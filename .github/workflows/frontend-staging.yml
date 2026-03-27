@@ -1,0 +1,126 @@
+name: Build, Push and Deploy Frontend
+
+on:
+  push:
+    branches: [main, master, develop]
+  workflow_dispatch:
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: aemadmin/newlevelhub-web-frontend
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            set -e
+            cd ~/buildconnect/backend || exit 1
+
+            if command -v docker-compose >/dev/null 2>&1; then
+              COMPOSE="docker-compose"
+            else
+              COMPOSE="docker compose"
+            fi
+
+            echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+            # Pull with retries
+            for i in 1 2 3; do
+              docker pull ${{ env.IMAGE_NAME }}:latest && break || sleep 10
+            done
+
+            # Stop and remove old container to avoid ContainerConfig error
+            $COMPOSE stop frontend || true
+            $COMPOSE rm -f frontend || true
+
+            # Start fresh frontend container without touching backend dependencies
+            $COMPOSE up -d --no-deps frontend
+
+            docker image prune -f
+            $COMPOSE ps
+
+      - name: Verify Deployment
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            set -e
+            cd ~/buildconnect/backend || exit 1
+
+            if command -v docker-compose >/dev/null 2>&1; then
+              COMPOSE="docker-compose"
+            else
+              COMPOSE="docker compose"
+            fi
+
+            echo "Waiting for frontend to start..."
+            for i in 1 2 3 4 5 6; do
+              FRONTEND_CONTAINER_ID=$($COMPOSE ps -q frontend)
+
+              if [ -n "$FRONTEND_CONTAINER_ID" ] && [ "$(/usr/bin/docker inspect -f '{{.State.Running}}' "$FRONTEND_CONTAINER_ID" 2>/dev/null)" = "true" ]; then
+                echo "Frontend is running"
+                $COMPOSE logs --tail=50 frontend
+                exit 0
+              fi
+
+              echo "Frontend not up yet, retrying in 10s... ($i/6)"
+              sleep 10
+            done
+
+            echo "Frontend failed to start"
+            $COMPOSE ps
+            FRONTEND_CONTAINER_ID=$($COMPOSE ps -q frontend)
+            if [ -n "$FRONTEND_CONTAINER_ID" ]; then
+              echo "Container state:"
+              /usr/bin/docker inspect -f 'status={{.State.Status}} exit={{.State.ExitCode}} error={{.State.Error}} started={{.State.StartedAt}} finished={{.State.FinishedAt}}' "$FRONTEND_CONTAINER_ID" || true
+            fi
+            $COMPOSE logs frontend
+            exit 1
