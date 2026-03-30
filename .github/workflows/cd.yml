@@ -21,10 +21,24 @@ jobs:
       - name: Build image reference
         id: image_meta
         run: |
+          if [[ -z "${{ secrets.DOCKER_REGISTRY }}" ]]; then
+            echo "DOCKER_REGISTRY secret is required"
+            exit 1
+          fi
+
           IMAGE_PATH="$IMAGE_REPOSITORY"
-          if [[ "$IMAGE_PATH" != */* ]]; then
+          if [[ -z "$IMAGE_PATH" ]]; then
+            IMAGE_PATH="${DOCKER_USERNAME}/newlevelhub-web-frontend"
+          elif [[ "$IMAGE_PATH" != */* ]]; then
             IMAGE_PATH="${DOCKER_USERNAME}/${IMAGE_PATH}"
           fi
+
+          IMAGE_PATH="$(echo "$IMAGE_PATH" | sed 's#^/*##; s#/*$##')"
+          if [[ -z "$IMAGE_PATH" ]]; then
+            echo "Invalid image repository path after normalization"
+            exit 1
+          fi
+
           echo "image_ref=${{ secrets.DOCKER_REGISTRY }}/${IMAGE_PATH}:${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Deploy to server
@@ -36,8 +50,8 @@ jobs:
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
           FRONTEND_IMAGE: ${{ steps.image_meta.outputs.image_ref }}
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
+          host: ${{ secrets.SSH_HOST != '' && secrets.SSH_HOST || secrets.SERVER_HOST }}
+          username: ${{ secrets.SSH_USER != '' && secrets.SSH_USER || secrets.SERVER_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || '22' }}
           envs: DOCKER_REGISTRY,DOCKER_USERNAME,DOCKER_PASSWORD,DEPLOY_PATH,FRONTEND_IMAGE
@@ -45,7 +59,11 @@ jobs:
             set -e
             echo "$DOCKER_PASSWORD" | docker login "$DOCKER_REGISTRY" -u "$DOCKER_USERNAME" --password-stdin
             cd "$DEPLOY_PATH"
-            git pull origin main
+            if [ -d ".git" ]; then
+              git pull origin main
+            else
+              echo "No git repository in $DEPLOY_PATH, skipping git pull"
+            fi
             if [ ! -f "docker-compose.staging.yml" ]; then
               echo "docker-compose.staging.yml not found in $DEPLOY_PATH"
               ls -la
