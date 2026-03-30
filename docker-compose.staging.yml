@@ -1,8 +1,7 @@
 services:
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  frontend:
+    image: ${FRONTEND_IMAGE}
+    pull_policy: always
     container_name: nlh_web_staging
     ports:
       - "3000:3000"
