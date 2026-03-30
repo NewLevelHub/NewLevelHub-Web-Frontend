@@ -39,7 +39,7 @@ jobs:
     name: Build and push Docker image
     needs: quality
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.fork == false && secrets.DOCKER_REGISTRY != '' && secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != ''
+    if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.fork == false
 
     steps:
       - uses: actions/checkout@v4
