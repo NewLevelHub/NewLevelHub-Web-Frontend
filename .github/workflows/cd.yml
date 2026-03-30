@@ -60,16 +60,15 @@ jobs:
             echo "$DOCKER_PASSWORD" | docker login "$DOCKER_REGISTRY" -u "$DOCKER_USERNAME" --password-stdin
             if [ ! -d "$DEPLOY_PATH" ]; then
               echo "DEPLOY_PATH does not exist: $DEPLOY_PATH"
-              echo "One-time on server: git clone git@github.com:${{ github.repository }}.git $DEPLOY_PATH"
               exit 1
             fi
             if [ ! -d "$DEPLOY_PATH/.git" ]; then
               echo "Not a git repository: $DEPLOY_PATH"
-              echo "One-time on server: git clone git@github.com:${{ github.repository }}.git $DEPLOY_PATH"
               ls -la "$DEPLOY_PATH"
               exit 1
             fi
             cd "$DEPLOY_PATH"
+            git remote set-url origin "git@github.com:${{ github.repository }}.git"
             git pull origin main
 
             if [ ! -f "docker-compose.staging.yml" ]; then
