@@ -58,12 +58,23 @@ jobs:
           script: |
             set -e
             echo "$DOCKER_PASSWORD" | docker login "$DOCKER_REGISTRY" -u "$DOCKER_USERNAME" --password-stdin
-            cd "$DEPLOY_PATH"
-            if [ -d ".git" ]; then
+            REPO_SSH="git@github.com:${{ github.repository }}.git"
+            mkdir -p "$DEPLOY_PATH"
+
+            if [ -d "$DEPLOY_PATH/.git" ]; then
+              cd "$DEPLOY_PATH"
               git pull origin main
             else
-              echo "No git repository in $DEPLOY_PATH, skipping git pull"
+              if [ -n "$(ls -A "$DEPLOY_PATH" 2>/dev/null)" ]; then
+                echo "$DEPLOY_PATH exists and is not a git repository."
+                echo "Please clean this directory or initialize it as a git repo."
+                ls -la "$DEPLOY_PATH"
+                exit 1
+              fi
+              git clone --branch main "$REPO_SSH" "$DEPLOY_PATH"
+              cd "$DEPLOY_PATH"
             fi
+
             if [ ! -f "docker-compose.staging.yml" ]; then
               echo "docker-compose.staging.yml not found in $DEPLOY_PATH"
               ls -la
