@@ -39,7 +39,7 @@ jobs:
     name: Build and push Docker image
     needs: quality
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.fork == false
+    if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.fork == false && secrets.DOCKER_REGISTRY != '' && secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != ''
 
     steps:
       - uses: actions/checkout@v4
@@ -47,10 +47,24 @@ jobs:
       - name: Build image reference
         id: image_meta
         run: |
+          if [[ -z "${{ secrets.DOCKER_REGISTRY }}" ]]; then
+            echo "DOCKER_REGISTRY secret is required"
+            exit 1
+          fi
+
           IMAGE_PATH="$IMAGE_REPOSITORY"
-          if [[ "$IMAGE_PATH" != */* ]]; then
+          if [[ -z "$IMAGE_PATH" ]]; then
+            IMAGE_PATH="${DOCKER_USERNAME}/newlevelhub-web-frontend"
+          elif [[ "$IMAGE_PATH" != */* ]]; then
             IMAGE_PATH="${DOCKER_USERNAME}/${IMAGE_PATH}"
           fi
+
+          IMAGE_PATH="$(echo "$IMAGE_PATH" | sed 's#^/*##; s#/*$##')"
+          if [[ -z "$IMAGE_PATH" ]]; then
+            echo "Invalid image repository path after normalization"
+            exit 1
+          fi
+
           # Extract ticket key like "DEV-29" from PR branch name (e.g. DEV-29-...).
           TICKET="$(echo "${{ github.head_ref }}" | grep -Eo '[A-Za-z]+-[0-9]+' | head -n1 || true)"
           TICKET="${TICKET:-TICKET}"
