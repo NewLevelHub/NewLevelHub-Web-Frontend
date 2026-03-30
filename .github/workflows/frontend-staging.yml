@@ -70,7 +70,18 @@ jobs:
           script: |
             set -e
             APP_DIR=~/NewLevelHub-Web-Frontend
+            REPO_URL="git@github.com:NewLevelHub/NewLevelHub-Web-Frontend.git"
+            BRANCH="${{ github.ref_name }}"
+
+            mkdir -p "$APP_DIR"
+            if [ ! -d "$APP_DIR/.git" ]; then
+              git clone "$REPO_URL" "$APP_DIR"
+            fi
+
             cd "$APP_DIR" || exit 1
+            git fetch origin
+            git checkout "$BRANCH"
+            git pull origin "$BRANCH"
 
             if command -v docker-compose >/dev/null 2>&1; then
               COMPOSE="docker-compose"
