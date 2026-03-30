@@ -1,0 +1,61 @@
+name: Frontend CD
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_REPOSITORY: ${{ secrets.DOCKER_REPOSITORY }}
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  IMAGE_TAG: latest
+
+jobs:
+  deploy:
+    name: Deploy on main push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Build image reference
+        id: image_meta
+        run: |
+          IMAGE_PATH="$IMAGE_REPOSITORY"
+          if [[ "$IMAGE_PATH" != */* ]]; then
+            IMAGE_PATH="${DOCKER_USERNAME}/${IMAGE_PATH}"
+          fi
+          echo "image_ref=${{ secrets.DOCKER_REGISTRY }}/${IMAGE_PATH}:${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DOCKER_REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          FRONTEND_IMAGE: ${{ steps.image_meta.outputs.image_ref }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          envs: DOCKER_REGISTRY,DOCKER_USERNAME,DOCKER_PASSWORD,DEPLOY_PATH,FRONTEND_IMAGE
+          script: |
+            set -e
+            echo "$DOCKER_PASSWORD" | docker login "$DOCKER_REGISTRY" -u "$DOCKER_USERNAME" --password-stdin
+            cd "$DEPLOY_PATH"
+            git pull origin main
+            if [ ! -f "docker-compose.staging.yml" ]; then
+              echo "docker-compose.staging.yml not found in $DEPLOY_PATH"
+              ls -la
+              exit 1
+            fi
+            if [ ! -f ".env" ]; then
+              echo ".env not found in $DEPLOY_PATH"
+              ls -la
+              exit 1
+            fi
+            export FRONTEND_IMAGE="$FRONTEND_IMAGE"
+            docker pull "$FRONTEND_IMAGE"
+            docker compose -f docker-compose.staging.yml up -d --force-recreate frontend
