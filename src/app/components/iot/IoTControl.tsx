@@ -40,6 +40,7 @@ const scenariosData = [
   { id: "s4", label: "Ночной режим",  icon: "🌙", desc: "18°C · 5% свет · Вентиляция ×0.2" },
 ];
 
+
 // ─── MINI SPARKLINE ────────────────────────────────────────────────────────
 
 function Sparkline({ data, color, max }: { data: typeof energyData; color: string; max: number }) {
