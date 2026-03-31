@@ -1,4 +1,5 @@
 import React from "react";
+import type { CurrentUser } from "../lib/api";
 
 interface NavItem {
   icon: string;
@@ -19,9 +20,15 @@ const navItems: NavItem[] = [
 interface SidebarProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  currentUser: CurrentUser | null;
 }
 
-export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
+export function Sidebar({ activeTab, onTabChange, currentUser }: SidebarProps) {
+  const initials =
+    currentUser
+      ? `${currentUser.first_name?.[0] || ""}${currentUser.last_name?.[0] || ""}`.trim() ||
+        currentUser.email.slice(0, 2).toUpperCase()
+      : "GU";
   return (
     <aside
       style={{
@@ -168,7 +175,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                 color: "#080c14",
               }}
             >
-              AK
+              {initials}
             </div>
             <div
               style={{
@@ -196,10 +203,10 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                 textOverflow: "ellipsis",
               }}
             >
-              Alexei Kovalev
+              {currentUser?.full_name || currentUser?.email || "Guest user"}
             </div>
             <div style={{ fontFamily: "DM Mono, monospace", fontSize: 10, color: "#8892a4", marginTop: 1 }}>
-              Head of Product
+              {currentUser?.role || "guest"}
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
