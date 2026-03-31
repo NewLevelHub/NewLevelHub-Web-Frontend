@@ -68,7 +68,6 @@ jobs:
               exit 1
             fi
             cd "$DEPLOY_PATH"
-            git remote set-url origin "git@github.com:${{ github.repository }}.git"
             git pull origin main
 
             if [ ! -f "docker-compose.staging.yml" ]; then
