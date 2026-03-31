@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from "react";
+import type { CurrentUser, SystemSnapshot } from "../lib/api";
 
 interface HeaderProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  snapshot: SystemSnapshot | null;
+  snapshotError: string | null;
+  currentUser: CurrentUser | null;
+  onLogout: () => Promise<void>;
 }
 
 const tabs = [
@@ -11,12 +16,20 @@ const tabs = [
   { id: "dola", label: "Dola AI" },
 ];
 
-export function Header({ activeTab, onTabChange }: HeaderProps) {
+export function Header({ activeTab, onTabChange, snapshot, snapshotError, currentUser, onLogout }: HeaderProps) {
   const [time, setTime] = useState(new Date());
   const [showNotif, setShowNotif] = useState(true);
 
   useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
+    if (snapshot?.serverTime?.utc_time) {
+      setTime(new Date(snapshot.serverTime.utc_time));
+    }
+  }, [snapshot?.serverTime?.utc_time]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTime((prev) => new Date(prev.getTime() + 1000));
+    }, 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -51,10 +64,10 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
               letterSpacing: "-0.03em",
             }}
           >
-            Добро пожаловать, Alexei 👋
+            Добро пожаловать, {currentUser?.full_name || currentUser?.email || "Guest"} 👋
           </h1>
           <div style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: "#8892a4", marginTop: 4, textTransform: "capitalize" }}>
-            {formatDate(time)} · New Level Hub, Москва, этаж 12
+            {formatDate(time)} · {snapshot?.buildInfo?.service ?? "New Level Hub"} v{snapshot?.buildInfo?.version ?? "n/a"} · {snapshot?.environment?.environment ?? "unknown"}
           </div>
         </div>
 
@@ -112,8 +125,38 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
           >
             {formatTime(time)}
           </div>
+          {currentUser && (
+            <button
+              onClick={onLogout}
+              style={{
+                height: 36,
+                borderRadius: 8,
+                border: "1px solid rgba(255,138,101,0.35)",
+                background: "rgba(255,138,101,0.08)",
+                color: "#ff8a65",
+                cursor: "pointer",
+                padding: "0 12px",
+                fontFamily: "DM Mono, monospace",
+                fontSize: 11,
+              }}
+            >
+              Logout
+            </button>
+          )}
         </div>
       </div>
+      {snapshotError && (
+        <div
+          style={{
+            fontFamily: "DM Mono, monospace",
+            fontSize: 10,
+            color: "#ff8a65",
+            marginBottom: 10,
+          }}
+        >
+          Backend sync error: {snapshotError}
+        </div>
+      )}
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4 }}>

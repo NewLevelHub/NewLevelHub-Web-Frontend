@@ -154,7 +154,7 @@ export function HRPortal() {
                 key={d}
                 onClick={() => setSelectedDept(d)}
                 style={{
-                  padding: "4px 10px", borderRadius: 6, border: "none",
+                  padding: "4px 10px", borderRadius: 6,
                   background: selectedDept === d ? "rgba(108,138,255,0.2)" : "rgba(255,255,255,0.05)",
                   color: selectedDept === d ? "#6c8aff" : "#8892a4",
                   fontFamily: "DM Mono, monospace", fontSize: 10, cursor: "pointer",

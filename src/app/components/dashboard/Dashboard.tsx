@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import type { SystemSnapshot } from "../../lib/api";
 
 const cardStyle = (extra?: React.CSSProperties): React.CSSProperties => ({
   background: "rgba(255,255,255,0.04)",
@@ -61,28 +62,79 @@ const deliveries = [
   { id: "R-036", item: "Посылка из ресепшена", floor: "1 эт. → 12 эт.", eta: "~14 мин", status: "Ожидание", color: "#6c8aff", x: 3, y: 2 },
 ];
 
-const stats = [
-  { label: "Активных сотрудников", value: "247", unit: "чел.", sub: "+12 с прошлой недели", color: "#00f5c4" },
-  { label: "Занятость переговорок", value: "68", unit: "%", sub: "4 из 6 залов", color: "#6c8aff" },
-  { label: "Роботы-доставщики", value: "3", unit: "/ 5", sub: "2 на зарядке", color: "#ff8a65" },
-];
-
 // Floor map grid (5×4)
 const GRID_W = 5;
 const GRID_H = 4;
 
-export function Dashboard() {
+interface DashboardProps {
+  snapshot: SystemSnapshot | null;
+  isLoadingSnapshot: boolean;
+  snapshotError: string | null;
+}
+
+export function Dashboard({ snapshot, isLoadingSnapshot, snapshotError }: DashboardProps) {
   const [hoveredAction, setHoveredAction] = useState<string | null>(null);
+  const featureFlags = snapshot?.features?.features;
+  const quickActionsActual = quickActions.map((action) => {
+    if (!featureFlags) return action;
+    if (action.id === "book") return { ...action, desc: featureFlags.booking ? "Модуль активен" : "Модуль выключен" };
+    if (action.id === "iot") return { ...action, desc: featureFlags.iot ? "Модуль активен" : "Модуль выключен" };
+    if (action.id === "robot") return { ...action, desc: featureFlags.crm ? "CRM включен" : "CRM выключен" };
+    return { ...action, desc: featureFlags.auth ? "Auth доступен" : "Auth недоступен" };
+  });
+
+  const uptimeHours = snapshot?.uptime ? Math.floor(snapshot.uptime.uptime_seconds / 3600) : null;
+  const uptimeMinutes = snapshot?.uptime ? Math.floor((snapshot.uptime.uptime_seconds % 3600) / 60) : null;
+  const uptimeLabel =
+    uptimeHours === null || uptimeMinutes === null ? "n/a" : `${uptimeHours}ч ${uptimeMinutes}м`;
+
+  const statsActual = [
+    {
+      label: "Статус API",
+      value: snapshot?.ping?.message === "pong" ? "OK" : "ERR",
+      unit: "",
+      sub: snapshot?.environment ? `${snapshot.environment.environment} · debug=${String(snapshot.environment.debug)}` : "Нет данных",
+      color: snapshot?.ping?.message === "pong" ? "#00f5c4" : "#ff8a65",
+    },
+    {
+      label: "Uptime сервиса",
+      value: uptimeLabel,
+      unit: "",
+      sub: snapshot?.uptime?.started_at ? `Старт: ${snapshot.uptime.started_at}` : "Нет данных",
+      color: "#6c8aff",
+    },
+    {
+      label: "Поддерживаемые роли",
+      value: String(snapshot?.roles?.length ?? 0),
+      unit: "",
+      sub: "Из /api/v1/auth/roles/",
+      color: "#ff8a65",
+    },
+  ];
 
   return (
     <div style={{ padding: "28px 32px", display: "flex", flexDirection: "column", gap: 24 }}>
+      {(isLoadingSnapshot || snapshotError) && (
+        <div
+          style={{
+            ...cardStyle({
+              padding: "12px 16px",
+              color: snapshotError ? "#ff8a65" : "#8892a4",
+              fontFamily: "DM Mono, monospace",
+              fontSize: 11,
+            }),
+          }}
+        >
+          {snapshotError ? `Ошибка загрузки backend данных: ${snapshotError}` : "Загрузка данных с backend..."}
+        </div>
+      )}
       {/* Quick Actions */}
       <section>
         <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 13, color: "#8892a4", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
           Быстрые сценарии
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-          {quickActions.map((a) => (
+          {quickActionsActual.map((a) => (
             <button
               key={a.id}
               onMouseEnter={() => setHoveredAction(a.id)}
@@ -291,7 +343,7 @@ export function Dashboard() {
 
       {/* Stats Row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-        {stats.map((s, i) => (
+        {statsActual.map((s, i) => (
           <div key={i} style={cardStyle({ padding: "20px 24px" })}>
             <div style={{ fontFamily: "DM Mono, monospace", fontSize: 11, color: "#8892a4", marginBottom: 8, letterSpacing: "0.06em", textTransform: "uppercase" }}>
               {s.label}
