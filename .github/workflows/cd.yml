@@ -68,7 +68,11 @@ jobs:
               exit 1
             fi
             cd "$DEPLOY_PATH"
-            git pull origin main
+            if ! git pull origin main; then
+              echo "git pull via origin failed, retrying with github.com-frontend SSH alias"
+              git remote set-url origin "git@github.com-frontend:${{ github.repository }}.git"
+              git pull origin main
+            fi
 
             if [ ! -f "docker-compose.staging.yml" ]; then
               echo "docker-compose.staging.yml not found in $DEPLOY_PATH"
