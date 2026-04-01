@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import type { CurrentUser } from "../lib/api";
 
 interface NavItem {
@@ -24,6 +24,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activeTab, onTabChange, currentUser }: SidebarProps) {
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const initials =
     currentUser
       ? `${currentUser.first_name?.[0] || ""}${currentUser.last_name?.[0] || ""}`.trim() ||
@@ -158,7 +159,22 @@ export function Sidebar({ activeTab, onTabChange, currentUser }: SidebarProps) {
           border: "1px solid rgba(255,255,255,0.07)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <button
+          onClick={() => setIsProfileMenuOpen((prev) => !prev)}
+          aria-expanded={isProfileMenuOpen}
+          aria-label="Toggle profile actions"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            width: "100%",
+            border: "none",
+            background: "transparent",
+            padding: 0,
+            textAlign: "left",
+            cursor: "pointer",
+          }}
+        >
           <div style={{ position: "relative", flexShrink: 0 }}>
             <div
               style={{
@@ -214,7 +230,31 @@ export function Sidebar({ activeTab, onTabChange, currentUser }: SidebarProps) {
               ONLINE
             </div>
           </div>
-        </div>
+        </button>
+        {isProfileMenuOpen && (
+          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+            {["Settings", "Log Out", "Help"].map((action) => (
+              <button
+                key={action}
+                type="button"
+                style={{
+                  width: "100%",
+                  borderRadius: 8,
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  background: "rgba(255,255,255,0.03)",
+                  color: "#e8eaf0",
+                  fontFamily: "Syne, sans-serif",
+                  fontSize: 12,
+                  padding: "8px 10px",
+                  textAlign: "left",
+                  cursor: "pointer",
+                }}
+              >
+                {action}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </aside>
   );
