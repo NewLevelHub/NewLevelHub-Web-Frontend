@@ -12,7 +12,6 @@ permissions:
 env:
   IMAGE_REPOSITORY: ${{ secrets.DOCKER_REPOSITORY }}
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-  LATEST_TAG: latest
 
 jobs:
   quality:
@@ -65,15 +64,15 @@ jobs:
             exit 1
           fi
 
-          # Extract ticket key like "DEV-29" from PR branch name (e.g. DEV-29-...).
-          TICKET="$(echo "${{ github.head_ref }}" | grep -Eo '[A-Za-z]+-[0-9]+' | head -n1 || true)"
+          # Extract ticket key like "DEV-33" from branch names such as:
+          # feature/dev-33-backend-api-endpoints-frontend-integration
+          TICKET="$(echo "${{ github.head_ref }}" | grep -Eo '(^|/)[A-Za-z]+-[0-9]+' | head -n1 | sed 's#^.*/##' || true)"
           TICKET="${TICKET:-TICKET}"
           TICKET="$(echo "$TICKET" | tr '[:lower:]' '[:upper:]')"
           PR_TAG="${TICKET}"
 
           IMAGE_NAME="${{ secrets.DOCKER_REGISTRY }}/${IMAGE_PATH}"
           echo "pr_image_ref=${IMAGE_NAME}:${PR_TAG}" >> "$GITHUB_OUTPUT"
-          echo "latest_image_ref=${IMAGE_NAME}:${LATEST_TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to Docker registry
         uses: docker/login-action@v3
@@ -93,7 +92,6 @@ jobs:
           push: true
           tags: |
             ${{ steps.image_meta.outputs.pr_image_ref }}
-            ${{ steps.image_meta.outputs.latest_image_ref }}
 
   notify:
     name: Slack notification
