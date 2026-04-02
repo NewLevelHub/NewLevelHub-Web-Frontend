@@ -102,6 +102,18 @@ jobs:
               ls -la
               exit 1
             fi
+            # Fallback keeps staging deployable even if output propagation is empty.
+            if [ -z "$FRONTEND_IMAGE" ]; then
+              FRONTEND_IMAGE="docker.io/aemadmin/newlevelhub-web-frontend:latest"
+              echo "FRONTEND_IMAGE is empty, fallback to $FRONTEND_IMAGE"
+            fi
+            case "$FRONTEND_IMAGE" in
+              *:*) ;;
+              *)
+                echo "Invalid FRONTEND_IMAGE: '$FRONTEND_IMAGE'"
+                exit 1
+                ;;
+            esac
             export FRONTEND_IMAGE="$FRONTEND_IMAGE"
 
             # Staging compose is generated from the repo's local template.
@@ -157,11 +169,9 @@ jobs:
               ls -la
               exit 1
             fi
-            if [ ! -f ".env" ]; then
-              echo ".env not found in NewLevelHub-Web-Frontend"
+            if [ ! -f ".env.prod" ]; then
+              echo ".env.prod not found in NewLevelHub-Web-Frontend"
               ls -la
               exit 1
             fi
-            export FRONTEND_IMAGE="$FRONTEND_IMAGE"
-            docker pull "$FRONTEND_IMAGE"
             docker compose -f docker-compose.prod.yml up -d --force-recreate
