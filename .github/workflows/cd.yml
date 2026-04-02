@@ -12,9 +12,12 @@ env:
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
 
 jobs:
-  deploy:
-    name: Deploy on main push
+  build_and_push:
+    name: Build and push Docker image
     runs-on: ubuntu-latest
+    outputs:
+      latest_image_ref: ${{ steps.image_meta.outputs.latest_image_ref }}
+      sha_image_ref: ${{ steps.image_meta.outputs.sha_image_ref }}
 
     steps:
       - uses: actions/checkout@v4
@@ -65,13 +68,75 @@ jobs:
             ${{ steps.image_meta.outputs.latest_image_ref }}
             ${{ steps.image_meta.outputs.sha_image_ref }}
 
-      - name: Deploy to server
+  deploy-staging:
+    name: Deploy to staging
+    needs: build_and_push
+    environment: staging
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy staging to server
         uses: appleboy/ssh-action@v1.2.0
         env:
           DOCKER_REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-          FRONTEND_IMAGE: ${{ steps.image_meta.outputs.latest_image_ref }}
+          FRONTEND_IMAGE: ${{ needs.build_and_push.outputs.latest_image_ref }}
+        with:
+          host: ${{ secrets.SSH_HOST != '' && secrets.SSH_HOST || secrets.SERVER_HOST }}
+          username: ${{ secrets.SSH_USER != '' && secrets.SSH_USER || secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          envs: DOCKER_REGISTRY,DOCKER_USERNAME,DOCKER_PASSWORD,FRONTEND_IMAGE
+          script: |
+            set -e
+            echo "$DOCKER_PASSWORD" | docker login "$DOCKER_REGISTRY" -u "$DOCKER_USERNAME" --password-stdin
+            if [ ! -d "NewLevelHub-Web-Frontend" ]; then
+              echo "Directory not found: NewLevelHub-Web-Frontend"
+              exit 1
+            fi
+            cd NewLevelHub-Web-Frontend
+
+            if [ ! -f ".env" ]; then
+              echo ".env not found in NewLevelHub-Web-Frontend"
+              ls -la
+              exit 1
+            fi
+            export FRONTEND_IMAGE="$FRONTEND_IMAGE"
+
+            # Staging compose is generated from the repo's local template.
+            # Production compose stays server-specific (may differ from what is in this repo).
+            cat > docker-compose.staging.yml <<EOF
+            services:
+              frontend:
+                image: ${FRONTEND_IMAGE}
+                pull_policy: always
+                container_name: nlh_web_staging
+                ports:
+                  - "3000:3000"
+                env_file:
+                  - .env
+                restart: unless-stopped
+            EOF
+
+            docker pull "$FRONTEND_IMAGE"
+
+            docker compose -f docker-compose.staging.yml up -d --force-recreate
+
+  deploy-production:
+    name: Deploy to production
+    needs: [deploy-staging, build_and_push]
+    environment: production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy production to server
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DOCKER_REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          FRONTEND_IMAGE: ${{ needs.build_and_push.outputs.latest_image_ref }}
         with:
           host: ${{ secrets.SSH_HOST != '' && secrets.SSH_HOST || secrets.SERVER_HOST }}
           username: ${{ secrets.SSH_USER != '' && secrets.SSH_USER || secrets.SERVER_USERNAME }}
