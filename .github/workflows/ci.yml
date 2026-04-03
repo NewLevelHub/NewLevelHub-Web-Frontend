@@ -81,8 +81,14 @@ jobs:
     needs: build_and_push
     runs-on: ubuntu-latest
     environment: staging
+    if: needs.build_and_push.result == 'success'
 
     steps:
+      - name: Debug image ref
+        run: |
+          echo "image_ref from build_and_push: '${{ needs.build_and_push.outputs.image_ref }}'"
+          echo "ticket: '${{ needs.build_and_push.outputs.ticket }}'"
+
       - name: Deploy to staging server
         uses: appleboy/ssh-action@v1.2.0
         env:
@@ -98,8 +104,9 @@ jobs:
           script: |
             set -e
             FRONTEND_IMAGE="$(printf '%s' "$FRONTEND_IMAGE" | tr -d '\r\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+            echo "FRONTEND_IMAGE received: '$FRONTEND_IMAGE'"
             if [ -z "$FRONTEND_IMAGE" ]; then
-              echo "FRONTEND_IMAGE is empty"
+              echo "FRONTEND_IMAGE is empty — build_and_push output was not propagated"
               exit 1
             fi
             echo "$DOCKER_PASSWORD" | docker login docker.io -u "$DOCKER_USERNAME" --password-stdin
