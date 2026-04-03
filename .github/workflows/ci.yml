@@ -95,18 +95,6 @@ jobs:
             echo "$DOCKER_PASSWORD" | docker login docker.io -u "$DOCKER_USERNAME" --password-stdin
             cd ~/NewLevelHub-Web-Frontend
             [ -f ".env" ] || { echo ".env not found"; ls -la; exit 1; }
-            cat > docker-compose.staging.yml <<EOF
-services:
-  frontend:
-    image: ${FRONTEND_IMAGE}
-    pull_policy: always
-    container_name: nlh_web_staging
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    env_file:
-      - .env
-EOF
             docker pull "$FRONTEND_IMAGE"
             docker compose -f docker-compose.staging.yml up -d --force-recreate
 
