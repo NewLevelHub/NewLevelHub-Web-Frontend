@@ -38,7 +38,6 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.fork == false
     outputs:
-      image_ref: ${{ steps.image_meta.outputs.image_ref }}
       ticket: ${{ steps.ticket.outputs.value }}
 
     steps:
@@ -46,21 +45,11 @@ jobs:
 
       - name: Extract ticket from branch name
         id: ticket
-        # Supports: feat/DEV-33-some-description, DEV-33, feature/dev-33-something
         run: |
           TICKET="$(echo "${{ github.head_ref }}" | grep -Eo '(^|/)[A-Za-z]+-[0-9]+' | head -n1 | sed 's#^.*/##' || true)"
           TICKET="${TICKET:-TICKET}"
           TICKET="$(echo "$TICKET" | tr '[:lower:]' '[:upper:]')"
           echo "value=${TICKET}" >> "$GITHUB_OUTPUT"
-
-      - name: Build image reference
-        id: image_meta
-        run: |
-          IMAGE="docker.io/${{ secrets.DOCKER_USERNAME }}/newlevelhub-web-frontend"
-          echo "Constructed IMAGE: '${IMAGE}'"         # <— add this
-          TICKET="${{ steps.ticket.outputs.value }}"
-          echo "image_ref=${IMAGE}:${TICKET}" >> "$GITHUB_OUTPUT"
-          cat "$GITHUB_OUTPUT"  
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -77,7 +66,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ steps.image_meta.outputs.image_ref }}
+          tags: docker.io/${{ secrets.DOCKER_USERNAME }}/newlevelhub-web-frontend:${{ steps.ticket.outputs.value }}
 
   deploy-staging:
     name: Deploy to staging
@@ -87,34 +76,37 @@ jobs:
     if: needs.build_and_push.result == 'success'
 
     steps:
-      - name: Debug image ref
-        run: |
-          echo "image_ref from build_and_push: '${{ needs.build_and_push.outputs.image_ref }}'"
-          echo "ticket: '${{ needs.build_and_push.outputs.ticket }}'"
-
       - name: Deploy to staging server
         uses: appleboy/ssh-action@v1.2.0
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-          FRONTEND_IMAGE: ${{ needs.build_and_push.outputs.image_ref }}
+          TICKET: ${{ needs.build_and_push.outputs.ticket }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || '22' }}
-          envs: DOCKER_USERNAME,DOCKER_PASSWORD,FRONTEND_IMAGE
+          envs: DOCKER_USERNAME,DOCKER_PASSWORD,TICKET
           script: |
             set -e
-            FRONTEND_IMAGE="$(printf '%s' "$FRONTEND_IMAGE" | tr -d '\r\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
-            echo "FRONTEND_IMAGE received: '$FRONTEND_IMAGE'"
-            if [ -z "$FRONTEND_IMAGE" ]; then
-              echo "FRONTEND_IMAGE is empty — build_and_push output was not propagated"
-              exit 1
-            fi
+            FRONTEND_IMAGE="docker.io/${DOCKER_USERNAME}/newlevelhub-web-frontend:${TICKET}"
+            echo "Deploying image: $FRONTEND_IMAGE"
             echo "$DOCKER_PASSWORD" | docker login docker.io -u "$DOCKER_USERNAME" --password-stdin
             cd ~/NewLevelHub-Web-Frontend
             [ -f ".env" ] || { echo ".env not found"; ls -la; exit 1; }
+            cat > docker-compose.staging.yml <<EOF
+services:
+  frontend:
+    image: ${FRONTEND_IMAGE}
+    pull_policy: always
+    container_name: nlh_web_staging
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+EOF
             docker pull "$FRONTEND_IMAGE"
             docker compose -f docker-compose.staging.yml up -d --force-recreate
 
