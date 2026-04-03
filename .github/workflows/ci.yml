@@ -7,15 +7,10 @@ on:
 
 permissions:
   contents: read
-  packages: write
-
-env:
-  IMAGE_REPOSITORY: ${{ secrets.DOCKER_REPOSITORY }}
-  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
 
 jobs:
   quality:
-    name: Build check
+    name: Quality check
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
 
@@ -31,7 +26,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run build
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
         run: npm run build
 
   build_and_push:
@@ -39,71 +37,101 @@ jobs:
     needs: quality
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.fork == false
+    outputs:
+      image_ref: ${{ steps.image_meta.outputs.image_ref }}
+      ticket: ${{ steps.ticket.outputs.value }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build image reference
-        id: image_meta
+      - name: Extract ticket from branch name
+        id: ticket
+        # Supports: feat/DEV-33-some-description, DEV-33, feature/dev-33-something
         run: |
-          if [[ -z "${{ secrets.DOCKER_REGISTRY }}" ]]; then
-            echo "DOCKER_REGISTRY secret is required"
-            exit 1
-          fi
-
-          IMAGE_PATH="$IMAGE_REPOSITORY"
-          if [[ -z "$IMAGE_PATH" ]]; then
-            IMAGE_PATH="${DOCKER_USERNAME}/newlevelhub-web-frontend"
-          elif [[ "$IMAGE_PATH" != */* ]]; then
-            IMAGE_PATH="${DOCKER_USERNAME}/${IMAGE_PATH}"
-          fi
-
-          IMAGE_PATH="$(echo "$IMAGE_PATH" | sed 's#^/*##; s#/*$##')"
-          if [[ -z "$IMAGE_PATH" ]]; then
-            echo "Invalid image repository path after normalization"
-            exit 1
-          fi
-
-          # Extract ticket key like "DEV-33" from branch names such as:
-          # feature/dev-33-backend-api-endpoints-frontend-integration
           TICKET="$(echo "${{ github.head_ref }}" | grep -Eo '(^|/)[A-Za-z]+-[0-9]+' | head -n1 | sed 's#^.*/##' || true)"
           TICKET="${TICKET:-TICKET}"
           TICKET="$(echo "$TICKET" | tr '[:lower:]' '[:upper:]')"
-          PR_TAG="${TICKET}"
+          echo "value=${TICKET}" >> "$GITHUB_OUTPUT"
 
-          IMAGE_NAME="${{ secrets.DOCKER_REGISTRY }}/${IMAGE_PATH}"
-          echo "pr_image_ref=${IMAGE_NAME}:${PR_TAG}" >> "$GITHUB_OUTPUT"
+      - name: Build image reference
+        id: image_meta
+        run: |
+          IMAGE="docker.io/${{ secrets.DOCKER_USERNAME }}/newlevelhub-web-frontend"
+          echo "image_ref=${IMAGE}:${{ steps.ticket.outputs.value }}" >> "$GITHUB_OUTPUT"
 
-      - name: Log in to Docker registry
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          registry: ${{ secrets.DOCKER_REGISTRY }}
+          registry: docker.io
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Build and push image
+      - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: |
-            ${{ steps.image_meta.outputs.pr_image_ref }}
+          tags: ${{ steps.image_meta.outputs.image_ref }}
+
+  deploy-staging:
+    name: Deploy to staging
+    needs: build_and_push
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Deploy to staging server
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          FRONTEND_IMAGE: ${{ needs.build_and_push.outputs.image_ref }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          envs: DOCKER_USERNAME,DOCKER_PASSWORD,FRONTEND_IMAGE
+          script: |
+            set -e
+            FRONTEND_IMAGE="$(printf '%s' "$FRONTEND_IMAGE" | tr -d '\r\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+            if [ -z "$FRONTEND_IMAGE" ]; then
+              echo "FRONTEND_IMAGE is empty"
+              exit 1
+            fi
+            echo "$DOCKER_PASSWORD" | docker login docker.io -u "$DOCKER_USERNAME" --password-stdin
+            cd ~/NewLevelHub-Web-Frontend
+            [ -f ".env" ] || { echo ".env not found"; ls -la; exit 1; }
+            cat > docker-compose.staging.yml <<EOF
+            services:
+              frontend:
+                image: ${FRONTEND_IMAGE}
+                pull_policy: always
+                container_name: nlh_web_staging
+                restart: unless-stopped
+                ports:
+                  - "3000:3000"
+                env_file:
+                  - .env
+            EOF
+            docker pull "$FRONTEND_IMAGE"
+            docker compose -f docker-compose.staging.yml up -d --force-recreate
 
   notify:
     name: Slack notification
     runs-on: ubuntu-latest
-    needs: [quality, build_and_push]
+    needs: [quality, build_and_push, deploy-staging]
     if: always() && github.event.pull_request.draft == false
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
     steps:
       - name: Send Slack message
-        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
+        if: env.SLACK_WEBHOOK_URL != ''
         uses: slackapi/slack-github-action@v1.27.0
         with:
           payload: |
@@ -113,7 +141,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "${{ needs.build_and_push.result == 'success' && '✅ SUCCESS' || '❌ FAILURE' }} *${{ github.repository }}*\n*Branch:* `${{ github.head_ref != '' && github.head_ref || github.ref_name }}`\n*Actor:* ${{ github.actor }}${{ github.event_name == 'pull_request' && format('\n*PR:* {0} by {1}', github.event.pull_request.title, github.event.pull_request.user.login) || '' }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+                    "text": "${{ needs.deploy-staging.result == 'success' && '✅ Staging deployed' || (needs.quality.result == 'failure' && '❌ Quality check failed' || '❌ Deploy failed') }} *${{ github.repository }}*\n*Ticket:* `${{ needs.build_and_push.outputs.ticket }}`\n*Branch:* `${{ github.head_ref }}`\n*PR:* ${{ github.event.pull_request.title }} by ${{ github.event.pull_request.user.login }}\n*Actor:* ${{ github.actor }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
                   }
                 }
               ]

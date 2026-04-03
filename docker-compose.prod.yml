@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: docker.io/aemadmin/newlevelhub-web-frontend:latest
+    image: ${FRONTEND_IMAGE:-docker.io/aemadmin/newlevelhub-web-frontend:latest}
     pull_policy: always
     container_name: nlh_web_prod
     restart: unless-stopped
