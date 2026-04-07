@@ -54,9 +54,14 @@ export default function LoginPage() {
         </div>
 
         <div>
-          <label htmlFor="login-password" className={authLabel}>
-            Пароль
-          </label>
+          <div className="mb-1 flex items-center justify-between">
+            <label htmlFor="login-password" className={authLabel}>
+              Пароль
+            </label>
+            <Link to="/forgot-password" className={authLink}>
+              Забыли пароль?
+            </Link>
+          </div>
           <input
             id="login-password"
             type="password"
