@@ -3,21 +3,23 @@ name: Frontend CI
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, closed]
 
 permissions:
   contents: read
-  packages: write
+  pull-requests: write
 
 env:
-  IMAGE_REPOSITORY: ${{ secrets.DOCKER_REPOSITORY }}
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
 
 jobs:
+  # ──────────────────────────────────────────────
+  # 1. Quality gate — typecheck + build
+  # ──────────────────────────────────────────────
   quality:
-    name: Build check
+    name: Quality check
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false && github.event.action != 'closed'
 
     steps:
       - uses: actions/checkout@v4
@@ -31,48 +33,36 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run build
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
         run: npm run build
 
+  # ──────────────────────────────────────────────
+  # 2. Build Docker image and push to Docker Hub
+  # ──────────────────────────────────────────────
   build_and_push:
-    name: Build and push Docker image
+    name: Build & push Docker image
     needs: quality
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.fork == false
+    if: github.event.pull_request.draft == false && github.event.action != 'closed'
+    outputs:
+      pr_image_ref: ${{ steps.meta.outputs.pr_image_ref }}
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Build image reference
-        id: image_meta
+        id: meta
         run: |
-          if [[ -z "${{ secrets.DOCKER_REGISTRY }}" ]]; then
-            echo "DOCKER_REGISTRY secret is required"
-            exit 1
-          fi
-
-          IMAGE_PATH="$IMAGE_REPOSITORY"
-          if [[ -z "$IMAGE_PATH" ]]; then
-            IMAGE_PATH="${DOCKER_USERNAME}/newlevelhub-web-frontend"
-          elif [[ "$IMAGE_PATH" != */* ]]; then
-            IMAGE_PATH="${DOCKER_USERNAME}/${IMAGE_PATH}"
-          fi
-
-          IMAGE_PATH="$(echo "$IMAGE_PATH" | sed 's#^/*##; s#/*$##')"
-          if [[ -z "$IMAGE_PATH" ]]; then
-            echo "Invalid image repository path after normalization"
-            exit 1
-          fi
-
-          # Extract ticket key like "DEV-33" from branch names such as:
-          # feature/dev-33-backend-api-endpoints-frontend-integration
-          TICKET="$(echo "${{ github.head_ref }}" | grep -Eo '(^|/)[A-Za-z]+-[0-9]+' | head -n1 | sed 's#^.*/##' || true)"
-          TICKET="${TICKET:-TICKET}"
-          TICKET="$(echo "$TICKET" | tr '[:lower:]' '[:upper:]')"
-          PR_TAG="${TICKET}"
-
-          IMAGE_NAME="${{ secrets.DOCKER_REGISTRY }}/${IMAGE_PATH}"
-          echo "pr_image_ref=${IMAGE_NAME}:${PR_TAG}" >> "$GITHUB_OUTPUT"
+          REGISTRY="${{ secrets.DOCKER_REGISTRY }}"
+          REGISTRY="${REGISTRY:-docker.io}"
+          REPO="${{ secrets.DOCKER_REPOSITORY }}"
+          REPO="${REPO:-newlevelhub-web-frontend}"
+          IMAGE="${REGISTRY}/${DOCKER_USERNAME}/${REPO}"
+          PR_TAG="pr-${{ github.event.pull_request.number }}"
+          echo "pr_image_ref=${IMAGE}:${PR_TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to Docker registry
         uses: docker/login-action@v3
@@ -84,27 +74,239 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push image
+      - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: |
-            ${{ steps.image_meta.outputs.pr_image_ref }}
+          tags: ${{ steps.meta.outputs.pr_image_ref }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
+  # ──────────────────────────────────────────────
+  # 3. Deploy per-PR preview on staging
+  # ──────────────────────────────────────────────
+  deploy_preview:
+    name: Deploy preview
+    needs: build_and_push
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false && github.event.action != 'closed'
+    environment: staging
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy compose template to staging server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "docker-compose.preview.yml"
+          target: ${{ secrets.DEPLOY_PATH }}
+
+      - name: Deploy preview environment
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          FRONTEND_IMAGE: ${{ needs.build_and_push.outputs.pr_image_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BRANCH_NAME: ${{ github.head_ref }}
+          DOCKER_REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: FRONTEND_IMAGE,PR_NUMBER,BRANCH_NAME,DOCKER_REGISTRY,DOCKER_USERNAME,DOCKER_PASSWORD,DEPLOY_PATH
+          script: |
+            set -e
+
+            # --- slug ---
+            TICKET=$(echo "$BRANCH_NAME" | grep -oE 'dev-[0-9]+' | head -1)
+            if [ -z "$TICKET" ]; then TICKET="noticket"; fi
+            PR_SLUG="fe-${TICKET}-pr${PR_NUMBER}"
+            HOST_PORT=$((20000 + PR_NUMBER))
+            DOMAIN="${PR_SLUG}.staging.newlevelhub.kz"
+
+            echo "► Slug: $PR_SLUG | Port: $HOST_PORT | Domain: $DOMAIN"
+
+            # --- docker login ---
+            echo "$DOCKER_PASSWORD" | docker login "${DOCKER_REGISTRY:-docker.io}" -u "$DOCKER_USERNAME" --password-stdin
+
+            cd "$DEPLOY_PATH"
+
+            # --- compose file for this PR ---
+            cp docker-compose.preview.yml "docker-compose.${PR_SLUG}.yml"
+
+            # --- pull & start ---
+            export FRONTEND_IMAGE
+            export CONTAINER_NAME="nlh_fe_${PR_SLUG}"
+            export HOST_PORT
+
+            docker compose -f "docker-compose.${PR_SLUG}.yml" --project-name "$PR_SLUG" pull
+            docker compose -f "docker-compose.${PR_SLUG}.yml" --project-name "$PR_SLUG" up -d --force-recreate
+
+            # --- nginx vhost ---
+            sudo tee "/etc/nginx/sites-available/${PR_SLUG}" > /dev/null <<NGINX_EOF
+            server {
+                listen 80;
+                server_name ${DOMAIN};
+
+                location / {
+                    proxy_pass http://127.0.0.1:${HOST_PORT};
+                    proxy_set_header Host \$host;
+                    proxy_set_header X-Real-IP \$remote_addr;
+                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto \$scheme;
+                }
+
+                location /api/ {
+                    proxy_pass http://127.0.0.1:8000;
+                    proxy_set_header Host \$host;
+                    proxy_set_header X-Real-IP \$remote_addr;
+                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto \$scheme;
+                }
+            }
+            NGINX_EOF
+
+            sudo ln -sf "/etc/nginx/sites-available/${PR_SLUG}" "/etc/nginx/sites-enabled/${PR_SLUG}"
+            sudo nginx -t && sudo systemctl reload nginx
+
+            # --- SSL ---
+            sudo certbot --nginx -d "${DOMAIN}" --non-interactive --agree-tos --email admin@newlevelhub.kz || true
+
+      - name: Comment preview URL on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const branch = context.payload.pull_request.head.ref;
+            const ticketMatch = branch.match(/dev-\d+/);
+            const ticket = ticketMatch ? ticketMatch[0] : 'noticket';
+            const slug = `fe-${ticket}-pr${prNumber}`;
+            const url = `https://${slug}.staging.newlevelhub.kz`;
+            const port = 20000 + prNumber;
+
+            const body = [
+              '## Frontend Preview Deployed',
+              '',
+              `| | |`,
+              `|---|---|`,
+              `| **URL** | ${url} |`,
+              `| **Slug** | \`${slug}\` |`,
+              `| **Port** | \`${port}\` |`,
+              `| **Image** | \`pr-${prNumber}\` |`,
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            const existing = comments.find(c => c.body?.includes('Frontend Preview'));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }
+
+  # ──────────────────────────────────────────────
+  # 4. Destroy preview when PR is closed / merged
+  # ──────────────────────────────────────────────
+  destroy_preview:
+    name: Destroy preview
+    runs-on: ubuntu-latest
+    if: github.event.action == 'closed'
+    environment: staging
+
+    steps:
+      - name: Tear down preview environment
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BRANCH_NAME: ${{ github.head_ref }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: PR_NUMBER,BRANCH_NAME,DEPLOY_PATH
+          script: |
+            set -e
+
+            TICKET=$(echo "$BRANCH_NAME" | grep -oE 'dev-[0-9]+' | head -1)
+            if [ -z "$TICKET" ]; then TICKET="noticket"; fi
+            PR_SLUG="fe-${TICKET}-pr${PR_NUMBER}"
+            DOMAIN="${PR_SLUG}.staging.newlevelhub.kz"
+
+            echo "► Destroying preview: $PR_SLUG"
+
+            cd "$DEPLOY_PATH"
+
+            # --- stop containers ---
+            if [ -f "docker-compose.${PR_SLUG}.yml" ]; then
+              docker compose -f "docker-compose.${PR_SLUG}.yml" --project-name "$PR_SLUG" down -v --remove-orphans || true
+              rm -f "docker-compose.${PR_SLUG}.yml"
+            fi
+
+            # --- remove nginx config ---
+            sudo rm -f "/etc/nginx/sites-available/${PR_SLUG}"
+            sudo rm -f "/etc/nginx/sites-enabled/${PR_SLUG}"
+            sudo nginx -t && sudo systemctl reload nginx
+
+            # --- remove SSL cert ---
+            sudo certbot delete --cert-name "${DOMAIN}" --non-interactive || true
+
+      - name: Update PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            const existing = comments.find(c => c.body?.includes('Frontend Preview'));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: `## Frontend Preview Destroyed\n\nThe preview environment for PR #${prNumber} has been removed.`,
+              });
+            }
+
+  # ──────────────────────────────────────────────
+  # 5. Slack notification (optional)
+  # ──────────────────────────────────────────────
   notify:
     name: Slack notification
     runs-on: ubuntu-latest
-    needs: [quality, build_and_push]
-    if: always() && github.event.pull_request.draft == false
-    env:
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+    needs: [quality, build_and_push, deploy_preview]
+    if: always() && github.event.pull_request.draft == false && github.event.action != 'closed'
     steps:
       - name: Send Slack message
-        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
+        if: env.SLACK_WEBHOOK_URL != ''
         uses: slackapi/slack-github-action@v1.27.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
         with:
           payload: |
             {
@@ -113,7 +315,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "${{ needs.build_and_push.result == 'success' && '✅ SUCCESS' || '❌ FAILURE' }} *${{ github.repository }}*\n*Branch:* `${{ github.head_ref != '' && github.head_ref || github.ref_name }}`\n*Actor:* ${{ github.actor }}${{ github.event_name == 'pull_request' && format('\n*PR:* {0} by {1}', github.event.pull_request.title, github.event.pull_request.user.login) || '' }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+                    "text": "${{ needs.deploy_preview.result == 'success' && ':white_check_mark: SUCCESS' || ':x: FAILURE' }} *Frontend CI* — `${{ github.repository }}`\n*PR:* #${{ github.event.pull_request.number }} ${{ github.event.pull_request.title }}\n*Branch:* `${{ github.head_ref }}`\n*Actor:* ${{ github.actor }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
                   }
                 }
               ]

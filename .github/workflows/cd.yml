@@ -8,45 +8,33 @@ permissions:
   contents: read
 
 env:
-  IMAGE_REPOSITORY: ${{ secrets.DOCKER_REPOSITORY }}
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
 
 jobs:
+  # ──────────────────────────────────────────────
+  # 1. Build Docker image → push with :latest + :sha-*
+  # ──────────────────────────────────────────────
   build_and_push:
-    name: Build and push Docker image
+    name: Build & push Docker image
     runs-on: ubuntu-latest
     outputs:
-      latest_image_ref: ${{ steps.image_meta.outputs.latest_image_ref }}
-      sha_image_ref: ${{ steps.image_meta.outputs.sha_image_ref }}
+      latest_image_ref: ${{ steps.meta.outputs.latest_image_ref }}
+      sha_image_ref: ${{ steps.meta.outputs.sha_image_ref }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build image reference
-        id: image_meta
+      - name: Build image references
+        id: meta
         run: |
-          if [[ -z "${{ secrets.DOCKER_REGISTRY }}" ]]; then
-            echo "DOCKER_REGISTRY secret is required"
-            exit 1
-          fi
-
-          IMAGE_PATH="$IMAGE_REPOSITORY"
-          if [[ -z "$IMAGE_PATH" ]]; then
-            IMAGE_PATH="${DOCKER_USERNAME}/newlevelhub-web-frontend"
-          elif [[ "$IMAGE_PATH" != */* ]]; then
-            IMAGE_PATH="${DOCKER_USERNAME}/${IMAGE_PATH}"
-          fi
-
-          IMAGE_PATH="$(echo "$IMAGE_PATH" | sed 's#^/*##; s#/*$##')"
-          if [[ -z "$IMAGE_PATH" ]]; then
-            echo "Invalid image repository path after normalization"
-            exit 1
-          fi
-
-          IMAGE_NAME="${{ secrets.DOCKER_REGISTRY }}/${IMAGE_PATH}"
-          SHA_TAG="sha-${GITHUB_SHA}"
-          echo "latest_image_ref=${IMAGE_NAME}:latest" >> "$GITHUB_OUTPUT"
-          echo "sha_image_ref=${IMAGE_NAME}:${SHA_TAG}" >> "$GITHUB_OUTPUT"
+          REGISTRY="${{ secrets.DOCKER_REGISTRY }}"
+          REGISTRY="${REGISTRY:-docker.io}"
+          REPO="${{ secrets.DOCKER_REPOSITORY }}"
+          REPO="${REPO:-newlevelhub-web-frontend}"
+          IMAGE="${REGISTRY}/${DOCKER_USERNAME}/${REPO}"
+          SHORT_SHA="${GITHUB_SHA::7}"
+          echo "latest_image_ref=${IMAGE}:latest"        >> "$GITHUB_OUTPUT"
+          echo "sha_image_ref=${IMAGE}:sha-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to Docker registry
         uses: docker/login-action@v3
@@ -58,120 +46,64 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push image
+      - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ steps.image_meta.outputs.latest_image_ref }}
-            ${{ steps.image_meta.outputs.sha_image_ref }}
+            ${{ steps.meta.outputs.latest_image_ref }}
+            ${{ steps.meta.outputs.sha_image_ref }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-  deploy-staging:
-    name: Deploy to staging
-    needs: build_and_push
-    environment: staging
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Deploy staging to server
-        uses: appleboy/ssh-action@v1.2.0
-        env:
-          DOCKER_REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-          FRONTEND_IMAGE: ${{ needs.build_and_push.outputs.latest_image_ref }}
-        with:
-          host: ${{ secrets.SSH_HOST != '' && secrets.SSH_HOST || secrets.SERVER_HOST }}
-          username: ${{ secrets.SSH_USER != '' && secrets.SSH_USER || secrets.SERVER_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || '22' }}
-          envs: DOCKER_REGISTRY,DOCKER_USERNAME,DOCKER_PASSWORD,FRONTEND_IMAGE
-          script: |
-            set -e
-            echo "$DOCKER_PASSWORD" | docker login "$DOCKER_REGISTRY" -u "$DOCKER_USERNAME" --password-stdin
-            if [ ! -d "NewLevelHub-Web-Frontend" ]; then
-              echo "Directory not found: NewLevelHub-Web-Frontend"
-              exit 1
-            fi
-            cd NewLevelHub-Web-Frontend
-
-            if [ ! -f ".env" ]; then
-              echo ".env not found in NewLevelHub-Web-Frontend"
-              ls -la
-              exit 1
-            fi
-            # Fallback keeps staging deployable even if output propagation is empty.
-            if [ -z "$FRONTEND_IMAGE" ]; then
-              FRONTEND_IMAGE="docker.io/aemadmin/newlevelhub-web-frontend:latest"
-              echo "FRONTEND_IMAGE is empty, fallback to $FRONTEND_IMAGE"
-            fi
-            case "$FRONTEND_IMAGE" in
-              *:*) ;;
-              *)
-                echo "Invalid FRONTEND_IMAGE: '$FRONTEND_IMAGE'"
-                exit 1
-                ;;
-            esac
-            export FRONTEND_IMAGE="$FRONTEND_IMAGE"
-
-            # Staging compose is generated from the repo's local template.
-            # Production compose stays server-specific (may differ from what is in this repo).
-            cat > docker-compose.staging.yml <<EOF
-            services:
-              frontend:
-                image: ${FRONTEND_IMAGE}
-                pull_policy: always
-                container_name: nlh_web_staging
-                ports:
-                  - "3000:3000"
-                env_file:
-                  - .env
-                restart: unless-stopped
-            EOF
-
-            docker pull "$FRONTEND_IMAGE"
-
-            docker compose -f docker-compose.staging.yml up -d --force-recreate
-
-  deploy-production:
+  # ──────────────────────────────────────────────
+  # 2. Deploy to production
+  # ──────────────────────────────────────────────
+  deploy_production:
     name: Deploy to production
-    needs: [deploy-staging, build_and_push]
-    environment: production
+    needs: build_and_push
     runs-on: ubuntu-latest
+    environment: production
 
     steps:
-      - name: Deploy production to server
+      - uses: actions/checkout@v4
+
+      - name: Copy compose file to production server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "docker-compose.prod.yml"
+          target: ${{ secrets.DEPLOY_PATH }}
+
+      - name: Deploy to production
         uses: appleboy/ssh-action@v1.2.0
         env:
           DOCKER_REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-          FRONTEND_IMAGE: ${{ needs.build_and_push.outputs.latest_image_ref }}
+          LATEST_IMAGE: ${{ needs.build_and_push.outputs.latest_image_ref }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         with:
-          host: ${{ secrets.SSH_HOST != '' && secrets.SSH_HOST || secrets.SERVER_HOST }}
-          username: ${{ secrets.SSH_USER != '' && secrets.SSH_USER || secrets.SERVER_USERNAME }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || '22' }}
-          envs: DOCKER_REGISTRY,DOCKER_USERNAME,DOCKER_PASSWORD,FRONTEND_IMAGE
+          envs: DOCKER_REGISTRY,DOCKER_USERNAME,DOCKER_PASSWORD,LATEST_IMAGE,DEPLOY_PATH
           script: |
             set -e
-            echo "$DOCKER_PASSWORD" | docker login "$DOCKER_REGISTRY" -u "$DOCKER_USERNAME" --password-stdin
-            if [ ! -d "NewLevelHub-Web-Frontend" ]; then
-              echo "Directory not found: NewLevelHub-Web-Frontend"
-              exit 1
-            fi
-            cd NewLevelHub-Web-Frontend
+
+            echo "$DOCKER_PASSWORD" | docker login "${DOCKER_REGISTRY:-docker.io}" -u "$DOCKER_USERNAME" --password-stdin
+
+            cd "$DEPLOY_PATH"
 
             if [ ! -f "docker-compose.prod.yml" ]; then
-              echo "docker-compose.prod.yml not found in NewLevelHub-Web-Frontend"
+              echo "docker-compose.prod.yml not found"
               ls -la
               exit 1
             fi
-            if [ ! -f ".env.prod" ]; then
-              echo ".env.prod not found in NewLevelHub-Web-Frontend"
-              ls -la
-              exit 1
-            fi
+
+            docker pull "$LATEST_IMAGE"
             docker compose -f docker-compose.prod.yml up -d --force-recreate
