@@ -8,6 +8,8 @@ export const API = {
     forgotPassword: '/auth/password/reset/',
     resetPassword: '/auth/password/reset/confirm/',
     changePassword: '/auth/password/change/',
+    verifyEmail: '/auth/email/verify/',
+    resendVerification: '/auth/email/resend/',
     roles: '/auth/roles/',
     acceptInvite: '/auth/invite/accept/',
   },

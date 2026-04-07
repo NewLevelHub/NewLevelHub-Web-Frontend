@@ -13,6 +13,7 @@ import RegisterPage from '@/pages/auth/RegisterPage';
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
 import InviteAcceptPage from '@/pages/auth/InviteAcceptPage';
+import VerifyEmailPage from '@/pages/auth/VerifyEmailPage';
 
 // Dashboard
 import DashboardPage from '@/pages/dashboard/DashboardPage';
@@ -108,6 +109,12 @@ export const router = createBrowserRouter([
         ],
       },
     ],
+  },
+
+  // ── Email verification (accessible regardless of auth state) ──
+  {
+    element: <AuthLayout />,
+    children: [{ path: '/verify-email', element: <VerifyEmailPage /> }],
   },
 
   // ── Protected routes (authenticated) ──

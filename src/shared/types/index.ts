@@ -21,9 +21,13 @@ export interface User {
   phone: string | null;
   role: UserRole;
   company_id: number | null;
+  company_name: string | null;
   avatar: string | null;
-  is_active: boolean;
-  email_verified: boolean;
+  /** Синхронно с бэкендом `is_email_verified` */
+  is_email_verified: boolean;
+  position?: string;
+  date_joined?: string;
+  last_login?: string | null;
 }
 
 export interface Company {
