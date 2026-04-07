@@ -12,6 +12,16 @@ interface ResetPasswordConfirmPayload {
   new_password: string;
 }
 
+/** Returns true when the error is a token-level failure (expired or already used). */
+function isTokenError(error: unknown): boolean {
+  const axiosErr = error as AxiosError<{ detail?: string }>;
+  const detail = axiosErr.response?.data?.detail ?? '';
+  return (
+    typeof detail === 'string' &&
+    (detail.toLowerCase().includes('expired') || detail.toLowerCase().includes('already used'))
+  );
+}
+
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -53,6 +63,8 @@ export default function ResetPasswordPage() {
     ? getApiErrorMessage(mutation.error as AxiosError, 'Не удалось сбросить пароль')
     : '';
 
+  const showNewLinkPrompt = mutation.isError && isTokenError(mutation.error);
+
   return (
     <div>
       <h2 className="mb-1 text-center text-xl font-semibold">Новый пароль</h2>
@@ -63,7 +75,14 @@ export default function ResetPasswordPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         {errorMessage ? (
           <div className="rounded-lg border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm text-red-300">
-            {errorMessage}
+            <p>{errorMessage}</p>
+            {showNewLinkPrompt ? (
+              <p className="mt-1">
+                <Link to="/forgot-password" className={authLink}>
+                  Запросить новую ссылку
+                </Link>
+              </p>
+            ) : null}
           </div>
         ) : null}
 
