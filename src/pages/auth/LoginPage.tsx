@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { useAuthStore } from '@/shared/store/auth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { authInput, authLabel, authPrimaryBtn, authLink } from '@/shared/ui/authFormStyles';
 
 export default function LoginPage() {
   const login = useAuthStore((s) => s.login);
+  const location = useLocation();
+  const notice = typeof location.state === 'object' && location.state !== null ? (location.state as { notice?: string }).notice : '';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,6 +33,11 @@ export default function LoginPage() {
       <p className="mb-6 text-center text-sm text-gray-500">NewLevelHub — тест с бэкендом</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {notice ? (
+          <div className="rounded-lg border border-green-900/60 bg-green-950/40 px-3 py-2 text-sm text-green-300">
+            {notice}
+          </div>
+        ) : null}
         {error ? (
           <div className="rounded-lg border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm text-red-300">
             {error}
