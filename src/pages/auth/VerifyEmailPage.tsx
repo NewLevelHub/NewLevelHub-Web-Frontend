@@ -2,16 +2,34 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { useAuthStore } from '@/shared/store/auth';
 import { cn } from '@/shared/lib/cn';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 
 type Status = 'loading' | 'success' | 'error';
+type VerifyResult = { ok: true } | { ok: false; message: string };
+
+// Keeps one verification request per token across StrictMode remounts.
+const verifyRequests = new Map<string, Promise<VerifyResult>>();
+
+function verifyTokenOnce(token: string): Promise<VerifyResult> {
+  const cached = verifyRequests.get(token);
+  if (cached) return cached;
+
+  const request = apiClient
+    .get(API.auth.verifyEmail, { params: { token } })
+    .then((): VerifyResult => ({ ok: true }))
+    .catch((err: unknown): VerifyResult => ({
+      ok: false,
+      message: getApiErrorMessage(err, 'Не удалось подтвердить email. Попробуйте позже.'),
+    }));
+
+  verifyRequests.set(token, request);
+  return request;
+}
 
 export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { isAuthenticated, fetchMe } = useAuthStore();
 
   const [status, setStatus] = useState<Status>('loading');
   const [errorMessage, setErrorMessage] = useState('');
@@ -24,36 +42,33 @@ export default function VerifyEmailPage() {
       setErrorMessage('Ссылка не содержит токен подтверждения.');
       return;
     }
-
-    let cancelled = false;
+    const verificationToken = token;
+    let active = true;
 
     async function verify() {
-      try {
-        await apiClient.get(API.auth.verifyEmail, { params: { token } });
-        if (cancelled) return;
-
-        if (isAuthenticated) {
-          await fetchMe();
-        }
-        setStatus('success');
-
-        setTimeout(() => {
-          navigate(isAuthenticated ? '/' : '/login', { replace: true });
-        }, 3000);
-      } catch (err: unknown) {
-        if (cancelled) return;
+      const result = await verifyTokenOnce(verificationToken);
+      if (!active) return;
+      if (!result.ok) {
         setStatus('error');
-
-        setErrorMessage(getApiErrorMessage(err, 'Не удалось подтвердить email. Попробуйте позже.'));
+        setErrorMessage(result.message);
+        return;
       }
+      setStatus('success');
+
+      setTimeout(() => {
+        navigate('/login', {
+          replace: true,
+          state: { notice: 'Email confirmed, please sign in' },
+        });
+      }, 3000);
     }
 
     verify();
 
     return () => {
-      cancelled = true;
+      active = false;
     };
-  }, [token, isAuthenticated, fetchMe, navigate]);
+  }, [token, navigate]);
 
   return (
     <div className="text-center">
@@ -72,9 +87,7 @@ export default function VerifyEmailPage() {
             </svg>
           </div>
           <h2 className="text-xl font-semibold">Email подтверждён</h2>
-          <p className="text-gray-400">
-            Сейчас вы будете перенаправлены{isAuthenticated ? ' на дашборд' : ' на страницу входа'}...
-          </p>
+          <p className="text-gray-400">Сейчас вы будете перенаправлены на страницу входа...</p>
         </div>
       )}
 
@@ -88,13 +101,13 @@ export default function VerifyEmailPage() {
           <h2 className="text-xl font-semibold">Ошибка подтверждения</h2>
           <p className="text-gray-400">{errorMessage}</p>
           <button
-            onClick={() => navigate(isAuthenticated ? '/' : '/login', { replace: true })}
+            onClick={() => navigate('/login', { replace: true })}
             className={cn(
               'mt-4 rounded-lg px-6 py-2 text-sm font-medium',
               'bg-white text-gray-950 hover:bg-gray-200 transition-colors',
             )}
           >
-            {isAuthenticated ? 'На дашборд' : 'Войти'}
+            Войти
           </button>
         </div>
       )}
