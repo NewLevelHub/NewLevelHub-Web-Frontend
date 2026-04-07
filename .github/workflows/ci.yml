@@ -156,15 +156,17 @@ jobs:
             docker compose -f "docker-compose.${PR_SLUG}.yml" --project-name "$PR_SLUG" up -d --force-recreate
 
             # --- find backend preview for the same ticket ---
-            BACKEND_PORT=8000
+            BACKEND_PORT=8080
             if [ "$TICKET" != "noticket" ]; then
               BE_PORT=$(docker ps --format '{{.Names}} {{.Ports}}' | grep "be-${TICKET}" | grep -oE '1[0-9]{4}' | head -1 || true)
               if [ -n "$BE_PORT" ]; then
                 BACKEND_PORT=$BE_PORT
                 echo "► Found backend preview on port $BACKEND_PORT"
               else
-                echo "► No backend preview for $TICKET, using main backend on port 8000"
+                echo "► No backend preview for $TICKET, using main staging backend on port 8080"
               fi
+            else
+              echo "► No ticket in branch name, using main staging backend on port 8080"
             fi
 
             # --- nginx vhost ---
