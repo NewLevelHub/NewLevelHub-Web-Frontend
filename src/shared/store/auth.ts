@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
+import { mapApiUser } from '@/shared/lib/mapUser';
 import { tokenStorage } from '@/shared/lib/storage';
 import type { User } from '@/shared/types';
 
@@ -34,13 +35,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email, password) => {
     const { data } = await apiClient.post(API.auth.login, { email, password });
     tokenStorage.setTokens(data.tokens.access, data.tokens.refresh);
-    set({ user: data.user, isAuthenticated: true });
+    set({ user: mapApiUser(data.user as Record<string, unknown>), isAuthenticated: true });
   },
 
   register: async (payload) => {
     const { data } = await apiClient.post(API.auth.register, payload);
     tokenStorage.setTokens(data.tokens.access, data.tokens.refresh);
-    set({ user: data.user, isAuthenticated: true });
+    set({ user: mapApiUser(data.user as Record<string, unknown>), isAuthenticated: true });
   },
 
   logout: async () => {
@@ -57,7 +58,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   fetchMe: async () => {
     const { data } = await apiClient.get(API.auth.me);
-    set({ user: data, isAuthenticated: true });
+    set({ user: mapApiUser(data as Record<string, unknown>), isAuthenticated: true });
   },
 
   bootstrap: async () => {
