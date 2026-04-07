@@ -23,6 +23,8 @@ pnpm-debug.log*
 # Environment variables
 .env*
 !.env.example
+!.env.staging.example
+!.env.production.example
 
 # TypeScript / Tooling cache
 *.tsbuildinfo
