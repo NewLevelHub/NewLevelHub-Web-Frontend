@@ -207,3 +207,10 @@ export interface MapMarker {
   y: number;
   resource_id: number | null;
 }
+
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
