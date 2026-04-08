@@ -1,9 +1,38 @@
+import axios from 'axios';
 import { create } from 'zustand';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
+import { env } from '@/shared/config/env';
 import { mapApiUser } from '@/shared/lib/mapUser';
 import { tokenStorage } from '@/shared/lib/storage';
 import type { User } from '@/shared/types';
+
+/** Подсказка: когда-то логинились — при перезагрузке пробуем refresh по httpOnly cookie. */
+const AUTH_SESSION_HINT_KEY = 'nlh_auth_session_hint';
+
+function setSessionHint() {
+  try {
+    localStorage.setItem(AUTH_SESSION_HINT_KEY, '1');
+  } catch {
+    /* ignore */
+  }
+}
+
+function clearSessionHint() {
+  try {
+    localStorage.removeItem(AUTH_SESSION_HINT_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function shouldTryRefreshFromCookie() {
+  try {
+    return localStorage.getItem(AUTH_SESSION_HINT_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
 
 interface RegisterPayload {
   email: string;
@@ -20,7 +49,7 @@ interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
 
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
   fetchMe: () => Promise<void>;
@@ -32,26 +61,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: true,
   isAuthenticated: false,
 
-  login: async (email, password) => {
-    const { data } = await apiClient.post(API.auth.login, { email, password });
-    tokenStorage.setTokens(data.tokens.access, data.tokens.refresh);
+  login: async (email, password, rememberMe = false) => {
+    const { data } = await apiClient.post(API.auth.login, {
+      email,
+      password,
+      remember_me: rememberMe,
+    });
+    tokenStorage.setAccessFromAuthResponse(data.tokens.access);
+    setSessionHint();
     set({ user: mapApiUser(data.user as Record<string, unknown>), isAuthenticated: true });
   },
 
   register: async (payload) => {
     const { data } = await apiClient.post(API.auth.register, payload);
-    tokenStorage.setTokens(data.tokens.access, data.tokens.refresh);
+    tokenStorage.setAccessFromAuthResponse(data.tokens.access);
+    setSessionHint();
     set({ user: mapApiUser(data.user as Record<string, unknown>), isAuthenticated: true });
   },
 
   logout: async () => {
     try {
-      const refresh = tokenStorage.getRefreshToken();
-      if (refresh) {
-        await apiClient.post(API.auth.logout, { refresh });
-      }
+      await apiClient.post(API.auth.logout, {});
     } finally {
       tokenStorage.clear();
+      clearSessionHint();
       set({ user: null, isAuthenticated: false });
     }
   },
@@ -62,15 +95,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   bootstrap: async () => {
-    const token = tokenStorage.getAccessToken();
-    if (!token) {
-      set({ isLoading: false });
-      return;
-    }
     try {
+      if (!tokenStorage.getAccessToken() && shouldTryRefreshFromCookie()) {
+        const { data } = await axios.post<{ access: string }>(
+          `${env.API_BASE_URL}${API.auth.refreshToken}`,
+          {},
+          { withCredentials: true },
+        );
+        tokenStorage.setAccessToken(data.access);
+      }
+      if (!tokenStorage.getAccessToken()) {
+        set({ isLoading: false });
+        return;
+      }
       await get().fetchMe();
     } catch {
       tokenStorage.clear();
+      clearSessionHint();
       set({ user: null, isAuthenticated: false });
     } finally {
       set({ isLoading: false });

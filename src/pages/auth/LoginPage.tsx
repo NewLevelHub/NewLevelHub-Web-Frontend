@@ -11,6 +11,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -19,7 +20,7 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      await login(email.trim(), password);
+      await login(email.trim(), password, rememberMe);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Не удалось войти'));
     } finally {
@@ -79,6 +80,16 @@ export default function LoginPage() {
             className={authInput}
           />
         </div>
+
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
+          <input
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-600"
+          />
+          Запомнить меня
+        </label>
 
         <button type="submit" disabled={loading} className={authPrimaryBtn}>
           {loading ? 'Вход…' : 'Войти'}
