@@ -25,6 +25,7 @@ import CompanyDetailPage from '@/pages/companies/CompanyDetailPage';
 
 // Company settings (company admin)
 import CompanySettingsPage from '@/pages/company/CompanySettingsPage';
+import CompanyMembersPage from '@/pages/company/CompanyMembersPage';
 
 // Team
 import TeamDirectoryPage from '@/pages/team/TeamDirectoryPage';
@@ -105,6 +106,7 @@ export const router = createBrowserRouter([
           { path: '/register', element: <RegisterPage /> },
           { path: '/forgot-password', element: <ForgotPasswordPage /> },
           { path: '/reset-password', element: <ResetPasswordPage /> },
+          { path: '/invite', element: <InviteAcceptPage /> },
           { path: '/invite/:token', element: <InviteAcceptPage /> },
         ],
       },
@@ -165,10 +167,13 @@ export const router = createBrowserRouter([
             ],
           },
 
-          // Company admin only
+          // Company admin + superadmin
           {
-            element: <RequireRole allowed={[COMPANY_ADMIN]} />,
-            children: [{ path: '/company/settings', element: <CompanySettingsPage /> }],
+            element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN]} />,
+            children: [
+              { path: '/company/settings', element: <CompanySettingsPage /> },
+              { path: '/company/settings/members', element: <CompanyMembersPage /> },
+            ],
           },
 
           // Superadmin only
