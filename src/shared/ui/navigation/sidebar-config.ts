@@ -13,6 +13,7 @@ import {
   Wrench,
   Megaphone,
   UserPlus,
+  UserCircle2,
   Clock,
   ListTodo,
   type LucideIcon,
@@ -66,6 +67,7 @@ const companyAdminNav: NavSection[] = [
     title: 'Компания',
     items: [
       { label: 'Команда', path: '/team', icon: Users },
+      { label: 'Участники', path: '/company/settings/members', icon: UserCircle2 },
       { label: 'Приглашения', path: '/team/manage', icon: UserPlus },
       { label: 'Настройки', path: '/company/settings', icon: Settings },
     ],

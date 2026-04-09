@@ -44,6 +44,32 @@ export interface Company {
   created_at: string;
 }
 
+/** GET /companies/:id/members/ — см. CompanyMemberSerializer (бэкенд). */
+export interface CompanyMember {
+  id: number;
+  email: string;
+  full_name: string;
+  role: string;
+  position: string;
+  avatar: string | null;
+  is_active: boolean;
+  date_joined: string;
+  last_login: string | null;
+}
+
+export interface CompanyInvitation {
+  id: number;
+  email: string;
+  role: string;
+  token: string;
+  invited_by_name: string;
+  is_used: boolean;
+  is_expired: boolean;
+  is_valid: boolean;
+  expires_at: string;
+  created_at: string;
+}
+
 export interface Resource {
   id: number;
   name: string;

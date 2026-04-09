@@ -20,8 +20,12 @@ export const API = {
     deactivate: (id: string) => `/companies/${id}/deactivate/`,
     activate: (id: string) => `/companies/${id}/activate/`,
     delete: (id: string) => `/companies/${id}/`,
-    employees: (id: string) => `/companies/${id}/employees/`,
-    invites: (id: string) => `/companies/${id}/invites/`,
+    members: (id: string) => `/companies/${id}/members/`,
+    invitations: (id: string) => `/companies/${id}/invitations/`,
+    invitationRevoke: (companyId: string, invitationId: string) =>
+      `/companies/${companyId}/invitations/${invitationId}/revoke/`,
+    invitationResend: (companyId: string, invitationId: string) =>
+      `/companies/${companyId}/invitations/${invitationId}/resend/`,
     settings: (id: string) => `/companies/${id}/settings/`,
   },
   resources: {
