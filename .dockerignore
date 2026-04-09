@@ -8,3 +8,4 @@ dist
 .env
 .env.*
 !.env.example
+# ci test Thu Apr  9 13:35:22 +05 2026
