@@ -1,5 +1,13 @@
-import { useParams, useSearchParams } from 'react-router';
-import { PageStub } from '@/shared/ui/PageStub';
+import { useMemo, useState, type FormEvent } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router';
+import { useMutation, useQuery } from '@tanstack/react-query';
+
+import { apiClient } from '@/shared/api/client';
+import { API } from '@/shared/api/endpoints';
+import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { useAuthStore } from '@/shared/store/auth';
+import type { InviteRegistrationPreview } from '@/shared/types';
+import { authInput, authLabel, authLink, authPrimaryBtn } from '@/shared/ui/authFormStyles';
 
 /**
  * Ссылка из письма: /invite?token=&lt;uuid&gt; (см. Celery send_invitation_email).
@@ -8,20 +16,194 @@ import { PageStub } from '@/shared/ui/PageStub';
 export default function InviteAcceptPage() {
   const { token: pathToken } = useParams();
   const [searchParams] = useSearchParams();
-  const token = pathToken ?? searchParams.get('token') ?? '';
+  const registerByInvite = useAuthStore((s) => s.registerByInvite);
+  const token = useMemo(() => pathToken ?? searchParams.get('token') ?? '', [pathToken, searchParams]);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [error, setError] = useState('');
+
+  const inviteQuery = useQuery({
+    queryKey: ['invite-registration-preview', token],
+    enabled: Boolean(token),
+    retry: false,
+    queryFn: () =>
+      apiClient
+        .get<InviteRegistrationPreview>(API.auth.registerInvite, { params: { token } })
+        .then((res) => res.data),
+  });
+
+  const registerMutation = useMutation({
+    mutationFn: () =>
+      registerByInvite({
+        token,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        password,
+        ...(phone.trim() ? { phone: phone.trim() } : {}),
+      }),
+    onError: (err) => setError(getApiErrorMessage(err, 'Не удалось зарегистрироваться по инвайту')),
+  });
+
+  function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError('');
+
+    if (!token) {
+      setError('Инвайт-токен не найден в ссылке');
+      return;
+    }
+    if (password !== passwordConfirm) {
+      setError('Пароли не совпадают');
+      return;
+    }
+    if (password.length < 8) {
+      setError('Пароль не короче 8 символов');
+      return;
+    }
+    registerMutation.mutate();
+  }
+
+  if (!token) {
+    return (
+      <div>
+        <h2 className="mb-2 text-center text-xl font-semibold">Инвайт недоступен</h2>
+        <p className="text-center text-sm text-gray-400">
+          В ссылке отсутствует токен. Открой ссылку вида <code>/invite?token=&lt;uuid&gt;</code>.
+        </p>
+      </div>
+    );
+  }
+
+  if (inviteQuery.isLoading) {
+    return <p className="text-center text-sm text-gray-400">Проверяем инвайт...</p>;
+  }
+
+  if (inviteQuery.isError || !inviteQuery.data) {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-center text-xl font-semibold">Инвайт недействителен</h2>
+        <p className="rounded-lg border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+          {getApiErrorMessage(inviteQuery.error, 'Ссылка невалидна, истекла или уже использована')}
+        </p>
+        <button type="button" onClick={() => inviteQuery.refetch()} className={authPrimaryBtn}>
+          Проверить снова
+        </button>
+      </div>
+    );
+  }
+
+  const invite = inviteQuery.data;
 
   return (
-    <PageStub
-      title="Присоединение к компании"
-      description="Регистрация по инвайт-ссылке от админа компании"
-      todos={[
-        token ? `Токен из ссылки: ${token.slice(0, 8)}…` : 'Нет токена в URL (?token= или /invite/:token)',
-        'Проверка валидности инвайта (DEV-54)',
-        'Показать название компании, от кого приглашение',
-        'Форма регистрации: имя, фамилия, email, пароль',
-        'Автоматическая привязка к компании при регистрации',
-        'Инвайт одноразовый, срок 72 часа',
-      ]}
-    />
+    <div>
+      <h2 className="mb-1 text-center text-xl font-semibold">Принять приглашение</h2>
+      <p className="mb-6 text-center text-sm text-gray-500">
+        Компания: <span className="font-medium text-white">{invite.company_name}</span>
+      </p>
+
+      <form onSubmit={onSubmit} className="space-y-3">
+        {error ? (
+          <div className="rounded-lg border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+            {error}
+          </div>
+        ) : null}
+
+        <div>
+          <label htmlFor="invite-email" className={authLabel}>
+            Email
+          </label>
+          <input id="invite-email" value={invite.email} readOnly className={`${authInput} opacity-70`} />
+        </div>
+
+        <div>
+          <label htmlFor="invite-role" className={authLabel}>
+            Роль
+          </label>
+          <input id="invite-role" value={invite.role} readOnly className={`${authInput} opacity-70`} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="invite-first" className={authLabel}>
+              Имя
+            </label>
+            <input
+              id="invite-first"
+              required
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className={authInput}
+            />
+          </div>
+          <div>
+            <label htmlFor="invite-last" className={authLabel}>
+              Фамилия
+            </label>
+            <input
+              id="invite-last"
+              required
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className={authInput}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="invite-phone" className={authLabel}>
+            Телефон <span className="text-gray-600">(необязательно)</span>
+          </label>
+          <input
+            id="invite-phone"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className={authInput}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="invite-pass" className={authLabel}>
+            Пароль
+          </label>
+          <input
+            id="invite-pass"
+            type="password"
+            required
+            minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={authInput}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="invite-pass2" className={authLabel}>
+            Пароль еще раз
+          </label>
+          <input
+            id="invite-pass2"
+            type="password"
+            required
+            value={passwordConfirm}
+            onChange={(e) => setPasswordConfirm(e.target.value)}
+            className={authInput}
+          />
+        </div>
+
+        <button type="submit" disabled={registerMutation.isPending} className={authPrimaryBtn}>
+          {registerMutation.isPending ? 'Регистрация...' : 'Зарегистрироваться по приглашению'}
+        </button>
+      </form>
+
+      <p className="mt-6 text-center">
+        <Link to="/login" className={authLink}>
+          Уже есть аккаунт — войти
+        </Link>
+      </p>
+    </div>
   );
 }

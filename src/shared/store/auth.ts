@@ -44,6 +44,14 @@ interface RegisterPayload {
   invite_token?: string;
 }
 
+interface InviteRegisterPayload {
+  token: string;
+  first_name: string;
+  last_name: string;
+  password: string;
+  phone?: string;
+}
+
 interface AuthState {
   user: User | null;
   isLoading: boolean;
@@ -51,6 +59,7 @@ interface AuthState {
 
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
+  registerByInvite: (payload: InviteRegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
   fetchMe: () => Promise<void>;
   bootstrap: () => Promise<void>;
@@ -74,6 +83,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   register: async (payload) => {
     const { data } = await apiClient.post(API.auth.register, payload);
+    tokenStorage.setAccessFromAuthResponse(data.tokens.access);
+    setSessionHint();
+    set({ user: mapApiUser(data.user as Record<string, unknown>), isAuthenticated: true });
+  },
+
+  registerByInvite: async (payload) => {
+    const { data } = await apiClient.post(API.auth.registerInvite, payload);
     tokenStorage.setAccessFromAuthResponse(data.tokens.access);
     setSessionHint();
     set({ user: mapApiUser(data.user as Record<string, unknown>), isAuthenticated: true });
