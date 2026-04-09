@@ -95,6 +95,12 @@ jobs:
           script: |
             set -e
 
+            # --- fallback image ref if output was lost ---
+            if [ -z "$LATEST_IMAGE" ]; then
+              LATEST_IMAGE="${DOCKER_REGISTRY:-docker.io}/${DOCKER_USERNAME}/newlevelhub-web-frontend:latest"
+              echo "► LATEST_IMAGE was empty, fallback to $LATEST_IMAGE"
+            fi
+
             echo "$DOCKER_PASSWORD" | docker login "${DOCKER_REGISTRY:-docker.io}" -u "$DOCKER_USERNAME" --password-stdin
 
             cd "$DEPLOY_PATH"
@@ -105,5 +111,6 @@ jobs:
               exit 1
             fi
 
+            echo "► Pulling $LATEST_IMAGE"
             docker pull "$LATEST_IMAGE"
             docker compose -f docker-compose.prod.yml up -d --force-recreate
