@@ -259,13 +259,17 @@ jobs:
         uses: appleboy/ssh-action@v1.2.0
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          BRANCH_NAME: ${{ github.head_ref }}
+          BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DOCKER_REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          DOCKER_REPOSITORY: ${{ secrets.DOCKER_REPOSITORY }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: PR_NUMBER,BRANCH_NAME,DEPLOY_PATH
+          envs: PR_NUMBER,BRANCH_NAME,DEPLOY_PATH,DOCKER_REGISTRY,DOCKER_USERNAME,DOCKER_PASSWORD,DOCKER_REPOSITORY
           script: |
             set -e
 
@@ -273,30 +277,60 @@ jobs:
             if [ -z "$TICKET" ]; then TICKET="noticket"; fi
             PR_SLUG="fe-${TICKET}-pr${PR_NUMBER}"
             DOMAIN="${PR_SLUG}.staging.newlevelhub.kz"
+            FRONTEND_IMAGE="${DOCKER_REGISTRY:-docker.io}/${DOCKER_USERNAME}/${DOCKER_REPOSITORY:-newlevelhub-web-frontend}:pr-${PR_NUMBER}"
+            COMPOSE_FILE="${DEPLOY_PATH}/docker-compose.${PR_SLUG}.yml"
 
-            echo "► Destroying preview: $PR_SLUG"
-
+            echo "--- [1/5] Stopping Docker containers ---"
             cd "$DEPLOY_PATH"
-
-            # --- stop containers ---
-            if [ -f "docker-compose.${PR_SLUG}.yml" ]; then
-              docker compose -f "docker-compose.${PR_SLUG}.yml" --project-name "$PR_SLUG" down -v --remove-orphans || true
-              rm -f "docker-compose.${PR_SLUG}.yml"
+            if [ -f "$COMPOSE_FILE" ]; then
+              docker compose --project-name "$PR_SLUG" -f "$COMPOSE_FILE" down -v --remove-orphans \
+                || echo "WARNING: compose down failed, proceeding with fallback"
+              rm -f "$COMPOSE_FILE"
+            else
+              echo "Compose file not found, skipping compose down"
             fi
 
-            # --- remove nginx config ---
+            echo "--- [2/5] Fallback: remove leftover containers/volumes/networks ---"
+            CONTAINERS=$(docker ps -a --filter "label=com.docker.compose.project=${PR_SLUG}" -q 2>/dev/null || true)
+            if [ -n "$CONTAINERS" ]; then
+              docker stop $CONTAINERS 2>/dev/null || true
+              docker rm -f $CONTAINERS 2>/dev/null || true
+            fi
+            # also remove by name pattern
+            docker ps -a --format '{{.Names}}' | grep "nlh_fe_${PR_SLUG}" | xargs -r docker rm -f || true
+
+            VOLUMES=$(docker volume ls --filter "label=com.docker.compose.project=${PR_SLUG}" -q 2>/dev/null || true)
+            if [ -n "$VOLUMES" ]; then
+              docker volume rm -f $VOLUMES 2>/dev/null || true
+            fi
+
+            NETWORKS=$(docker network ls --filter "label=com.docker.compose.project=${PR_SLUG}" -q 2>/dev/null || true)
+            if [ -n "$NETWORKS" ]; then
+              docker network rm $NETWORKS 2>/dev/null || true
+            fi
+
+            echo "--- [3/5] Removing nginx config ---"
             sudo rm -f "/etc/nginx/sites-available/${PR_SLUG}"
             sudo rm -f "/etc/nginx/sites-enabled/${PR_SLUG}"
-            sudo nginx -t && sudo systemctl reload nginx
+            sudo nginx -t && sudo nginx -s reload
 
-            # --- remove SSL cert ---
-            sudo certbot delete --cert-name "${DOMAIN}" --non-interactive || true
+            echo "--- [4/5] Deleting SSL certificate ---"
+            sudo certbot delete --cert-name "${DOMAIN}" --non-interactive 2>/dev/null \
+              || echo "Cert not found or already deleted."
+
+            echo "--- [5/5] Cleaning up Docker image ---"
+            docker rmi "$FRONTEND_IMAGE" 2>/dev/null || echo "Image not found or already removed."
+
+            echo ""
+            echo "=== Preview destroyed: ${PR_SLUG} ==="
 
       - name: Update PR comment
         uses: actions/github-script@v7
         with:
           script: |
             const prNumber = context.payload.pull_request.number;
+            const merged = context.payload.pull_request.merged;
+            const action = merged ? 'merged ✅' : 'closed';
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -308,7 +342,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: existing.id,
-                body: `## Frontend Preview Destroyed\n\nThe preview environment for PR #${prNumber} has been removed.`,
+                body: `## Frontend Preview Destroyed\n\nPreview for PR #${prNumber} has been removed (PR ${action}).`,
               });
             }
 
