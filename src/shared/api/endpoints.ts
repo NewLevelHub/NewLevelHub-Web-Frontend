@@ -112,4 +112,8 @@ export const API = {
     update: '/auth/me/update/',
     deleteAvatar: '/auth/me/avatar/',
   },
+  users: {
+    list: '/auth/users/',
+    detail: (id: number) => `/auth/users/${id}/`,
+  },
 } as const;
