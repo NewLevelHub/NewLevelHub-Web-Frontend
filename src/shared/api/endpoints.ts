@@ -115,5 +115,6 @@ export const API = {
   users: {
     list: '/auth/users/',
     detail: (id: number) => `/auth/users/${id}/`,
+    impersonate: (id: number) => `/auth/users/${id}/impersonate/`,
   },
 } as const;

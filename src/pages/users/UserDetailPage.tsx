@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Mail,
@@ -12,11 +13,14 @@ import {
   LogIn,
   Bookmark,
   ListTodo,
+  AlertTriangle,
 } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
+import { mapApiUser } from '@/shared/lib/mapUser';
+import { useAuth } from '@/shared/hooks/useAuth';
 import type { UserDetail } from '@/shared/types';
 
 // ---------------------------------------------------------------------------
@@ -188,12 +192,133 @@ function DetailSkeleton() {
 }
 
 // ---------------------------------------------------------------------------
+// Impersonation panel
+// ---------------------------------------------------------------------------
+
+interface ImpersonatePanelProps {
+  targetUser: UserDetail;
+}
+
+function ImpersonatePanel({ targetUser }: ImpersonatePanelProps) {
+  const navigate = useNavigate();
+  const { startImpersonation } = useAuth();
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  interface ImpersonateResponse {
+    access: string;
+    refresh: string;
+    user: Record<string, unknown>;
+  }
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: () =>
+      apiClient
+        .post<ImpersonateResponse>(API.users.impersonate(targetUser.id))
+        .then((r) => r.data),
+    onSuccess: (data) => {
+      const mappedUser = mapApiUser(data.user);
+      startImpersonation(mappedUser, data.access);
+      navigate('/dashboard/');
+    },
+    onError: (error: unknown) => {
+      const axiosError = error as { response?: { status?: number } };
+      if (axiosError?.response?.status === 400) {
+        setErrorMessage('Нельзя войти от имени суперадмина');
+      } else {
+        setErrorMessage('Не удалось выполнить вход. Попробуйте ещё раз.');
+      }
+      setShowConfirm(false);
+    },
+  });
+
+  function handleConfirm() {
+    setErrorMessage(null);
+    mutate();
+  }
+
+  return (
+    <div>
+      {errorMessage && (
+        <div
+          role="alert"
+          className="mb-3 flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm"
+        >
+          <AlertTriangle size={15} className="shrink-0" aria-hidden="true" />
+          {errorMessage}
+        </div>
+      )}
+
+      {showConfirm ? (
+        <div
+          className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3"
+          role="region"
+          aria-label="Подтверждение входа от имени пользователя"
+        >
+          <div className="flex items-start gap-2">
+            <AlertTriangle
+              size={16}
+              className="text-amber-600 shrink-0 mt-0.5"
+              aria-hidden="true"
+            />
+            <p className="text-sm text-amber-900">
+              Вы собираетесь войти от имени{' '}
+              <strong>
+                {targetUser.first_name} {targetUser.last_name}
+              </strong>
+              . Все ваши действия будут выполняться от его имени.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleConfirm}
+              disabled={isPending}
+              className={cn(
+                'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500',
+                isPending
+                  ? 'bg-amber-300 text-amber-800 cursor-not-allowed'
+                  : 'bg-amber-500 hover:bg-amber-600 text-white',
+              )}
+            >
+              {isPending ? 'Вход...' : 'Подтвердить'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowConfirm(false)}
+              disabled={isPending}
+              className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            setErrorMessage(null);
+            setShowConfirm(true);
+          }}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-amber-500 hover:bg-amber-600 text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+          aria-label={`Войти от имени ${targetUser.first_name} ${targetUser.last_name}`}
+        >
+          <LogIn size={15} aria-hidden="true" />
+          Войти от имени
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
 
 export default function UserDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user: currentUser, isImpersonating } = useAuth();
 
   const { data: user, isLoading, isError } = useQuery<UserDetail>({
     queryKey: ['user', id],
@@ -201,6 +326,11 @@ export default function UserDetailPage() {
       apiClient.get<UserDetail>(API.users.detail(Number(id))).then((r) => r.data),
     enabled: !!id,
   });
+
+  const canImpersonate =
+    !isImpersonating &&
+    currentUser?.role === USER_ROLES.SUPERADMIN &&
+    user?.role !== USER_ROLES.SUPERADMIN;
 
   if (isLoading) {
     return <DetailSkeleton />;
@@ -230,19 +360,27 @@ export default function UserDetailPage() {
   return (
     <main className="px-4 py-8 max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <div>
-        <button
-          type="button"
-          onClick={() => navigate('/users/')}
-          className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 mb-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
-          aria-label="Назад к списку пользователей"
-        >
-          <ArrowLeft size={16} aria-hidden="true" />
-          Назад к списку
-        </button>
-        <h1 className="text-2xl font-bold text-gray-900">
-          {user.first_name} {user.last_name}
-        </h1>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <button
+            type="button"
+            onClick={() => navigate('/users/')}
+            className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 mb-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+            aria-label="Назад к списку пользователей"
+          >
+            <ArrowLeft size={16} aria-hidden="true" />
+            Назад к списку
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {user.first_name} {user.last_name}
+          </h1>
+        </div>
+
+        {canImpersonate && (
+          <div className="sm:pt-10">
+            <ImpersonatePanel targetUser={user} />
+          </div>
+        )}
       </div>
 
       {/* Profile card */}
@@ -378,6 +516,12 @@ export default function UserDetailPage() {
           value={user.tasks_count}
         />
       </section>
+
+      {/* Date details */}
+      <p className="text-xs text-gray-400">
+        Зарегистрирован: {formatDate(user.date_joined)} · Последний вход:{' '}
+        {formatDate(user.last_login)}
+      </p>
     </main>
   );
 }
