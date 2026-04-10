@@ -11,3 +11,12 @@ export function useUser() {
 export function useIsAuthenticated() {
   return useAuthStore((s) => s.isAuthenticated);
 }
+
+export function useImpersonation() {
+  return useAuthStore((s) => ({
+    isImpersonating: s.isImpersonating,
+    originalUser: s.originalUser,
+    startImpersonation: s.startImpersonation,
+    stopImpersonation: s.stopImpersonation,
+  }));
+}
