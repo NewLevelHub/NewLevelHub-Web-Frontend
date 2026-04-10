@@ -88,6 +88,10 @@ import AnalyticsDashboardPage from '@/pages/analytics/AnalyticsDashboardPage';
 import ProfilePage from '@/pages/profile/ProfilePage';
 import ProfileSettingsPage from '@/pages/profile/ProfileSettingsPage';
 
+// Users (superadmin)
+import UsersListPage from '@/pages/users/UsersListPage';
+import UserDetailPage from '@/pages/users/UserDetailPage';
+
 // Errors
 import NotFoundPage from '@/pages/errors/NotFoundPage';
 import ForbiddenPage from '@/pages/errors/ForbiddenPage';
@@ -176,13 +180,23 @@ export const router = createBrowserRouter([
             ],
           },
 
+          // Companies — list visible to all company roles, detail to all, create superadmin only
+          {
+            element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE]} />,
+            children: [
+              { path: '/companies', element: <CompanyListPage /> },
+              { path: '/companies/:id', element: <CompanyDetailPage /> },
+            ],
+          },
+          {
+            element: <RequireRole allowed={[SUPERADMIN]} />,
+            children: [{ path: '/companies/new', element: <CompanyCreatePage /> }],
+          },
+
           // Superadmin only
           {
             element: <RequireRole allowed={[SUPERADMIN]} />,
             children: [
-              { path: '/companies', element: <CompanyListPage /> },
-              { path: '/companies/new', element: <CompanyCreatePage /> },
-              { path: '/companies/:id', element: <CompanyDetailPage /> },
               { path: '/resources', element: <ResourceListPage /> },
               { path: '/resources/new', element: <ResourceCreatePage /> },
               { path: '/resources/:id', element: <ResourceDetailPage /> },
@@ -190,6 +204,8 @@ export const router = createBrowserRouter([
               { path: '/access-log', element: <AccessLogPage /> },
               { path: '/building/map/manage', element: <MapManagePage /> },
               { path: '/passes/validate', element: <PassValidatePage /> },
+              { path: '/users', element: <UsersListPage /> },
+              { path: '/users/:id', element: <UserDetailPage /> },
             ],
           },
 

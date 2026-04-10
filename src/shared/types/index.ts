@@ -22,10 +22,12 @@ export interface User {
   role: UserRole;
   company_id: number | null;
   company_name: string | null;
+  /** Nested company object returned by /api/v1/auth/me/ */
+  company: { id: number; name: string } | null;
   avatar: string | null;
   /** Синхронно с бэкендом `is_email_verified` */
   is_email_verified: boolean;
-  position?: string;
+  position: string | null;
   date_joined?: string;
   last_login?: string | null;
 }
@@ -33,15 +35,22 @@ export interface User {
 export interface Company {
   id: number;
   name: string;
-  description: string;
+  description: string | null;
   logo: string | null;
-  floor: string;
-  office_number: string;
-  tier: CompanyTier;
+  floor: number | null;
+  office_number: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  plan: CompanyTier;
   max_employees: number;
-  storage_quota_gb: number;
+  storage_limit_gb: number;
   is_active: boolean;
   created_at: string;
+}
+
+export interface CompanyDetail extends Company {
+  employee_count: number;
+  storage_used: number;
 }
 
 /** GET /companies/:id/members/ — см. CompanyMemberSerializer (бэкенд). */
@@ -245,4 +254,25 @@ export interface PaginatedResponse<T> {
   next: string | null;
   previous: string | null;
   results: T[];
+}
+
+export interface UserListItem {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  position: string | null;
+  avatar: string | null;
+  role: string;
+  company: { id: number; name: string } | null;
+  is_email_verified: boolean;
+  is_active: boolean;
+  date_joined: string;
+  last_login: string | null;
+}
+
+export interface UserDetail extends UserListItem {
+  bookings_count: number;
+  tasks_count: number;
 }

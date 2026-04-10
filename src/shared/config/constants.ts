@@ -88,6 +88,9 @@ export const COMPANY_TIERS = {
 
 export type CompanyTier = (typeof COMPANY_TIERS)[keyof typeof COMPANY_TIERS];
 
+/** Alias for COMPANY_TIERS — matches the `plan` field returned by the backend. */
+export const COMPANY_PLANS = COMPANY_TIERS;
+
 export const ANNOUNCEMENT_CATEGORIES = {
   INFO: 'info',
   IMPORTANT: 'important',
