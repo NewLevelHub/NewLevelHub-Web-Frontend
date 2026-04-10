@@ -9,3 +9,4 @@ dist
 .env.*
 !.env.example
 # ci test Thu Apr  9 13:35:22 +05 2026
+# destroy test Fri Apr 10 15:33:16 +05 2026
