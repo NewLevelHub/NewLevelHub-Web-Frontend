@@ -242,3 +242,24 @@ export interface PaginatedResponse<T> {
   previous: string | null;
   results: T[];
 }
+
+export interface UserListItem {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  position: string | null;
+  avatar: string | null;
+  role: string;
+  company: { id: number; name: string } | null;
+  is_email_verified: boolean;
+  is_active: boolean;
+  date_joined: string;
+  last_login: string | null;
+}
+
+export interface UserDetail extends UserListItem {
+  bookings_count: number;
+  tasks_count: number;
+}
