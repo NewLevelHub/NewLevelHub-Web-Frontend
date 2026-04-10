@@ -2,6 +2,7 @@ export const API = {
   auth: {
     login: '/auth/login/',
     register: '/auth/register/',
+    registerInvite: '/auth/register/invite/',
     logout: '/auth/logout/',
     me: '/auth/me/',
     refreshToken: '/auth/token/refresh/',
@@ -11,7 +12,6 @@ export const API = {
     verifyEmail: '/auth/email/verify/',
     resendVerification: '/auth/email/resend/',
     roles: '/auth/roles/',
-    acceptInvite: '/auth/invite/accept/',
   },
   companies: {
     list: '/companies/',

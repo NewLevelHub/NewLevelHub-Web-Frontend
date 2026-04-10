@@ -79,6 +79,12 @@ export interface CompanyInvitation {
   created_at: string;
 }
 
+export interface InviteRegistrationPreview {
+  company_name: string;
+  email: string;
+  role: string;
+}
+
 export interface Resource {
   id: number;
   name: string;

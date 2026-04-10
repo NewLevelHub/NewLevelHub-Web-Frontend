@@ -155,15 +155,22 @@ jobs:
             docker compose -f "docker-compose.${PR_SLUG}.yml" --project-name "$PR_SLUG" pull
             docker compose -f "docker-compose.${PR_SLUG}.yml" --project-name "$PR_SLUG" up -d --force-recreate
 
-            # --- find backend preview for the same ticket ---
+            # --- backend preview: MUST match same PR number as this frontend ---
+            # Old logic (grep "be-${TICKET}") picked the first be-dev-XX-* preview on the host,
+            # so fe-dev-54-pr16 could proxy /api to be-dev-54-pr55 → wrong DB → invite token "invalid" in UI.
             BACKEND_PORT=8080
             if [ "$TICKET" != "noticket" ]; then
-              BE_PORT=$(docker ps --format '{{.Names}} {{.Ports}}' | grep "be-${TICKET}" | grep -oE '1[0-9]{4}' | head -1 || true)
-              if [ -n "$BE_PORT" ]; then
-                BACKEND_PORT=$BE_PORT
-                echo "► Found backend preview on port $BACKEND_PORT"
+              BE_NGINX_NAME="be-${TICKET}-pr${PR_NUMBER}-nginx-1"
+              if docker inspect "$BE_NGINX_NAME" >/dev/null 2>&1; then
+                BE_PORT=$(docker port "$BE_NGINX_NAME" 80/tcp 2>/dev/null | head -1 | awk -F: '{print $NF}')
+                if [ -n "$BE_PORT" ]; then
+                  BACKEND_PORT=$BE_PORT
+                  echo "► Matched backend preview $BE_NGINX_NAME → host port $BACKEND_PORT"
+                else
+                  echo "► Container $BE_NGINX_NAME exists but port mapping not found; using port 8080"
+                fi
               else
-                echo "► No backend preview for $TICKET, using main staging backend on port 8080"
+                echo "► No $BE_NGINX_NAME — open backend PR #${PR_NUMBER} preview or use shared API on 8080"
               fi
             else
               echo "► No ticket in branch name, using main staging backend on port 8080"
@@ -220,6 +227,8 @@ jobs:
               `| **Slug** | \`${slug}\` |`,
               `| **Port** | \`${port}\` |`,
               `| **Image** | \`pr-${prNumber}\` |`,
+              '',
+              `**API:** \`/api/\` проксируется на backend preview \`be-${ticket}-pr${prNumber}\` (тот же номер PR). Если такого контейнера нет — используется общий стенд на порту 8080.`,
             ].join('\n');
 
             const { data: comments } = await github.rest.issues.listComments({
