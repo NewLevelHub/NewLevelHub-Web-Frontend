@@ -35,15 +35,22 @@ export interface User {
 export interface Company {
   id: number;
   name: string;
-  description: string;
+  description: string | null;
   logo: string | null;
-  floor: string;
-  office_number: string;
-  tier: CompanyTier;
+  floor: number | null;
+  office_number: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  plan: CompanyTier;
   max_employees: number;
-  storage_quota_gb: number;
+  storage_limit_gb: number;
   is_active: boolean;
   created_at: string;
+}
+
+export interface CompanyDetail extends Company {
+  employee_count: number;
+  storage_used: number;
 }
 
 /** GET /companies/:id/members/ — см. CompanyMemberSerializer (бэкенд). */

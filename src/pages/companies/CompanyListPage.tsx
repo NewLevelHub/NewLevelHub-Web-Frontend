@@ -1,7 +1,21 @@
-import { useState } from 'react';
-import { Link } from 'react-router';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Building2, Users, HardDrive, CheckCircle2, XCircle, Trash2, PowerOff, Power } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  Building2,
+  Users,
+  HardDrive,
+  CheckCircle2,
+  XCircle,
+  Trash2,
+  PowerOff,
+  Power,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+} from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -11,7 +25,23 @@ import { cn } from '@/shared/lib/cn';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import type { Company, PaginatedResponse } from '@/shared/types';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const PAGE_SIZE = 20;
+
+const PLAN_LABELS: Record<string, string> = {
+  [COMPANY_TIERS.BASIC]: 'Базовый',
+  [COMPANY_TIERS.STANDARD]: 'Стандарт',
+  [COMPANY_TIERS.PREMIUM]: 'Премиум',
+};
+
+const PLAN_COLORS: Record<string, string> = {
+  [COMPANY_TIERS.BASIC]: 'bg-gray-100 text-gray-700',
+  [COMPANY_TIERS.STANDARD]: 'bg-blue-100 text-blue-700',
+  [COMPANY_TIERS.PREMIUM]: 'bg-purple-100 text-purple-700',
+};
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type ModalAction = 'deactivate' | 'activate' | 'delete';
 
@@ -20,19 +50,7 @@ interface ModalState {
   company: Company;
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const TIER_LABELS: Record<string, string> = {
-  [COMPANY_TIERS.BASIC]: 'Базовый',
-  [COMPANY_TIERS.STANDARD]: 'Стандарт',
-  [COMPANY_TIERS.PREMIUM]: 'Премиум',
-};
-
-const TIER_COLORS: Record<string, string> = {
-  [COMPANY_TIERS.BASIC]: 'bg-gray-100 text-gray-700',
-  [COMPANY_TIERS.STANDARD]: 'bg-blue-100 text-blue-700',
-  [COMPANY_TIERS.PREMIUM]: 'bg-purple-100 text-purple-700',
-};
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function modalConfig(action: ModalAction, companyName: string) {
   switch (action) {
@@ -60,40 +78,100 @@ function modalConfig(action: ModalAction, companyName: string) {
   }
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
+// ─── Skeleton row ─────────────────────────────────────────────────────────────
+
+function SkeletonRow() {
+  return (
+    <tr className="animate-pulse">
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-gray-200 shrink-0" />
+          <div className="space-y-1.5">
+            <div className="w-36 h-4 rounded bg-gray-200" />
+            <div className="w-24 h-3 rounded bg-gray-200" />
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-3"><div className="w-20 h-5 rounded-full bg-gray-200" /></td>
+      <td className="px-4 py-3"><div className="w-12 h-4 rounded bg-gray-200" /></td>
+      <td className="px-4 py-3"><div className="w-16 h-4 rounded bg-gray-200" /></td>
+      <td className="px-4 py-3"><div className="w-16 h-5 rounded-full bg-gray-200" /></td>
+      <td className="px-4 py-3"><div className="w-20 h-8 rounded-lg bg-gray-200" /></td>
+    </tr>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function CompanyListPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
 
+  // ── Filter state ────────────────────────────────────────────────────────────
+
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
-  const [tierFilter, setTierFilter] = useState<'all' | string>('all');
+  const [planFilter, setPlanFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [page, setPage] = useState(1);
+
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchInput(value);
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      setSearch(value);
+      setPage(1);
+    }, 400);
+  }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [planFilter, statusFilter]);
+
+  // ── Data fetching ──────────────────────────────────────────────────────────
+
+  const queryParams: Record<string, string | number> = {
+    page,
+    page_size: PAGE_SIZE,
+  };
+  if (search) queryParams.search = search;
+  if (planFilter) queryParams.plan = planFilter;
+  if (statusFilter !== '') queryParams.is_active = statusFilter;
+
+  const { data, isLoading, isError } = useQuery<PaginatedResponse<Company>>({
+    queryKey: ['companies', { search, planFilter, statusFilter, page }],
+    queryFn: () =>
+      apiClient
+        .get<PaginatedResponse<Company>>(API.companies.list, { params: queryParams })
+        .then((r) => r.data),
+    placeholderData: (prev) => prev,
+  });
+
+  const companies = data?.results ?? [];
+  const totalCount = data?.count ?? 0;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const rangeStart = totalCount === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(page * PAGE_SIZE, totalCount);
+
+  // For non-superadmin: redirect to their own company if only one result
+  useEffect(() => {
+    if (!isSuperadmin && !isLoading && companies.length === 1) {
+      navigate(`/companies/${companies[0].id}`, { replace: true });
+    }
+  }, [isSuperadmin, isLoading, companies, navigate]);
+
+  // ── Mutations ──────────────────────────────────────────────────────────────
 
   const [modal, setModal] = useState<ModalState | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
 
-  // ── Data fetching ──────────────────────────────────────────────────────────
-
-  const {
-    data,
-    isLoading,
-    isError,
-  } = useQuery({
-    queryKey: ['companies'],
-    queryFn: () =>
-      apiClient.get<PaginatedResponse<Company>>(API.companies.list).then((r) => r.data),
-  });
-
-  const companies = data?.results ?? [];
-
-  // ── Mutations ──────────────────────────────────────────────────────────────
-
   const deactivateMutation = useMutation({
-    mutationFn: (id: number) =>
-      apiClient.post(API.companies.deactivate(String(id))),
+    mutationFn: (id: number) => apiClient.post(API.companies.deactivate(String(id))),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['companies'] });
       setMutationError(null);
@@ -101,14 +179,11 @@ export default function CompanyListPage() {
     onError: () => {
       setMutationError('Не удалось деактивировать компанию. Попробуйте ещё раз.');
     },
-    onSettled: () => {
-      setModal(null);
-    },
+    onSettled: () => setModal(null),
   });
 
   const activateMutation = useMutation({
-    mutationFn: (id: number) =>
-      apiClient.post(API.companies.activate(String(id))),
+    mutationFn: (id: number) => apiClient.post(API.companies.activate(String(id))),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['companies'] });
       setMutationError(null);
@@ -116,14 +191,11 @@ export default function CompanyListPage() {
     onError: () => {
       setMutationError('Не удалось активировать компанию. Попробуйте ещё раз.');
     },
-    onSettled: () => {
-      setModal(null);
-    },
+    onSettled: () => setModal(null),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) =>
-      apiClient.delete(API.companies.delete(String(id))),
+    mutationFn: (id: number) => apiClient.delete(API.companies.delete(String(id))),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['companies'] });
       setMutationError(null);
@@ -131,15 +203,11 @@ export default function CompanyListPage() {
     onError: () => {
       setMutationError('Не удалось удалить компанию. Попробуйте ещё раз.');
     },
-    onSettled: () => {
-      setModal(null);
-    },
+    onSettled: () => setModal(null),
   });
 
   const isPending =
-    deactivateMutation.isPending ||
-    activateMutation.isPending ||
-    deleteMutation.isPending;
+    deactivateMutation.isPending || activateMutation.isPending || deleteMutation.isPending;
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
@@ -162,61 +230,37 @@ export default function CompanyListPage() {
     else deleteMutation.mutate(id);
   }
 
-  // ── Filtering ──────────────────────────────────────────────────────────────
-
-  const filtered = companies.filter((c) => {
-    const matchesSearch =
-      search.trim() === '' ||
-      c.name.toLowerCase().includes(search.toLowerCase());
-
-    const matchesStatus =
-      statusFilter === 'all' ||
-      (statusFilter === 'active' && c.is_active) ||
-      (statusFilter === 'inactive' && !c.is_active);
-
-    const matchesTier = tierFilter === 'all' || c.tier === tierFilter;
-
-    return matchesSearch && matchesStatus && matchesTier;
-  });
-
   // ── Render ─────────────────────────────────────────────────────────────────
-
-  if (isLoading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-      </div>
-    );
-  }
 
   if (isError) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center gap-2 text-center">
-        <p className="text-sm font-medium text-red-600">Ошибка загрузки компаний.</p>
-        <p className="text-xs text-gray-500">Проверьте соединение и обновите страницу.</p>
-      </div>
+      <main className="px-4 py-8 max-w-7xl mx-auto">
+        <div className="flex h-64 flex-col items-center justify-center gap-2 text-center">
+          <p className="text-sm font-medium text-red-600">Ошибка загрузки компаний.</p>
+          <p className="text-xs text-gray-500">Проверьте соединение и обновите страницу.</p>
+        </div>
+      </main>
     );
   }
 
-  const currentModal = modal
-    ? modalConfig(modal.action, modal.company.name)
-    : null;
+  const currentModal = modal ? modalConfig(modal.action, modal.company.name) : null;
 
   return (
-    <div className="space-y-6 p-6">
+    <main className="px-4 py-8 max-w-7xl mx-auto space-y-6">
       {/* Page header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Компании-арендаторы</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Всего: {companies.length}, активных:{' '}
-            {companies.filter((c) => c.is_active).length}
-          </p>
+          {!isLoading && (
+            <p className="mt-1 text-sm text-gray-500">
+              Всего: {totalCount}
+            </p>
+          )}
         </div>
         {isSuperadmin && (
           <Link
             to="/companies/new"
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
             Создать компанию
@@ -234,94 +278,215 @@ export default function CompanyListPage() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        {/* Search */}
-        <div className="relative flex-1">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-            aria-hidden="true"
-          />
-          <input
-            type="search"
-            placeholder="Поиск по названию..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-4 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-          />
-        </div>
-
-        {/* Status filter */}
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+      {/* Filters — superadmin only */}
+      {isSuperadmin && (
+        <section
+          className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4"
+          aria-label="Фильтры компаний"
         >
-          <option value="all">Все статусы</option>
-          <option value="active">Активные</option>
-          <option value="inactive">Неактивные</option>
-        </select>
+          <div className="flex flex-wrap gap-3">
+            {/* Search */}
+            <div className="relative flex-1 min-w-52">
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                aria-hidden="true"
+              />
+              <input
+                type="search"
+                value={searchInput}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                placeholder="Поиск по названию..."
+                aria-label="Поиск компаний"
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
 
-        {/* Tier filter */}
-        <select
-          value={tierFilter}
-          onChange={(e) => setTierFilter(e.target.value)}
-          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-        >
-          <option value="all">Все тарифы</option>
-          <option value={COMPANY_TIERS.BASIC}>Базовый</option>
-          <option value={COMPANY_TIERS.STANDARD}>Стандарт</option>
-          <option value={COMPANY_TIERS.PREMIUM}>Премиум</option>
-        </select>
-      </div>
+            {/* Plan filter */}
+            <select
+              value={planFilter}
+              onChange={(e) => setPlanFilter(e.target.value)}
+              aria-label="Фильтр по тарифу"
+              className="px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Все тарифы</option>
+              <option value={COMPANY_TIERS.BASIC}>Базовый</option>
+              <option value={COMPANY_TIERS.STANDARD}>Стандарт</option>
+              <option value={COMPANY_TIERS.PREMIUM}>Премиум</option>
+            </select>
 
-      {/* Empty state */}
-      {filtered.length === 0 && (
-        <div className="flex h-48 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-gray-200 text-center">
-          <Building2 className="h-8 w-8 text-gray-300" aria-hidden="true" />
-          <p className="text-sm text-gray-500">Компании не найдены</p>
-        </div>
+            {/* Status filter */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              aria-label="Фильтр по статусу"
+              className="px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Все статусы</option>
+              <option value="true">Активные</option>
+              <option value="false">Неактивные</option>
+            </select>
+          </div>
+        </section>
       )}
 
       {/* Table */}
-      {filtered.length > 0 && (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-          <table className="w-full border-collapse text-sm">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table
+            className="w-full text-sm"
+            role="table"
+            aria-label="Список компаний"
+          >
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50 text-left">
-                <th className="px-4 py-3 font-medium text-gray-600">Компания</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Тариф</th>
-                <th className="px-4 py-3 font-medium text-gray-600">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                >
+                  Компания
+                </th>
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                >
+                  Тариф
+                </th>
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                >
                   <span className="inline-flex items-center gap-1">
                     <Users className="h-3.5 w-3.5" aria-hidden="true" />
                     Сотрудники
                   </span>
                 </th>
-                <th className="px-4 py-3 font-medium text-gray-600">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                >
                   <span className="inline-flex items-center gap-1">
                     <HardDrive className="h-3.5 w-3.5" aria-hidden="true" />
                     Хранилище
                   </span>
                 </th>
-                <th className="px-4 py-3 font-medium text-gray-600">Статус</th>
-                {isSuperadmin && (
-                  <th className="px-4 py-3 font-medium text-gray-600">Действия</th>
-                )}
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                >
+                  Статус
+                </th>
+                <th scope="col" className="px-4 py-3">
+                  <span className="sr-only">Действия</span>
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.map((company) => (
-                <CompanyRow
-                  key={company.id}
-                  company={company}
-                  isSuperadmin={isSuperadmin}
-                  onDeactivate={() => openModal('deactivate', company)}
-                  onActivate={() => openModal('activate', company)}
-                  onDelete={() => openModal('delete', company)}
-                />
-              ))}
+            <tbody className="divide-y divide-gray-50">
+              {isLoading ? (
+                Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)
+              ) : companies.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <Building2 className="h-8 w-8 text-gray-300" aria-hidden="true" />
+                      <p className="text-sm text-gray-500">Компании не найдены</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                companies.map((company) => (
+                  <CompanyRow
+                    key={company.id}
+                    company={company}
+                    isSuperadmin={isSuperadmin}
+                    onDeactivate={() => openModal('deactivate', company)}
+                    onActivate={() => openModal('activate', company)}
+                    onDelete={() => openModal('delete', company)}
+                  />
+                ))
+              )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Pagination */}
+      {!isLoading && totalCount > 0 && (
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <p className="text-sm text-gray-500">
+            Показано{' '}
+            <span className="font-medium text-gray-900">
+              {rangeStart}–{rangeEnd}
+            </span>{' '}
+            из{' '}
+            <span className="font-medium text-gray-900">{totalCount}</span> компаний
+          </p>
+
+          <nav aria-label="Пагинация" className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              aria-label="Предыдущая страница"
+              className={cn(
+                'p-2 rounded-lg border text-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                page === 1
+                  ? 'border-gray-200 text-gray-300 cursor-not-allowed'
+                  : 'border-gray-300 hover:bg-gray-50',
+              )}
+            >
+              <ChevronLeft size={16} aria-hidden="true" />
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+              .reduce<(number | 'ellipsis')[]>((acc, p, idx, arr) => {
+                if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('ellipsis');
+                acc.push(p);
+                return acc;
+              }, [])
+              .map((item, idx) =>
+                item === 'ellipsis' ? (
+                  <span
+                    key={`ellipsis-${idx}`}
+                    className="px-2 text-gray-400 text-sm select-none"
+                  >
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => setPage(item)}
+                    aria-label={`Страница ${item}`}
+                    aria-current={item === page ? 'page' : undefined}
+                    className={cn(
+                      'w-9 h-9 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                      item === page
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-100 border border-gray-300',
+                    )}
+                  >
+                    {item}
+                  </button>
+                ),
+              )}
+
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              aria-label="Следующая страница"
+              className={cn(
+                'p-2 rounded-lg border text-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                page === totalPages
+                  ? 'border-gray-200 text-gray-300 cursor-not-allowed'
+                  : 'border-gray-300 hover:bg-gray-50',
+              )}
+            >
+              <ChevronRight size={16} aria-hidden="true" />
+            </button>
+          </nav>
         </div>
       )}
 
@@ -338,7 +503,7 @@ export default function CompanyListPage() {
           isLoading={isPending}
         />
       )}
-    </div>
+    </main>
   );
 }
 
@@ -352,45 +517,61 @@ interface CompanyRowProps {
   onDelete: () => void;
 }
 
-function CompanyRow({
-  company,
-  isSuperadmin,
-  onDeactivate,
-  onActivate,
-  onDelete,
-}: CompanyRowProps) {
+function CompanyRow({ company, isSuperadmin, onDeactivate, onActivate, onDelete }: CompanyRowProps) {
   return (
     <tr className="group transition-colors hover:bg-gray-50">
-      {/* Name + office */}
+      {/* Logo + Name + office */}
       <td className="px-4 py-3">
-        <Link
-          to={`/companies/${company.id}`}
-          className="font-medium text-blue-600 hover:underline"
-        >
-          {company.name}
-        </Link>
-        <div className="mt-0.5 text-xs text-gray-400">
-          Этаж {company.floor}, офис {company.office_number}
+        <div className="flex items-center gap-3">
+          {company.logo ? (
+            <img
+              src={company.logo}
+              alt={company.name}
+              className="w-8 h-8 rounded-lg object-cover shrink-0"
+            />
+          ) : (
+            <div
+              className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0"
+              aria-hidden="true"
+            >
+              <Building2 className="w-4 h-4 text-blue-500" />
+            </div>
+          )}
+          <div>
+            <Link
+              to={`/companies/${company.id}`}
+              className="font-medium text-blue-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+            >
+              {company.name}
+            </Link>
+            {(company.floor != null || company.office_number) && (
+              <div className="mt-0.5 text-xs text-gray-400">
+                {company.floor != null && `Этаж ${company.floor}`}
+                {company.floor != null && company.office_number && ', '}
+                {company.office_number && `офис ${company.office_number}`}
+              </div>
+            )}
+          </div>
         </div>
       </td>
 
-      {/* Tier */}
+      {/* Plan badge */}
       <td className="px-4 py-3">
         <span
           className={cn(
             'inline-block rounded-full px-2.5 py-0.5 text-xs font-medium',
-            TIER_COLORS[company.tier] ?? 'bg-gray-100 text-gray-700',
+            PLAN_COLORS[company.plan] ?? 'bg-gray-100 text-gray-700',
           )}
         >
-          {TIER_LABELS[company.tier] ?? company.tier}
+          {PLAN_LABELS[company.plan] ?? company.plan}
         </span>
       </td>
 
-      {/* Employees limit */}
+      {/* Max employees */}
       <td className="px-4 py-3 text-gray-700">{company.max_employees}</td>
 
-      {/* Storage quota */}
-      <td className="px-4 py-3 text-gray-700">{company.storage_quota_gb} ГБ</td>
+      {/* Storage limit */}
+      <td className="px-4 py-3 text-gray-700">{company.storage_limit_gb} ГБ</td>
 
       {/* Status */}
       <td className="px-4 py-3">
@@ -407,44 +588,55 @@ function CompanyRow({
         )}
       </td>
 
-      {/* Actions (superadmin only) */}
-      {isSuperadmin && (
-        <td className="px-4 py-3">
-          <div className="flex items-center gap-1">
-            {company.is_active ? (
-              <button
-                type="button"
-                onClick={onDeactivate}
-                title="Деактивировать"
-                className="rounded-lg p-1.5 text-amber-500 transition-colors hover:bg-amber-50 hover:text-amber-700"
-              >
-                <PowerOff className="h-4 w-4" aria-hidden="true" />
-                <span className="sr-only">Деактивировать {company.name}</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={onActivate}
-                title="Активировать"
-                className="rounded-lg p-1.5 text-emerald-500 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
-              >
-                <Power className="h-4 w-4" aria-hidden="true" />
-                <span className="sr-only">Активировать {company.name}</span>
-              </button>
-            )}
+      {/* Actions */}
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-1">
+          <Link
+            to={`/companies/${company.id}`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            aria-label={`Открыть ${company.name}`}
+          >
+            <ExternalLink size={13} aria-hidden="true" />
+            Открыть
+          </Link>
 
-            <button
-              type="button"
-              onClick={onDelete}
-              title="Удалить"
-              className="rounded-lg p-1.5 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
-            >
-              <Trash2 className="h-4 w-4" aria-hidden="true" />
-              <span className="sr-only">Удалить {company.name}</span>
-            </button>
-          </div>
-        </td>
-      )}
+          {isSuperadmin && (
+            <>
+              {company.is_active ? (
+                <button
+                  type="button"
+                  onClick={onDeactivate}
+                  title="Деактивировать"
+                  className="rounded-lg p-1.5 text-amber-500 transition-colors hover:bg-amber-50 hover:text-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                >
+                  <PowerOff className="h-4 w-4" aria-hidden="true" />
+                  <span className="sr-only">Деактивировать {company.name}</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onActivate}
+                  title="Активировать"
+                  className="rounded-lg p-1.5 text-emerald-500 transition-colors hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                >
+                  <Power className="h-4 w-4" aria-hidden="true" />
+                  <span className="sr-only">Активировать {company.name}</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={onDelete}
+                title="Удалить"
+                className="rounded-lg p-1.5 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              >
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
+                <span className="sr-only">Удалить {company.name}</span>
+              </button>
+            </>
+          )}
+        </div>
+      </td>
     </tr>
   );
 }
