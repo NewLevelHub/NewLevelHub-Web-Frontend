@@ -67,6 +67,7 @@ const companyAdminNav: NavSection[] = [
   {
     title: 'Компания',
     items: [
+      { label: 'Моя компания', path: '/companies', icon: Building2 },
       { label: 'Команда', path: '/team', icon: Users },
       { label: 'Участники', path: '/company/settings/members', icon: UserCircle2 },
       { label: 'Приглашения', path: '/team/manage', icon: UserPlus },
@@ -100,6 +101,10 @@ const companyAdminNav: NavSection[] = [
 const employeeNav: NavSection[] = [
   {
     items: [{ label: 'Дашборд', path: '/', icon: LayoutDashboard }],
+  },
+  {
+    title: 'Компания',
+    items: [{ label: 'Моя компания', path: '/companies', icon: Building2 }],
   },
   {
     title: 'Работа',
