@@ -107,4 +107,9 @@ export const API = {
     resources: '/analytics/resources/',
     company: (id: string) => `/analytics/companies/${id}/`,
   },
+  profile: {
+    me: '/auth/me/',
+    update: '/auth/me/update/',
+    deleteAvatar: '/auth/me/avatar/',
+  },
 } as const;
