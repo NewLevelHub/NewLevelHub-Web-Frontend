@@ -39,6 +39,7 @@ const superadminNav: NavSection[] = [
     title: 'Управление',
     items: [
       { label: 'Пользователи', path: '/users', icon: Users },
+      { label: 'Сотрудники', path: '/team/manage', icon: Users },
       { label: 'Компании', path: '/companies', icon: Building2 },
       { label: 'Ресурсы', path: '/resources', icon: Bookmark },
       { label: 'Бронирования', path: '/admin/bookings', icon: CalendarDays },
@@ -68,9 +69,8 @@ const companyAdminNav: NavSection[] = [
     title: 'Компания',
     items: [
       { label: 'Моя компания', path: '/companies', icon: Building2 },
-      { label: 'Команда', path: '/team', icon: Users },
+      { label: 'Сотрудники', path: '/team/manage', icon: Users },
       { label: 'Участники', path: '/company/settings/members', icon: UserCircle2 },
-      { label: 'Приглашения', path: '/team/manage', icon: UserPlus },
       { label: 'Настройки', path: '/company/settings', icon: Settings },
     ],
   },

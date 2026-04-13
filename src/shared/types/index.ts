@@ -66,6 +66,13 @@ export interface CompanyMember {
   last_login: string | null;
 }
 
+export interface MemberActivity {
+  last_login: string | null;
+  tasks_active: number;
+  tasks_completed: number;
+  bookings_last_30_days: number;
+}
+
 export interface CompanyInvitation {
   id: number;
   email: string;
