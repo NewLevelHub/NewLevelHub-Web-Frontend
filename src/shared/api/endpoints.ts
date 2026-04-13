@@ -29,6 +29,12 @@ export const API = {
     settings: (id: string) => `/companies/${id}/settings/`,
     memberActivity: (companyId: string, userId: string) =>
       `/companies/${companyId}/members/${userId}/activity/`,
+    memberDeactivate: (companyId: string, userId: string) =>
+      `/companies/${companyId}/members/${userId}/deactivate/`,
+    memberActivate: (companyId: string, userId: string) =>
+      `/companies/${companyId}/members/${userId}/activate/`,
+    memberDelete: (companyId: string, userId: string) =>
+      `/companies/${companyId}/members/${userId}/`,
   },
   resources: {
     list: '/resources/',
