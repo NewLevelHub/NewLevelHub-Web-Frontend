@@ -30,17 +30,21 @@ export const API = {
     memberActivity: (companyId: string, userId: string) =>
       `/companies/${companyId}/members/${userId}/activity/`,
   },
-  resources: {
-    list: '/resources/',
-    create: '/resources/',
-    detail: (id: string) => `/resources/${id}/`,
-    availability: (id: string) => `/resources/${id}/availability/`,
-  },
   bookings: {
-    list: '/bookings/',
-    create: '/bookings/',
-    detail: (id: string) => `/bookings/${id}/`,
-    my: '/bookings/my/',
+    reservations: {
+      list: '/bookings/reservations/',
+      create: '/bookings/reservations/',
+      detail: (id: string) => `/bookings/reservations/${id}/`,
+      my: '/bookings/reservations/my/',
+      cancel: (id: string) => `/bookings/reservations/${id}/cancel/`,
+    },
+    resources: {
+      list: '/bookings/resources/',
+      create: '/bookings/resources/',
+      detail: (id: string) => `/bookings/resources/${id}/`,
+      schedule: (id: string) => `/bookings/resources/${id}/schedule/`,
+      block: (id: string) => `/bookings/resources/${id}/block/`,
+    },
     manage: '/bookings/manage/',
   },
   crm: {

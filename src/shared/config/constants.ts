@@ -16,8 +16,51 @@ export const RESOURCE_TYPES = {
 
 export type ResourceType = (typeof RESOURCE_TYPES)[keyof typeof RESOURCE_TYPES];
 
+export const RESOURCE_TYPE_LABELS: Record<ResourceType, string> = {
+  [RESOURCE_TYPES.DESK]: 'Рабочее место',
+  [RESOURCE_TYPES.MEETING_ROOM]: 'Переговорка',
+  [RESOURCE_TYPES.PARKING]: 'Парковка',
+  [RESOURCE_TYPES.CAPSULE]: 'Капсула',
+};
+
+/** Ключи тела `equipment` для `meeting_room` (совпадают с бэкендом). */
+export const RESOURCE_EQUIPMENT_KEYS = [
+  'projector',
+  'tv',
+  'whiteboard',
+  'video_conf',
+  'monitor',
+  'dock',
+  'power_outlet',
+] as const;
+
+export type ResourceEquipmentKey = (typeof RESOURCE_EQUIPMENT_KEYS)[number];
+
+export const RESOURCE_EQUIPMENT_LABELS: Record<ResourceEquipmentKey, string> = {
+  projector: 'Проектор',
+  tv: 'ТВ',
+  whiteboard: 'Доска',
+  video_conf: 'Видеосвязь',
+  monitor: 'Монитор',
+  dock: 'Док-станция',
+  power_outlet: 'Розетка',
+};
+
+export const PARKING_TYPES = {
+  REGULAR: 'regular',
+  VIP: 'vip',
+} as const;
+
+export type ParkingType = (typeof PARKING_TYPES)[keyof typeof PARKING_TYPES];
+
+export const CAPSULE_ZONES = {
+  QUIET: 'quiet',
+  REGULAR: 'regular',
+} as const;
+
+export type CapsuleZone = (typeof CAPSULE_ZONES)[keyof typeof CAPSULE_ZONES];
+
 export const BOOKING_STATUSES = {
-  PENDING: 'pending',
   CONFIRMED: 'confirmed',
   CANCELLED: 'cancelled',
   COMPLETED: 'completed',

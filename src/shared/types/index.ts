@@ -1,6 +1,8 @@
 import type {
   UserRole,
   ResourceType,
+  ResourceEquipmentKey,
+  ParkingType,
   BookingStatus,
   TaskPriority,
   PassStatus,
@@ -92,6 +94,49 @@ export interface InviteRegistrationPreview {
   role: string;
 }
 
+/** Элемент каталога: GET /bookings/resources/ (пагинация). */
+export interface BookingResourceListItem {
+  id: number;
+  type: ResourceType;
+  name: string;
+  floor: number;
+  zone: string;
+  photo: string | null;
+  capacity: number;
+  is_active: boolean;
+  is_hot_desk: boolean;
+  parking_type: ParkingType | null;
+  capsule_zone: string;
+}
+
+export type ResourceEquipment = Record<ResourceEquipmentKey, boolean>;
+
+/** Полная карточка: GET/PATCH /bookings/resources/:id/ */
+export interface BookingResourceDetail {
+  id: number;
+  type: ResourceType;
+  name: string;
+  floor: number;
+  zone: string;
+  description: string;
+  photo: string | null;
+  capacity: number;
+  equipment: ResourceEquipment | null;
+  is_active: boolean;
+  has_monitor: boolean;
+  has_dock: boolean;
+  has_power_outlet: boolean;
+  is_hot_desk: boolean;
+  assigned_company: number | null;
+  min_duration_minutes: number;
+  max_duration_minutes: number;
+  parking_type: ParkingType | null;
+  capsule_zone: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/** @deprecated Используйте BookingResourceListItem / BookingResourceDetail */
 export interface Resource {
   id: number;
   name: string;
@@ -105,16 +150,23 @@ export interface Resource {
   schedule: string | null;
 }
 
+/** Бронирование: сериализатор бэкенда (resource — id, participants — email-строки). */
 export interface Booking {
   id: number;
-  resource: Resource;
-  user: User;
+  resource: number;
+  resource_name: string;
+  user: number;
+  user_name: string;
+  company: number | null;
   start_time: string;
   end_time: string;
   status: BookingStatus;
-  description: string | null;
-  participants: User[];
+  description: string;
+  cancelled_by: number | null;
+  cancel_reason: string;
+  participants: string[];
   created_at: string;
+  updated_at: string;
 }
 
 export interface Board {
