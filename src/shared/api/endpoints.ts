@@ -27,6 +27,8 @@ export const API = {
     invitationResend: (companyId: string, invitationId: string) =>
       `/companies/${companyId}/invitations/${invitationId}/resend/`,
     settings: (id: string) => `/companies/${id}/settings/`,
+    memberActivity: (companyId: string, userId: string) =>
+      `/companies/${companyId}/members/${userId}/activity/`,
   },
   resources: {
     list: '/resources/',
