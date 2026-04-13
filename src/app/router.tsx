@@ -171,11 +171,18 @@ export const router = createBrowserRouter([
             ],
           },
 
+          // Company admin + superadmin + employee (read-only for employee)
+          {
+            element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE]} />,
+            children: [
+              { path: '/company/settings', element: <CompanySettingsPage /> },
+            ],
+          },
+
           // Company admin + superadmin
           {
             element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN]} />,
             children: [
-              { path: '/company/settings', element: <CompanySettingsPage /> },
               { path: '/company/settings/members', element: <CompanyMembersPage /> },
             ],
           },

@@ -335,3 +335,12 @@ export interface UserDetail extends UserListItem {
   bookings_count: number;
   tasks_count: number;
 }
+
+export interface CompanySettings {
+  custom_task_categories: string[];
+  custom_labels: { name: string; color: string }[];
+  vacation_days_per_year: number;
+  onboarding_enabled: boolean;
+  working_hours: { start: string; end: string } | null;
+  brand_primary_color: string | null;
+}

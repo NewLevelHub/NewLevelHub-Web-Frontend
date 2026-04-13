@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useParams, useNavigate, Link } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
@@ -16,6 +16,7 @@ import {
   Check,
   Upload,
   AlertTriangle,
+  Settings,
 } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
@@ -572,16 +573,30 @@ export default function CompanyDetailPage() {
           <h1 className="text-2xl font-bold text-gray-900">{company.name}</h1>
         </div>
 
-        {canEdit && !isEditing && (
-          <button
-            type="button"
-            onClick={() => setIsEditing(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 shrink-0 sm:mt-10"
-            aria-label="Редактировать компанию"
-          >
-            <Pencil size={15} aria-hidden="true" />
-            Редактировать
-          </button>
+        {!isEditing && (
+          <div className="flex items-center gap-2 sm:mt-10">
+            {isSuperadmin && (
+              <Link
+                to={`/company/settings?company=${company.id}`}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 shrink-0"
+                aria-label="Настройки компании"
+              >
+                <Settings size={15} aria-hidden="true" />
+                Настройки
+              </Link>
+            )}
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 shrink-0"
+                aria-label="Редактировать компанию"
+              >
+                <Pencil size={15} aria-hidden="true" />
+                Редактировать
+              </button>
+            )}
+          </div>
         )}
       </div>
 
