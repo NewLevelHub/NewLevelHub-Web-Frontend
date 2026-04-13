@@ -6,8 +6,10 @@ import { Bookmark, Search, Settings2 } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import {
+  BOOKING_RESOURCE_CATALOG_STATUS,
   RESOURCE_TYPES,
   RESOURCE_TYPE_LABELS,
+  RESOURCE_EQUIPMENT_LABELS,
   USER_ROLES,
   type ResourceType,
 } from '@/shared/config/constants';
@@ -26,20 +28,64 @@ const TYPE_OPTIONS: { value: string; label: string }[] = [
   })),
 ];
 
+const ORDERING_OPTIONS: { value: string; label: string }[] = [
+  { value: 'name', label: 'Название (А–Я)' },
+  { value: '-name', label: 'Название (Я–А)' },
+  { value: 'floor', label: 'Этаж ↑' },
+  { value: '-floor', label: 'Этаж ↓' },
+  { value: 'capacity', label: 'Вместимость ↑' },
+  { value: '-capacity', label: 'Вместимость ↓' },
+];
+
+const STATUS_LABELS: Record<string, string> = {
+  [BOOKING_RESOURCE_CATALOG_STATUS.FREE]: 'Свободен',
+  [BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED]: 'Занят',
+  [BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE]: 'Скоро свободен',
+};
+
+const STATUS_BADGE_CLASS: Record<string, string> = {
+  [BOOKING_RESOURCE_CATALOG_STATUS.FREE]: 'bg-emerald-600/90',
+  [BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED]: 'bg-rose-600/90',
+  [BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE]: 'bg-amber-600/90',
+};
+
+function formatAvailableAt(iso: string | null): string | null {
+  if (!iso) return null;
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+  } catch {
+    return null;
+  }
+}
+
 export default function BookingCatalogPage() {
   const { user } = useAuth();
   const [page, setPage] = useState(1);
   const [typeFilter, setTypeFilter] = useState('');
   const [floorFilter, setFloorFilter] = useState('');
+  const [capacityMin, setCapacityMin] = useState('');
+  const [capacityMax, setCapacityMax] = useState('');
+  const [needProjector, setNeedProjector] = useState(false);
+  const [needTv, setNeedTv] = useState(false);
+  const [ordering, setOrdering] = useState('name');
   const [searchInput, setSearchInput] = useState('');
   const debouncedSearch = useDebouncedValue(searchInput, 350);
 
-  const queryParams: Record<string, string | number> = { page, page_size: PAGE_SIZE };
-  if (typeFilter) queryParams.resource_type = typeFilter;
+  const queryParams: Record<string, string | number> = { page, page_size: PAGE_SIZE, ordering };
+  if (typeFilter) queryParams.type = typeFilter;
   if (floorFilter !== '' && !Number.isNaN(Number(floorFilter))) {
     queryParams.floor = Number(floorFilter);
   }
   if (debouncedSearch.trim()) queryParams.search = debouncedSearch.trim();
+  const capMinN = Number(capacityMin);
+  if (capacityMin !== '' && !Number.isNaN(capMinN)) queryParams.capacity_min = capMinN;
+  const capMaxN = Number(capacityMax);
+  if (capacityMax !== '' && !Number.isNaN(capMaxN)) queryParams.capacity_max = capMaxN;
+  const equip: string[] = [];
+  if (needProjector) equip.push('projector');
+  if (needTv) equip.push('tv');
+  if (equip.length) queryParams.equipment = equip.join(',');
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['booking-resources', 'catalog', queryParams],
@@ -58,15 +104,35 @@ export default function BookingCatalogPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [typeFilter, floorFilter, debouncedSearch]);
+  }, [
+    typeFilter,
+    floorFilter,
+    debouncedSearch,
+    capacityMin,
+    capacityMax,
+    needProjector,
+    needTv,
+    ordering,
+  ]);
+
+  const resetFilters = () => {
+    setTypeFilter('');
+    setFloorFilter('');
+    setCapacityMin('');
+    setCapacityMax('');
+    setNeedProjector(false);
+    setNeedTv(false);
+    setOrdering('name');
+    setSearchInput('');
+  };
 
   return (
     <main className="px-4 py-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Бронирование</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Каталог ресурсов</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Каталог ресурсов бизнес-центра. Доступен всем авторизованным пользователям.
+            Подбор площадок и мест для бронирования. Фильтры слева, карточки справа.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -97,122 +163,242 @@ export default function BookingCatalogPage() {
         </div>
       )}
 
-      <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-        <div className="flex flex-wrap gap-3">
-          <div className="relative flex-1 min-w-52">
-            <Search
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-            />
-            <input
-              type="search"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Поиск по названию или зоне..."
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500"
-          >
-            {TYPE_OPTIONS.map((o) => (
-              <option key={o.value || 'all'} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <input
-            type="number"
-            value={floorFilter}
-            onChange={(e) => setFloorFilter(e.target.value)}
-            placeholder="Этаж"
-            className="w-28 px-3 py-2 text-sm rounded-lg border border-gray-300"
-          />
-        </div>
-      </section>
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <aside
+          className={cn(
+            'w-full shrink-0 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm',
+            'lg:w-72 lg:sticky lg:top-4',
+          )}
+        >
+          <h2 className="text-sm font-semibold text-gray-900">Фильтры</h2>
+          <div className="mt-4 space-y-4">
+            <label className="block">
+              <span className="text-xs font-medium text-gray-600">Поиск по названию</span>
+              <div className="relative mt-1">
+                <Search
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
+                <input
+                  type="search"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Например, Байтерек"
+                  className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </label>
 
-      {isLoading ? (
-        <div className="py-20 text-center text-sm text-gray-500">Загрузка каталога…</div>
-      ) : results.length === 0 ? (
-        <div className="py-20 text-center text-sm text-gray-500">Нет доступных ресурсов.</div>
-      ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {results.map((r) => (
-            <li key={r.id}>
-              <article
-                className={cn(
-                  'h-full flex flex-col rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden',
-                  !r.is_active && 'opacity-60',
-                )}
+            <label className="block">
+              <span className="text-xs font-medium text-gray-600">Тип</span>
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="mt-1 w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500"
               >
-                <div className="aspect-[16/10] bg-gray-100 relative">
-                  {r.photo ? (
-                    <img
-                      src={resolveMediaUrl(r.photo) ?? r.photo}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center">
-                      <Bookmark className="h-10 w-10 text-gray-300" />
-                    </div>
-                  )}
-                  <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
-                    {RESOURCE_TYPE_LABELS[r.type]}
-                  </span>
-                </div>
-                <div className="flex flex-1 flex-col p-4 gap-2">
-                  <h2 className="font-semibold text-gray-900">{r.name}</h2>
-                  <p className="text-xs text-gray-500">
-                    Этаж {r.floor}
-                    {r.zone ? ` · ${r.zone}` : ''}
-                    {r.parking_type ? ` · ${r.parking_type === 'vip' ? 'VIP' : 'Обычная'}` : ''}
-                    {r.capsule_zone ? ` · ${r.capsule_zone === 'quiet' ? 'тихая зона' : 'обычная'}` : ''}
-                  </p>
-                  <p className="text-xs text-gray-500">Вместимость: {r.capacity}</p>
-                  {r.is_hot_desk && r.type === RESOURCE_TYPES.DESK && (
-                    <span className="text-xs font-medium text-blue-700">Hot desk</span>
-                  )}
-                  <div className="mt-auto pt-2">
-                    <Link
-                      to={`/bookings/new?resource=${r.id}`}
-                      className="inline-flex w-full justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                    >
-                      Забронировать
-                    </Link>
-                  </div>
-                </div>
-              </article>
-            </li>
-          ))}
-        </ul>
-      )}
+                {TYPE_OPTIONS.map((o) => (
+                  <option key={o.value || 'all'} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-2">
-          <button
-            type="button"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm disabled:opacity-40"
-          >
-            Назад
-          </button>
-          <span className="self-center text-sm text-gray-600">
-            {page} / {totalPages}
-          </span>
-          <button
-            type="button"
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm disabled:opacity-40"
-          >
-            Вперёд
-          </button>
+            <label className="block">
+              <span className="text-xs font-medium text-gray-600">Этаж</span>
+              <input
+                type="number"
+                value={floorFilter}
+                onChange={(e) => setFloorFilter(e.target.value)}
+                placeholder="Любой"
+                className="mt-1 w-full px-3 py-2 text-sm rounded-lg border border-gray-300"
+              />
+            </label>
+
+            <div className="grid grid-cols-2 gap-2">
+              <label className="block">
+                <span className="text-xs font-medium text-gray-600">Вместимость от</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={capacityMin}
+                  onChange={(e) => setCapacityMin(e.target.value)}
+                  placeholder="—"
+                  className="mt-1 w-full px-2 py-2 text-sm rounded-lg border border-gray-300"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium text-gray-600">до</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={capacityMax}
+                  onChange={(e) => setCapacityMax(e.target.value)}
+                  placeholder="—"
+                  className="mt-1 w-full px-2 py-2 text-sm rounded-lg border border-gray-300"
+                />
+              </label>
+            </div>
+
+            <fieldset>
+              <legend className="text-xs font-medium text-gray-600">Оборудование (переговорки)</legend>
+              <div className="mt-2 space-y-2">
+                <label className="flex items-center gap-2 text-sm text-gray-800">
+                  <input
+                    type="checkbox"
+                    checked={needProjector}
+                    onChange={(e) => setNeedProjector(e.target.checked)}
+                    className="rounded border-gray-300"
+                  />
+                  {RESOURCE_EQUIPMENT_LABELS.projector}
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-800">
+                  <input
+                    type="checkbox"
+                    checked={needTv}
+                    onChange={(e) => setNeedTv(e.target.checked)}
+                    className="rounded border-gray-300"
+                  />
+                  {RESOURCE_EQUIPMENT_LABELS.tv}
+                </label>
+              </div>
+            </fieldset>
+
+            <label className="block">
+              <span className="text-xs font-medium text-gray-600">Сортировка</span>
+              <select
+                value={ordering}
+                onChange={(e) => setOrdering(e.target.value)}
+                className="mt-1 w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500"
+              >
+                {ORDERING_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="w-full rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Сбросить
+            </button>
+          </div>
+        </aside>
+
+        <div className="min-w-0 flex-1 space-y-4">
+          {isLoading ? (
+            <div className="py-20 text-center text-sm text-gray-500">Загрузка каталога…</div>
+          ) : results.length === 0 ? (
+            <div className="py-20 text-center text-sm text-gray-500">Нет ресурсов по заданным условиям.</div>
+          ) : (
+            <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {results.map((r) => {
+                const imgSrc = resolveMediaUrl(r.photo_url ?? r.photo ?? '') ?? r.photo_url ?? r.photo ?? '';
+                const statusLabel = STATUS_LABELS[r.status] ?? r.status;
+                const badgeClass = STATUS_BADGE_CLASS[r.status] ?? 'bg-black/60';
+                const whenFree = formatAvailableAt(r.available_at);
+                return (
+                  <li key={r.id}>
+                    <article
+                      className={cn(
+                        'h-full flex flex-col rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden',
+                        !r.is_active && 'opacity-60',
+                      )}
+                    >
+                      <div className="aspect-[16/10] bg-gray-100 relative">
+                        {imgSrc ? (
+                          <img src={imgSrc} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full items-center justify-center">
+                            <Bookmark className="h-10 w-10 text-gray-300" />
+                          </div>
+                        )}
+                        <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
+                          {RESOURCE_TYPE_LABELS[r.type]}
+                        </span>
+                        <span
+                          className={cn(
+                            'absolute right-2 top-2 rounded-full px-2 py-0.5 text-xs font-medium text-white',
+                            badgeClass,
+                          )}
+                        >
+                          {statusLabel}
+                        </span>
+                      </div>
+                      <div className="flex flex-1 flex-col p-4 gap-2">
+                        <h2 className="font-semibold text-gray-900">{r.name}</h2>
+                        <p className="text-xs text-gray-500">
+                          Этаж {r.floor}
+                          {r.zone ? ` · ${r.zone}` : ''}
+                          {r.parking_type ? ` · ${r.parking_type === 'vip' ? 'VIP' : 'Обычная'}` : ''}
+                          {r.capsule_zone ? ` · ${r.capsule_zone === 'quiet' ? 'тихая зона' : 'обычная'}` : ''}
+                        </p>
+                        <p className="text-xs text-gray-500">Вместимость: {r.capacity}</p>
+                        {r.equipment && r.type === RESOURCE_TYPES.MEETING_ROOM && (
+                          <ul className="flex flex-wrap gap-1">
+                            {Object.entries(r.equipment)
+                              .filter(([, v]) => v)
+                              .map(([key]) => (
+                                <li
+                                  key={key}
+                                  className="rounded bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-700"
+                                >
+                                  {RESOURCE_EQUIPMENT_LABELS[key as keyof typeof RESOURCE_EQUIPMENT_LABELS] ?? key}
+                                </li>
+                              ))}
+                          </ul>
+                        )}
+                        {whenFree && r.status === BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE && (
+                          <p className="text-xs text-amber-800">Освободится: {whenFree}</p>
+                        )}
+                        {r.is_hot_desk && r.type === RESOURCE_TYPES.DESK && (
+                          <span className="text-xs font-medium text-blue-700">Hot desk</span>
+                        )}
+                        <div className="mt-auto pt-2">
+                          <Link
+                            to={`/bookings/new?resource=${r.id}`}
+                            className="inline-flex w-full justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                          >
+                            Забронировать
+                          </Link>
+                        </div>
+                      </div>
+                    </article>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex justify-center gap-2 pt-2">
+              <button
+                type="button"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm disabled:opacity-40"
+              >
+                Назад
+              </button>
+              <span className="self-center text-sm text-gray-600">
+                {page} / {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm disabled:opacity-40"
+              >
+                Вперёд
+              </button>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </main>
   );
 }

@@ -81,7 +81,7 @@ export default function BookingCreatePage() {
         <h1 className="text-xl font-bold text-gray-900">Новое бронирование</h1>
         <p className="text-sm text-gray-600">
           Сначала выберите ресурс в{' '}
-          <Link to="/bookings" className="text-blue-600 hover:underline">
+          <Link to="/bookings/catalog" className="text-blue-600 hover:underline">
             каталоге
           </Link>
           .
@@ -102,7 +102,7 @@ export default function BookingCreatePage() {
     return (
       <main className="px-4 py-8 max-w-lg mx-auto space-y-4">
         <p className="text-sm text-red-600">Ресурс не найден или недоступен.</p>
-        <Link to="/bookings" className="text-sm text-blue-600 hover:underline">
+        <Link to="/bookings/catalog" className="text-sm text-blue-600 hover:underline">
           В каталог
         </Link>
       </main>
@@ -112,7 +112,7 @@ export default function BookingCreatePage() {
   return (
     <main className="px-4 py-8 max-w-lg mx-auto space-y-6">
       <Link
-        to="/bookings"
+        to="/bookings/catalog"
         className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
       >
         <ArrowLeft className="h-4 w-4" />

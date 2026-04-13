@@ -4,6 +4,7 @@ import type {
   ResourceEquipmentKey,
   ParkingType,
   BookingStatus,
+  BookingResourceCatalogStatus,
   TaskPriority,
   PassStatus,
   ServiceRequestType,
@@ -94,6 +95,8 @@ export interface InviteRegistrationPreview {
   role: string;
 }
 
+export type ResourceEquipment = Record<ResourceEquipmentKey, boolean>;
+
 /** Элемент каталога: GET /bookings/resources/ (пагинация). */
 export interface BookingResourceListItem {
   id: number;
@@ -102,14 +105,17 @@ export interface BookingResourceListItem {
   floor: number;
   zone: string;
   photo: string | null;
+  photo_url: string | null;
   capacity: number;
+  equipment: ResourceEquipment | null;
   is_active: boolean;
   is_hot_desk: boolean;
   parking_type: ParkingType | null;
   capsule_zone: string;
+  status: BookingResourceCatalogStatus;
+  /** Конец текущей занятости; только при status === soon_available */
+  available_at: string | null;
 }
-
-export type ResourceEquipment = Record<ResourceEquipmentKey, boolean>;
 
 /** Полная карточка: GET/PATCH /bookings/resources/:id/ */
 export interface BookingResourceDetail {

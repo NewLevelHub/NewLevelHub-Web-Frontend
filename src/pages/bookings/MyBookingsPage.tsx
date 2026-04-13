@@ -31,7 +31,7 @@ export default function MyBookingsPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Мои бронирования</h1>
         <Link
-          to="/bookings"
+          to="/bookings/catalog"
           className="text-sm font-medium text-blue-600 hover:text-blue-800"
         >
           Каталог ресурсов

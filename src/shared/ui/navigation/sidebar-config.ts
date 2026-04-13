@@ -85,7 +85,7 @@ const companyAdminNav: NavSection[] = [
   {
     title: 'Сервисы',
     items: [
-      { label: 'Бронирование', path: '/bookings', icon: Bookmark },
+      { label: 'Бронирование', path: '/bookings/catalog', icon: Bookmark },
       { label: 'Гостевые пропуска', path: '/passes', icon: ShieldCheck },
       { label: 'Файлы', path: '/files', icon: FileText },
       { label: 'Объявления', path: '/announcements', icon: Megaphone },
@@ -118,7 +118,7 @@ const employeeNav: NavSection[] = [
   {
     title: 'Сервисы',
     items: [
-      { label: 'Бронирование', path: '/bookings', icon: Bookmark },
+      { label: 'Бронирование', path: '/bookings/catalog', icon: Bookmark },
       { label: 'Гостевые пропуска', path: '/passes', icon: ShieldCheck },
       { label: 'Файлы', path: '/files', icon: FileText },
       { label: 'Объявления', path: '/announcements', icon: Megaphone },
@@ -141,7 +141,7 @@ const guestNav: NavSection[] = [
   {
     title: 'Сервисы',
     items: [
-      { label: 'Бронирование', path: '/bookings', icon: Bookmark },
+      { label: 'Бронирование', path: '/bookings/catalog', icon: Bookmark },
       { label: 'Карта здания', path: '/building/map', icon: Map },
       { label: 'Мои файлы', path: '/files', icon: FileText },
       { label: 'Объявления', path: '/announcements', icon: Megaphone },
