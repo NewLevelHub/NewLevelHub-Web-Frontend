@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { Bookmark, Search, Settings2 } from 'lucide-react';
@@ -9,8 +9,10 @@ import {
   BOOKING_RESOURCE_CATALOG_STATUS,
   RESOURCE_TYPES,
   RESOURCE_TYPE_LABELS,
+  RESOURCE_EQUIPMENT_KEYS,
   RESOURCE_EQUIPMENT_LABELS,
   USER_ROLES,
+  type ResourceEquipmentKey,
   type ResourceType,
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
@@ -49,6 +51,19 @@ const STATUS_BADGE_CLASS: Record<string, string> = {
   [BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE]: 'bg-amber-600/90',
 };
 
+function emptyEquipmentFilters(): Record<ResourceEquipmentKey, boolean> {
+  return Object.fromEntries(
+    RESOURCE_EQUIPMENT_KEYS.map((k) => [k, false]),
+  ) as Record<ResourceEquipmentKey, boolean>;
+}
+
+/** Подписи и поля в сайдбаре — явный тёмный текст (в т.ч. при тёмной теме ОС). */
+const sbLabel = 'text-sm font-medium text-gray-900';
+const sbInput =
+  'mt-1 w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white text-gray-900 placeholder:text-gray-500';
+const sbSelect =
+  'mt-1 w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white text-gray-900 [&>option]:bg-white [&>option]:text-gray-900';
+
 function formatAvailableAt(iso: string | null): string | null {
   if (!iso) return null;
   try {
@@ -66,8 +81,7 @@ export default function BookingCatalogPage() {
   const [floorFilter, setFloorFilter] = useState('');
   const [capacityMin, setCapacityMin] = useState('');
   const [capacityMax, setCapacityMax] = useState('');
-  const [needProjector, setNeedProjector] = useState(false);
-  const [needTv, setNeedTv] = useState(false);
+  const [equipmentNeed, setEquipmentNeed] = useState(emptyEquipmentFilters);
   const [ordering, setOrdering] = useState('name');
   const [searchInput, setSearchInput] = useState('');
   const debouncedSearch = useDebouncedValue(searchInput, 350);
@@ -82,10 +96,8 @@ export default function BookingCatalogPage() {
   if (capacityMin !== '' && !Number.isNaN(capMinN)) queryParams.capacity_min = capMinN;
   const capMaxN = Number(capacityMax);
   if (capacityMax !== '' && !Number.isNaN(capMaxN)) queryParams.capacity_max = capMaxN;
-  const equip: string[] = [];
-  if (needProjector) equip.push('projector');
-  if (needTv) equip.push('tv');
-  if (equip.length) queryParams.equipment = equip.join(',');
+  const equipTokens = RESOURCE_EQUIPMENT_KEYS.filter((k) => equipmentNeed[k]);
+  if (equipTokens.length) queryParams.equipment = equipTokens.join(',');
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['booking-resources', 'catalog', queryParams],
@@ -102,6 +114,32 @@ export default function BookingCatalogPage() {
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const results = data?.results ?? [];
 
+  const equipmentFacetKeys = useMemo((): ResourceEquipmentKey[] => {
+    const raw = data?.meeting_room_equipment_keys;
+    if (!raw?.length) return [];
+    const allowed = new Set<ResourceEquipmentKey>(RESOURCE_EQUIPMENT_KEYS);
+    return raw.filter((k): k is ResourceEquipmentKey => allowed.has(k as ResourceEquipmentKey));
+  }, [(data?.meeting_room_equipment_keys ?? []).slice().sort().join('|')]);
+
+  useEffect(() => {
+    if (equipmentFacetKeys.length === 0) {
+      setEquipmentNeed(emptyEquipmentFilters());
+      return;
+    }
+    const allowed = new Set(equipmentFacetKeys);
+    setEquipmentNeed((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const k of RESOURCE_EQUIPMENT_KEYS) {
+        if (next[k] && !allowed.has(k)) {
+          next[k] = false;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [equipmentFacetKeys]);
+
   useEffect(() => {
     setPage(1);
   }, [
@@ -110,8 +148,7 @@ export default function BookingCatalogPage() {
     debouncedSearch,
     capacityMin,
     capacityMax,
-    needProjector,
-    needTv,
+    equipmentNeed,
     ordering,
   ]);
 
@@ -120,8 +157,7 @@ export default function BookingCatalogPage() {
     setFloorFilter('');
     setCapacityMin('');
     setCapacityMax('');
-    setNeedProjector(false);
-    setNeedTv(false);
+    setEquipmentNeed(emptyEquipmentFilters());
     setOrdering('name');
     setSearchInput('');
   };
@@ -166,35 +202,38 @@ export default function BookingCatalogPage() {
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
         <aside
           className={cn(
-            'w-full shrink-0 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm',
-            'lg:w-72 lg:sticky lg:top-4',
+            'w-full shrink-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm text-gray-900',
+            'lg:w-80 lg:sticky lg:top-4',
           )}
         >
           <h2 className="text-sm font-semibold text-gray-900">Фильтры</h2>
           <div className="mt-4 space-y-4">
             <label className="block">
-              <span className="text-xs font-medium text-gray-600">Поиск по названию</span>
+              <span className={sbLabel}>Поиск по названию</span>
               <div className="relative mt-1">
                 <Search
                   size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
                 />
                 <input
                   type="search"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Например, Байтерек"
-                  className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={cn(
+                    'w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 bg-white text-gray-900 placeholder:text-gray-500',
+                    'focus:outline-none focus:ring-2 focus:ring-blue-500',
+                  )}
                 />
               </div>
             </label>
 
             <label className="block">
-              <span className="text-xs font-medium text-gray-600">Тип</span>
+              <span className={sbLabel}>Тип</span>
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="mt-1 w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500"
+                className={cn(sbSelect, 'focus:ring-2 focus:ring-blue-500 focus:outline-none')}
               >
                 {TYPE_OPTIONS.map((o) => (
                   <option key={o.value || 'all'} value={o.value}>
@@ -205,71 +244,75 @@ export default function BookingCatalogPage() {
             </label>
 
             <label className="block">
-              <span className="text-xs font-medium text-gray-600">Этаж</span>
+              <span className={sbLabel}>Этаж</span>
               <input
                 type="number"
                 value={floorFilter}
                 onChange={(e) => setFloorFilter(e.target.value)}
                 placeholder="Любой"
-                className="mt-1 w-full px-3 py-2 text-sm rounded-lg border border-gray-300"
+                className={cn(sbInput, 'focus:ring-2 focus:ring-blue-500 focus:outline-none')}
               />
             </label>
 
             <div className="grid grid-cols-2 gap-2">
-              <label className="block">
-                <span className="text-xs font-medium text-gray-600">Вместимость от</span>
+              <label className="block min-w-0">
+                <span className={sbLabel}>Вместимость от</span>
                 <input
                   type="number"
                   min={1}
                   value={capacityMin}
                   onChange={(e) => setCapacityMin(e.target.value)}
                   placeholder="—"
-                  className="mt-1 w-full px-2 py-2 text-sm rounded-lg border border-gray-300"
+                  className={cn(sbInput, 'px-2 focus:ring-2 focus:ring-blue-500 focus:outline-none')}
                 />
               </label>
-              <label className="block">
-                <span className="text-xs font-medium text-gray-600">до</span>
+              <label className="block min-w-0">
+                <span className={sbLabel}>до</span>
                 <input
                   type="number"
                   min={1}
                   value={capacityMax}
                   onChange={(e) => setCapacityMax(e.target.value)}
                   placeholder="—"
-                  className="mt-1 w-full px-2 py-2 text-sm rounded-lg border border-gray-300"
+                  className={cn(sbInput, 'px-2 focus:ring-2 focus:ring-blue-500 focus:outline-none')}
                 />
               </label>
             </div>
 
-            <fieldset>
-              <legend className="text-xs font-medium text-gray-600">Оборудование (переговорки)</legend>
-              <div className="mt-2 space-y-2">
-                <label className="flex items-center gap-2 text-sm text-gray-800">
-                  <input
-                    type="checkbox"
-                    checked={needProjector}
-                    onChange={(e) => setNeedProjector(e.target.checked)}
-                    className="rounded border-gray-300"
-                  />
-                  {RESOURCE_EQUIPMENT_LABELS.projector}
-                </label>
-                <label className="flex items-center gap-2 text-sm text-gray-800">
-                  <input
-                    type="checkbox"
-                    checked={needTv}
-                    onChange={(e) => setNeedTv(e.target.checked)}
-                    className="rounded border-gray-300"
-                  />
-                  {RESOURCE_EQUIPMENT_LABELS.tv}
-                </label>
-              </div>
+            <fieldset className="min-w-0">
+              <legend className={sbLabel}>Оборудование в переговорке</legend>
+              {equipmentFacetKeys.length === 0 ? (
+                <p className="mt-3 text-sm text-gray-600">
+                  Нет переговорок с оборудованием в этой выборке — смените фильтры или тип «Переговорка».
+                </p>
+              ) : (
+                <div className="mt-3 max-h-52 space-y-2 overflow-y-auto pr-1">
+                  {equipmentFacetKeys.map((key) => (
+                    <label
+                      key={key}
+                      className="flex cursor-pointer items-center gap-2 text-sm text-gray-900"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={equipmentNeed[key]}
+                        onChange={() =>
+                          setEquipmentNeed((prev) => ({ ...prev, [key]: !prev[key] }))
+                        }
+                        className="size-4 shrink-0 rounded border-gray-400 text-blue-600 focus:ring-blue-500"
+                      />
+                      {RESOURCE_EQUIPMENT_LABELS[key]}
+                    </label>
+                  ))}
+                </div>
+              )}
             </fieldset>
 
             <label className="block">
-              <span className="text-xs font-medium text-gray-600">Сортировка</span>
+              <span className={sbLabel}>Сортировка</span>
               <select
                 value={ordering}
                 onChange={(e) => setOrdering(e.target.value)}
-                className="mt-1 w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500"
+                className={cn(sbSelect, 'focus:ring-2 focus:ring-blue-500 focus:outline-none')}
               >
                 {ORDERING_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -282,7 +325,7 @@ export default function BookingCatalogPage() {
             <button
               type="button"
               onClick={resetFilters}
-              className="w-full rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="w-full rounded-lg border border-gray-300 bg-gray-50 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100"
             >
               Сбросить
             </button>

@@ -75,13 +75,17 @@ export default function BookingCreatePage() {
     return d.toISOString().slice(0, 16);
   }, []);
 
+  /** Тёмный фон шелла задаёт `text-white`; на светлых карточках явно задаём тёмный текст. */
+  const fieldClass =
+    'w-full px-3 py-2 text-sm rounded-lg border border-gray-400 bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500';
+
   if (validResourceId === null) {
     return (
-      <main className="px-4 py-8 max-w-lg mx-auto space-y-4">
-        <h1 className="text-xl font-bold text-gray-900">Новое бронирование</h1>
-        <p className="text-sm text-gray-600">
+      <main className="px-4 py-8 max-w-lg mx-auto space-y-4 text-zinc-100">
+        <h1 className="text-xl font-bold text-white">Новое бронирование</h1>
+        <p className="text-sm text-zinc-400">
           Сначала выберите ресурс в{' '}
-          <Link to="/bookings/catalog" className="text-blue-600 hover:underline">
+          <Link to="/bookings/catalog" className="text-blue-400 hover:text-blue-300 underline-offset-2 hover:underline">
             каталоге
           </Link>
           .
@@ -92,17 +96,20 @@ export default function BookingCreatePage() {
 
   if (loadingResource) {
     return (
-      <main className="px-4 py-8 max-w-lg mx-auto">
-        <p className="text-sm text-gray-500">Загрузка ресурса…</p>
+      <main className="px-4 py-8 max-w-lg mx-auto text-zinc-300">
+        <p className="text-sm">Загрузка ресурса…</p>
       </main>
     );
   }
 
   if (!resource) {
     return (
-      <main className="px-4 py-8 max-w-lg mx-auto space-y-4">
-        <p className="text-sm text-red-600">Ресурс не найден или недоступен.</p>
-        <Link to="/bookings/catalog" className="text-sm text-blue-600 hover:underline">
+      <main className="px-4 py-8 max-w-lg mx-auto space-y-4 text-zinc-100">
+        <p className="text-sm text-red-400">Ресурс не найден или недоступен.</p>
+        <Link
+          to="/bookings/catalog"
+          className="text-sm text-blue-400 hover:text-blue-300 underline-offset-2 hover:underline"
+        >
           В каталог
         </Link>
       </main>
@@ -110,10 +117,10 @@ export default function BookingCreatePage() {
   }
 
   return (
-    <main className="px-4 py-8 max-w-lg mx-auto space-y-6">
+    <main className="px-4 py-8 max-w-lg mx-auto space-y-6 text-zinc-100">
       <Link
         to="/bookings/catalog"
-        className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
+        className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-white"
       >
         <ArrowLeft className="h-4 w-4" />
         Каталог
@@ -124,12 +131,12 @@ export default function BookingCreatePage() {
           <img
             src={resolveMediaUrl(resource.photo) ?? resource.photo}
             alt=""
-            className="h-20 w-28 rounded-lg object-cover border border-gray-200"
+            className="h-20 w-28 rounded-lg object-cover border border-zinc-600"
           />
         )}
         <div>
-          <h1 className="text-xl font-bold text-gray-900">{resource.name}</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-xl font-bold text-white">{resource.name}</h1>
+          <p className="text-sm text-zinc-400">
             {RESOURCE_TYPE_LABELS[resource.type]} · этаж {resource.floor}
             {resource.zone ? ` · ${resource.zone}` : ''}
           </p>
@@ -139,14 +146,14 @@ export default function BookingCreatePage() {
       {errorMsg && (
         <div
           role="alert"
-          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          className="rounded-lg border border-red-400/50 bg-red-950/40 px-4 py-3 text-sm text-red-200"
         >
           {errorMsg}
         </div>
       )}
 
       <form
-        className="space-y-4 bg-white rounded-2xl border border-gray-100 shadow-sm p-6"
+        className="space-y-4 rounded-2xl border border-gray-200 bg-white p-6 text-gray-900 shadow-md"
         onSubmit={(e) => {
           e.preventDefault();
           setErrorMsg(null);
@@ -154,37 +161,46 @@ export default function BookingCreatePage() {
         }}
       >
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Начало (локальное время)</label>
+          <label className="mb-1 block text-sm font-semibold text-gray-900" htmlFor="booking-start">
+            Начало (локальное время)
+          </label>
           <input
+            id="booking-start"
             type="datetime-local"
             required
             min={minStep}
             value={startLocal}
             onChange={(e) => setStartLocal(e.target.value)}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
+            className={fieldClass}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Окончание</label>
+          <label className="mb-1 block text-sm font-semibold text-gray-900" htmlFor="booking-end">
+            Окончание
+          </label>
           <input
+            id="booking-end"
             type="datetime-local"
             required
             value={endLocal}
             onChange={(e) => setEndLocal(e.target.value)}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
+            className={fieldClass}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Комментарий</label>
+          <label className="mb-1 block text-sm font-semibold text-gray-900" htmlFor="booking-note">
+            Комментарий
+          </label>
           <textarea
+            id="booking-note"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300"
+            className={fieldClass}
             placeholder="Необязательно"
           />
         </div>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs leading-relaxed text-gray-700">
           Бронирование требует подтверждённый email (кроме superadmin). Время отправляется на сервер в UTC.
         </p>
         <button

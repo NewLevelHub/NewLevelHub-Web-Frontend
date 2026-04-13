@@ -319,6 +319,11 @@ export interface PaginatedResponse<T> {
   next: string | null;
   previous: string | null;
   results: T[];
+  /**
+   * Только GET /bookings/resources/: ключи оборудования, которые есть хотя бы у одной
+   * переговорки в выборке с теми же фильтрами, но без фильтра по equipment.
+   */
+  meeting_room_equipment_keys?: ResourceEquipmentKey[];
 }
 
 export interface UserListItem {
