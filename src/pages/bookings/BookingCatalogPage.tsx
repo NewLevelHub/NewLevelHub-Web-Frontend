@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Bookmark, Search, Settings2 } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
@@ -108,6 +108,7 @@ export default function BookingCatalogPage() {
       );
       return res;
     },
+    placeholderData: keepPreviousData,
   });
 
   const totalCount = data?.count ?? 0;
@@ -122,6 +123,9 @@ export default function BookingCatalogPage() {
   }, [(data?.meeting_room_equipment_keys ?? []).slice().sort().join('|')]);
 
   useEffect(() => {
+    // Пока нет ответа (смена страницы / новый queryKey), не трогаем чекбоксы — иначе [] фасетов сбрасывает всё.
+    if (data === undefined) return;
+
     if (equipmentFacetKeys.length === 0) {
       setEquipmentNeed(emptyEquipmentFilters());
       return;
@@ -138,7 +142,7 @@ export default function BookingCatalogPage() {
       }
       return changed ? next : prev;
     });
-  }, [equipmentFacetKeys]);
+  }, [equipmentFacetKeys, data]);
 
   useEffect(() => {
     setPage(1);
