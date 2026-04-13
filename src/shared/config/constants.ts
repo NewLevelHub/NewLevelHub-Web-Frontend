@@ -69,6 +69,16 @@ export const BOOKING_STATUSES = {
 
 export type BookingStatus = (typeof BOOKING_STATUSES)[keyof typeof BOOKING_STATUSES];
 
+/** Статус занятости в каталоге GET /bookings/resources/ */
+export const BOOKING_RESOURCE_CATALOG_STATUS = {
+  FREE: 'free',
+  OCCUPIED: 'occupied',
+  SOON_AVAILABLE: 'soon_available',
+} as const;
+
+export type BookingResourceCatalogStatus =
+  (typeof BOOKING_RESOURCE_CATALOG_STATUS)[keyof typeof BOOKING_RESOURCE_CATALOG_STATUS];
+
 export const TASK_PRIORITIES = {
   LOW: 'low',
   MEDIUM: 'medium',

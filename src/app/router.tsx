@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router';
+import { createBrowserRouter, Navigate } from 'react-router';
 
 import { RequireAuth } from '@/shared/guards/RequireAuth';
 import { RequireGuest } from '@/shared/guards/RequireGuest';
@@ -135,7 +135,8 @@ export const router = createBrowserRouter([
           { path: '/profile', element: <ProfilePage /> },
           { path: '/profile/settings', element: <ProfileSettingsPage /> },
           { path: '/notifications', element: <NotificationListPage /> },
-          { path: '/bookings', element: <BookingCatalogPage /> },
+          { path: '/bookings', element: <Navigate to="/bookings/catalog" replace /> },
+          { path: '/bookings/catalog', element: <BookingCatalogPage /> },
           { path: '/bookings/new', element: <BookingCreatePage /> },
           { path: '/bookings/my', element: <MyBookingsPage /> },
           { path: '/bookings/:id', element: <BookingDetailPage /> },
