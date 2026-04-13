@@ -14,6 +14,7 @@ import type { User as UserType } from '@/shared/types';
 // ---------------------------------------------------------------------------
 
 const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_AVATAR_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const ROLE_LABELS: Record<string, string> = {
   [USER_ROLES.SUPERADMIN]: 'Суперадмин',
@@ -110,6 +111,7 @@ export default function ProfilePage() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [formAlert, setFormAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // ---------------------------------------------------------------------------
@@ -155,8 +157,16 @@ export default function ProfilePage() {
   // ---------------------------------------------------------------------------
 
   const updateMutation = useMutation({
-    mutationFn: (payload: { first_name: string; last_name: string; phone: string; position: string }) =>
-      apiClient.patch<Record<string, unknown>>(API.profile.update, payload),
+    mutationFn: (payload: { first_name: string; last_name: string; phone: string; position: string }) => {
+      const formData = new FormData();
+      formData.append('first_name', payload.first_name);
+      formData.append('last_name', payload.last_name);
+      if (payload.phone) formData.append('phone', payload.phone);
+      if (payload.position) formData.append('position', payload.position);
+      return apiClient.patch<Record<string, unknown>>(API.profile.update, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['profile'] });
       await fetchMe();
@@ -179,9 +189,11 @@ export default function ProfilePage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['profile'] });
       await fetchMe();
+      setAvatarPreview(null);
       setAvatarError(null);
     },
     onError: () => {
+      setAvatarPreview(null);
       setAvatarError('Не удалось загрузить аватар. Попробуйте снова.');
     },
   });
@@ -191,6 +203,7 @@ export default function ProfilePage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['profile'] });
       await fetchMe();
+      setAvatarPreview(null);
       setAvatarError(null);
     },
     onError: () => {
@@ -222,8 +235,14 @@ export default function ProfilePage() {
       e.target.value = '';
       return;
     }
+    if (!ALLOWED_AVATAR_MIME_TYPES.has(file.type)) {
+      setAvatarError('Допустимые форматы: JPEG, PNG или WebP.');
+      e.target.value = '';
+      return;
+    }
 
     setAvatarError(null);
+    setAvatarPreview(URL.createObjectURL(file));
     avatarUploadMutation.mutate(file);
     // Reset so the same file triggers onChange next time if needed
     e.target.value = '';
@@ -275,7 +294,7 @@ export default function ProfilePage() {
         <div className="flex items-center gap-5">
           <div className="relative shrink-0">
             <Avatar
-              src={profile.avatar}
+              src={avatarPreview ?? profile.avatar}
               firstName={profile.first_name}
               lastName={profile.last_name}
               size={80}

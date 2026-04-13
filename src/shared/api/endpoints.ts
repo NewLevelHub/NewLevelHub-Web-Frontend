@@ -17,9 +17,10 @@ export const API = {
     list: '/companies/',
     create: '/companies/',
     detail: (id: string) => `/companies/${id}/`,
+    limits: (id: string) => `/companies/${id}/limits/`,
     deactivate: (id: string) => `/companies/${id}/deactivate/`,
     activate: (id: string) => `/companies/${id}/activate/`,
-    delete: (id: string) => `/companies/${id}/`,
+    delete: (id: string) => `/companies/${id}/?confirm=true`,
     members: (id: string) => `/companies/${id}/members/`,
     invitations: (id: string) => `/companies/${id}/invitations/`,
     invitationRevoke: (companyId: string, invitationId: string) =>
@@ -117,6 +118,8 @@ export const API = {
   users: {
     list: '/auth/users/',
     detail: (id: number) => `/auth/users/${id}/`,
+    block: (id: number) => `/auth/users/${id}/block/`,
+    unblock: (id: number) => `/auth/users/${id}/unblock/`,
     impersonate: (id: number) => `/auth/users/${id}/impersonate/`,
   },
 } as const;

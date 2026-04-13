@@ -10,6 +10,7 @@ import {
   Hash,
   CalendarDays,
   Users,
+  Columns3,
   HardDrive,
   Pencil,
   X,
@@ -22,8 +23,9 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES, COMPANY_TIERS } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
+import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { cn } from '@/shared/lib/cn';
-import type { CompanyDetail } from '@/shared/types';
+import type { CompanyDetail, CompanyLimits } from '@/shared/types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -48,6 +50,17 @@ function formatDate(iso: string | null | undefined): string {
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
   return `${day}.${month}.${year}`;
+}
+
+function getUsagePercent(current: number, max: number): number {
+  if (max <= 0) return 0;
+  return Math.min(100, Math.round((current / max) * 100));
+}
+
+function usageTone(percent: number): 'normal' | 'warning' | 'danger' {
+  if (percent >= 95) return 'danger';
+  if (percent >= 80) return 'warning';
+  return 'normal';
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -86,6 +99,47 @@ function StatCard({ icon, label, value }: StatCardProps) {
         <p className="text-2xl font-bold text-gray-900">{value}</p>
         <p className="text-sm text-gray-500">{label}</p>
       </div>
+    </div>
+  );
+}
+
+interface LimitBarProps {
+  label: string;
+  current: number;
+  max: number;
+  unit?: string;
+}
+
+function LimitBar({ label, current, max, unit = '' }: LimitBarProps) {
+  const percent = getUsagePercent(current, max);
+  const tone = usageTone(percent);
+  const barColor =
+    tone === 'danger' ? 'bg-red-500' : tone === 'warning' ? 'bg-amber-500' : 'bg-blue-600';
+  const textColor =
+    tone === 'danger' ? 'text-red-700' : tone === 'warning' ? 'text-amber-700' : 'text-gray-900';
+
+  const valueLabel = `${current.toFixed(1).replace('.0', '')}${unit}`;
+  const maxLabel = `${max.toFixed(1).replace('.0', '')}${unit}`;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium text-gray-700">{label}</p>
+        <p className={cn('text-sm font-semibold', textColor)}>{percent}%</p>
+      </div>
+      <div
+        className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden"
+        role="progressbar"
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`${label}: ${percent}%`}
+      >
+        <div className={cn('h-full rounded-full transition-all duration-500', barColor)} style={{ width: `${percent}%` }} />
+      </div>
+      <p className="text-xs text-gray-500">
+        {valueLabel} из {maxLabel}
+      </p>
     </div>
   );
 }
@@ -206,6 +260,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['company', String(company.id)] });
+      queryClient.invalidateQueries({ queryKey: ['company-limits', String(company.id)] });
       queryClient.invalidateQueries({ queryKey: ['companies'] });
       onSaved();
     },
@@ -219,12 +274,18 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
         for (const [key, messages] of Object.entries(responseData)) {
           if (Array.isArray(messages)) {
             errors[key] = messages[0] ?? '';
+          } else if (typeof messages === 'string') {
+            errors[key] = messages;
           }
         }
-        setFieldErrors(errors);
-        setGeneralError(null);
+        if (Object.keys(errors).length > 0) {
+          setFieldErrors(errors);
+          setGeneralError(null);
+          return;
+        }
+        setGeneralError(getApiErrorMessage(error, 'Не удалось сохранить изменения. Попробуйте ещё раз.'));
       } else {
-        setGeneralError('Не удалось сохранить изменения. Попробуйте ещё раз.');
+        setGeneralError(getApiErrorMessage(error, 'Не удалось сохранить изменения. Попробуйте ещё раз.'));
       }
     },
   });
@@ -513,6 +574,7 @@ export default function CompanyDetailPage() {
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
   const isCompanyAdmin = user?.role === USER_ROLES.COMPANY_ADMIN;
   const canEdit = isSuperadmin || isCompanyAdmin;
+  const companiesBasePath = isSuperadmin ? '/admin/companies' : '/companies';
 
   const [isEditing, setIsEditing] = useState(false);
 
@@ -521,6 +583,15 @@ export default function CompanyDetailPage() {
     queryFn: () =>
       apiClient
         .get<CompanyDetail>(API.companies.detail(id!))
+        .then((r) => r.data),
+    enabled: !!id,
+  });
+
+  const { data: limits } = useQuery<CompanyLimits>({
+    queryKey: ['company-limits', id],
+    queryFn: () =>
+      apiClient
+        .get<CompanyLimits>(API.companies.limits(id!))
         .then((r) => r.data),
     enabled: !!id,
   });
@@ -534,7 +605,7 @@ export default function CompanyDetailPage() {
       <main className="px-4 py-8 max-w-4xl mx-auto">
         <button
           type="button"
-          onClick={() => navigate('/companies')}
+          onClick={() => navigate(companiesBasePath)}
           className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 mb-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
         >
           <ArrowLeft size={16} aria-hidden="true" />
@@ -550,10 +621,13 @@ export default function CompanyDetailPage() {
   const planLabel = PLAN_LABELS[company.plan] ?? company.plan;
   const planBadgeColor = PLAN_BADGE_COLORS[company.plan] ?? 'bg-gray-100 text-gray-700';
 
-  const storagePercent =
-    company.storage_limit_gb > 0
-      ? Math.min(100, Math.round((company.storage_used / company.storage_limit_gb) * 100))
-      : 0;
+  const fallbackStorageUsedGb = company.storage_used / (1024 * 1024 * 1024);
+  const limitEmployeesCurrent = limits?.employees.current ?? company.employee_count;
+  const limitEmployeesMax = limits?.employees.max ?? company.max_employees;
+  const limitBoardsCurrent = limits?.boards.current ?? 0;
+  const limitBoardsMax = limits?.boards.max ?? 0;
+  const limitStorageUsedGb = limits?.storage.used_gb ?? fallbackStorageUsedGb;
+  const limitStorageMaxGb = limits?.storage.limit_gb ?? company.storage_limit_gb;
 
   return (
     <main className="px-4 py-8 max-w-4xl mx-auto space-y-6">
@@ -562,7 +636,7 @@ export default function CompanyDetailPage() {
         <div>
           <button
             type="button"
-            onClick={() => navigate('/companies')}
+            onClick={() => navigate(companiesBasePath)}
             className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 mb-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
             aria-label="Назад к списку компаний"
           >
@@ -580,7 +654,7 @@ export default function CompanyDetailPage() {
             aria-label="Редактировать компанию"
           >
             <Pencil size={15} aria-hidden="true" />
-            Редактировать
+            {isSuperadmin ? 'Изменить лимиты' : 'Редактировать'}
           </button>
         )}
       </div>
@@ -692,55 +766,42 @@ export default function CompanyDetailPage() {
       >
         <StatCard
           icon={<Users size={22} aria-hidden="true" />}
-          label={`Сотрудников (макс. ${company.max_employees})`}
-          value={company.employee_count}
+          label={`Сотрудников (макс. ${limitEmployeesMax})`}
+          value={limitEmployeesCurrent}
+        />
+        <StatCard
+          icon={<Columns3 size={22} aria-hidden="true" />}
+          label={`Досок (макс. ${limitBoardsMax || '—'})`}
+          value={limitBoardsCurrent}
         />
 
         <StatCard
           icon={<HardDrive size={22} aria-hidden="true" />}
-          label={`Хранилище (всего ${company.storage_limit_gb} ГБ)`}
+          label={`Хранилище (всего ${limitStorageMaxGb} ГБ)`}
           value={
             <span>
-              {company.storage_used.toFixed(1)}{' '}
-              <span className="text-base font-semibold text-gray-500">/ {company.storage_limit_gb} ГБ</span>
+              {limitStorageUsedGb.toFixed(1)}{' '}
+              <span className="text-base font-semibold text-gray-500">/ {limitStorageMaxGb} ГБ</span>
             </span>
           }
         />
       </section>
 
-      {/* Storage progress bar */}
-      <div
+      {/* Limits widget */}
+      <section
         className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"
-        aria-label="Использование хранилища"
+        aria-label="Лимиты компании"
       >
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-sm font-medium text-gray-700">Использование хранилища</p>
-          <p className="text-sm font-semibold text-gray-900">{storagePercent}%</p>
+        <div className="mb-4">
+          <p className="text-base font-semibold text-gray-900">Лимиты тарифа</p>
+          <p className="text-sm text-gray-500">Индикаторы меняют цвет с 80% и 95% использования.</p>
         </div>
-        <div
-          className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden"
-          role="progressbar"
-          aria-valuenow={storagePercent}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label={`${storagePercent}% хранилища использовано`}
-        >
-          <div
-            className={cn(
-              'h-full rounded-full transition-all duration-500',
-              storagePercent >= 90
-                ? 'bg-red-500'
-                : storagePercent >= 70
-                  ? 'bg-amber-500'
-                  : 'bg-blue-600',
-            )}
-            style={{ width: `${storagePercent}%` }}
-          />
+        <div className="space-y-5">
+          <LimitBar label="Сотрудники" current={limitEmployeesCurrent} max={limitEmployeesMax} />
+          <LimitBar label="Доски" current={limitBoardsCurrent} max={limitBoardsMax} />
+          <LimitBar label="Хранилище" current={limitStorageUsedGb} max={limitStorageMaxGb} unit=" ГБ" />
         </div>
-        <p className="mt-1.5 text-xs text-gray-400">
-          {company.storage_used.toFixed(1)} ГБ использовано из {company.storage_limit_gb} ГБ
-        </p>
-      </div>
+      </section>
     </main>
   );
 }

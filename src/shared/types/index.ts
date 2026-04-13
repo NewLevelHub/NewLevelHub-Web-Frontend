@@ -53,6 +53,21 @@ export interface CompanyDetail extends Company {
   storage_used: number;
 }
 
+export interface CompanyLimits {
+  employees: {
+    current: number;
+    max: number;
+  };
+  boards: {
+    current: number;
+    max: number;
+  };
+  storage: {
+    used_gb: number;
+    limit_gb: number;
+  };
+}
+
 /** GET /companies/:id/members/ — см. CompanyMemberSerializer (бэкенд). */
 export interface CompanyMember {
   id: number;

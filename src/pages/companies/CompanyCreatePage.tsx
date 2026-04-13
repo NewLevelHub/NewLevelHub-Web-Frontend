@@ -11,8 +11,9 @@ import {
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { COMPANY_TIERS } from '@/shared/config/constants';
+import { COMPANY_TIERS, USER_ROLES } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
+import { useAuth } from '@/shared/hooks/useAuth';
 import type { Company } from '@/shared/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -44,6 +45,8 @@ function inputClass(hasError: boolean) {
 
 export default function CompanyCreatePage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const companiesBasePath = user?.role === USER_ROLES.SUPERADMIN ? '/admin/companies' : '/companies';
 
   const [form, setForm] = useState<FormData>({
     name: '',
@@ -84,7 +87,7 @@ export default function CompanyCreatePage() {
       );
     },
     onSuccess: (response) => {
-      navigate(`/companies/${response.data.id}`);
+      navigate(`${companiesBasePath}/${response.data.id}`);
     },
     onError: (error: unknown) => {
       const axiosError = error as {
@@ -142,7 +145,7 @@ export default function CompanyCreatePage() {
       <div>
         <button
           type="button"
-          onClick={() => navigate('/companies')}
+          onClick={() => navigate(companiesBasePath)}
           className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 mb-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
           aria-label="Назад к списку компаний"
         >
@@ -419,7 +422,7 @@ export default function CompanyCreatePage() {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/companies')}
+              onClick={() => navigate(companiesBasePath)}
               disabled={isPending}
               className="inline-flex items-center px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
             >
