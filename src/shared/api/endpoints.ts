@@ -42,6 +42,7 @@ export const API = {
       list: '/bookings/resources/',
       create: '/bookings/resources/',
       detail: (id: string) => `/bookings/resources/${id}/`,
+      bulkCreate: '/bookings/resources/bulk-create/',
       schedule: (id: string) => `/bookings/resources/${id}/schedule/`,
       block: (id: string) => `/bookings/resources/${id}/block/`,
     },

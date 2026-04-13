@@ -142,12 +142,23 @@ export interface Resource {
   name: string;
   type: ResourceType;
   floor: number;
+  zone: string;
   description: string;
   photo: string | null;
   capacity: number | null;
-  equipment: string[];
+  equipment: {
+    projector?: boolean;
+    tv?: boolean;
+    whiteboard?: boolean;
+    video_conf?: boolean;
+    monitor?: boolean;
+    dock?: boolean;
+    power_outlet?: boolean;
+  } | null;
   is_active: boolean;
-  schedule: string | null;
+  availability_start: string;
+  availability_end: string;
+  availability_days: number[];
 }
 
 /** Бронирование: сериализатор бэкенда (resource — id, participants — email-строки). */
