@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -148,7 +148,9 @@ function buildFormData(payload: ResourceCreatePayload, photoFile: File): FormDat
       continue;
     }
     if (Array.isArray(value)) {
-      fd.append(key, JSON.stringify(value));
+      for (const item of value) {
+        fd.append(key, String(item));
+      }
       continue;
     }
     if (typeof value === 'object') {
@@ -167,6 +169,7 @@ function buildFormData(payload: ResourceCreatePayload, photoFile: File): FormDat
 
 export default function ResourceCreatePage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isBulkMode, setIsBulkMode] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -216,11 +219,18 @@ export default function ResourceCreatePage() {
       const fd = buildFormData(payload, file);
       return apiClient
         .post<Resource>(API.bookings.resources.create, fd, {
-          headers: { 'Content-Type': 'multipart/form-data' },
+          headers: { 'Content-Type': undefined },
         })
         .then((res) => res.data);
     },
-    onSuccess: () => navigate('/resources'),
+    onSuccess: async (resource) => {
+      await queryClient.invalidateQueries({ queryKey: ['booking-resources'] });
+      navigate('/resources', {
+        state: {
+          successMessage: `Ресурс "${resource.name}" успешно создан.`,
+        },
+      });
+    },
     onError: (error) => {
       const parsed = parseError(error);
       setFieldErrors(parsed.fieldErrors);
@@ -231,7 +241,14 @@ export default function ResourceCreatePage() {
   const bulkCreateMutation = useMutation({
     mutationFn: (payload: BulkCreatePayload) =>
       apiClient.post<Resource[]>(API.bookings.resources.bulkCreate, payload).then((res) => res.data),
-    onSuccess: () => navigate('/resources'),
+    onSuccess: async (_, variables) => {
+      await queryClient.invalidateQueries({ queryKey: ['booking-resources'] });
+      navigate('/resources', {
+        state: {
+          successMessage: `Успешно создано ${variables.count} ресурсов.`,
+        },
+      });
+    },
     onError: (error) => {
       const parsed = parseError(error);
       setFieldErrors(parsed.fieldErrors);
