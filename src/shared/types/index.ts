@@ -26,7 +26,7 @@ export interface User {
   company_id: number | null;
   company_name: string | null;
   /** Nested company object returned by /api/v1/auth/me/ */
-  company: { id: number; name: string } | null;
+  company: { id: number; name: string; onboarding_completed?: boolean } | null;
   avatar: string | null;
   /** Синхронно с бэкендом `is_email_verified` */
   is_email_verified: boolean;
@@ -379,4 +379,15 @@ export interface CompanySettings {
   onboarding_enabled: boolean;
   working_hours: { start: string; end: string } | null;
   brand_primary_color: string | null;
+}
+
+export interface OnboardingStep {
+  key: 'upload_logo' | 'fill_description' | 'create_first_board' | 'invite_first_employee';
+  title: string;
+  completed: boolean;
+}
+
+export interface OnboardingStatus {
+  completed: boolean;
+  steps: OnboardingStep[];
 }
