@@ -117,6 +117,14 @@ export interface BookingResourceListItem {
   available_at: string | null;
 }
 
+/** Занятый интервал: GET …/resources/:id/ (поле schedule) и GET …/schedule/?date|week */
+export interface ResourceScheduleSlot {
+  start: string;
+  end: string;
+  booking_id: number | null;
+  user_name: string | null;
+}
+
 /** Полная карточка: GET/PATCH /bookings/resources/:id/ */
 export interface BookingResourceDetail {
   id: number;
@@ -136,10 +144,16 @@ export interface BookingResourceDetail {
   assigned_company: number | null;
   min_duration_minutes: number;
   max_duration_minutes: number;
+  /** HH:MM:SS — рабочее окно ресурса (сериализатор бэкенда) */
+  availability_start?: string;
+  availability_end?: string;
+  availability_days?: number[];
   parking_type: ParkingType | null;
   capsule_zone: string;
   created_at: string;
   updated_at: string;
+  /** Занятость на 7 календарных дней (только GET retrieve) */
+  schedule?: ResourceScheduleSlot[];
 }
 
 /** @deprecated Используйте BookingResourceListItem / BookingResourceDetail */
