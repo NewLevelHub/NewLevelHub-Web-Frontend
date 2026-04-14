@@ -131,7 +131,11 @@ export default function BookingResourceSchedulePage() {
             <button
               type="button"
               onClick={() => setSelectedDay((d) => addDays(d, -1))}
-              className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50"
+              className={cn(
+                'p-2 rounded-lg border border-gray-300 bg-white text-gray-700 shadow-sm',
+                'hover:bg-gray-50 hover:text-gray-900',
+                'focus:outline-none focus:ring-2 focus:ring-blue-500',
+              )}
               aria-label="Предыдущий день"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -140,12 +144,19 @@ export default function BookingResourceSchedulePage() {
               type="date"
               value={selectedDay}
               onChange={(e) => setSelectedDay(e.target.value)}
-              className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+              className={cn(
+                'rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900',
+                'focus:outline-none focus:ring-2 focus:ring-blue-500',
+              )}
             />
             <button
               type="button"
               onClick={() => setSelectedDay((d) => addDays(d, 1))}
-              className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50"
+              className={cn(
+                'p-2 rounded-lg border border-gray-300 bg-white text-gray-700 shadow-sm',
+                'hover:bg-gray-50 hover:text-gray-900',
+                'focus:outline-none focus:ring-2 focus:ring-blue-500',
+              )}
               aria-label="Следующий день"
             >
               <ChevronRight className="h-4 w-4" />
