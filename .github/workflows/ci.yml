@@ -155,22 +155,26 @@ jobs:
             docker compose -f "docker-compose.${PR_SLUG}.yml" --project-name "$PR_SLUG" pull
             docker compose -f "docker-compose.${PR_SLUG}.yml" --project-name "$PR_SLUG" up -d --force-recreate
 
-            # --- backend preview: MUST match same PR number as this frontend ---
-            # Old logic (grep "be-${TICKET}") picked the first be-dev-XX-* preview on the host,
-            # so fe-dev-54-pr16 could proxy /api to be-dev-54-pr55 → wrong DB → invite token "invalid" in UI.
+            # --- backend preview: match by ticket (dev-XX), not by PR number ---
+            # FE and BE have different PR numbers; the only stable shared key is the ticket (dev-XX).
+            # We pick the first running be-dev-XX-pr*-nginx-1 container for this ticket.
             BACKEND_PORT=8080
+            BE_HOST_HEADER="localhost"
             if [ "$TICKET" != "noticket" ]; then
-              BE_NGINX_NAME="be-${TICKET}-pr${PR_NUMBER}-nginx-1"
-              if docker inspect "$BE_NGINX_NAME" >/dev/null 2>&1; then
+              BE_NGINX_NAME=$(docker ps --format '{{.Names}}' | grep -E "^be-${TICKET}-pr[0-9]+-nginx-1$" | head -1 || true)
+              if [ -n "$BE_NGINX_NAME" ]; then
                 BE_PORT=$(docker port "$BE_NGINX_NAME" 80/tcp 2>/dev/null | head -1 | awk -F: '{print $NF}')
                 if [ -n "$BE_PORT" ]; then
                   BACKEND_PORT=$BE_PORT
-                  echo "► Matched backend preview $BE_NGINX_NAME → host port $BACKEND_PORT"
+                  # Derive the BE domain so Django ALLOWED_HOSTS check passes
+                  BE_SLUG="${BE_NGINX_NAME%-nginx-1}"
+                  BE_HOST_HEADER="${BE_SLUG}.staging.newlevelhub.kz"
+                  echo "► Matched backend preview $BE_NGINX_NAME → host port $BACKEND_PORT (Host: $BE_HOST_HEADER)"
                 else
                   echo "► Container $BE_NGINX_NAME exists but port mapping not found; using port 8080"
                 fi
               else
-                echo "► No $BE_NGINX_NAME — open backend PR #${PR_NUMBER} preview or use shared API on 8080"
+                echo "► No be-${TICKET}-pr*-nginx-1 running — using shared staging API on port 8080"
               fi
             else
               echo "► No ticket in branch name, using main staging backend on port 8080"
@@ -192,7 +196,7 @@ jobs:
 
                 location /api/ {
                     proxy_pass http://127.0.0.1:${BACKEND_PORT};
-                    proxy_set_header Host localhost;
+                    proxy_set_header Host ${BE_HOST_HEADER};
                     proxy_set_header X-Real-IP \$remote_addr;
                     proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
                     proxy_set_header X-Forwarded-Proto \$scheme;
@@ -228,7 +232,7 @@ jobs:
               `| **Port** | \`${port}\` |`,
               `| **Image** | \`pr-${prNumber}\` |`,
               '',
-              `**API:** \`/api/\` проксируется на backend preview \`be-${ticket}-pr${prNumber}\` (тот же номер PR). Если такого контейнера нет — используется общий стенд на порту 8080.`,
+              `**API:** \`/api/\` проксируется на backend preview \`be-${ticket}-pr*\` (первый запущенный для этого тикета). Если такого контейнера нет — используется общий стенд на порту 8080.`,
             ].join('\n');
 
             const { data: comments } = await github.rest.issues.listComments({

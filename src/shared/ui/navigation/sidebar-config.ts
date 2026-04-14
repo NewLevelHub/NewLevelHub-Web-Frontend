@@ -12,8 +12,6 @@ import {
   Settings,
   Wrench,
   Megaphone,
-  UserPlus,
-  UserCircle2,
   Clock,
   ListTodo,
   type LucideIcon,
@@ -70,7 +68,6 @@ const companyAdminNav: NavSection[] = [
     items: [
       { label: 'Моя компания', path: '/companies', icon: Building2 },
       { label: 'Сотрудники', path: '/team/manage', icon: Users },
-      { label: 'Участники', path: '/company/settings/members', icon: UserCircle2 },
       { label: 'Настройки', path: '/company/settings', icon: Settings },
     ],
   },
@@ -85,7 +82,7 @@ const companyAdminNav: NavSection[] = [
   {
     title: 'Сервисы',
     items: [
-      { label: 'Бронирование', path: '/bookings', icon: Bookmark },
+      { label: 'Бронирование', path: '/bookings/catalog', icon: Bookmark },
       { label: 'Гостевые пропуска', path: '/passes', icon: ShieldCheck },
       { label: 'Файлы', path: '/files', icon: FileText },
       { label: 'Объявления', path: '/announcements', icon: Megaphone },
@@ -104,7 +101,10 @@ const employeeNav: NavSection[] = [
   },
   {
     title: 'Компания',
-    items: [{ label: 'Моя компания', path: '/companies', icon: Building2 }],
+    items: [
+      { label: 'Моя компания', path: '/companies', icon: Building2 },
+      { label: 'Настройки компании', path: '/company/settings', icon: Settings },
+    ],
   },
   {
     title: 'Работа',
@@ -118,7 +118,7 @@ const employeeNav: NavSection[] = [
   {
     title: 'Сервисы',
     items: [
-      { label: 'Бронирование', path: '/bookings', icon: Bookmark },
+      { label: 'Бронирование', path: '/bookings/catalog', icon: Bookmark },
       { label: 'Гостевые пропуска', path: '/passes', icon: ShieldCheck },
       { label: 'Файлы', path: '/files', icon: FileText },
       { label: 'Объявления', path: '/announcements', icon: Megaphone },
@@ -141,7 +141,7 @@ const guestNav: NavSection[] = [
   {
     title: 'Сервисы',
     items: [
-      { label: 'Бронирование', path: '/bookings', icon: Bookmark },
+      { label: 'Бронирование', path: '/bookings/catalog', icon: Bookmark },
       { label: 'Карта здания', path: '/building/map', icon: Map },
       { label: 'Мои файлы', path: '/files', icon: FileText },
       { label: 'Объявления', path: '/announcements', icon: Megaphone },

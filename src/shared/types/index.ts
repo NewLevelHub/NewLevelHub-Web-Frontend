@@ -1,7 +1,10 @@
 import type {
   UserRole,
   ResourceType,
+  ResourceEquipmentKey,
+  ParkingType,
   BookingStatus,
+  BookingResourceCatalogStatus,
   TaskPriority,
   PassStatus,
   ServiceRequestType,
@@ -23,7 +26,7 @@ export interface User {
   company_id: number | null;
   company_name: string | null;
   /** Nested company object returned by /api/v1/auth/me/ */
-  company: { id: number; name: string } | null;
+  company: { id: number; name: string; onboarding_completed?: boolean } | null;
   avatar: string | null;
   /** Синхронно с бэкендом `is_email_verified` */
   is_email_verified: boolean;
@@ -107,29 +110,109 @@ export interface InviteRegistrationPreview {
   role: string;
 }
 
+export type ResourceEquipment = Record<ResourceEquipmentKey, boolean>;
+
+/** Элемент каталога: GET /bookings/resources/ (пагинация). */
+export interface BookingResourceListItem {
+  id: number;
+  type: ResourceType;
+  name: string;
+  floor: number;
+  zone: string;
+  photo: string | null;
+  photo_url: string | null;
+  capacity: number;
+  equipment: ResourceEquipment | null;
+  is_active: boolean;
+  is_hot_desk: boolean;
+  parking_type: ParkingType | null;
+  capsule_zone: string;
+  status: BookingResourceCatalogStatus;
+  /** Конец текущей занятости; только при status === soon_available */
+  available_at: string | null;
+}
+
+/** Занятый интервал: GET …/resources/:id/ (поле schedule) и GET …/schedule/?date|week */
+export interface ResourceScheduleSlot {
+  start: string;
+  end: string;
+  booking_id: number | null;
+  user_name: string | null;
+}
+
+/** Полная карточка: GET/PATCH /bookings/resources/:id/ */
+export interface BookingResourceDetail {
+  id: number;
+  type: ResourceType;
+  name: string;
+  floor: number;
+  zone: string;
+  description: string;
+  photo: string | null;
+  capacity: number;
+  equipment: ResourceEquipment | null;
+  is_active: boolean;
+  has_monitor: boolean;
+  has_dock: boolean;
+  has_power_outlet: boolean;
+  is_hot_desk: boolean;
+  assigned_company: number | null;
+  min_duration_minutes: number;
+  max_duration_minutes: number;
+  /** HH:MM:SS — рабочее окно ресурса (сериализатор бэкенда) */
+  availability_start?: string;
+  availability_end?: string;
+  availability_days?: number[];
+  parking_type: ParkingType | null;
+  capsule_zone: string;
+  created_at: string;
+  updated_at: string;
+  /** Занятость на 7 календарных дней (только GET retrieve) */
+  schedule?: ResourceScheduleSlot[];
+}
+
+/** @deprecated Используйте BookingResourceListItem / BookingResourceDetail */
 export interface Resource {
   id: number;
   name: string;
   type: ResourceType;
   floor: number;
+  zone: string;
   description: string;
   photo: string | null;
   capacity: number | null;
-  equipment: string[];
+  equipment: {
+    projector?: boolean;
+    tv?: boolean;
+    whiteboard?: boolean;
+    video_conf?: boolean;
+    monitor?: boolean;
+    dock?: boolean;
+    power_outlet?: boolean;
+  } | null;
   is_active: boolean;
-  schedule: string | null;
+  availability_start: string;
+  availability_end: string;
+  availability_days: number[];
 }
 
+/** Бронирование: сериализатор бэкенда (resource — id, participants — email-строки). */
 export interface Booking {
   id: number;
-  resource: Resource;
-  user: User;
+  resource: number;
+  resource_name: string;
+  user: number;
+  user_name: string;
+  company: number | null;
   start_time: string;
   end_time: string;
   status: BookingStatus;
-  description: string | null;
-  participants: User[];
+  description: string;
+  cancelled_by: number | null;
+  cancel_reason: string;
+  participants: string[];
   created_at: string;
+  updated_at: string;
 }
 
 export interface Board {
@@ -276,6 +359,11 @@ export interface PaginatedResponse<T> {
   next: string | null;
   previous: string | null;
   results: T[];
+  /**
+   * Только GET /bookings/resources/: ключи оборудования, которые есть хотя бы у одной
+   * переговорки в выборке с теми же фильтрами, но без фильтра по equipment.
+   */
+  meeting_room_equipment_keys?: ResourceEquipmentKey[];
 }
 
 export interface UserListItem {
@@ -297,4 +385,24 @@ export interface UserListItem {
 export interface UserDetail extends UserListItem {
   bookings_count: number;
   tasks_count: number;
+}
+
+export interface CompanySettings {
+  custom_task_categories: string[];
+  custom_labels: { name: string; color: string }[];
+  vacation_days_per_year: number;
+  onboarding_enabled: boolean;
+  working_hours: { start: string; end: string } | null;
+  brand_primary_color: string | null;
+}
+
+export interface OnboardingStep {
+  key: 'upload_logo' | 'fill_description' | 'create_first_board' | 'invite_first_employee';
+  title: string;
+  completed: boolean;
+}
+
+export interface OnboardingStatus {
+  completed: boolean;
+  steps: OnboardingStep[];
 }

@@ -30,26 +30,37 @@ function stringifyDetail(detail: unknown): string {
  *   { "email": ["Enter a valid email address."] }          → any field-level array
  *   { "message": "Something went wrong" }                  → message field
  */
+function unwrapPayload(data: unknown): unknown {
+  if (data && typeof data === 'object' && 'detail' in data && 'error' in data) {
+    return (data as { detail: unknown }).detail;
+  }
+  return data;
+}
+
 export function getApiErrorMessage(error: unknown, fallback = 'Произошла ошибка'): string {
   const err = error as AxiosError<ApiErrorBody>;
-  const data = err.response?.data;
-  if (!data) return err.message || fallback;
+  const raw = err.response?.data;
+  if (raw == null) return err.message || fallback;
 
-  // 1. Standard DRF `detail` key (string or array)
+  const unwrapped = unwrapPayload(raw);
+  if (typeof unwrapped === 'string') return unwrapped || fallback;
+  if (Array.isArray(unwrapped)) {
+    const joined = unwrapped.map(String).join('; ');
+    return joined || fallback;
+  }
+  if (unwrapped == null || typeof unwrapped !== 'object') return err.message || fallback;
+
+  const data = unwrapped as ApiErrorBody;
+
   const fromDetail = stringifyDetail(data.detail);
   if (fromDetail) return fromDetail;
 
-  // 2. `message` key
   if (typeof data.message === 'string') return data.message;
 
-  // 3. DRF field-level validation errors: { field: ["error msg", ...] }
-  //    Walk all keys and return the first non-empty array item found.
-  if (typeof data === 'object' && data !== null) {
-    for (const [, value] of Object.entries(data)) {
-      if (Array.isArray(value) && value.length) {
-        const first = String(value[0]);
-        if (first) return first;
-      }
+  for (const [, value] of Object.entries(data)) {
+    if (Array.isArray(value) && value.length) {
+      const first = String(value[0]);
+      if (first) return first;
     }
   }
 

@@ -30,18 +30,31 @@ export const API = {
     settings: (id: string) => `/companies/${id}/settings/`,
     memberActivity: (companyId: string, userId: string) =>
       `/companies/${companyId}/members/${userId}/activity/`,
-  },
-  resources: {
-    list: '/resources/',
-    create: '/resources/',
-    detail: (id: string) => `/resources/${id}/`,
-    availability: (id: string) => `/resources/${id}/availability/`,
+    memberDeactivate: (companyId: string, userId: string) =>
+      `/companies/${companyId}/members/${userId}/deactivate/`,
+    memberActivate: (companyId: string, userId: string) =>
+      `/companies/${companyId}/members/${userId}/activate/`,
+    memberDelete: (companyId: string, userId: string) =>
+      `/companies/${companyId}/members/${userId}/`,
+    onboardingStatus: (id: string) => `/companies/${id}/onboarding-status/`,
+    onboardingSkip: (id: string) => `/companies/${id}/onboarding-status/skip/`,
   },
   bookings: {
-    list: '/bookings/',
-    create: '/bookings/',
-    detail: (id: string) => `/bookings/${id}/`,
-    my: '/bookings/my/',
+    reservations: {
+      list: '/bookings/reservations/',
+      create: '/bookings/reservations/',
+      detail: (id: string) => `/bookings/reservations/${id}/`,
+      my: '/bookings/reservations/my/',
+      cancel: (id: string) => `/bookings/reservations/${id}/cancel/`,
+    },
+    resources: {
+      list: '/bookings/resources/',
+      create: '/bookings/resources/',
+      detail: (id: string) => `/bookings/resources/${id}/`,
+      bulkCreate: '/bookings/resources/bulk-create/',
+      schedule: (id: string) => `/bookings/resources/${id}/schedule/`,
+      block: (id: string) => `/bookings/resources/${id}/block/`,
+    },
     manage: '/bookings/manage/',
   },
   crm: {
