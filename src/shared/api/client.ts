@@ -5,7 +5,7 @@ import { tokenStorage } from '@/shared/lib/storage';
 
 export const apiClient = axios.create({
   baseURL: env.API_BASE_URL,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { Accept: 'application/json' },
   withCredentials: true,
 });
 
