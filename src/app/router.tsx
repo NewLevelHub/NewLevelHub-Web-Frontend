@@ -41,6 +41,7 @@ import CalendarPage from '@/pages/calendar/CalendarPage';
 
 // Bookings
 import BookingCatalogPage from '@/pages/bookings/BookingCatalogPage';
+import BookingResourceSchedulePage from '@/pages/bookings/BookingResourceSchedulePage';
 import BookingCreatePage from '@/pages/bookings/BookingCreatePage';
 import BookingDetailPage from '@/pages/bookings/BookingDetailPage';
 import MyBookingsPage from '@/pages/bookings/MyBookingsPage';
@@ -137,6 +138,7 @@ export const router = createBrowserRouter([
           { path: '/notifications', element: <NotificationListPage /> },
           { path: '/bookings', element: <Navigate to="/bookings/catalog" replace /> },
           { path: '/bookings/catalog', element: <BookingCatalogPage /> },
+          { path: '/bookings/resources/:id', element: <BookingResourceSchedulePage /> },
           { path: '/bookings/new', element: <BookingCreatePage /> },
           { path: '/bookings/my', element: <MyBookingsPage /> },
           { path: '/bookings/:id', element: <BookingDetailPage /> },
