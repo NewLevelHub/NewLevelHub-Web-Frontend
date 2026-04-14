@@ -92,6 +92,9 @@ import ProfileSettingsPage from '@/pages/profile/ProfileSettingsPage';
 import UsersListPage from '@/pages/users/UsersListPage';
 import UserDetailPage from '@/pages/users/UserDetailPage';
 
+// Onboarding
+import OnboardingWizardPage from '@/pages/onboarding/OnboardingWizardPage';
+
 // Errors
 import NotFoundPage from '@/pages/errors/NotFoundPage';
 import ForbiddenPage from '@/pages/errors/ForbiddenPage';
@@ -147,6 +150,14 @@ export const router = createBrowserRouter([
           { path: '/passes/new', element: <PassCreatePage /> },
           { path: '/service-requests', element: <ServiceRequestListPage /> },
           { path: '/service-requests/new', element: <ServiceRequestCreatePage /> },
+
+          // Company admin + employee onboarding
+          {
+            element: <RequireRole allowed={[COMPANY_ADMIN, EMPLOYEE]} />,
+            children: [
+              { path: '/onboarding', element: <OnboardingWizardPage /> },
+            ],
+          },
 
           // Company users (superadmin + company_admin + employee)
           {

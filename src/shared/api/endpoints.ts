@@ -35,6 +35,8 @@ export const API = {
       `/companies/${companyId}/members/${userId}/activate/`,
     memberDelete: (companyId: string, userId: string) =>
       `/companies/${companyId}/members/${userId}/`,
+    onboardingStatus: (id: string) => `/companies/${id}/onboarding-status/`,
+    onboardingSkip: (id: string) => `/companies/${id}/onboarding-status/skip/`,
   },
   bookings: {
     reservations: {
