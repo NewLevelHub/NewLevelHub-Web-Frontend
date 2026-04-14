@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, Search, Bookmark, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -56,7 +56,13 @@ const STATUS_FILTER = [
 ] as const;
 
 export default function ResourceListPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const successMessage =
+    typeof location.state === 'object' && location.state && 'successMessage' in location.state
+      ? String((location.state as { successMessage?: string }).successMessage ?? '')
+      : null;
   const [page, setPage] = useState(1);
   const [typeFilter, setTypeFilter] = useState('');
   const [floorFilter, setFloorFilter] = useState('');
@@ -91,6 +97,12 @@ export default function ResourceListPage() {
     setPage(1);
   }, [typeFilter, floorFilter, activeFilter, debouncedSearch]);
 
+  useEffect(() => {
+    if (!successMessage) return;
+    // Clear navigation state so alert doesn't reappear on page refresh/back-forward.
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, navigate, successMessage]);
+
   return (
     <main className={resourcePageWide}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -114,6 +126,14 @@ export default function ResourceListPage() {
       {isError && (
         <div role="alert" className={resErrorBanner}>
           Не удалось загрузить ресурсы. Проверьте API и авторизацию.
+        </div>
+      )}
+      {successMessage && (
+        <div
+          role="status"
+          className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+        >
+          {successMessage}
         </div>
       )}
 
