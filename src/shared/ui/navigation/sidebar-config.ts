@@ -103,7 +103,6 @@ const employeeNav: NavSection[] = [
     title: 'Компания',
     items: [
       { label: 'Моя компания', path: '/companies', icon: Building2 },
-      { label: 'Настройки компании', path: '/company/settings', icon: Settings },
     ],
   },
   {

@@ -46,9 +46,11 @@ export interface Company {
   contact_phone: string | null;
   plan: CompanyTier;
   max_employees: number;
+  max_boards: number;
   storage_limit_gb: number;
   is_active: boolean;
   created_at: string;
+  updated_at: string;
 }
 
 export interface CompanyDetail extends Company {
@@ -77,7 +79,7 @@ export interface CompanyMember {
   email: string;
   full_name: string;
   role: string;
-  position: string;
+  position: string | null;
   avatar: string | null;
   is_active: boolean;
   date_joined: string;
@@ -86,9 +88,26 @@ export interface CompanyMember {
 
 export interface MemberActivity {
   last_login: string | null;
-  tasks_active: number;
-  tasks_completed: number;
+  active_tasks_count: number;
+  completed_tasks_count: number;
   bookings_last_30_days: number;
+}
+
+export interface CompanySettings {
+  custom_task_categories: string[];
+  custom_labels: Array<{ name: string; color: string }>;
+  vacation_days_per_year: number;
+  onboarding_enabled: boolean;
+  brand_primary_color: string | null;
+  working_hours: {
+    start: string | null;
+    end: string | null;
+  };
+}
+
+export interface MemberActionResponse {
+  detail: string;
+  tasks_reassigned?: number;
 }
 
 export interface CompanyInvitation {
@@ -385,15 +404,6 @@ export interface UserListItem {
 export interface UserDetail extends UserListItem {
   bookings_count: number;
   tasks_count: number;
-}
-
-export interface CompanySettings {
-  custom_task_categories: string[];
-  custom_labels: { name: string; color: string }[];
-  vacation_days_per_year: number;
-  onboarding_enabled: boolean;
-  working_hours: { start: string; end: string } | null;
-  brand_primary_color: string | null;
 }
 
 export interface OnboardingStep {

@@ -34,12 +34,30 @@ export const API = {
       `/companies/${companyId}/members/${userId}/deactivate/`,
     memberActivate: (companyId: string, userId: string) =>
       `/companies/${companyId}/members/${userId}/activate/`,
-    memberDelete: (companyId: string, userId: string) =>
-      `/companies/${companyId}/members/${userId}/`,
-    onboardingStatus: (id: string) => `/companies/${id}/onboarding-status/`,
-    onboardingSkip: (id: string) => `/companies/${id}/onboarding-status/skip/`,
+    memberRemove: (companyId: string, userId: string, reassignTo?: string) =>
+      `/companies/${companyId}/members/${userId}/${reassignTo ? `?reassign_to=${reassignTo}` : ''}`,
+    onboardingStatus: (companyId: string) => `/companies/${companyId}/onboarding/status/`,
+    onboardingSkip: (companyId: string) => `/companies/${companyId}/onboarding/skip/`,
+  },
+  resources: {
+    list: '/resources/',
+    create: '/resources/',
+    detail: (id: string) => `/resources/${id}/`,
+    availability: (id: string) => `/resources/${id}/availability/`,
   },
   bookings: {
+    list: '/bookings/',
+    create: '/bookings/',
+    detail: (id: string) => `/bookings/${id}/`,
+    my: '/bookings/my/',
+    manage: '/bookings/manage/',
+    resources: {
+      list: '/bookings/resources/',
+      create: '/bookings/resources/',
+      detail: (id: string) => `/bookings/resources/${id}/`,
+      schedule: (id: string) => `/bookings/resources/${id}/schedule/`,
+      bulkCreate: '/bookings/resources/bulk-create/',
+    },
     reservations: {
       list: '/bookings/reservations/',
       create: '/bookings/reservations/',
@@ -47,15 +65,6 @@ export const API = {
       my: '/bookings/reservations/my/',
       cancel: (id: string) => `/bookings/reservations/${id}/cancel/`,
     },
-    resources: {
-      list: '/bookings/resources/',
-      create: '/bookings/resources/',
-      detail: (id: string) => `/bookings/resources/${id}/`,
-      bulkCreate: '/bookings/resources/bulk-create/',
-      schedule: (id: string) => `/bookings/resources/${id}/schedule/`,
-      block: (id: string) => `/bookings/resources/${id}/block/`,
-    },
-    manage: '/bookings/manage/',
   },
   crm: {
     boards: '/crm/boards/',

@@ -36,11 +36,13 @@ export default function CompanyMembersPage() {
   const [filterUsed, setFilterUsed] = useState<boolean | undefined>(undefined);
   const [filterExpired, setFilterExpired] = useState<boolean | undefined>(undefined);
 
-  const { data: members, isLoading: membersLoading } = useQuery({
+  const { data: membersData, isLoading: membersLoading } = useQuery({
     queryKey: ['company-members', companyId],
     enabled: Boolean(companyId),
     queryFn: () =>
-      apiClient.get<CompanyMember[]>(API.companies.members(companyId!)).then((r) => r.data),
+      apiClient
+        .get<PaginatedResponse<CompanyMember>>(API.companies.members(companyId!))
+        .then((r) => r.data),
   });
 
   const invitationsQuery = useQuery({
@@ -109,6 +111,7 @@ export default function CompanyMembersPage() {
   }
 
   const invitations = invitationsQuery.data?.results ?? [];
+  const members = membersData?.results ?? [];
 
   return (
     <div className="max-w-4xl space-y-10">
@@ -203,7 +206,7 @@ export default function CompanyMembersPage() {
           <p className="mt-3 text-sm text-gray-500">Загрузка…</p>
         ) : (
           <ul className="mt-4 divide-y divide-gray-800 rounded-xl border border-gray-800">
-            {(members ?? []).map((m) => (
+            {members.map((m) => (
               <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
                 <div>
                   <p className="font-medium text-white">{m.full_name}</p>
@@ -214,7 +217,7 @@ export default function CompanyMembersPage() {
                 </span>
               </li>
             ))}
-            {!members?.length ? (
+            {!members.length ? (
               <li className="px-4 py-6 text-center text-sm text-gray-500">Пока нет сотрудников</li>
             ) : null}
           </ul>
