@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Mail,
@@ -14,6 +14,7 @@ import {
   Bookmark,
   ListTodo,
   AlertTriangle,
+  Shield,
 } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -21,6 +22,7 @@ import { USER_ROLES } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
 import { mapApiUser } from '@/shared/lib/mapUser';
 import { useAuth } from '@/shared/hooks/useAuth';
+import { getApiErrorMessage } from '@/shared/lib/apiError';
 import type { UserDetail } from '@/shared/types';
 
 // ---------------------------------------------------------------------------
@@ -219,7 +221,7 @@ function ImpersonatePanel({ targetUser }: ImpersonatePanelProps) {
     onSuccess: (data) => {
       const mappedUser = mapApiUser(data.user);
       startImpersonation(mappedUser, data.access);
-      navigate('/dashboard/');
+      navigate('/');
     },
     onError: (error: unknown) => {
       const axiosError = error as { response?: { status?: number } };
@@ -318,7 +320,9 @@ function ImpersonatePanel({ targetUser }: ImpersonatePanelProps) {
 export default function UserDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user: currentUser, isImpersonating } = useAuth();
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   const { data: user, isLoading, isError } = useQuery<UserDetail>({
     queryKey: ['user', id],
@@ -331,6 +335,27 @@ export default function UserDetailPage() {
     !isImpersonating &&
     currentUser?.role === USER_ROLES.SUPERADMIN &&
     user?.role !== USER_ROLES.SUPERADMIN;
+  const canToggleStatus =
+    currentUser?.role === USER_ROLES.SUPERADMIN &&
+    user?.role !== USER_ROLES.SUPERADMIN &&
+    currentUser.id !== user?.id;
+
+  const statusMutation = useMutation({
+    mutationFn: (shouldBlock: boolean) => {
+      if (!user) {
+        throw new Error('User is not loaded');
+      }
+      return apiClient.post(shouldBlock ? API.users.block(user.id) : API.users.unblock(user.id));
+    },
+    onSuccess: async () => {
+      setStatusError(null);
+      await queryClient.invalidateQueries({ queryKey: ['user', id] });
+      await queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (error: unknown) => {
+      setStatusError(getApiErrorMessage(error, 'Не удалось обновить статус пользователя.'));
+    },
+  });
 
   if (isLoading) {
     return <DetailSkeleton />;
@@ -341,7 +366,7 @@ export default function UserDetailPage() {
       <main className="px-4 py-8 max-w-4xl mx-auto">
         <button
           type="button"
-          onClick={() => navigate('/users/')}
+          onClick={() => navigate('/admin/users')}
           className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 mb-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
         >
           <ArrowLeft size={16} aria-hidden="true" />
@@ -364,7 +389,7 @@ export default function UserDetailPage() {
         <div>
           <button
             type="button"
-            onClick={() => navigate('/users/')}
+          onClick={() => navigate('/admin/users')}
             className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 mb-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
             aria-label="Назад к списку пользователей"
           >
@@ -376,12 +401,44 @@ export default function UserDetailPage() {
           </h1>
         </div>
 
-        {canImpersonate && (
-          <div className="sm:pt-10">
-            <ImpersonatePanel targetUser={user} />
-          </div>
-        )}
+        <div className="sm:pt-10 flex flex-col items-start gap-2">
+          {canImpersonate && <ImpersonatePanel targetUser={user} />}
+          {canToggleStatus && (
+            <button
+              type="button"
+              onClick={() => {
+                setStatusError(null);
+                statusMutation.mutate(user.is_active);
+              }}
+              disabled={statusMutation.isPending}
+              className={cn(
+                'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2',
+                user.is_active
+                  ? 'bg-red-600 hover:bg-red-700 text-white focus-visible:ring-red-500'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white focus-visible:ring-emerald-500',
+                statusMutation.isPending && 'opacity-60 cursor-not-allowed',
+              )}
+            >
+              <Shield size={15} aria-hidden="true" />
+              {statusMutation.isPending
+                ? 'Обновление...'
+                : user.is_active
+                  ? 'Заблокировать'
+                  : 'Разблокировать'}
+            </button>
+          )}
+        </div>
       </div>
+
+      {statusError && (
+        <div
+          role="alert"
+          className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm"
+        >
+          <AlertTriangle size={15} className="shrink-0" aria-hidden="true" />
+          {statusError}
+        </div>
+      )}
 
       {/* Profile card */}
       <section

@@ -131,6 +131,7 @@ export default function UsersListPage() {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('');
+  const [companyId, setCompanyId] = useState('');
   const [isActive, setIsActive] = useState('');
   const [ordering, setOrdering] = useState('-date_joined');
   const [page, setPage] = useState(1);
@@ -150,7 +151,7 @@ export default function UsersListPage() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [role, isActive, ordering]);
+  }, [role, companyId, isActive, ordering]);
 
   const queryParams: Record<string, string | number> = {
     page,
@@ -159,10 +160,11 @@ export default function UsersListPage() {
   };
   if (search) queryParams.search = search;
   if (role) queryParams.role = role;
+  if (companyId) queryParams.company_id = companyId;
   if (isActive !== '') queryParams.is_active = isActive;
 
   const { data, isLoading, isError } = useQuery<PaginatedResponse<UserListItem>>({
-    queryKey: ['users', { search, role, isActive, ordering, page }],
+    queryKey: ['users', { search, role, companyId, isActive, ordering, page }],
     queryFn: () =>
       apiClient
         .get<PaginatedResponse<UserListItem>>(API.users.list, { params: queryParams })
@@ -176,13 +178,13 @@ export default function UsersListPage() {
   const rangeEnd = Math.min(page * PAGE_SIZE, totalCount);
 
   function handleRowClick(id: number) {
-    navigate(`/users/${id}/`);
+    navigate(`/admin/users/${id}`);
   }
 
   function handleRowKeyDown(e: React.KeyboardEvent, id: number) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      navigate(`/users/${id}/`);
+      navigate(`/admin/users/${id}`);
     }
   }
 
@@ -226,6 +228,17 @@ export default function UsersListPage() {
               </option>
             ))}
           </select>
+
+          {/* Active status filter */}
+          <input
+            type="number"
+            min={1}
+            value={companyId}
+            onChange={(e) => setCompanyId(e.target.value)}
+            placeholder="ID компании"
+            aria-label="Фильтр по ID компании"
+            className="px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-36"
+          />
 
           {/* Active status filter */}
           <select
@@ -401,7 +414,7 @@ export default function UsersListPage() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/users/${user.id}/`);
+                            navigate(`/admin/users/${user.id}`);
                           }}
                           aria-label={`Открыть профиль ${user.first_name} ${user.last_name}`}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"

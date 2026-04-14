@@ -185,9 +185,9 @@ export const router = createBrowserRouter([
             ],
           },
 
-          // Company admin + superadmin + employee (read-only for employee)
+          // Company admin + superadmin
           {
-            element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE]} />,
+            element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN]} />,
             children: [
               { path: '/company/settings', element: <CompanySettingsPage /> },
             ],
@@ -206,12 +206,17 @@ export const router = createBrowserRouter([
             element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE]} />,
             children: [
               { path: '/companies', element: <CompanyListPage /> },
+              { path: '/admin/companies', element: <CompanyListPage /> },
               { path: '/companies/:id', element: <CompanyDetailPage /> },
+              { path: '/admin/companies/:id', element: <CompanyDetailPage /> },
             ],
           },
           {
             element: <RequireRole allowed={[SUPERADMIN]} />,
-            children: [{ path: '/companies/new', element: <CompanyCreatePage /> }],
+            children: [
+              { path: '/companies/new', element: <CompanyCreatePage /> },
+              { path: '/admin/companies/new', element: <CompanyCreatePage /> },
+            ],
           },
 
           // Superadmin only
@@ -227,6 +232,8 @@ export const router = createBrowserRouter([
               { path: '/passes/validate', element: <PassValidatePage /> },
               { path: '/users', element: <UsersListPage /> },
               { path: '/users/:id', element: <UserDetailPage /> },
+              { path: '/admin/users', element: <UsersListPage /> },
+              { path: '/admin/users/:id', element: <UserDetailPage /> },
             ],
           },
 

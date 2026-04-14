@@ -21,7 +21,7 @@ function ImpersonationBanner() {
 
   function handleStop() {
     stopImpersonation();
-    navigate('/users/');
+    navigate('/admin/users');
   }
 
   return (
