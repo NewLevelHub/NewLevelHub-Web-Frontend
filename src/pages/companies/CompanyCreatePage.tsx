@@ -11,7 +11,12 @@ import {
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { COMPANY_TIERS, USER_ROLES } from '@/shared/config/constants';
+import {
+  COMPANY_PLAN_DEFAULT_LIMITS,
+  COMPANY_TIERS,
+  USER_ROLES,
+  type CompanyTier,
+} from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
 import { useAuth } from '@/shared/hooks/useAuth';
 import type { Company } from '@/shared/types';
@@ -41,6 +46,8 @@ function inputClass(hasError: boolean) {
   );
 }
 
+const basicPlanLimits = COMPANY_PLAN_DEFAULT_LIMITS[COMPANY_TIERS.BASIC];
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function CompanyCreatePage() {
@@ -56,8 +63,8 @@ export default function CompanyCreatePage() {
     contact_email: '',
     contact_phone: '',
     plan: COMPANY_TIERS.BASIC,
-    max_employees: '50',
-    storage_limit_gb: '10',
+    max_employees: String(basicPlanLimits.max_employees),
+    storage_limit_gb: String(basicPlanLimits.storage_limit_gb),
   });
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -110,11 +117,28 @@ export default function CompanyCreatePage() {
   });
 
   function handleField(field: keyof FormData, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }));
-    if (fieldErrors[field]) {
+    setForm((prev) => {
+      if (field === 'plan') {
+        const limits =
+          COMPANY_PLAN_DEFAULT_LIMITS[value as CompanyTier] ??
+          COMPANY_PLAN_DEFAULT_LIMITS[COMPANY_TIERS.BASIC];
+        return {
+          ...prev,
+          plan: value,
+          max_employees: String(limits.max_employees),
+          storage_limit_gb: String(limits.storage_limit_gb),
+        };
+      }
+      return { ...prev, [field]: value };
+    });
+    const keysToClear: (keyof FormData)[] =
+      field === 'plan' ? ['plan', 'max_employees', 'storage_limit_gb'] : [field];
+    if (keysToClear.some((k) => fieldErrors[k])) {
       setFieldErrors((prev) => {
         const next = { ...prev };
-        delete next[field];
+        for (const k of keysToClear) {
+          delete next[k];
+        }
         return next;
       });
     }

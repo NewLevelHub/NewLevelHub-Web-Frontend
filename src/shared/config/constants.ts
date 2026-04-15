@@ -141,6 +141,19 @@ export const COMPANY_TIERS = {
 
 export type CompanyTier = (typeof COMPANY_TIERS)[keyof typeof COMPANY_TIERS];
 
+/**
+ * Default limits per plan — must stay in sync with `Company.PLAN_DEFAULT_LIMITS`
+ * in `apps/companies/models.py` (NewLevelHub-Backend).
+ */
+export const COMPANY_PLAN_DEFAULT_LIMITS: Record<
+  CompanyTier,
+  { max_employees: number; max_boards: number; storage_limit_gb: number }
+> = {
+  [COMPANY_TIERS.BASIC]: { max_employees: 10, max_boards: 1, storage_limit_gb: 5 },
+  [COMPANY_TIERS.STANDARD]: { max_employees: 30, max_boards: 5, storage_limit_gb: 20 },
+  [COMPANY_TIERS.PREMIUM]: { max_employees: 9999, max_boards: 9999, storage_limit_gb: 100 },
+};
+
 /** Alias for COMPANY_TIERS — matches the `plan` field returned by the backend. */
 export const COMPANY_PLANS = COMPANY_TIERS;
 
