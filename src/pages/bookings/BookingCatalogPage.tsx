@@ -2,8 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Bookmark, Search, Settings2 } from 'lucide-react';
+import dayjs from 'dayjs';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
 
 import { BookingModal } from '@/shared/ui/BookingModal';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -104,11 +110,11 @@ export default function BookingCatalogPage() {
   const equipTokens = RESOURCE_EQUIPMENT_KEYS.filter((k) => equipmentNeed[k]);
   if (equipTokens.length) queryParams.equipment = equipTokens.join(',');
   if (availFromLocal && availToLocal) {
-    const fromMs = new Date(availFromLocal).getTime();
-    const toMs = new Date(availToLocal).getTime();
-    if (!Number.isNaN(fromMs) && !Number.isNaN(toMs) && fromMs < toMs) {
-      queryParams.available_from = new Date(availFromLocal).toISOString();
-      queryParams.available_to = new Date(availToLocal).toISOString();
+    const fromDayjs = dayjs.tz(availFromLocal, 'Asia/Almaty');
+    const toDayjs = dayjs.tz(availToLocal, 'Asia/Almaty');
+    if (fromDayjs.isValid() && toDayjs.isValid() && fromDayjs.isBefore(toDayjs)) {
+      queryParams.available_from = fromDayjs.format();
+      queryParams.available_to = toDayjs.format();
     }
   }
 
