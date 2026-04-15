@@ -16,18 +16,23 @@ import {
   LogIn,
   ChevronLeft,
   ChevronRight,
-  UserX,
   UserCheck,
-  Trash2,
-  AlertTriangle,
+  UserX,
+  UserMinus,
 } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
-import { cn } from '@/shared/lib/cn';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
-import type { Company, CompanyMember, MemberActivity, PaginatedResponse } from '@/shared/types';
+import { cn } from '@/shared/lib/cn';
+import type {
+  Company,
+  CompanyMember,
+  MemberActionResponse,
+  MemberActivity,
+  PaginatedResponse,
+} from '@/shared/types';
 
 // ---------------------------------------------------------------------------
 // Styles (matching CompanyMembersPage dark theme)
@@ -37,12 +42,6 @@ const inputClass =
 
 const selectClass =
   'rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500';
-
-const ghostBtnClass =
-  'inline-flex items-center gap-1.5 rounded-lg border border-gray-600 px-3 py-2 text-sm font-medium text-gray-200 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors';
-
-const dangerBtnClass =
-  'inline-flex items-center gap-1.5 rounded-lg bg-red-700 px-3 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -167,315 +166,83 @@ const StatusBadge = memo<StatusBadgeProps>(({ isActive }) => (
 ));
 
 // ---------------------------------------------------------------------------
-// Delete confirmation modal
-// ---------------------------------------------------------------------------
-
-interface DeleteConfirmProps {
-  member: CompanyMember;
-  companyId: string;
-  allMembers: CompanyMember[];
-  onCancel: () => void;
-  onDeleted: () => void;
-}
-
-const DeleteConfirmPanel = memo<DeleteConfirmProps>(
-  ({ member, companyId, allMembers, onCancel, onDeleted }) => {
-    const queryClient = useQueryClient();
-    const [reassignTo, setReassignTo] = useState<string>('');
-    const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-    const eligibleForReassign = allMembers.filter(
-      (m) => m.id !== member.id && m.is_active,
-    );
-
-    const deleteMutation = useMutation({
-      mutationFn: () => {
-        const params: Record<string, string> = {};
-        if (reassignTo) {
-          params.reassign_to = reassignTo;
-        }
-        return apiClient.delete(
-          API.companies.memberDelete(companyId, String(member.id)),
-          { params },
-        );
-      },
-      onSuccess: () => {
-        void queryClient.invalidateQueries({ queryKey: ['teamMembers', companyId] });
-        onDeleted();
-      },
-      onError: (err: unknown) => {
-        setErrorMsg(getApiErrorMessage(err, 'Не удалось удалить сотрудника.'));
-      },
-    });
-
-    return (
-      <div
-        className="mt-4 rounded-xl border border-red-800/60 bg-red-950/30 p-4"
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="delete-confirm-title"
-      >
-        <div className="flex items-start gap-3">
-          <AlertTriangle
-            className="mt-0.5 h-5 w-5 shrink-0 text-red-400"
-            aria-hidden="true"
-          />
-          <div className="flex-1 space-y-3">
-            <p
-              id="delete-confirm-title"
-              className="text-sm font-semibold text-red-300"
-            >
-              Удалить сотрудника {member.full_name}? Это действие необратимо.
-            </p>
-
-            {/* Reassign dropdown */}
-            <div>
-              <label
-                htmlFor={`reassign-${member.id}`}
-                className="mb-1 block text-xs font-medium text-gray-400"
-              >
-                Переназначить задачи на:
-              </label>
-              <select
-                id={`reassign-${member.id}`}
-                value={reassignTo}
-                onChange={(e) => setReassignTo(e.target.value)}
-                className={cn(selectClass, 'w-full sm:w-72')}
-                aria-label="Выберите сотрудника для переназначения задач"
-              >
-                <option value="">Не переназначать (задачи станут неназначенными)</option>
-                {eligibleForReassign.map((m) => (
-                  <option key={m.id} value={String(m.id)}>
-                    {m.full_name} ({m.email})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Inline error */}
-            {errorMsg && (
-              <p className="text-sm text-red-400" role="alert">
-                {errorMsg}
-              </p>
-            )}
-
-            {/* Action buttons */}
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => deleteMutation.mutate()}
-                disabled={deleteMutation.isPending}
-                className={dangerBtnClass}
-                aria-label={`Подтвердить удаление сотрудника ${member.full_name}`}
-              >
-                <Trash2 className="h-4 w-4" aria-hidden="true" />
-                {deleteMutation.isPending ? 'Удаление…' : 'Подтвердить удаление'}
-              </button>
-              <button
-                type="button"
-                onClick={onCancel}
-                disabled={deleteMutation.isPending}
-                className={ghostBtnClass}
-              >
-                Отмена
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  },
-);
-
-// ---------------------------------------------------------------------------
-// Activity panel (with member action buttons)
+// Activity panel
 // ---------------------------------------------------------------------------
 
 interface ActivityPanelProps {
   companyId: string;
-  member: CompanyMember;
-  currentUser: { id: number; role: string } | null;
-  allMembers: CompanyMember[];
+  memberId: number;
 }
 
-const ActivityPanel = memo<ActivityPanelProps>(
-  ({ companyId, member, currentUser, allMembers }) => {
-    const queryClient = useQueryClient();
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-    const [actionError, setActionError] = useState<string | null>(null);
+const ActivityPanel = memo<ActivityPanelProps>(({ companyId, memberId }) => {
+  const { data, isLoading, isError } = useQuery<MemberActivity>({
+    queryKey: ['memberActivity', companyId, memberId],
+    queryFn: () =>
+      apiClient
+        .get<MemberActivity>(API.companies.memberActivity(companyId, String(memberId)))
+        .then((r) => r.data),
+    staleTime: 30_000,
+  });
 
-    const { data, isLoading, isError } = useQuery<MemberActivity>({
-      queryKey: ['memberActivity', companyId, member.id],
-      queryFn: () =>
-        apiClient
-          .get<MemberActivity>(API.companies.memberActivity(companyId, String(member.id)))
-          .then((r) => r.data),
-      staleTime: 30_000,
-    });
-
-    // Determine which actions to show
-    const isSelf = currentUser?.id === member.id;
-    const currentRole = currentUser?.role ?? '';
-    const canManageActive =
-      !isSelf &&
-      (currentRole === USER_ROLES.SUPERADMIN || currentRole === USER_ROLES.COMPANY_ADMIN);
-
-    // Only superadmin can delete company_admin; company_admin can delete employees
-    const canDelete =
-      !isSelf &&
-      ((currentRole === USER_ROLES.SUPERADMIN) ||
-        (currentRole === USER_ROLES.COMPANY_ADMIN &&
-          member.role !== USER_ROLES.COMPANY_ADMIN &&
-          member.role !== USER_ROLES.SUPERADMIN));
-
-    const deactivateMutation = useMutation({
-      mutationFn: () =>
-        apiClient.post(API.companies.memberDeactivate(companyId, String(member.id))),
-      onSuccess: () => {
-        setActionError(null);
-        void queryClient.invalidateQueries({ queryKey: ['teamMembers', companyId] });
-      },
-      onError: (err: unknown) => {
-        setActionError(getApiErrorMessage(err, 'Не удалось деактивировать сотрудника.'));
-      },
-    });
-
-    const activateMutation = useMutation({
-      mutationFn: () =>
-        apiClient.post(API.companies.memberActivate(companyId, String(member.id))),
-      onSuccess: () => {
-        setActionError(null);
-        void queryClient.invalidateQueries({ queryKey: ['teamMembers', companyId] });
-      },
-      onError: (err: unknown) => {
-        setActionError(getApiErrorMessage(err, 'Не удалось активировать сотрудника.'));
-      },
-    });
-
-    const anyPending = deactivateMutation.isPending || activateMutation.isPending;
-
-    const stats: { icon: React.ReactNode; label: string; value: string | number }[] = isLoading
-      ? []
-      : isError || !data
-        ? []
-        : [
-            {
-              icon: <LogIn className="h-4 w-4 text-indigo-400" aria-hidden="true" />,
-              label: 'Последний вход',
-              value: formatDate(data.last_login),
-            },
-            {
-              icon: <ClipboardList className="h-4 w-4 text-amber-400" aria-hidden="true" />,
-              label: 'Активные задачи',
-              value: data.tasks_active,
-            },
-            {
-              icon: <CheckCircle2 className="h-4 w-4 text-emerald-400" aria-hidden="true" />,
-              label: 'Завершённые задачи',
-              value: data.tasks_completed,
-            },
-            {
-              icon: <Calendar className="h-4 w-4 text-sky-400" aria-hidden="true" />,
-              label: 'Брони за 30 дней',
-              value: data.bookings_last_30_days,
-            },
-          ];
-
+  if (isLoading) {
     return (
-      <div className="space-y-4">
-        {/* Activity stats */}
-        {isLoading && (
-          <div className="flex items-center gap-2 py-4 text-sm text-gray-400">
-            <Activity className="h-4 w-4 animate-pulse" aria-hidden="true" />
-            Загрузка активности…
-          </div>
-        )}
-        {!isLoading && (isError || !data) && (
-          <p className="py-3 text-sm text-red-400">Не удалось загрузить данные активности.</p>
-        )}
-        {!isLoading && data && (
-          <div
-            className="grid grid-cols-2 gap-3 sm:grid-cols-4"
-            role="region"
-            aria-label="Активность сотрудника"
-          >
-            {stats.map((s) => (
-              <div
-                key={s.label}
-                className="flex flex-col gap-1.5 rounded-lg bg-gray-900 px-4 py-3 border border-gray-700"
-              >
-                <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                  {s.icon}
-                  {s.label}
-                </div>
-                <span className="text-base font-semibold text-white">{s.value}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Action buttons */}
-        {(canManageActive || canDelete) && (
-          <div className="flex flex-wrap items-center gap-2 border-t border-gray-700 pt-4">
-            {canManageActive && member.is_active && (
-              <button
-                type="button"
-                onClick={() => deactivateMutation.mutate()}
-                disabled={anyPending}
-                className={ghostBtnClass}
-                aria-label={`Деактивировать ${member.full_name}`}
-              >
-                <UserX className="h-4 w-4" aria-hidden="true" />
-                {deactivateMutation.isPending ? 'Деактивация…' : 'Деактивировать'}
-              </button>
-            )}
-            {canManageActive && !member.is_active && (
-              <button
-                type="button"
-                onClick={() => activateMutation.mutate()}
-                disabled={anyPending}
-                className={ghostBtnClass}
-                aria-label={`Активировать ${member.full_name}`}
-              >
-                <UserCheck className="h-4 w-4" aria-hidden="true" />
-                {activateMutation.isPending ? 'Активация…' : 'Активировать'}
-              </button>
-            )}
-            {canDelete && !showDeleteConfirm && (
-              <button
-                type="button"
-                onClick={() => setShowDeleteConfirm(true)}
-                className={dangerBtnClass}
-                aria-label={`Удалить ${member.full_name}`}
-              >
-                <Trash2 className="h-4 w-4" aria-hidden="true" />
-                Удалить
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Inline action error */}
-        {actionError && (
-          <p className="text-sm text-red-400" role="alert">
-            {actionError}
-          </p>
-        )}
-
-        {/* Delete confirmation panel */}
-        {showDeleteConfirm && (
-          <DeleteConfirmPanel
-            member={member}
-            companyId={companyId}
-            allMembers={allMembers}
-            onCancel={() => setShowDeleteConfirm(false)}
-            onDeleted={() => setShowDeleteConfirm(false)}
-          />
-        )}
+      <div className="flex items-center gap-2 py-4 text-sm text-gray-400">
+        <Activity className="h-4 w-4 animate-pulse" aria-hidden="true" />
+        Загрузка активности…
       </div>
     );
-  },
-);
+  }
+
+  if (isError || !data) {
+    return (
+      <p className="py-3 text-sm text-red-400">Не удалось загрузить данные активности.</p>
+    );
+  }
+
+  const stats: { icon: React.ReactNode; label: string; value: string | number }[] = [
+    {
+      icon: <LogIn className="h-4 w-4 text-indigo-400" aria-hidden="true" />,
+      label: 'Последний вход',
+      value: formatDate(data.last_login),
+    },
+    {
+      icon: <ClipboardList className="h-4 w-4 text-amber-400" aria-hidden="true" />,
+      label: 'Активные задачи',
+      value: data.active_tasks_count,
+    },
+    {
+      icon: <CheckCircle2 className="h-4 w-4 text-emerald-400" aria-hidden="true" />,
+      label: 'Завершённые задачи',
+      value: data.completed_tasks_count,
+    },
+    {
+      icon: <Calendar className="h-4 w-4 text-sky-400" aria-hidden="true" />,
+      label: 'Брони за 30 дней',
+      value: data.bookings_last_30_days,
+    },
+  ];
+
+  return (
+    <div
+      className="grid grid-cols-2 gap-3 sm:grid-cols-4"
+      role="region"
+      aria-label="Активность сотрудника"
+    >
+      {stats.map((s) => (
+        <div
+          key={s.label}
+          className="flex flex-col gap-1.5 rounded-lg bg-gray-900 px-4 py-3 border border-gray-700"
+        >
+          <div className="flex items-center gap-1.5 text-xs text-gray-400">
+            {s.icon}
+            {s.label}
+          </div>
+          <span className="text-base font-semibold text-white">{s.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+});
 
 // ---------------------------------------------------------------------------
 // Member row
@@ -486,84 +253,126 @@ interface MemberRowProps {
   companyId: string;
   isExpanded: boolean;
   onToggle: (id: number) => void;
-  currentUser: { id: number; role: string } | null;
-  allMembers: CompanyMember[];
+  canManageMembers: boolean;
+  isUpdating: boolean;
+  onDeactivate: (member: CompanyMember) => void;
+  onActivate: (member: CompanyMember) => void;
+  onRemove: (member: CompanyMember) => void;
 }
 
-const MemberRow = memo<MemberRowProps>(
-  ({ member, companyId, isExpanded, onToggle, currentUser, allMembers }) => {
-    const handleKeyDown = useCallback(
-      (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onToggle(member.id);
-        }
-      },
-      [member.id, onToggle],
-    );
+const MemberRow = memo<MemberRowProps>(({
+  member,
+  companyId,
+  isExpanded,
+  onToggle,
+  canManageMembers,
+  isUpdating,
+  onDeactivate,
+  onActivate,
+  onRemove,
+}) => {
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onToggle(member.id);
+      }
+    },
+    [member.id, onToggle],
+  );
 
-    return (
-      <>
-        <tr
-          className={cn(
-            'cursor-pointer transition-colors',
-            isExpanded ? 'bg-gray-700/60' : 'hover:bg-gray-700/40',
+  return (
+    <>
+      <tr
+        className={cn(
+          'cursor-pointer transition-colors',
+          isExpanded ? 'bg-gray-700/60' : 'hover:bg-gray-700/40',
+        )}
+        onClick={() => onToggle(member.id)}
+        onKeyDown={handleKeyDown}
+        tabIndex={0}
+        role="row"
+        aria-expanded={isExpanded}
+        aria-label={`Сотрудник ${member.full_name}`}
+      >
+        <td className="px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Avatar src={member.avatar} fullName={member.full_name} />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-white">{member.full_name}</p>
+              <p className="truncate text-xs text-gray-400">{member.email}</p>
+            </div>
+          </div>
+        </td>
+        <td className="hidden px-4 py-3 sm:table-cell">
+          <RoleBadge role={member.role} />
+        </td>
+        <td className="hidden px-4 py-3 text-sm text-gray-300 md:table-cell">
+          {member.position || <span className="text-gray-600">—</span>}
+        </td>
+        <td className="hidden px-4 py-3 lg:table-cell">
+          <StatusBadge isActive={member.is_active} />
+        </td>
+        <td className="hidden px-4 py-3 text-xs text-gray-400 xl:table-cell">
+          {formatDate(member.date_joined)}
+        </td>
+        <td className="hidden px-4 py-3 text-xs text-gray-400 xl:table-cell">
+          {formatDate(member.last_login)}
+        </td>
+        <td className="px-4 py-3 text-right">
+          {isExpanded ? (
+            <ChevronUp className="ml-auto h-4 w-4 text-gray-400" aria-hidden="true" />
+          ) : (
+            <ChevronDown className="ml-auto h-4 w-4 text-gray-400" aria-hidden="true" />
           )}
-          onClick={() => onToggle(member.id)}
-          onKeyDown={handleKeyDown}
-          tabIndex={0}
-          role="row"
-          aria-expanded={isExpanded}
-          aria-label={`Сотрудник ${member.full_name}`}
-        >
-          <td className="px-4 py-3">
-            <div className="flex items-center gap-3">
-              <Avatar src={member.avatar} fullName={member.full_name} />
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-white">{member.full_name}</p>
-                <p className="truncate text-xs text-gray-400">{member.email}</p>
-              </div>
+        </td>
+      </tr>
+      {isExpanded && (
+        <tr role="row">
+          <td colSpan={7} className="bg-gray-800/60 px-4 pb-4 pt-2">
+            <div className="space-y-3">
+              <ActivityPanel companyId={companyId} memberId={member.id} />
+              {canManageMembers && (
+                <div className="flex flex-wrap gap-2">
+                  {member.is_active ? (
+                    <button
+                      type="button"
+                      disabled={isUpdating}
+                      onClick={() => onDeactivate(member)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-amber-700 bg-amber-900/40 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-900/60 disabled:opacity-60"
+                    >
+                      <UserX className="h-3.5 w-3.5" aria-hidden="true" />
+                      Деактивировать
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={isUpdating}
+                      onClick={() => onActivate(member)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-700 bg-emerald-900/30 px-3 py-1.5 text-xs font-medium text-emerald-300 hover:bg-emerald-900/50 disabled:opacity-60"
+                    >
+                      <UserCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                      Активировать
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={isUpdating}
+                    onClick={() => onRemove(member)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-red-800 bg-red-900/30 px-3 py-1.5 text-xs font-medium text-red-300 hover:bg-red-900/50 disabled:opacity-60"
+                  >
+                    <UserMinus className="h-3.5 w-3.5" aria-hidden="true" />
+                    Удалить из компании
+                  </button>
+                </div>
+              )}
             </div>
           </td>
-          <td className="hidden px-4 py-3 sm:table-cell">
-            <RoleBadge role={member.role} />
-          </td>
-          <td className="hidden px-4 py-3 text-sm text-gray-300 md:table-cell">
-            {member.position || <span className="text-gray-600">—</span>}
-          </td>
-          <td className="hidden px-4 py-3 lg:table-cell">
-            <StatusBadge isActive={member.is_active} />
-          </td>
-          <td className="hidden px-4 py-3 text-xs text-gray-400 xl:table-cell">
-            {formatDate(member.date_joined)}
-          </td>
-          <td className="hidden px-4 py-3 text-xs text-gray-400 xl:table-cell">
-            {formatDate(member.last_login)}
-          </td>
-          <td className="px-4 py-3 text-right">
-            {isExpanded ? (
-              <ChevronUp className="ml-auto h-4 w-4 text-gray-400" aria-hidden="true" />
-            ) : (
-              <ChevronDown className="ml-auto h-4 w-4 text-gray-400" aria-hidden="true" />
-            )}
-          </td>
         </tr>
-        {isExpanded && (
-          <tr role="row">
-            <td colSpan={7} className="bg-gray-800/60 px-4 pb-4 pt-2">
-              <ActivityPanel
-                companyId={companyId}
-                member={member}
-                currentUser={currentUser}
-                allMembers={allMembers}
-              />
-            </td>
-          </tr>
-        )}
-      </>
-    );
-  },
-);
+      )}
+    </>
+  );
+});
 
 // ---------------------------------------------------------------------------
 // Ordering toggle button
@@ -611,6 +420,7 @@ const DEBOUNCE_MS = 350;
 
 export default function TeamManagePage() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
 
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
@@ -624,6 +434,8 @@ export default function TeamManagePage() {
   });
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   // Debounce search input
   useEffect(() => {
@@ -672,6 +484,76 @@ export default function TeamManagePage() {
     placeholderData: (prev) => prev,
   });
 
+  const refreshMemberQueries = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+    await queryClient.invalidateQueries({ queryKey: ['company-members'] });
+  }, [queryClient]);
+
+  const deactivateMemberMutation = useMutation({
+    mutationFn: ({ currentCompanyId, memberId }: { currentCompanyId: string; memberId: number }) =>
+      apiClient
+        .post<MemberActionResponse>(API.companies.memberDeactivate(currentCompanyId, String(memberId)))
+        .then((r) => r.data),
+    onSuccess: async (payload) => {
+      setActionError(null);
+      setActionSuccess(payload.detail);
+      await refreshMemberQueries();
+    },
+    onError: (error: unknown) => {
+      setActionSuccess(null);
+      setActionError(getApiErrorMessage(error, 'Не удалось деактивировать сотрудника.'));
+    },
+  });
+
+  const activateMemberMutation = useMutation({
+    mutationFn: ({ currentCompanyId, memberId }: { currentCompanyId: string; memberId: number }) =>
+      apiClient
+        .post<MemberActionResponse>(API.companies.memberActivate(currentCompanyId, String(memberId)))
+        .then((r) => r.data),
+    onSuccess: async (payload) => {
+      setActionError(null);
+      setActionSuccess(payload.detail);
+      await refreshMemberQueries();
+    },
+    onError: (error: unknown) => {
+      setActionSuccess(null);
+      setActionError(getApiErrorMessage(error, 'Не удалось активировать сотрудника.'));
+    },
+  });
+
+  const removeMemberMutation = useMutation({
+    mutationFn: ({
+      currentCompanyId,
+      memberId,
+      reassignTo,
+    }: {
+      currentCompanyId: string;
+      memberId: number;
+      reassignTo?: string;
+    }) =>
+      apiClient
+        .delete<MemberActionResponse>(API.companies.memberRemove(currentCompanyId, String(memberId), reassignTo))
+        .then((r) => r.data),
+    onSuccess: async (payload) => {
+      const suffix =
+        typeof payload.tasks_reassigned === 'number'
+          ? ` Переназначено задач: ${payload.tasks_reassigned}.`
+          : '';
+      setActionError(null);
+      setActionSuccess(`${payload.detail}.${suffix}`.trim());
+      await refreshMemberQueries();
+    },
+    onError: (error: unknown) => {
+      setActionSuccess(null);
+      setActionError(getApiErrorMessage(error, 'Не удалось удалить сотрудника из компании.'));
+    },
+  });
+
+  const isMemberActionPending =
+    deactivateMemberMutation.isPending ||
+    activateMemberMutation.isPending ||
+    removeMemberMutation.isPending;
+
   const handleToggleExpand = useCallback((id: number) => {
     setExpandedId((prev) => (prev === id ? null : id));
   }, []);
@@ -690,11 +572,44 @@ export default function TeamManagePage() {
     }));
   }, []);
 
-  const totalPages = data ? Math.ceil(data.count / PAGE_SIZE) : 0;
+  const canManageMembers = user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN;
 
-  // Current user identity (id + role) passed down to rows for action visibility
-  const currentUserIdentity =
-    user != null ? { id: user.id, role: user.role } : null;
+  const handleDeactivate = useCallback((member: CompanyMember) => {
+    if (!companyId) return;
+    if (!window.confirm(`Деактивировать пользователя ${member.full_name}?`)) return;
+    setActionSuccess(null);
+    setActionError(null);
+    deactivateMemberMutation.mutate({ currentCompanyId: companyId, memberId: member.id });
+  }, [companyId, deactivateMemberMutation]);
+
+  const handleActivate = useCallback((member: CompanyMember) => {
+    if (!companyId) return;
+    if (!window.confirm(`Активировать пользователя ${member.full_name}?`)) return;
+    setActionSuccess(null);
+    setActionError(null);
+    activateMemberMutation.mutate({ currentCompanyId: companyId, memberId: member.id });
+  }, [companyId, activateMemberMutation]);
+
+  const handleRemove = useCallback((member: CompanyMember) => {
+    if (!companyId) return;
+    if (!window.confirm(`Удалить ${member.full_name} из компании?`)) return;
+
+    const reassignInput = window.prompt(
+      'ID сотрудника для переназначения задач (опционально). Оставьте пустым, чтобы снять исполнителя.',
+      '',
+    );
+    const reassignTo = reassignInput?.trim() ? reassignInput.trim() : undefined;
+
+    setActionSuccess(null);
+    setActionError(null);
+    removeMemberMutation.mutate({
+      currentCompanyId: companyId,
+      memberId: member.id,
+      reassignTo,
+    });
+  }, [companyId, removeMemberMutation]);
+
+  const totalPages = data ? Math.ceil(data.count / PAGE_SIZE) : 0;
 
   if (!companyId && !isSuperadmin) {
     return (
@@ -714,11 +629,7 @@ export default function TeamManagePage() {
       <div>
         <h1 className="text-2xl font-bold text-white">Управление сотрудниками</h1>
         <p className="mt-1 text-sm text-gray-400">
-          {companyId && data
-            ? `Всего: ${data.count} сотрудников`
-            : isSuperadmin && !companyId
-              ? 'Выберите компанию для просмотра сотрудников'
-              : 'Загрузка…'}
+          {companyId && data ? `Всего: ${data.count} сотрудников` : isSuperadmin && !companyId ? 'Выберите компанию для просмотра сотрудников' : 'Загрузка…'}
         </p>
       </div>
 
@@ -753,251 +664,246 @@ export default function TeamManagePage() {
       )}
 
       {/* Filters, table and pagination — only shown once a company is available */}
-      {companyId && (
-        <>
-          <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
-              {/* Search */}
-              <div className="flex-1 min-w-48">
-                <label
-                  htmlFor="member-search"
-                  className="mb-1 block text-xs font-medium text-gray-400"
-                >
-                  Поиск
-                </label>
-                <div className="relative">
-                  <Search
-                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"
-                    aria-hidden="true"
-                  />
-                  <input
-                    id="member-search"
-                    type="search"
-                    value={filters.search}
-                    onChange={(e) =>
-                      setFilters((prev) => ({ ...prev, search: e.target.value, page: 1 }))
-                    }
-                    placeholder="Имя или email…"
-                    className={cn(inputClass, 'pl-9')}
-                    aria-label="Поиск сотрудников по имени или email"
-                  />
-                </div>
-              </div>
-
-              {/* Role filter */}
-              <div>
-                <label
-                  htmlFor="role-filter"
-                  className="mb-1 block text-xs font-medium text-gray-400"
-                >
-                  Роль
-                </label>
-                <select
-                  id="role-filter"
-                  value={filters.role}
-                  onChange={(e) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      role: e.target.value as Filters['role'],
-                      page: 1,
-                    }))
-                  }
-                  className={selectClass}
-                  aria-label="Фильтр по роли"
-                >
-                  <option value="">Все роли</option>
-                  <option value="employee">Сотрудник</option>
-                  <option value="company_admin">Админ компании</option>
-                </select>
-              </div>
-
-              {/* Active status filter */}
-              <div>
-                <label
-                  htmlFor="status-filter"
-                  className="mb-1 block text-xs font-medium text-gray-400"
-                >
-                  Статус
-                </label>
-                <select
-                  id="status-filter"
-                  value={filters.is_active}
-                  onChange={(e) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      is_active: e.target.value as Filters['is_active'],
-                      page: 1,
-                    }))
-                  }
-                  className={selectClass}
-                  aria-label="Фильтр по статусу активности"
-                >
-                  <option value="">Все</option>
-                  <option value="true">Активные</option>
-                  <option value="false">Неактивные</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Ordering */}
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span className="text-xs font-medium text-gray-400">Сортировка:</span>
-              <OrderingButton
-                field="full_name"
-                label="По имени"
-                current={{ field: filters.orderingField, dir: filters.orderingDir }}
-                onChange={handleOrderingFieldChange}
+      {companyId && <><div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+        {actionError && (
+          <div className="mb-3 rounded-lg border border-red-800 bg-red-950/50 px-3 py-2 text-sm text-red-300">
+            {actionError}
+          </div>
+        )}
+        {actionSuccess && (
+          <div className="mb-3 rounded-lg border border-emerald-800 bg-emerald-950/40 px-3 py-2 text-sm text-emerald-300">
+            {actionSuccess}
+          </div>
+        )}
+        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
+          {/* Search */}
+          <div className="flex-1 min-w-48">
+            <label htmlFor="member-search" className="mb-1 block text-xs font-medium text-gray-400">
+              Поиск
+            </label>
+            <div className="relative">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"
+                aria-hidden="true"
               />
-              <OrderingButton
-                field="date_joined"
-                label="По дате вступления"
-                current={{ field: filters.orderingField, dir: filters.orderingDir }}
-                onChange={handleOrderingFieldChange}
-              />
-              <OrderingButton
-                field="last_login"
-                label="По последнему входу"
-                current={{ field: filters.orderingField, dir: filters.orderingDir }}
-                onChange={handleOrderingFieldChange}
+              <input
+                id="member-search"
+                type="search"
+                value={filters.search}
+                onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value, page: 1 }))}
+                placeholder="Имя или email…"
+                className={cn(inputClass, 'pl-9')}
+                aria-label="Поиск сотрудников по имени или email"
               />
             </div>
           </div>
 
-          {/* Table */}
-          <div
-            className={cn(
-              'overflow-hidden rounded-xl border border-gray-700 bg-gray-800 transition-opacity',
-              isFetching && 'opacity-70',
-            )}
-          >
-            {isLoading ? (
-              <div className="flex items-center justify-center py-16 text-sm text-gray-400">
-                <Activity className="mr-2 h-5 w-5 animate-pulse" aria-hidden="true" />
-                Загрузка сотрудников…
-              </div>
-            ) : isError ? (
-              <div className="flex items-center justify-center py-16 text-sm text-red-400">
-                Не удалось загрузить список сотрудников. Попробуйте снова.
-              </div>
-            ) : !data?.results.length ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-16 text-sm text-gray-400">
-                <User className="h-10 w-10 text-gray-600" aria-hidden="true" />
-                <p>Сотрудники не найдены.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table
-                  className="w-full text-left"
-                  role="table"
-                  aria-label="Список сотрудников"
-                >
-                  <thead>
-                    <tr className="border-b border-gray-700">
-                      <th
-                        scope="col"
-                        className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400"
-                      >
-                        Сотрудник
-                      </th>
-                      <th
-                        scope="col"
-                        className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 sm:table-cell"
-                      >
-                        Роль
-                      </th>
-                      <th
-                        scope="col"
-                        className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 md:table-cell"
-                      >
-                        Должность
-                      </th>
-                      <th
-                        scope="col"
-                        className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 lg:table-cell"
-                      >
-                        Статус
-                      </th>
-                      <th
-                        scope="col"
-                        className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 xl:table-cell"
-                      >
-                        Дата вступления
-                      </th>
-                      <th
-                        scope="col"
-                        className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 xl:table-cell"
-                      >
-                        Последний вход
-                      </th>
-                      <th scope="col" className="px-4 py-3">
-                        <span className="sr-only">Действия</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-700/50">
-                    {data.results.map((member) => (
-                      <MemberRow
-                        key={member.id}
-                        member={member}
-                        companyId={companyId}
-                        isExpanded={expandedId === member.id}
-                        onToggle={handleToggleExpand}
-                        currentUser={currentUserIdentity}
-                        allMembers={data.results}
-                      />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div
-              className="flex items-center justify-between text-sm text-gray-400"
-              role="navigation"
-              aria-label="Пагинация"
+          {/* Role filter */}
+          <div>
+            <label htmlFor="role-filter" className="mb-1 block text-xs font-medium text-gray-400">
+              Роль
+            </label>
+            <select
+              id="role-filter"
+              value={filters.role}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  role: e.target.value as Filters['role'],
+                  page: 1,
+                }))
+              }
+              className={selectClass}
+              aria-label="Фильтр по роли"
             >
-              <span>
-                Страница {filters.page} из {totalPages} ({data?.count ?? 0} записей)
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  disabled={filters.page <= 1}
-                  onClick={() => setFilters((prev) => ({ ...prev, page: prev.page - 1 }))}
-                  className={cn(
-                    'inline-flex items-center gap-1 rounded-lg border border-gray-700 px-3 py-1.5 text-sm transition-colors',
-                    filters.page <= 1
-                      ? 'cursor-not-allowed opacity-40'
-                      : 'hover:bg-gray-700 text-white',
-                  )}
-                  aria-label="Предыдущая страница"
-                >
-                  <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-                  Назад
-                </button>
-                <button
-                  type="button"
-                  disabled={filters.page >= totalPages}
-                  onClick={() => setFilters((prev) => ({ ...prev, page: prev.page + 1 }))}
-                  className={cn(
-                    'inline-flex items-center gap-1 rounded-lg border border-gray-700 px-3 py-1.5 text-sm transition-colors',
-                    filters.page >= totalPages
-                      ? 'cursor-not-allowed opacity-40'
-                      : 'hover:bg-gray-700 text-white',
-                  )}
-                  aria-label="Следующая страница"
-                >
-                  Вперёд
-                  <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                </button>
-              </div>
-            </div>
-          )}
-        </>
+              <option value="">Все роли</option>
+              <option value="employee">Сотрудник</option>
+              <option value="company_admin">Админ компании</option>
+            </select>
+          </div>
+
+          {/* Active status filter */}
+          <div>
+            <label htmlFor="status-filter" className="mb-1 block text-xs font-medium text-gray-400">
+              Статус
+            </label>
+            <select
+              id="status-filter"
+              value={filters.is_active}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  is_active: e.target.value as Filters['is_active'],
+                  page: 1,
+                }))
+              }
+              className={selectClass}
+              aria-label="Фильтр по статусу активности"
+            >
+              <option value="">Все</option>
+              <option value="true">Активные</option>
+              <option value="false">Неактивные</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Ordering */}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-gray-400">Сортировка:</span>
+          <OrderingButton
+            field="full_name"
+            label="По имени"
+            current={{ field: filters.orderingField, dir: filters.orderingDir }}
+            onChange={handleOrderingFieldChange}
+          />
+          <OrderingButton
+            field="date_joined"
+            label="По дате вступления"
+            current={{ field: filters.orderingField, dir: filters.orderingDir }}
+            onChange={handleOrderingFieldChange}
+          />
+          <OrderingButton
+            field="last_login"
+            label="По последнему входу"
+            current={{ field: filters.orderingField, dir: filters.orderingDir }}
+            onChange={handleOrderingFieldChange}
+          />
+        </div>
+      </div>
+
+      {/* Table */}
+      <div
+        className={cn(
+          'overflow-hidden rounded-xl border border-gray-700 bg-gray-800 transition-opacity',
+          isFetching && 'opacity-70',
+        )}
+      >
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16 text-sm text-gray-400">
+            <Activity className="mr-2 h-5 w-5 animate-pulse" aria-hidden="true" />
+            Загрузка сотрудников…
+          </div>
+        ) : isError ? (
+          <div className="flex items-center justify-center py-16 text-sm text-red-400">
+            Не удалось загрузить список сотрудников. Попробуйте снова.
+          </div>
+        ) : !data?.results.length ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-16 text-sm text-gray-400">
+            <User className="h-10 w-10 text-gray-600" aria-hidden="true" />
+            <p>Сотрудники не найдены.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left" role="table" aria-label="Список сотрудников">
+              <thead>
+                <tr className="border-b border-gray-700">
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400"
+                  >
+                    Сотрудник
+                  </th>
+                  <th
+                    scope="col"
+                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 sm:table-cell"
+                  >
+                    Роль
+                  </th>
+                  <th
+                    scope="col"
+                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 md:table-cell"
+                  >
+                    Должность
+                  </th>
+                  <th
+                    scope="col"
+                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 lg:table-cell"
+                  >
+                    Статус
+                  </th>
+                  <th
+                    scope="col"
+                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 xl:table-cell"
+                  >
+                    Дата вступления
+                  </th>
+                  <th
+                    scope="col"
+                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 xl:table-cell"
+                  >
+                    Последний вход
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    <span className="sr-only">Действия</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-700/50">
+                {data.results.map((member) => (
+                  <MemberRow
+                    key={member.id}
+                    member={member}
+                    companyId={companyId!}
+                    isExpanded={expandedId === member.id}
+                    onToggle={handleToggleExpand}
+                    canManageMembers={canManageMembers}
+                    isUpdating={isMemberActionPending}
+                    onDeactivate={handleDeactivate}
+                    onActivate={handleActivate}
+                    onRemove={handleRemove}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div
+          className="flex items-center justify-between text-sm text-gray-400"
+          role="navigation"
+          aria-label="Пагинация"
+        >
+          <span>
+            Страница {filters.page} из {totalPages} ({data?.count ?? 0} записей)
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={filters.page <= 1}
+              onClick={() => setFilters((prev) => ({ ...prev, page: prev.page - 1 }))}
+              className={cn(
+                'inline-flex items-center gap-1 rounded-lg border border-gray-700 px-3 py-1.5 text-sm transition-colors',
+                filters.page <= 1
+                  ? 'cursor-not-allowed opacity-40'
+                  : 'hover:bg-gray-700 text-white',
+              )}
+              aria-label="Предыдущая страница"
+            >
+              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+              Назад
+            </button>
+            <button
+              type="button"
+              disabled={filters.page >= totalPages}
+              onClick={() => setFilters((prev) => ({ ...prev, page: prev.page + 1 }))}
+              className={cn(
+                'inline-flex items-center gap-1 rounded-lg border border-gray-700 px-3 py-1.5 text-sm transition-colors',
+                filters.page >= totalPages
+                  ? 'cursor-not-allowed opacity-40'
+                  : 'hover:bg-gray-700 text-white',
+              )}
+              aria-label="Следующая страница"
+            >
+              Вперёд
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
       )}
+      </>}
     </div>
   );
 }

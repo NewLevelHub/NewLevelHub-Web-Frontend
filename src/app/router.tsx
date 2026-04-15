@@ -41,6 +41,7 @@ import CalendarPage from '@/pages/calendar/CalendarPage';
 
 // Bookings
 import BookingCatalogPage from '@/pages/bookings/BookingCatalogPage';
+import BookingResourceSchedulePage from '@/pages/bookings/BookingResourceSchedulePage';
 import BookingCreatePage from '@/pages/bookings/BookingCreatePage';
 import BookingDetailPage from '@/pages/bookings/BookingDetailPage';
 import MyBookingsPage from '@/pages/bookings/MyBookingsPage';
@@ -92,6 +93,9 @@ import ProfileSettingsPage from '@/pages/profile/ProfileSettingsPage';
 import UsersListPage from '@/pages/users/UsersListPage';
 import UserDetailPage from '@/pages/users/UserDetailPage';
 
+// Onboarding
+import OnboardingWizardPage from '@/pages/onboarding/OnboardingWizardPage';
+
 // Errors
 import NotFoundPage from '@/pages/errors/NotFoundPage';
 import ForbiddenPage from '@/pages/errors/ForbiddenPage';
@@ -137,6 +141,7 @@ export const router = createBrowserRouter([
           { path: '/notifications', element: <NotificationListPage /> },
           { path: '/bookings', element: <Navigate to="/bookings/catalog" replace /> },
           { path: '/bookings/catalog', element: <BookingCatalogPage /> },
+          { path: '/bookings/resources/:id', element: <BookingResourceSchedulePage /> },
           { path: '/bookings/new', element: <BookingCreatePage /> },
           { path: '/bookings/my', element: <MyBookingsPage /> },
           { path: '/bookings/:id', element: <BookingDetailPage /> },
@@ -147,6 +152,14 @@ export const router = createBrowserRouter([
           { path: '/passes/new', element: <PassCreatePage /> },
           { path: '/service-requests', element: <ServiceRequestListPage /> },
           { path: '/service-requests/new', element: <ServiceRequestCreatePage /> },
+
+          // Company admin + employee onboarding
+          {
+            element: <RequireRole allowed={[COMPANY_ADMIN, EMPLOYEE]} />,
+            children: [
+              { path: '/onboarding', element: <OnboardingWizardPage /> },
+            ],
+          },
 
           // Company users (superadmin + company_admin + employee)
           {
@@ -172,9 +185,9 @@ export const router = createBrowserRouter([
             ],
           },
 
-          // Company admin + superadmin + employee (read-only for employee)
+          // Company admin + superadmin
           {
-            element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE]} />,
+            element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN]} />,
             children: [
               { path: '/company/settings', element: <CompanySettingsPage /> },
             ],
@@ -193,12 +206,17 @@ export const router = createBrowserRouter([
             element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE]} />,
             children: [
               { path: '/companies', element: <CompanyListPage /> },
+              { path: '/admin/companies', element: <CompanyListPage /> },
               { path: '/companies/:id', element: <CompanyDetailPage /> },
+              { path: '/admin/companies/:id', element: <CompanyDetailPage /> },
             ],
           },
           {
             element: <RequireRole allowed={[SUPERADMIN]} />,
-            children: [{ path: '/companies/new', element: <CompanyCreatePage /> }],
+            children: [
+              { path: '/companies/new', element: <CompanyCreatePage /> },
+              { path: '/admin/companies/new', element: <CompanyCreatePage /> },
+            ],
           },
 
           // Superadmin only
@@ -214,6 +232,8 @@ export const router = createBrowserRouter([
               { path: '/passes/validate', element: <PassValidatePage /> },
               { path: '/users', element: <UsersListPage /> },
               { path: '/users/:id', element: <UserDetailPage /> },
+              { path: '/admin/users', element: <UsersListPage /> },
+              { path: '/admin/users/:id', element: <UserDetailPage /> },
             ],
           },
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
@@ -38,9 +38,17 @@ import {
   resourcePageNarrow,
   resTitle,
 } from '@/shared/ui/resourcePageStyles';
-import type { BookingResourceDetail, Company, PaginatedResponse } from '@/shared/types';
+import type { BookingResourceDetail, Company, PaginatedResponse, ResourceScheduleSlot } from '@/shared/types';
+import { ResourceDayTimeline } from '@/pages/bookings/components/ResourceDayTimeline';
 
 type EquipmentState = Record<ResourceEquipmentKey, boolean>;
+
+function localIsoDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 function equipmentFromDetail(eq: BookingResourceDetail['equipment']): EquipmentState {
   const d = eq ?? {
@@ -62,6 +70,7 @@ export default function ResourceDetailPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [deleteModal, setDeleteModal] = useState(false);
   const [deactivateModal, setDeactivateModal] = useState(false);
+  const [scheduleDay, setScheduleDay] = useState(() => localIsoDate(new Date()));
 
   const resourceId = id ? Number(id) : NaN;
 
@@ -75,6 +84,30 @@ export default function ResourceDetailPage() {
       return res;
     },
   });
+
+  const { data: scheduleSlots = [], isLoading: scheduleLoading } = useQuery({
+    queryKey: ['booking-resource-schedule', resourceId, scheduleDay],
+    enabled: Number.isFinite(resourceId),
+    queryFn: async () => {
+      const { data: res } = await apiClient.get<ResourceScheduleSlot[]>(
+        API.bookings.resources.schedule(String(resourceId)),
+        { params: { date: scheduleDay } },
+      );
+      return res;
+    },
+  });
+
+  const weekAnchors = useMemo(() => {
+    const [y, m, d] = scheduleDay.split('-').map(Number);
+    const mid = new Date(y, m - 1, d);
+    const monday = new Date(mid);
+    monday.setDate(mid.getDate() - ((mid.getDay() + 6) % 7));
+    return Array.from({ length: 7 }, (_, i) => {
+      const x = new Date(monday);
+      x.setDate(monday.getDate() + i);
+      return localIsoDate(x);
+    });
+  }, [scheduleDay]);
 
   const { data: companies = [] } = useQuery({
     queryKey: ['companies', 'resource-form'],
@@ -204,6 +237,7 @@ export default function ResourceDetailPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['booking-resource', resourceId] });
+      queryClient.invalidateQueries({ queryKey: ['booking-resource-schedule', resourceId] });
       queryClient.invalidateQueries({ queryKey: ['booking-resources'] });
       setErrorMsg(null);
       setPhotoFile(null);
@@ -221,6 +255,7 @@ export default function ResourceDetailPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['booking-resource', resourceId] });
+      queryClient.invalidateQueries({ queryKey: ['booking-resource-schedule', resourceId] });
       queryClient.invalidateQueries({ queryKey: ['booking-resources'] });
       setDeactivateModal(false);
       setErrorMsg(null);
@@ -301,6 +336,43 @@ export default function ResourceDetailPage() {
           {errorMsg}
         </div>
       )}
+
+      <section className={`${resFormCard} space-y-3`}>
+        <h2 className="text-base font-semibold text-gray-900">Занятость по дням</h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="date"
+            value={scheduleDay}
+            onChange={(e) => setScheduleDay(e.target.value)}
+            className="rounded-lg border border-gray-600 bg-gray-900/40 px-2 py-1.5 text-sm text-gray-100"
+          />
+          <div className="flex flex-wrap gap-1">
+            {weekAnchors.map((iso) => {
+              const [, mm, dd] = iso.split('-');
+              const active = iso === scheduleDay;
+              return (
+                <button
+                  key={iso}
+                  type="button"
+                  onClick={() => setScheduleDay(iso)}
+                  className={`rounded px-2 py-0.5 text-xs font-medium border ${
+                    active
+                      ? 'border-blue-500 bg-blue-600 text-white'
+                      : 'border-gray-600 text-gray-200 hover:bg-gray-800'
+                  }`}
+                >
+                  {dd}.{mm}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        {scheduleLoading ? (
+          <p className="text-sm text-gray-400">Загрузка расписания…</p>
+        ) : (
+          <ResourceDayTimeline dayDate={scheduleDay} slots={scheduleSlots} />
+        )}
+      </section>
 
       <form
         className={resFormCard}

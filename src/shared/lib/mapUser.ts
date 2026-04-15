@@ -15,14 +15,18 @@ export function mapApiUser(raw: Record<string, unknown>): User {
   // Support both nested company object { id, name } and flat company_id/company_name
   let companyId: number | null = null;
   let companyName: string | null = null;
-  let companyObject: { id: number; name: string } | null = null;
+  let companyObject: { id: number; name: string; onboarding_completed?: boolean } | null = null;
 
   if (companyRaw !== null && companyRaw !== undefined && typeof companyRaw === 'object') {
     const c = companyRaw as Record<string, unknown>;
     companyId = typeof c.id === 'number' ? c.id : null;
     companyName = typeof c.name === 'string' ? c.name : null;
     if (companyId !== null && companyName !== null) {
-      companyObject = { id: companyId, name: companyName };
+      companyObject = {
+        id: companyId,
+        name: companyName,
+        onboarding_completed: typeof c.onboarding_completed === 'boolean' ? c.onboarding_completed : undefined,
+      };
     }
   } else if (typeof companyRaw === 'number') {
     companyId = companyRaw;

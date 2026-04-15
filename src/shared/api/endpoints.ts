@@ -17,9 +17,10 @@ export const API = {
     list: '/companies/',
     create: '/companies/',
     detail: (id: string) => `/companies/${id}/`,
+    limits: (id: string) => `/companies/${id}/limits/`,
     deactivate: (id: string) => `/companies/${id}/deactivate/`,
     activate: (id: string) => `/companies/${id}/activate/`,
-    delete: (id: string) => `/companies/${id}/`,
+    delete: (id: string) => `/companies/${id}/?confirm=true`,
     members: (id: string) => `/companies/${id}/members/`,
     invitations: (id: string) => `/companies/${id}/invitations/`,
     invitationRevoke: (companyId: string, invitationId: string) =>
@@ -33,10 +34,30 @@ export const API = {
       `/companies/${companyId}/members/${userId}/deactivate/`,
     memberActivate: (companyId: string, userId: string) =>
       `/companies/${companyId}/members/${userId}/activate/`,
-    memberDelete: (companyId: string, userId: string) =>
-      `/companies/${companyId}/members/${userId}/`,
+    memberRemove: (companyId: string, userId: string, reassignTo?: string) =>
+      `/companies/${companyId}/members/${userId}/${reassignTo ? `?reassign_to=${reassignTo}` : ''}`,
+    onboardingStatus: (companyId: string) => `/companies/${companyId}/onboarding/status/`,
+    onboardingSkip: (companyId: string) => `/companies/${companyId}/onboarding/skip/`,
+  },
+  resources: {
+    list: '/resources/',
+    create: '/resources/',
+    detail: (id: string) => `/resources/${id}/`,
+    availability: (id: string) => `/resources/${id}/availability/`,
   },
   bookings: {
+    list: '/bookings/',
+    create: '/bookings/',
+    detail: (id: string) => `/bookings/${id}/`,
+    my: '/bookings/my/',
+    manage: '/bookings/manage/',
+    resources: {
+      list: '/bookings/resources/',
+      create: '/bookings/resources/',
+      detail: (id: string) => `/bookings/resources/${id}/`,
+      schedule: (id: string) => `/bookings/resources/${id}/schedule/`,
+      bulkCreate: '/bookings/resources/bulk-create/',
+    },
     reservations: {
       list: '/bookings/reservations/',
       create: '/bookings/reservations/',
@@ -44,15 +65,6 @@ export const API = {
       my: '/bookings/reservations/my/',
       cancel: (id: string) => `/bookings/reservations/${id}/cancel/`,
     },
-    resources: {
-      list: '/bookings/resources/',
-      create: '/bookings/resources/',
-      detail: (id: string) => `/bookings/resources/${id}/`,
-      bulkCreate: '/bookings/resources/bulk-create/',
-      schedule: (id: string) => `/bookings/resources/${id}/schedule/`,
-      block: (id: string) => `/bookings/resources/${id}/block/`,
-    },
-    manage: '/bookings/manage/',
   },
   crm: {
     boards: '/crm/boards/',
@@ -128,6 +140,8 @@ export const API = {
   users: {
     list: '/auth/users/',
     detail: (id: number) => `/auth/users/${id}/`,
+    block: (id: number) => `/auth/users/${id}/block/`,
+    unblock: (id: number) => `/auth/users/${id}/unblock/`,
     impersonate: (id: number) => `/auth/users/${id}/impersonate/`,
   },
 } as const;

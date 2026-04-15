@@ -1,15 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import { useAuthStore } from '@/shared/store/auth';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
+import { USER_ROLES } from '@/shared/config/constants';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { authPrimaryBtn } from '@/shared/ui/authFormStyles';
 import { cn } from '@/shared/lib/cn';
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const fetchMe = useAuthStore((s) => s.fetchMe);
+
+  // Redirect company_admin or employee with unfinished onboarding to wizard
+  useEffect(() => {
+    if (
+      (user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.EMPLOYEE) &&
+      user.company?.onboarding_completed === false
+    ) {
+      void navigate('/onboarding', { replace: true });
+    }
+  }, [user, navigate]);
 
   const [resendMsg, setResendMsg] = useState('');
   const [resendErr, setResendErr] = useState('');

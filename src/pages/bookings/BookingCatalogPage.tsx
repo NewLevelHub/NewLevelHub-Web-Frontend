@@ -87,6 +87,8 @@ export default function BookingCatalogPage() {
   const [equipmentNeed, setEquipmentNeed] = useState(emptyEquipmentFilters);
   const [ordering, setOrdering] = useState('name');
   const [searchInput, setSearchInput] = useState('');
+  const [availFromLocal, setAvailFromLocal] = useState('');
+  const [availToLocal, setAvailToLocal] = useState('');
   const debouncedSearch = useDebouncedValue(searchInput, 350);
 
   const queryParams: Record<string, string | number> = { page, page_size: PAGE_SIZE, ordering };
@@ -101,6 +103,14 @@ export default function BookingCatalogPage() {
   if (capacityMax !== '' && !Number.isNaN(capMaxN)) queryParams.capacity_max = capMaxN;
   const equipTokens = RESOURCE_EQUIPMENT_KEYS.filter((k) => equipmentNeed[k]);
   if (equipTokens.length) queryParams.equipment = equipTokens.join(',');
+  if (availFromLocal && availToLocal) {
+    const fromMs = new Date(availFromLocal).getTime();
+    const toMs = new Date(availToLocal).getTime();
+    if (!Number.isNaN(fromMs) && !Number.isNaN(toMs) && fromMs < toMs) {
+      queryParams.available_from = new Date(availFromLocal).toISOString();
+      queryParams.available_to = new Date(availToLocal).toISOString();
+    }
+  }
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['booking-resources', 'catalog', queryParams],
@@ -157,6 +167,8 @@ export default function BookingCatalogPage() {
     capacityMax,
     equipmentNeed,
     ordering,
+    availFromLocal,
+    availToLocal,
   ]);
 
   const resetFilters = () => {
@@ -167,6 +179,8 @@ export default function BookingCatalogPage() {
     setEquipmentNeed(emptyEquipmentFilters());
     setOrdering('name');
     setSearchInput('');
+    setAvailFromLocal('');
+    setAvailToLocal('');
   };
 
   return (
@@ -313,6 +327,32 @@ export default function BookingCatalogPage() {
                 </div>
               )}
             </fieldset>
+
+            <div className="space-y-2 rounded-lg border border-gray-100 bg-gray-50/80 p-3">
+              <span className={sbLabel}>Свободен в интервале</span>
+              <p className="text-xs text-gray-600">
+                Укажите «с» и «до» (локальное время). Отфильтруются ресурсы без пересечений с
+                бронированиями и блокировками.
+              </p>
+              <label className="block">
+                <span className="text-xs text-gray-700">С</span>
+                <input
+                  type="datetime-local"
+                  value={availFromLocal}
+                  onChange={(e) => setAvailFromLocal(e.target.value)}
+                  className={cn(sbInput, 'focus:ring-2 focus:ring-blue-500 focus:outline-none')}
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs text-gray-700">До</span>
+                <input
+                  type="datetime-local"
+                  value={availToLocal}
+                  onChange={(e) => setAvailToLocal(e.target.value)}
+                  className={cn(sbInput, 'focus:ring-2 focus:ring-blue-500 focus:outline-none')}
+                />
+              </label>
+            </div>
 
             <label className="block">
               <span className={sbLabel}>Сортировка</span>

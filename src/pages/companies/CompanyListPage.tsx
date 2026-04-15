@@ -109,6 +109,7 @@ export default function CompanyListPage() {
   const queryClient = useQueryClient();
 
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
+  const companiesBasePath = isSuperadmin ? '/admin/companies' : '/companies';
 
   // ── Filter state ────────────────────────────────────────────────────────────
 
@@ -259,7 +260,7 @@ export default function CompanyListPage() {
         </div>
         {isSuperadmin && (
           <Link
-            to="/companies/new"
+            to={`${companiesBasePath}/new`}
             className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
@@ -398,6 +399,7 @@ export default function CompanyListPage() {
                   <CompanyRow
                     key={company.id}
                     company={company}
+                    detailBasePath={companiesBasePath}
                     isSuperadmin={isSuperadmin}
                     onDeactivate={() => openModal('deactivate', company)}
                     onActivate={() => openModal('activate', company)}
@@ -511,13 +513,21 @@ export default function CompanyListPage() {
 
 interface CompanyRowProps {
   company: Company;
+  detailBasePath: string;
   isSuperadmin: boolean;
   onDeactivate: () => void;
   onActivate: () => void;
   onDelete: () => void;
 }
 
-function CompanyRow({ company, isSuperadmin, onDeactivate, onActivate, onDelete }: CompanyRowProps) {
+function CompanyRow({
+  company,
+  detailBasePath,
+  isSuperadmin,
+  onDeactivate,
+  onActivate,
+  onDelete,
+}: CompanyRowProps) {
   return (
     <tr className="group transition-colors hover:bg-gray-50">
       {/* Logo + Name + office */}
@@ -539,7 +549,7 @@ function CompanyRow({ company, isSuperadmin, onDeactivate, onActivate, onDelete 
           )}
           <div>
             <Link
-              to={`/companies/${company.id}`}
+              to={`${detailBasePath}/${company.id}`}
               className="font-medium text-blue-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
             >
               {company.name}
@@ -592,7 +602,7 @@ function CompanyRow({ company, isSuperadmin, onDeactivate, onActivate, onDelete 
       <td className="px-4 py-3">
         <div className="flex items-center gap-1">
           <Link
-            to={`/companies/${company.id}`}
+            to={`${detailBasePath}/${company.id}`}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             aria-label={`Открыть ${company.name}`}
           >
