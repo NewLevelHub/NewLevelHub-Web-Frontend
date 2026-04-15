@@ -64,6 +64,7 @@ export const API = {
       detail: (id: string) => `/bookings/reservations/${id}/`,
       my: '/bookings/reservations/my/',
       cancel: (id: string) => `/bookings/reservations/${id}/cancel/`,
+      adminCancel: (id: string) => `/bookings/reservations/${id}/admin-cancel/`,
     },
   },
   crm: {
