@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { BOOKING_STATUSES, RESOURCE_TYPES, RESOURCE_TYPE_LABELS } from '@/shared/config/constants';
+import { BOOKING_STATUSES, RESOURCE_TYPES, RESOURCE_TYPE_LABELS, USER_ROLES } from '@/shared/config/constants';
+import { useAuth } from '@/shared/hooks/useAuth';
 import type { Booking, PaginatedResponse } from '@/shared/types';
 
 type MyBookingsStatusFilter = 'upcoming' | 'past' | 'cancelled';
@@ -38,6 +40,7 @@ function localDateTimeToIso(value: string): string | undefined {
 }
 
 export default function MyBookingsPage() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [statusTab, setStatusTab] = useState<MyBookingsStatusFilter>('upcoming');
   const [resourceType, setResourceType] = useState('');
@@ -80,12 +83,23 @@ export default function MyBookingsPage() {
     <main className="px-4 py-8 max-w-3xl mx-auto space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Мои бронирования</h1>
-        <Link
-          to="/bookings/catalog"
-          className="text-sm font-medium text-blue-600 hover:text-blue-800"
-        >
-          Каталог ресурсов
-        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          {(user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN) && (
+            <Link
+              to="/admin/bookings"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Назад в бронирования (админ)
+            </Link>
+          )}
+          <Link
+            to="/bookings/catalog"
+            className="text-sm font-medium text-blue-600 hover:text-blue-800"
+          >
+            Каталог ресурсов
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2 rounded-xl border border-gray-200 bg-white p-2">
