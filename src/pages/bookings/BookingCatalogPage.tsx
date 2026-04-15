@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { Bookmark, Search, Settings2 } from 'lucide-react';
+import { ArrowLeft, Bookmark, Search, Settings2 } from 'lucide-react';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
@@ -199,6 +199,15 @@ export default function BookingCatalogPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {(user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN) && (
+            <Link
+              to="/admin/bookings"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Назад в бронирования (админ)
+            </Link>
+          )}
           {user?.role === USER_ROLES.SUPERADMIN && (
             <Link
               to="/resources"

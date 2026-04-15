@@ -83,6 +83,7 @@ const companyAdminNav: NavSection[] = [
     title: 'Сервисы',
     items: [
       { label: 'Бронирование', path: '/bookings/catalog', icon: Bookmark },
+      { label: 'Бронирования (админ)', path: '/admin/bookings', icon: CalendarDays },
       { label: 'Гостевые пропуска', path: '/passes', icon: ShieldCheck },
       { label: 'Файлы', path: '/files', icon: FileText },
       { label: 'Объявления', path: '/announcements', icon: Megaphone },

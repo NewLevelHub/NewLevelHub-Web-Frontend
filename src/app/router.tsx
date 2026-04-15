@@ -219,6 +219,14 @@ export const router = createBrowserRouter([
             ],
           },
 
+          // Superadmin + company_admin
+          {
+            element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN]} />,
+            children: [
+              { path: '/admin/bookings', element: <ManageBookingsPage /> },
+            ],
+          },
+
           // Superadmin only
           {
             element: <RequireRole allowed={[SUPERADMIN]} />,
@@ -226,7 +234,6 @@ export const router = createBrowserRouter([
               { path: '/resources', element: <ResourceListPage /> },
               { path: '/resources/new', element: <ResourceCreatePage /> },
               { path: '/resources/:id', element: <ResourceDetailPage /> },
-              { path: '/admin/bookings', element: <ManageBookingsPage /> },
               { path: '/access-log', element: <AccessLogPage /> },
               { path: '/building/map/manage', element: <MapManagePage /> },
               { path: '/passes/validate', element: <PassValidatePage /> },
