@@ -48,7 +48,7 @@ export default function BookingCreatePage() {
       if (!validResourceId) throw new Error('Выберите ресурс из каталога.');
       if (!start_time || !end_time) throw new Error('Укажите начало и конец.');
       const { data } = await apiClient.post<Booking>(API.bookings.reservations.create, {
-        resource: Number(validResourceId),
+        resource_id: Number(validResourceId),
         start_time,
         end_time,
         description: description.trim(),

@@ -3,6 +3,8 @@ import { Link } from 'react-router';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Bookmark, Search, Settings2 } from 'lucide-react';
 
+import { BookingModal } from '@/shared/ui/BookingModal';
+
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import {
@@ -77,6 +79,7 @@ function formatAvailableAt(iso: string | null): string | null {
 export default function BookingCatalogPage() {
   const { user } = useAuth();
   const [page, setPage] = useState(1);
+  const [selectedResource, setSelectedResource] = useState<BookingResourceListItem | null>(null);
   const [typeFilter, setTypeFilter] = useState('');
   const [floorFilter, setFloorFilter] = useState('');
   const [capacityMin, setCapacityMin] = useState('');
@@ -445,19 +448,24 @@ export default function BookingCatalogPage() {
                         {r.is_hot_desk && r.type === RESOURCE_TYPES.DESK && (
                           <span className="text-xs font-medium text-blue-700">Hot desk</span>
                         )}
-                        <div className="mt-auto pt-2 flex flex-col gap-2">
-                          <Link
-                            to={`/bookings/resources/${r.id}`}
-                            className="inline-flex w-full justify-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
-                          >
-                            Расписание
-                          </Link>
-                          <Link
-                            to={`/bookings/new?resource=${r.id}`}
-                            className="inline-flex w-full justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                          >
-                            Забронировать
-                          </Link>
+                        <div className="mt-auto pt-2">
+                          {r.status === BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED ? (
+                            <button
+                              type="button"
+                              disabled
+                              className="inline-flex w-full justify-center rounded-lg bg-gray-200 px-3 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
+                            >
+                              Занят
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedResource(r)}
+                              className="inline-flex w-full justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              Забронировать
+                            </button>
+                          )}
                         </div>
                       </div>
                     </article>
@@ -492,6 +500,14 @@ export default function BookingCatalogPage() {
           )}
         </div>
       </div>
+
+      {selectedResource !== null && (
+        <BookingModal
+          resource={selectedResource}
+          open={selectedResource !== null}
+          onClose={() => setSelectedResource(null)}
+        />
+      )}
     </main>
   );
 }
