@@ -8,7 +8,14 @@ import { BOOKING_STATUSES, RESOURCE_TYPES, RESOURCE_TYPE_LABELS, USER_ROLES } fr
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { cn } from '@/shared/lib/cn';
-import type { Booking, PaginatedResponse } from '@/shared/types';
+import type {
+  Booking,
+  BookingResourceListItem,
+  Company,
+  CompanyMember,
+  PaginatedResponse,
+  UserListItem,
+} from '@/shared/types';
 
 const PAGE_SIZE = 20;
 
@@ -49,12 +56,7 @@ function localDateTimeToIso(value: string): string | undefined {
   return date.toISOString();
 }
 
-function normalizeNumericFilter(value: string): number | undefined {
-  if (!value.trim()) return undefined;
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed <= 0) return undefined;
-  return parsed;
-}
+type SelectOption = { id: number; label: string };
 
 export default function ManageBookingsPage() {
   const { user } = useAuth();
@@ -74,6 +76,71 @@ export default function ManageBookingsPage() {
   const [cancelReason, setCancelReason] = useState('');
   const [cancelFormError, setCancelFormError] = useState<string | null>(null);
 
+  const { data: companiesData } = useQuery({
+    queryKey: ['admin-bookings', 'company-options'],
+    enabled: isSuperadmin,
+    queryFn: async () => {
+      const { data: response } = await apiClient.get<PaginatedResponse<Company>>(API.companies.list, {
+        params: { page_size: 1000 },
+      });
+      return response.results;
+    },
+  });
+
+  const { data: usersData } = useQuery({
+    queryKey: ['admin-bookings', 'user-options', isSuperadmin, user?.company?.id],
+    enabled: Boolean(user && (isSuperadmin || user?.company?.id)),
+    queryFn: async () => {
+      if (isSuperadmin) {
+        const { data: response } = await apiClient.get<PaginatedResponse<UserListItem>>(API.users.list, {
+          params: { page_size: 1000 },
+        });
+        return response.results.map<SelectOption>((u) => ({
+          id: u.id,
+          label: `${u.first_name} ${u.last_name}`.trim() || u.email,
+        }));
+      }
+
+      const companyIdForMembers = user?.company?.id;
+      if (!companyIdForMembers) return [];
+
+      const { data: response } = await apiClient.get<CompanyMember[] | PaginatedResponse<CompanyMember>>(
+        API.companies.members(String(companyIdForMembers)),
+      );
+      const rows = Array.isArray(response) ? response : response.results;
+      return rows.map<SelectOption>((member) => ({
+        id: member.id,
+        label: member.full_name || member.email,
+      }));
+    },
+  });
+
+  const { data: resourcesData } = useQuery({
+    queryKey: ['admin-bookings', 'resource-options'],
+    queryFn: async () => {
+      const { data: response } = await apiClient.get<PaginatedResponse<BookingResourceListItem>>(
+        API.bookings.resources.list,
+        { params: { page_size: 1000, ordering: 'name' } },
+      );
+      return response.results;
+    },
+  });
+
+  const companyOptions = (companiesData ?? []).map<SelectOption>((company) => ({
+    id: company.id,
+    label: company.name,
+  }));
+  const userOptions = usersData ?? [];
+  const resourceOptions = (resourcesData ?? []).map<SelectOption>((resource) => ({
+    id: resource.id,
+    label: resource.name,
+  }));
+
+  const companyNameById = useMemo(() => {
+    const entries = companyOptions.map((company) => [company.id, company.label] as const);
+    return new Map<number, string>(entries);
+  }, [companyOptions]);
+
   const queryParams = useMemo(() => {
     const params: Record<string, string | number> = {
       page,
@@ -81,16 +148,11 @@ export default function ManageBookingsPage() {
       ordering: '-start_time',
     };
 
-    if (isSuperadmin) {
-      const normalizedCompanyId = normalizeNumericFilter(companyId);
-      if (normalizedCompanyId) params.company_id = normalizedCompanyId;
+    if (isSuperadmin && companyId) {
+      params.company_id = Number(companyId);
     }
-
-    const normalizedUserId = normalizeNumericFilter(userId);
-    if (normalizedUserId) params.user_id = normalizedUserId;
-
-    const normalizedResourceId = normalizeNumericFilter(resourceId);
-    if (normalizedResourceId) params.resource_id = normalizedResourceId;
+    if (userId) params.user_id = Number(userId);
+    if (resourceId) params.resource_id = Number(resourceId);
 
     if (resourceType) params.resource_type = resourceType;
     if (statusFilter) params.status = statusFilter;
@@ -198,47 +260,59 @@ export default function ManageBookingsPage() {
       <section className="grid gap-3 rounded-2xl border border-gray-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
         {isSuperadmin && (
           <label className="text-sm text-gray-700">
-            Company ID
-            <input
-              type="number"
-              min={1}
+            Компания
+            <select
               value={companyId}
               onChange={(e) => {
                 setCompanyId(e.target.value);
                 setPage(1);
               }}
               className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
-              placeholder="Напр. 12"
-            />
+            >
+              <option value="">Все компании</option>
+              {companyOptions.map((option) => (
+                <option key={option.id} value={String(option.id)}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </label>
         )}
         <label className="text-sm text-gray-700">
-          User ID
-          <input
-            type="number"
-            min={1}
+          Пользователь
+          <select
             value={userId}
             onChange={(e) => {
               setUserId(e.target.value);
               setPage(1);
             }}
             className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
-            placeholder="Напр. 42"
-          />
+          >
+            <option value="">Все пользователи</option>
+            {userOptions.map((option) => (
+              <option key={option.id} value={String(option.id)}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="text-sm text-gray-700">
-          Resource ID
-          <input
-            type="number"
-            min={1}
+          Ресурс
+          <select
             value={resourceId}
             onChange={(e) => {
               setResourceId(e.target.value);
               setPage(1);
             }}
             className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
-            placeholder="Напр. 5"
-          />
+          >
+            <option value="">Все ресурсы</option>
+            {resourceOptions.map((option) => (
+              <option key={option.id} value={String(option.id)}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="text-sm text-gray-700">
           Тип ресурса
@@ -341,15 +415,19 @@ export default function ManageBookingsPage() {
                         to={`/bookings/${booking.id}`}
                         className="text-sm font-semibold text-gray-900 hover:text-blue-700"
                       >
-                        #{booking.id} — {booking.resource_name}
+                        {booking.resource_name}
                       </Link>
                       <span className={cn('rounded-full border px-2 py-0.5 text-xs font-medium', statusClass)}>
                         {STATUS_LABEL[booking.status] ?? booking.status}
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-gray-600">
-                      Пользователь: {booking.user_name} (ID {booking.user}) · Ресурс ID {booking.resource} · Компания{' '}
-                      {booking.company ?? '—'}
+                      Бронирование #{booking.id} · Пользователь: {booking.user_name} · Компания:{' '}
+                      {booking.company
+                        ? (companyNameById.get(booking.company) ??
+                          user?.company?.name ??
+                          `Компания #${booking.company}`)
+                        : '—'}
                     </p>
                     <p className="text-xs text-gray-600">
                       {new Date(booking.start_time).toLocaleString()} —{' '}
