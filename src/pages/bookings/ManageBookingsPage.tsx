@@ -169,12 +169,6 @@ export default function ManageBookingsPage() {
     return new Map<number, string>(entries);
   }, [companyOptions]);
 
-  const userEmailToId = useMemo(() => {
-    return new Map<string, number>(
-      userOptions.filter((u) => Boolean(u.email)).map((u) => [u.email as string, u.id]),
-    );
-  }, [userOptions]);
-
   const queryParams = useMemo(() => {
     const params: Record<string, string | number> = {
       page,
@@ -744,7 +738,9 @@ export default function ManageBookingsPage() {
                         return option.companyId === modalBooking.company;
                       })
                       .filter((option) => option.id !== (modalBooking?.user ?? editTarget.user))
-                      .filter((option) => !(modalBooking?.participants ?? []).includes(option.email ?? ''))
+                      .filter((option) =>
+                        !(modalBooking?.participants ?? []).some((participant) => participant.email === option.email),
+                      )
                       .map((option) => (
                         <option key={option.id} value={String(option.id)}>
                           {option.label}{option.email ? ` (${option.email})` : ''}
@@ -766,31 +762,27 @@ export default function ManageBookingsPage() {
                   Добавить участника
                 </button>
                 <ul className="space-y-2">
-                  {(modalBooking?.participants ?? []).map((participantEmail) => {
-                    const participantId = userEmailToId.get(participantEmail);
-                    return (
-                      <li
-                        key={participantEmail}
-                        className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2"
+                  {(modalBooking?.participants ?? []).map((participant) => (
+                    <li
+                      key={participant.id}
+                      className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2"
+                    >
+                      <span className="text-sm text-gray-700">{participant.full_name || participant.email}</span>
+                      <button
+                        type="button"
+                        disabled={removeParticipantMutation.isPending}
+                        onClick={() => {
+                          removeParticipantMutation.mutate({
+                            bookingId: modalBooking?.id ?? editTarget.id,
+                            userId: participant.id,
+                          });
+                        }}
+                        className="rounded-lg border border-rose-300 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
                       >
-                        <span className="text-sm text-gray-700">{participantEmail}</span>
-                        <button
-                          type="button"
-                          disabled={!participantId || removeParticipantMutation.isPending}
-                          onClick={() => {
-                            if (!participantId) return;
-                            removeParticipantMutation.mutate({
-                              bookingId: modalBooking?.id ?? editTarget.id,
-                              userId: participantId,
-                            });
-                          }}
-                          className="rounded-lg border border-rose-300 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
-                        >
-                          Удалить
-                        </button>
-                      </li>
-                    );
-                  })}
+                        Удалить
+                      </button>
+                    </li>
+                  ))}
                 </ul>
               </div>
             ) : (

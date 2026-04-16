@@ -1,15 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { BOOKING_STATUSES, RESOURCE_TYPES } from '@/shared/config/constants';
+import { BOOKING_STATUSES, RESOURCE_TYPES, USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import type { Booking, BookingResourceDetail, CompanyMember, PaginatedResponse } from '@/shared/types';
-import { cn } from '@/shared/lib/cn';
-import { useEffect } from 'react';
 
 const STATUS_LABEL: Record<string, string> = {
   [BOOKING_STATUSES.CONFIRMED]: 'Подтверждено',
@@ -27,21 +25,6 @@ function toDateTimeLocalValue(iso: string): string {
   const hours = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
   return `${year}-${month}-${day}T${hours}:${minutes}`;
-/** Map backend error detail strings to user-friendly Russian messages */
-function mapCancelError(rawMessage: string, status?: number): string {
-  if (status === 409) return 'Выбранное время уже занято';
-  if (status === 403) return 'Нельзя отменить чужую бронь';
-  if (rawMessage.includes('cancel your own')) return 'Нельзя отменить чужую бронь';
-  return rawMessage || 'Произошла ошибка';
-}
-
-function getCancelError(error: unknown): string {
-  const err = error as { response?: { status?: number; data?: { detail?: string } }; message?: string };
-  const status = err.response?.status;
-  const detail = err.response?.data?.detail ?? '';
-  if (detail) return mapCancelError(detail, status);
-  if (status === 403) return 'Нельзя отменить чужую бронь';
-  return 'Не удалось отменить бронирование';
 }
 
 export default function BookingDetailPage() {
@@ -49,21 +32,18 @@ export default function BookingDetailPage() {
   const queryClient = useQueryClient();
   const { id } = useParams<{ id: string }>();
   const bookingId = id ?? '';
+
   const [startInput, setStartInput] = useState('');
   const [endInput, setEndInput] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['booking-reservation', bookingId],
     enabled: Boolean(bookingId),
     queryFn: async () => {
-      const { data: res } = await apiClient.get<Booking>(
-        API.bookings.reservations.detail(bookingId),
-      );
+      const { data: res } = await apiClient.get<Booking>(API.bookings.reservations.detail(bookingId));
       return res;
     },
   });
@@ -79,25 +59,33 @@ export default function BookingDetailPage() {
     },
   });
 
+  const canManageParticipants =
+    user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN;
+
   const { data: companyMembersData } = useQuery({
     queryKey: ['booking-company-members', user?.company_id],
-    enabled: Boolean(user?.company_id),
+    enabled: Boolean(user?.company_id) && canManageParticipants,
     queryFn: async () => {
       const { data: res } = await apiClient.get<PaginatedResponse<CompanyMember>>(
         API.companies.members(String(user!.company_id)),
-        { params: { page_size: 200 } },
+        { params: { page_size: 1000 } },
       );
       return res;
     },
   });
 
+  useEffect(() => {
+    if (!data) return;
+    setStartInput(toDateTimeLocalValue(data.start_time));
+    setEndInput(toDateTimeLocalValue(data.end_time));
+  }, [data]);
+
   const updateTimeMutation = useMutation({
     mutationFn: async ({ startTime, endTime }: { startTime: string; endTime: string }) => {
-      const payload = {
+      await apiClient.patch(API.bookings.reservations.detail(bookingId), {
         start_time: new Date(startTime).toISOString(),
         end_time: new Date(endTime).toISOString(),
-      };
-      await apiClient.patch(API.bookings.reservations.detail(bookingId), payload);
+      });
     },
     onSuccess: async () => {
       setFormError(null);
@@ -143,14 +131,22 @@ export default function BookingDetailPage() {
     onError: (error: unknown) => {
       setFormSuccess(null);
       setFormError(getApiErrorMessage(error, 'Не удалось удалить участника.'));
+    },
+  });
+
   const cancelMutation = useMutation({
     mutationFn: async () => {
-      await apiClient.post(API.bookings.reservations.cancel(bookingId));
+      await apiClient.post(API.bookings.reservations.cancel(bookingId), { reason: '' });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['booking-reservation', bookingId] });
-      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+    onSuccess: async () => {
+      setFormError(null);
+      setFormSuccess('Бронирование отменено.');
+      await queryClient.invalidateQueries({ queryKey: ['booking-reservation', bookingId] });
+      await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+    },
+    onError: (error: unknown) => {
+      setFormSuccess(null);
+      setFormError(getApiErrorMessage(error, 'Не удалось отменить бронирование.'));
     },
   });
 
@@ -165,7 +161,7 @@ export default function BookingDetailPage() {
   if (isLoading) {
     return (
       <main className="px-4 py-8 max-w-lg mx-auto">
-        <p className="text-sm text-gray-500">Загрузка…</p>
+        <p className="text-sm text-gray-500">Загрузка...</p>
       </main>
     );
   }
@@ -185,38 +181,35 @@ export default function BookingDetailPage() {
   const end = new Date(data.end_time);
   const isMeetingRoom = resourceData?.type === RESOURCE_TYPES.MEETING_ROOM;
   const canEditTime = data.status === BOOKING_STATUSES.CONFIRMED;
-  const participantEmailToId = useMemo(() => {
-    const members = companyMembersData?.results ?? [];
-    return new Map(members.map((m) => [m.email, m.id]));
-  }, [companyMembersData]);
-  const selectedParticipantUserId = Number(selectedUserId);
-  const members = companyMembersData?.results ?? [];
+  const canCancel = user !== null && data.user === user.id && data.status === BOOKING_STATUSES.CONFIRMED;
 
-  const candidateMembers = members.filter(
-    (m) => !data.participants.includes(m.email) && m.id !== data.user,
+  const participantIds = new Set(data.participants.map((participant) => participant.id));
+  const candidateMembers = (companyMembersData?.results ?? []).filter(
+    (member) => member.id !== data.user && !participantIds.has(member.id),
   );
-  const isMutationPending =
-    updateTimeMutation.isPending || addParticipantMutation.isPending || removeParticipantMutation.isPending;
 
-  const initialStart = toDateTimeLocalValue(data.start_time);
-  const initialEnd = toDateTimeLocalValue(data.end_time);
-
-  // Show cancel button only to the booking owner
-  const canCancel = user !== null && data.user === user.id;
-
-  const isCancellable = data.status === BOOKING_STATUSES.CONFIRMED;
-  const isMeetingRoom = data.resource_name !== undefined && data.participants !== undefined;
-
-  // We detect meeting room by checking if participants array exists with values
-  // or we rely on resource type from the booking detail page context
-  const hasParticipants = Array.isArray(data.participants) && data.participants.length > 0;
+  const selectedParticipantUserId = Number(selectedUserId);
+  const isMutationPending = useMemo(
+    () =>
+      updateTimeMutation.isPending ||
+      addParticipantMutation.isPending ||
+      removeParticipantMutation.isPending ||
+      cancelMutation.isPending,
+    [
+      updateTimeMutation.isPending,
+      addParticipantMutation.isPending,
+      removeParticipantMutation.isPending,
+      cancelMutation.isPending,
+    ],
+  );
 
   return (
     <main className="px-4 py-8 max-w-lg mx-auto space-y-6">
       <Link to="/bookings/my" className="text-sm text-blue-600 hover:underline">
         ← Мои бронирования
       </Link>
-      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm space-y-3">
+
+      <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm space-y-3">
         <h1 className="text-xl font-bold text-gray-900">{data.resource_name}</h1>
         <p className="text-sm text-gray-600">
           {start.toLocaleString()} — {end.toLocaleString()}
@@ -225,112 +218,31 @@ export default function BookingDetailPage() {
           <span className="font-medium text-gray-700">Статус: </span>
           {STATUS_LABEL[data.status] ?? data.status}
         </p>
-        {data.description ? (
-          <p className="text-sm text-gray-600">{data.description}</p>
-        ) : null}
-        {data.participants?.length ? (
-          <p className="text-xs text-gray-500">Участники: {data.participants.join(', ')}</p>
-        ) : null}
-      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm space-y-4">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">{data.resource_name}</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            {start.toLocaleString()} — {end.toLocaleString()}
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <p className="text-sm">
-            <span className="font-medium text-gray-700">Статус: </span>
-            <span
-              className={cn(
-                'font-medium',
-                data.status === BOOKING_STATUSES.CONFIRMED && 'text-emerald-600',
-                data.status === BOOKING_STATUSES.CANCELLED && 'text-red-600',
-                data.status === BOOKING_STATUSES.COMPLETED && 'text-gray-600',
-                data.status === BOOKING_STATUSES.NO_SHOW && 'text-amber-600',
-              )}
-            >
-              {STATUS_LABEL[data.status] ?? data.status}
-            </span>
-          </p>
-
-          {data.description ? (
-            <p className="text-sm text-gray-600">
-              <span className="font-medium text-gray-700">Комментарий: </span>
-              {data.description}
-            </p>
-          ) : null}
-
-          {data.user_name && (
-            <p className="text-sm text-gray-600">
-              <span className="font-medium text-gray-700">Забронировал: </span>
-              {data.user_name}
-            </p>
-          )}
-        </div>
-
-        {/* Participants — displayed for meeting room bookings */}
-        {hasParticipants && (
-          <div>
-            <p className="mb-1 text-sm font-medium text-gray-700">Участники:</p>
-            <ul className="space-y-1">
-              {data.participants.map((p) => (
-                <li key={p.id} className="text-sm text-gray-600">
-                  {p.full_name || p.email}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Cancel error */}
-        {cancelMutation.isError && (
-          <div
-            role="alert"
-            className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-          >
-            {getCancelError(cancelMutation.error)}
-          </div>
-        )}
-
-        {/* Cancel success */}
-        {cancelMutation.isSuccess && (
-          <div
-            role="status"
-            className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-          >
-            Бронирование отменено.
-          </div>
-        )}
-
-        {/* Cancel button — only for owner or admin/superadmin */}
-        {canCancel && isCancellable && !cancelMutation.isSuccess && (
-          <button
-            type="button"
-            disabled={cancelMutation.isPending}
-            onClick={() => cancelMutation.mutate()}
-            className={cn(
-              'w-full rounded-lg border border-red-300 py-2.5 text-sm font-medium',
-              cancelMutation.isPending
-                ? 'bg-red-50 text-red-400 cursor-not-allowed opacity-60'
-                : 'bg-white text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500',
-            )}
-          >
-            {cancelMutation.isPending ? 'Отмена…' : 'Отменить бронирование'}
-          </button>
-        )}
-      </div>
+        {data.description ? <p className="text-sm text-gray-600">{data.description}</p> : null}
+      </section>
 
       {formError ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {formError}
-        </div>
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</div>
       ) : null}
       {formSuccess ? (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
           {formSuccess}
         </div>
+      ) : null}
+
+      {canCancel ? (
+        <button
+          type="button"
+          disabled={isMutationPending}
+          onClick={() => {
+            setFormError(null);
+            setFormSuccess(null);
+            cancelMutation.mutate();
+          }}
+          className="w-full rounded-lg border border-red-300 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+        >
+          Отменить бронирование
+        </button>
       ) : null}
 
       {canEditTime ? (
@@ -341,8 +253,8 @@ export default function BookingDetailPage() {
               Начало
               <input
                 type="datetime-local"
-                value={startInput || initialStart}
-                onChange={(e) => setStartInput(e.target.value)}
+                value={startInput}
+                onChange={(event) => setStartInput(event.target.value)}
                 className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
               />
             </label>
@@ -350,8 +262,8 @@ export default function BookingDetailPage() {
               Конец
               <input
                 type="datetime-local"
-                value={endInput || initialEnd}
-                onChange={(e) => setEndInput(e.target.value)}
+                value={endInput}
+                onChange={(event) => setEndInput(event.target.value)}
                 className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
               />
             </label>
@@ -362,13 +274,11 @@ export default function BookingDetailPage() {
             onClick={() => {
               setFormError(null);
               setFormSuccess(null);
-              const startTime = startInput || initialStart;
-              const endTime = endInput || initialEnd;
-              if (!startTime || !endTime) {
+              if (!startInput || !endInput) {
                 setFormError('Укажите start_time и end_time.');
                 return;
               }
-              updateTimeMutation.mutate({ startTime, endTime });
+              updateTimeMutation.mutate({ startTime: startInput, endTime: endInput });
             }}
             className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50"
           >
@@ -380,62 +290,67 @@ export default function BookingDetailPage() {
       {isMeetingRoom ? (
         <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">Участники встречи</h2>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-            <label className="text-sm text-gray-700 sm:min-w-72">
-              Добавить участника
-              <select
-                value={selectedUserId}
-                onChange={(e) => setSelectedUserId(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
-              >
-                <option value="">Выберите пользователя</option>
-                {candidateMembers.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.full_name} ({member.email})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              disabled={isMutationPending || !selectedUserId || Number.isNaN(selectedParticipantUserId)}
-              onClick={() => {
-                setFormError(null);
-                setFormSuccess(null);
-                addParticipantMutation.mutate({ userId: selectedParticipantUserId });
-              }}
-              className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50"
-            >
-              Добавить
-            </button>
-          </div>
           <ul className="space-y-2">
-            {data.participants?.length ? (
-              data.participants.map((email) => {
-                const mappedUserId = participantEmailToId.get(email);
-                return (
-                  <li key={email} className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
-                    <span className="text-sm text-gray-700">{email}</span>
+            {data.participants.length > 0 ? (
+              data.participants.map((participant) => (
+                <li key={participant.id} className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
+                  <span className="text-sm text-gray-700">{participant.full_name || participant.email}</span>
+                  {canManageParticipants ? (
                     <button
                       type="button"
-                      disabled={isMutationPending || !mappedUserId}
+                      disabled={isMutationPending}
                       onClick={() => {
-                        if (!mappedUserId) return;
                         setFormError(null);
                         setFormSuccess(null);
-                        removeParticipantMutation.mutate({ userId: mappedUserId });
+                        removeParticipantMutation.mutate({ userId: participant.id });
                       }}
                       className="rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
                     >
                       Удалить
                     </button>
-                  </li>
-                );
-              })
+                  ) : null}
+                </li>
+              ))
             ) : (
               <li className="text-sm text-gray-500">Пока нет участников.</li>
             )}
           </ul>
+
+          {canManageParticipants ? (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+              <label className="text-sm text-gray-700 sm:min-w-72">
+                Добавить участника
+                <select
+                  value={selectedUserId}
+                  onChange={(event) => setSelectedUserId(event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                >
+                  <option value="">Выберите пользователя</option>
+                  {candidateMembers.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.full_name} ({member.email})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                disabled={isMutationPending || !selectedUserId || Number.isNaN(selectedParticipantUserId)}
+                onClick={() => {
+                  setFormError(null);
+                  setFormSuccess(null);
+                  addParticipantMutation.mutate({ userId: selectedParticipantUserId });
+                }}
+                className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+              >
+                Добавить
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">
+              Управление участниками доступно только администраторам компании.
+            </p>
+          )}
         </section>
       ) : null}
     </main>

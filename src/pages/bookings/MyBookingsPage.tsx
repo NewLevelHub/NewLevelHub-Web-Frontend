@@ -188,17 +188,13 @@ export default function MyBookingsPage() {
   });
 
   const rows = data?.results ?? [];
-  const participantEmailToId = useMemo(() => {
-    const members = companyMembersData ?? [];
-    return new Map(members.map((m) => [m.email, m.id]));
-  }, [companyMembersData]);
-
   const candidateMembers = useMemo(() => {
     if (!modalBooking) return [];
     const members = companyMembersData ?? [];
+    const participantIds = new Set((modalBooking.participants ?? []).map((participant) => participant.id));
     return members
       .filter((m) => m.id !== modalBooking.user)
-      .filter((m) => !modalBooking.participants.includes(m.email))
+      .filter((m) => !participantIds.has(m.id))
       .filter((m) => m.role === USER_ROLES.EMPLOYEE || m.role === USER_ROLES.COMPANY_ADMIN);
   }, [companyMembersData, modalBooking]);
 
@@ -423,31 +419,27 @@ export default function MyBookingsPage() {
                       Добавить участника
                     </button>
                     <ul className="space-y-2">
-                      {(modalBooking?.participants ?? []).map((participantEmail) => {
-                        const participantId = participantEmailToId.get(participantEmail);
-                        return (
-                          <li
-                            key={participantEmail}
-                            className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2"
+                      {(modalBooking?.participants ?? []).map((participant) => (
+                        <li
+                          key={participant.id}
+                          className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2"
+                        >
+                          <span className="text-sm text-gray-700">{participant.full_name || participant.email}</span>
+                          <button
+                            type="button"
+                            disabled={removeParticipantMutation.isPending}
+                            onClick={() => {
+                              removeParticipantMutation.mutate({
+                                bookingId: modalBooking?.id ?? editTarget.id,
+                                userId: participant.id,
+                              });
+                            }}
+                            className="rounded-lg border border-rose-300 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
                           >
-                            <span className="text-sm text-gray-700">{participantEmail}</span>
-                            <button
-                              type="button"
-                              disabled={!participantId || removeParticipantMutation.isPending}
-                              onClick={() => {
-                                if (!participantId) return;
-                                removeParticipantMutation.mutate({
-                                  bookingId: modalBooking?.id ?? editTarget.id,
-                                  userId: participantId,
-                                });
-                              }}
-                              className="rounded-lg border border-rose-300 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
-                            >
-                              Удалить
-                            </button>
-                          </li>
-                        );
-                      })}
+                            Удалить
+                          </button>
+                        </li>
+                      ))}
                     </ul>
                   </>
                 ) : (
