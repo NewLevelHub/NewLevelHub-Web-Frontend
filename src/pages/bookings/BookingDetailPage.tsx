@@ -3,17 +3,23 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { BOOKING_STATUSES, RESOURCE_TYPES } from '@/shared/config/constants';
+import { BOOKING_STATUSES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { cn } from '@/shared/lib/cn';
 import type { Booking } from '@/shared/types';
-import { useEffect } from 'react';
 
 const STATUS_LABEL: Record<string, string> = {
   [BOOKING_STATUSES.CONFIRMED]: 'Подтверждено',
   [BOOKING_STATUSES.CANCELLED]: 'Отменено',
   [BOOKING_STATUSES.COMPLETED]: 'Завершено',
-  [BOOKING_STATUSES.NO_SHOW]: 'Неявка',
+  [BOOKING_STATUSES.NO_SHOW]: 'Не явился',
+};
+
+const STATUS_BADGE_CLASS: Record<string, string> = {
+  [BOOKING_STATUSES.CONFIRMED]: 'bg-green-100 text-green-800',
+  [BOOKING_STATUSES.COMPLETED]: 'bg-gray-100 text-gray-600',
+  [BOOKING_STATUSES.CANCELLED]: 'bg-red-100 text-red-700',
+  [BOOKING_STATUSES.NO_SHOW]: 'bg-orange-100 text-orange-700',
 };
 
 /** Map backend error detail strings to user-friendly Russian messages */
@@ -91,14 +97,8 @@ export default function BookingDetailPage() {
   const start = new Date(data.start_time);
   const end = new Date(data.end_time);
 
-  // Show cancel button only to the booking owner
   const canCancel = user !== null && data.user === user.id;
-
   const isCancellable = data.status === BOOKING_STATUSES.CONFIRMED;
-  const isMeetingRoom = data.resource_name !== undefined && data.participants !== undefined;
-
-  // We detect meeting room by checking if participants array exists with values
-  // or we rely on resource type from the booking detail page context
   const hasParticipants = Array.isArray(data.participants) && data.participants.length > 0;
 
   return (
@@ -106,6 +106,7 @@ export default function BookingDetailPage() {
       <Link to="/bookings/my" className="text-sm text-blue-600 hover:underline">
         ← Мои бронирования
       </Link>
+
       <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm space-y-4">
         <div>
           <h1 className="text-xl font-bold text-gray-900">{data.resource_name}</h1>
@@ -115,28 +116,18 @@ export default function BookingDetailPage() {
         </div>
 
         <div className="space-y-2">
-          <p className="text-sm">
+          <p className="text-sm flex items-center gap-2">
             <span className="font-medium text-gray-700">Статус: </span>
-            <span
-              className={cn(
-                'font-medium',
-                data.status === BOOKING_STATUSES.CONFIRMED && 'text-emerald-600',
-                data.status === BOOKING_STATUSES.CANCELLED && 'text-red-600',
-                data.status === BOOKING_STATUSES.COMPLETED && 'text-gray-600',
-                data.status === BOOKING_STATUSES.NO_SHOW && 'text-amber-600',
-              )}
-            >
+            <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE_CLASS[data.status] ?? 'bg-gray-100 text-gray-600')}>
               {STATUS_LABEL[data.status] ?? data.status}
             </span>
           </p>
-
           {data.description ? (
             <p className="text-sm text-gray-600">
               <span className="font-medium text-gray-700">Комментарий: </span>
               {data.description}
             </p>
           ) : null}
-
           {data.user_name && (
             <p className="text-sm text-gray-600">
               <span className="font-medium text-gray-700">Забронировал: </span>
@@ -145,55 +136,49 @@ export default function BookingDetailPage() {
           )}
         </div>
 
-        {/* Participants — displayed for meeting room bookings */}
         {hasParticipants && (
           <div>
             <p className="mb-1 text-sm font-medium text-gray-700">Участники:</p>
-            <ul className="space-y-1">
-              {data.participants.map((p) => (
-                <li key={p.id} className="text-sm text-gray-600">
-                  {p.full_name || p.email}
-                </li>
-              ))}
-            </ul>
+            <p className="text-sm text-gray-500">
+              {data.participants.map(p => p.full_name || p.email).join(', ')}
+            </p>
           </div>
         )}
 
-        {/* Cancel error */}
         {cancelMutation.isError && (
-          <div
-            role="alert"
-            className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-          >
+          <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {getCancelError(cancelMutation.error)}
           </div>
         )}
 
-        {/* Cancel success */}
         {cancelMutation.isSuccess && (
-          <div
-            role="status"
-            className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-          >
+          <div role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
             Бронирование отменено.
           </div>
         )}
 
-        {/* Cancel button — only for owner or admin/superadmin */}
         {canCancel && isCancellable && !cancelMutation.isSuccess && (
-          <button
-            type="button"
-            disabled={cancelMutation.isPending}
-            onClick={() => cancelMutation.mutate()}
-            className={cn(
-              'w-full rounded-lg border border-red-300 py-2.5 text-sm font-medium',
-              cancelMutation.isPending
-                ? 'bg-red-50 text-red-400 cursor-not-allowed opacity-60'
-                : 'bg-white text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500',
-            )}
-          >
-            {cancelMutation.isPending ? 'Отмена…' : 'Отменить бронирование'}
-          </button>
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              disabled={cancelMutation.isPending}
+              onClick={() => cancelMutation.mutate()}
+              className={cn(
+                'rounded-lg border border-red-300 px-4 py-2 text-sm font-medium transition-colors',
+                cancelMutation.isPending
+                  ? 'bg-red-50 text-red-400 cursor-not-allowed opacity-60'
+                  : 'bg-white text-red-600 hover:bg-red-50',
+              )}
+            >
+              {cancelMutation.isPending ? 'Отмена…' : 'Отменить'}
+            </button>
+            <Link
+              to={`/bookings/${data.id}/edit`}
+              className="rounded-lg border border-blue-300 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 transition-colors"
+            >
+              Редактировать
+            </Link>
+          </div>
         )}
       </div>
     </main>
