@@ -6,6 +6,7 @@ import { Plus, Search, Bookmark, ChevronLeft, ChevronRight } from 'lucide-react'
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import {
+  BOOKING_RESOURCE_CATALOG_STATUS,
   RESOURCE_TYPES,
   RESOURCE_TYPE_LABELS,
   type ResourceType,
@@ -92,6 +93,19 @@ export default function ResourceListPage() {
   const totalCount = data?.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const results = data?.results ?? [];
+
+  const getOperationalStatus = (resource: BookingResourceListItem) => {
+    if (resource.status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED) {
+      return {
+        label: 'Заблокирован',
+        className: 'inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-800',
+      };
+    }
+    return {
+      label: resource.is_active ? 'Активен' : 'Выключен',
+      className: resource.is_active ? resBadgeOn : resBadgeOff,
+    };
+  };
 
   useEffect(() => {
     setPage(1);
@@ -208,38 +222,44 @@ export default function ResourceListPage() {
                 </tr>
               </thead>
               <tbody className={resTableBody}>
-                {results.map((r) => (
-                  <tr key={r.id} className={resTr}>
-                    <td className="px-4 py-2">
-                      {r.photo ? (
-                        <img
-                          src={resolveMediaUrl(r.photo) ?? r.photo}
-                          alt=""
-                          className={resPhotoThumb}
-                        />
-                      ) : (
-                        <div className={resPlaceholderIconBox}>
-                          <Bookmark className="h-4 w-4 text-gray-500" />
+                {results.map((r) => {
+                  const operationalStatus = getOperationalStatus(r);
+                  return (
+                    <tr key={r.id} className={resTr}>
+                      <td className="px-4 py-2">
+                        {r.photo ? (
+                          <img
+                            src={resolveMediaUrl(r.photo) ?? r.photo}
+                            alt=""
+                            className={resPhotoThumb}
+                          />
+                        ) : (
+                          <div className={resPlaceholderIconBox}>
+                            <Bookmark className="h-4 w-4 text-gray-500" />
+                          </div>
+                        )}
+                      </td>
+                      <td className={resTdStrong}>{r.name}</td>
+                      <td className={resTd}>{RESOURCE_TYPE_LABELS[r.type] ?? r.type}</td>
+                      <td className={resTdMuted}>{r.floor}</td>
+                      <td className={resTdMuted}>{r.zone || '—'}</td>
+                      <td className={resTdMuted}>{r.capacity}</td>
+                      <td className="px-4 py-2">
+                        <div className="space-y-1">
+                          <span className={operationalStatus.className}>{operationalStatus.label}</span>
+                          {r.status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED && r.reason && (
+                            <p className="max-w-xs text-xs text-slate-600">{r.reason}</p>
+                          )}
                         </div>
-                      )}
-                    </td>
-                    <td className={resTdStrong}>{r.name}</td>
-                    <td className={resTd}>{RESOURCE_TYPE_LABELS[r.type] ?? r.type}</td>
-                    <td className={resTdMuted}>{r.floor}</td>
-                    <td className={resTdMuted}>{r.zone || '—'}</td>
-                    <td className={resTdMuted}>{r.capacity}</td>
-                    <td className="px-4 py-2">
-                      <span className={r.is_active ? resBadgeOn : resBadgeOff}>
-                        {r.is_active ? 'Активен' : 'Выключен'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2">
-                      <Link to={`/resources/${r.id}`} className={resLink}>
-                        Открыть
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-4 py-2">
+                        <Link to={`/resources/${r.id}`} className={resLink}>
+                          Открыть
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

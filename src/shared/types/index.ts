@@ -147,8 +147,20 @@ export interface BookingResourceListItem {
   parking_type: ParkingType | null;
   capsule_zone: string;
   status: BookingResourceCatalogStatus;
+  reason: string | null;
   /** Конец текущей занятости; только при status === soon_available */
   available_at: string | null;
+}
+
+export interface ResourceBlock {
+  id: number;
+  resource: number;
+  blocked_by: number | null;
+  start_time: string;
+  end_time: string;
+  reason: string;
+  created_at: string;
+  updated_at: string;
 }
 
 /** Занятый интервал: GET …/resources/:id/ (поле schedule) и GET …/schedule/?date|week */
