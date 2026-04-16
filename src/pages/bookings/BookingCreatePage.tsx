@@ -10,6 +10,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { RESOURCE_TYPE_LABELS, RESOURCE_TYPES, USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
+import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { cn } from '@/shared/lib/cn';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import type { Booking, BookingResourceDetail, CompanyMember } from '@/shared/types';
@@ -36,7 +37,13 @@ function maxDateStr(days: number): string {
 function mapApiError(rawMessage: string, status?: number): string {
   if (status === 409) return 'Выбранное время уже занято';
   if (status === 403 && rawMessage.includes('cancel your own')) return 'Нельзя отменить чужую бронь';
+  if (rawMessage.includes('Email not verified')) return 'Для бронирования нужно подтвердить email';
   if (rawMessage.includes('Datetime must include timezone')) return 'Ошибка формата даты';
+  if (rawMessage.includes('Booking start time must be in the future')) return 'Время начала должно быть в будущем';
+  if (rawMessage.includes('Booking is outside resource availability hours')) return 'Выбранное время вне доступных часов ресурса';
+  if (rawMessage.includes('Booking is outside resource availability days')) return 'Выбранный день недоступен для этого ресурса';
+  if (rawMessage.includes('Booking must be within a single day')) return 'Бронирование должно быть в пределах одного дня';
+  if (rawMessage.includes('Resource is assigned to another company')) return 'Ресурс привязан к другой компании';
   if (rawMessage.includes('Desk booking must start within 14 days')) return 'Слишком далёкая дата';
   if (rawMessage.includes('Meeting room booking minimum duration is 30')) return 'Минимальная длительность — 30 минут';
   if (rawMessage.includes('Meeting room booking maximum duration is 4')) return 'Максимальная длительность — 4 часа';
@@ -49,10 +56,10 @@ function mapApiError(rawMessage: string, status?: number): string {
 }
 
 function getBookingError(error: unknown): string {
-  const err = error as { response?: { status?: number; data?: { detail?: string } }; message?: string };
+  const err = error as { response?: { status?: number }; message?: string };
   const status = err.response?.status;
-  const detail = err.response?.data?.detail ?? '';
-  if (detail) return mapApiError(detail, status);
+  const baseMessage = getApiErrorMessage(error, 'Произошла ошибка');
+  if (baseMessage) return mapApiError(baseMessage, status);
   if (status === 409) return 'Выбранное время уже занято';
   if (err instanceof Error && err.message && !('response' in err)) return err.message;
   return 'Произошла ошибка';
