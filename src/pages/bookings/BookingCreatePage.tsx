@@ -2,32 +2,78 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
+import dayjs from 'dayjs';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { RESOURCE_TYPE_LABELS } from '@/shared/config/constants';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { RESOURCE_TYPE_LABELS, RESOURCE_TYPES, USER_ROLES } from '@/shared/config/constants';
+import { useAuth } from '@/shared/hooks/useAuth';
+import { cn } from '@/shared/lib/cn';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
-import type { Booking, BookingResourceDetail } from '@/shared/types';
+import type { Booking, BookingResourceDetail, CompanyMember } from '@/shared/types';
 
-function toIsoUtc(localDatetime: string): string {
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const TZ = 'Asia/Almaty';
+
+/** Format a datetime-local string with Asia/Almaty offset */
+function toAlmatyIso(localDatetime: string): string {
   if (!localDatetime) return '';
-  const d = new Date(localDatetime);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toISOString();
+  const d = dayjs.tz(localDatetime, TZ);
+  if (!d.isValid()) return '';
+  return d.format();
+}
+
+/** Max date string (YYYY-MM-DD) = today + N days */
+function maxDateStr(days: number): string {
+  return dayjs().tz(TZ).add(days, 'day').format('YYYY-MM-DD');
+}
+
+/** Map backend error detail strings to user-friendly Russian messages */
+function mapApiError(rawMessage: string, status?: number): string {
+  if (status === 409) return 'Выбранное время уже занято';
+  if (status === 403 && rawMessage.includes('cancel your own')) return 'Нельзя отменить чужую бронь';
+  if (rawMessage.includes('Datetime must include timezone')) return 'Ошибка формата даты';
+  if (rawMessage.includes('Desk booking must start within 14 days')) return 'Слишком далёкая дата';
+  if (rawMessage.includes('Meeting room booking minimum duration is 30')) return 'Минимальная длительность — 30 минут';
+  if (rawMessage.includes('Meeting room booking maximum duration is 4')) return 'Максимальная длительность — 4 часа';
+  if (rawMessage.includes('Parking booking must be whole-day only')) return 'Только целый день';
+  if (rawMessage.includes('Capsule booking minimum')) return rawMessage.replace(/Capsule booking minimum duration is (\d+) hours?\.?/, 'Мин. $1 ч');
+  if (rawMessage.includes('Capsule booking maximum')) return rawMessage.replace(/Capsule booking maximum duration is (\d+) hours?\.?/, 'Макс. $1 ч');
+  if (rawMessage.includes('Minimum booking duration is')) return rawMessage.replace(/Minimum booking duration is (\d+) minutes?\.?/, 'Мин. $1 минут');
+  if (rawMessage.includes('Active booking limit exceeded')) return 'Достигнут лимит броней';
+  return rawMessage;
+}
+
+function getBookingError(error: unknown): string {
+  const err = error as { response?: { status?: number; data?: { detail?: string } }; message?: string };
+  const status = err.response?.status;
+  const detail = err.response?.data?.detail ?? '';
+  if (detail) return mapApiError(detail, status);
+  if (status === 409) return 'Выбранное время уже занято';
+  if (err instanceof Error && err.message && !('response' in err)) return err.message;
+  return 'Произошла ошибка';
 }
 
 export default function BookingCreatePage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const resourceParam = searchParams.get('resource');
   const resourceId = resourceParam ? Number(resourceParam) : NaN;
   const validResourceId = Number.isFinite(resourceId) ? String(resourceId) : null;
 
+  const todayStr = dayjs().tz(TZ).format('YYYY-MM-DD');
+
+  const [selectedDate, setSelectedDate] = useState('');
   const [startLocal, setStartLocal] = useState('');
   const [endLocal, setEndLocal] = useState('');
   const [description, setDescription] = useState('');
+  const [participantIds, setParticipantIds] = useState<number[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const { data: resource, isLoading: loadingResource } = useQuery({
@@ -41,23 +87,92 @@ export default function BookingCreatePage() {
     },
   });
 
+  const isParking = resource?.type === RESOURCE_TYPES.PARKING;
+  const isMeetingRoom = resource?.type === RESOURCE_TYPES.MEETING_ROOM;
+  const isDesk = resource?.type === RESOURCE_TYPES.DESK;
+  const isCapsule = resource?.type === RESOURCE_TYPES.CAPSULE;
+
+  const maxDateDesk = maxDateStr(14);
+  const maxDateParking = maxDateStr(7);
+  const maxDate = isDesk ? maxDateDesk : isParking ? maxDateParking : undefined;
+
+  const minStep = useMemo(() => {
+    return dayjs().tz(TZ).format('YYYY-MM-DDTHH:mm');
+  }, []);
+
+  // Fetch company members for participant multi-select
+  const companyId = user?.company_id ? String(user.company_id) : null;
+
+  const { data: membersData, isLoading: loadingMembers } = useQuery({
+    queryKey: ['company-members-for-booking', companyId],
+    enabled: isMeetingRoom && companyId !== null,
+    queryFn: async () => {
+      const { data } = await apiClient.get<CompanyMember[] | { results: CompanyMember[] }>(
+        API.companies.members(companyId!),
+        { params: { page_size: 200 } },
+      );
+      return Array.isArray(data) ? data : data.results;
+    },
+  });
+  const userOptions = membersData ?? [];
+
+  /** Client-side validation */
+  function validateBooking(): string | null {
+    const startDatetime = isParking ? `${selectedDate}T00:00` : startLocal;
+    const endDatetime = isParking ? `${selectedDate}T23:59` : endLocal;
+    const start = dayjs.tz(startDatetime, TZ);
+    const end = dayjs.tz(endDatetime, TZ);
+
+    if (!start.isValid() || !end.isValid()) return 'Укажите начало и конец бронирования.';
+
+    const durationMin = end.diff(start, 'minute');
+
+    if (isDesk) {
+      const maxDesk = dayjs().tz(TZ).add(14, 'day');
+      if (start.isAfter(maxDesk)) return 'Можно бронировать не более чем на 14 дней вперёд';
+    }
+
+    if (isParking) {
+      const maxParking = dayjs().tz(TZ).add(7, 'day');
+      if (start.isAfter(maxParking)) return 'Можно бронировать не более чем на 7 дней вперёд';
+    }
+
+    if (isMeetingRoom) {
+      if (durationMin < 30) return 'Минимальная длительность — 30 минут';
+      if (durationMin > 240) return 'Максимальная длительность — 4 часа';
+    }
+
+    if (isCapsule) {
+      if (durationMin < 60) return 'Минимальная длительность — 1 час';
+      if (durationMin > 480) return 'Максимальная длительность — 8 часов';
+    }
+
+    return null;
+  }
+
   const createMutation = useMutation({
     mutationFn: async () => {
-      const start_time = toIsoUtc(startLocal);
-      const end_time = toIsoUtc(endLocal);
       if (!validResourceId) throw new Error('Выберите ресурс из каталога.');
+
+      const startDatetime = isParking ? `${selectedDate}T00:00` : startLocal;
+      const endDatetime = isParking ? `${selectedDate}T23:59` : endLocal;
+      const start_time = toAlmatyIso(startDatetime);
+      const end_time = toAlmatyIso(endDatetime);
+
       if (!start_time || !end_time) throw new Error('Укажите начало и конец.');
+
       const { data } = await apiClient.post<Booking>(API.bookings.reservations.create, {
         resource_id: Number(validResourceId),
         start_time,
         end_time,
         description: description.trim(),
-        participant_ids: [],
+        participant_ids: isMeetingRoom ? participantIds : [],
       });
       return data;
     },
     onSuccess: (booking) => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
       navigate(`/bookings/${booking.id}`);
     },
     onError: (e) => {
@@ -65,17 +180,16 @@ export default function BookingCreatePage() {
         setErrorMsg(e.message);
         return;
       }
-      setErrorMsg(getApiErrorMessage(e));
+      setErrorMsg(getBookingError(e));
     },
   });
 
-  const minStep = useMemo(() => {
-    const d = new Date();
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().slice(0, 16);
-  }, []);
+  const toggleParticipant = (userId: number) => {
+    setParticipantIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId],
+    );
+  };
 
-  /** Тёмный фон шелла задаёт `text-white`; на светлых карточках явно задаём тёмный текст. */
   const fieldClass =
     'w-full px-3 py-2 text-sm rounded-lg border border-gray-400 bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500';
 
@@ -157,36 +271,148 @@ export default function BookingCreatePage() {
         onSubmit={(e) => {
           e.preventDefault();
           setErrorMsg(null);
+          const validationError = validateBooking();
+          if (validationError) {
+            setErrorMsg(validationError);
+            return;
+          }
           createMutation.mutate();
         }}
       >
-        <div>
-          <label className="mb-1 block text-sm font-semibold text-gray-900" htmlFor="booking-start">
-            Начало (локальное время)
-          </label>
-          <input
-            id="booking-start"
-            type="datetime-local"
-            required
-            min={minStep}
-            value={startLocal}
-            onChange={(e) => setStartLocal(e.target.value)}
-            className={fieldClass}
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-semibold text-gray-900" htmlFor="booking-end">
-            Окончание
-          </label>
-          <input
-            id="booking-end"
-            type="datetime-local"
-            required
-            value={endLocal}
-            onChange={(e) => setEndLocal(e.target.value)}
-            className={fieldClass}
-          />
-        </div>
+        {/* Parking: date-only */}
+        {isParking ? (
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-gray-900" htmlFor="booking-date">
+              Дата бронирования
+            </label>
+            <input
+              id="booking-date"
+              type="date"
+              required
+              min={todayStr}
+              max={maxDateParking}
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className={fieldClass}
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Парковка бронируется на весь день (00:00 — 23:59)
+            </p>
+          </div>
+        ) : (
+          <>
+            {isDesk && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                Рабочее место можно бронировать не более чем на 14 дней вперёд.
+              </p>
+            )}
+            {isCapsule && (
+              <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+                Капсула: от 1 до 8 часов.
+              </p>
+            )}
+            {isMeetingRoom && (
+              <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+                Переговорка: от 30 минут до 4 часов.
+              </p>
+            )}
+
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-gray-900" htmlFor="booking-start">
+                Начало
+              </label>
+              <input
+                id="booking-start"
+                type="datetime-local"
+                required
+                min={minStep}
+                max={maxDate ? `${maxDate}T23:59` : undefined}
+                value={startLocal}
+                onChange={(e) => setStartLocal(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-gray-900" htmlFor="booking-end">
+                Окончание
+              </label>
+              <input
+                id="booking-end"
+                type="datetime-local"
+                required
+                min={startLocal || minStep}
+                max={maxDate ? `${maxDate}T23:59` : undefined}
+                value={endLocal}
+                onChange={(e) => setEndLocal(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Participants for meeting rooms */}
+        {isMeetingRoom && (
+          <div>
+            <p className="mb-2 text-sm font-semibold text-gray-900">
+              Участники{' '}
+              <span className="font-normal text-gray-500">(необязательно)</span>
+            </p>
+
+            {loadingMembers ? (
+              <p className="text-sm text-gray-500">Загрузка участников…</p>
+            ) : userOptions.filter((u) => u.id !== user?.id).length === 0 ? (
+              <p className="text-sm text-gray-400">Нет доступных участников</p>
+            ) : (
+              <>
+                <div
+                  className="max-h-40 overflow-y-auto rounded-lg border border-gray-300 bg-white divide-y divide-gray-100"
+                  role="listbox"
+                  aria-multiselectable="true"
+                  aria-label="Выберите участников"
+                >
+                  {userOptions
+                    .filter((u) => u.id !== user?.id)
+                    .map((u) => {
+                      const selected = participantIds.includes(u.id);
+                      return (
+                        <button
+                          key={u.id}
+                          type="button"
+                          role="option"
+                          aria-selected={selected}
+                          onClick={() => toggleParticipant(u.id)}
+                          className={cn(
+                            'flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors',
+                            selected && 'bg-blue-50',
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              'flex h-4 w-4 shrink-0 items-center justify-center rounded border text-xs font-bold',
+                              selected
+                                ? 'border-blue-600 bg-blue-600 text-white'
+                                : 'border-gray-300 text-transparent',
+                            )}
+                            aria-hidden="true"
+                          >
+                            ✓
+                          </span>
+                          <span className="text-gray-900">{u.full_name || u.email}</span>
+                          <span className="ml-auto text-xs text-gray-400">{u.email}</span>
+                        </button>
+                      );
+                    })}
+                </div>
+                {participantIds.length > 0 && (
+                  <p className="mt-1 text-xs text-blue-600">
+                    Выбрано: {participantIds.length}
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
         <div>
           <label className="mb-1 block text-sm font-semibold text-gray-900" htmlFor="booking-note">
             Комментарий
@@ -201,7 +427,7 @@ export default function BookingCreatePage() {
           />
         </div>
         <p className="text-xs leading-relaxed text-gray-700">
-          Бронирование требует подтверждённый email (кроме superadmin). Время отправляется на сервер в UTC.
+          Время отправляется с часовым поясом Asia/Almaty (+05:00). Требуется подтверждённый email (кроме superadmin).
         </p>
         <button
           type="submit"

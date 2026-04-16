@@ -229,7 +229,7 @@ export interface Booking {
   description: string;
   cancelled_by: number | null;
   cancel_reason: string;
-  participants: string[];
+  participants: { id: number; email: string; full_name: string }[];
   created_at: string;
   updated_at: string;
 }
@@ -349,10 +349,10 @@ export interface FileItem {
 export interface Notification {
   id: number;
   title: string;
-  message: string;
-  type: string;
+  body: string;
+  notification_type: string;
   is_read: boolean;
-  link: string | null;
+  url: string;
   created_at: string;
 }
 
