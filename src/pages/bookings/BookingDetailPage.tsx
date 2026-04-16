@@ -3,10 +3,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { BOOKING_STATUSES, RESOURCE_TYPES, USER_ROLES } from '@/shared/config/constants';
+import { BOOKING_STATUSES, RESOURCE_TYPES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { cn } from '@/shared/lib/cn';
 import type { Booking } from '@/shared/types';
+import { useEffect } from 'react';
 
 const STATUS_LABEL: Record<string, string> = {
   [BOOKING_STATUSES.CONFIRMED]: 'Подтверждено',
@@ -90,12 +91,8 @@ export default function BookingDetailPage() {
   const start = new Date(data.start_time);
   const end = new Date(data.end_time);
 
-  // Show cancel button only to booking owner or admin/superadmin
-  const canCancel =
-    user !== null &&
-    (data.user === user.id ||
-      user.role === USER_ROLES.COMPANY_ADMIN ||
-      user.role === USER_ROLES.SUPERADMIN);
+  // Show cancel button only to the booking owner
+  const canCancel = user !== null && data.user === user.id;
 
   const isCancellable = data.status === BOOKING_STATUSES.CONFIRMED;
   const isMeetingRoom = data.resource_name !== undefined && data.participants !== undefined;
@@ -153,9 +150,9 @@ export default function BookingDetailPage() {
           <div>
             <p className="mb-1 text-sm font-medium text-gray-700">Участники:</p>
             <ul className="space-y-1">
-              {data.participants.map((email) => (
-                <li key={email} className="text-sm text-gray-600">
-                  {email}
+              {data.participants.map((p) => (
+                <li key={p.id} className="text-sm text-gray-600">
+                  {p.full_name || p.email}
                 </li>
               ))}
             </ul>

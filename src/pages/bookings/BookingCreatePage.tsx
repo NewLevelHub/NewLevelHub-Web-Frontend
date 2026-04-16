@@ -12,7 +12,7 @@ import { RESOURCE_TYPE_LABELS, RESOURCE_TYPES, USER_ROLES } from '@/shared/confi
 import { useAuth } from '@/shared/hooks/useAuth';
 import { cn } from '@/shared/lib/cn';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
-import type { Booking, BookingResourceDetail, UserListItem } from '@/shared/types';
+import type { Booking, BookingResourceDetail, CompanyMember } from '@/shared/types';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -100,18 +100,21 @@ export default function BookingCreatePage() {
     return dayjs().tz(TZ).format('YYYY-MM-DDTHH:mm');
   }, []);
 
-  // Fetch users for participant multi-select
-  const { data: usersData } = useQuery({
-    queryKey: ['users-list-for-booking'],
-    enabled: isMeetingRoom,
+  // Fetch company members for participant multi-select
+  const companyId = user?.company_id ? String(user.company_id) : null;
+
+  const { data: membersData, isLoading: loadingMembers } = useQuery({
+    queryKey: ['company-members-for-booking', companyId],
+    enabled: isMeetingRoom && companyId !== null,
     queryFn: async () => {
-      const { data } = await apiClient.get<{ results: UserListItem[] }>(API.users.list, {
-        params: { page_size: 200 },
-      });
-      return data;
+      const { data } = await apiClient.get<CompanyMember[] | { results: CompanyMember[] }>(
+        API.companies.members(companyId!),
+        { params: { page_size: 200 } },
+      );
+      return Array.isArray(data) ? data : data.results;
     },
   });
-  const userOptions = usersData?.results ?? [];
+  const userOptions = membersData ?? [];
 
   /** Client-side validation */
   function validateBooking(): string | null {
@@ -348,59 +351,64 @@ export default function BookingCreatePage() {
         )}
 
         {/* Participants for meeting rooms */}
-        {isMeetingRoom && userOptions.length > 0 && (
+        {isMeetingRoom && (
           <div>
             <p className="mb-2 text-sm font-semibold text-gray-900">
               Участники{' '}
               <span className="font-normal text-gray-500">(необязательно)</span>
             </p>
-            <div
-              className="max-h-40 overflow-y-auto rounded-lg border border-gray-300 bg-white divide-y divide-gray-100"
-              role="listbox"
-              aria-multiselectable="true"
-              aria-label="Выберите участников"
-            >
-              {userOptions
-                .filter((u) => u.id !== user?.id)
-                .map((u) => {
-                  const selected = participantIds.includes(u.id);
-                  return (
-                    <button
-                      key={u.id}
-                      type="button"
-                      role="option"
-                      aria-selected={selected}
-                      onClick={() => toggleParticipant(u.id)}
-                      className={cn(
-                        'flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors',
-                        selected && 'bg-blue-50',
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          'flex h-4 w-4 shrink-0 items-center justify-center rounded border text-xs font-bold',
-                          selected
-                            ? 'border-blue-600 bg-blue-600 text-white'
-                            : 'border-gray-300 text-transparent',
-                        )}
-                        aria-hidden="true"
-                      >
-                        ✓
-                      </span>
-                      <span className="text-gray-900">
-                        {u.first_name || u.last_name
-                          ? `${u.first_name} ${u.last_name}`.trim()
-                          : u.email}
-                      </span>
-                      <span className="ml-auto text-xs text-gray-400">{u.email}</span>
-                    </button>
-                  );
-                })}
-            </div>
-            {participantIds.length > 0 && (
-              <p className="mt-1 text-xs text-blue-600">
-                Выбрано: {participantIds.length}
-              </p>
+
+            {loadingMembers ? (
+              <p className="text-sm text-gray-500">Загрузка участников…</p>
+            ) : userOptions.filter((u) => u.id !== user?.id).length === 0 ? (
+              <p className="text-sm text-gray-400">Нет доступных участников</p>
+            ) : (
+              <>
+                <div
+                  className="max-h-40 overflow-y-auto rounded-lg border border-gray-300 bg-white divide-y divide-gray-100"
+                  role="listbox"
+                  aria-multiselectable="true"
+                  aria-label="Выберите участников"
+                >
+                  {userOptions
+                    .filter((u) => u.id !== user?.id)
+                    .map((u) => {
+                      const selected = participantIds.includes(u.id);
+                      return (
+                        <button
+                          key={u.id}
+                          type="button"
+                          role="option"
+                          aria-selected={selected}
+                          onClick={() => toggleParticipant(u.id)}
+                          className={cn(
+                            'flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors',
+                            selected && 'bg-blue-50',
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              'flex h-4 w-4 shrink-0 items-center justify-center rounded border text-xs font-bold',
+                              selected
+                                ? 'border-blue-600 bg-blue-600 text-white'
+                                : 'border-gray-300 text-transparent',
+                            )}
+                            aria-hidden="true"
+                          >
+                            ✓
+                          </span>
+                          <span className="text-gray-900">{u.full_name || u.email}</span>
+                          <span className="ml-auto text-xs text-gray-400">{u.email}</span>
+                        </button>
+                      );
+                    })}
+                </div>
+                {participantIds.length > 0 && (
+                  <p className="mt-1 text-xs text-blue-600">
+                    Выбрано: {participantIds.length}
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}
