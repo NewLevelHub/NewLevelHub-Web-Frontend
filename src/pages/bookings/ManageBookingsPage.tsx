@@ -175,6 +175,7 @@ export default function ManageBookingsPage() {
       );
       return response;
     },
+    refetchInterval: 30_000,
   });
 
   const adminCancelMutation = useMutation({
@@ -433,6 +434,11 @@ export default function ManageBookingsPage() {
                       {new Date(booking.start_time).toLocaleString()} —{' '}
                       {new Date(booking.end_time).toLocaleString()}
                     </p>
+                    {booking.checked_in_at && (
+                      <p className="text-xs text-green-700">
+                        Check-in: {new Date(booking.checked_in_at).toLocaleString()}
+                      </p>
+                    )}
                     {booking.cancel_reason ? (
                       <p className="mt-1 text-xs text-rose-700">Причина отмены: {booking.cancel_reason}</p>
                     ) : null}

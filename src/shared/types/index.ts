@@ -220,6 +220,7 @@ export interface Booking {
   id: number;
   resource: number;
   resource_name: string;
+  resource_type: ResourceType;
   user: number;
   user_name: string;
   company: number | null;
@@ -229,6 +230,7 @@ export interface Booking {
   description: string;
   cancelled_by: number | null;
   cancel_reason: string;
+  checked_in_at: string | null;
   participants: { id: number; email: string; full_name: string }[];
   created_at: string;
   updated_at: string;

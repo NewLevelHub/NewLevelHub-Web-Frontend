@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { BOOKING_STATUSES, RESOURCE_TYPES, RESOURCE_TYPE_LABELS, USER_ROLES } from '@/shared/config/constants';
+import { BOOKING_STATUSES, RESOURCE_TYPES, RESOURCE_TYPE_LABELS, USER_ROLES, type ResourceType } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { cn } from '@/shared/lib/cn';
 import type { Booking, PaginatedResponse } from '@/shared/types';
@@ -74,6 +74,7 @@ export default function MyBookingsPage() {
       );
       return res;
     },
+    refetchInterval: 30_000,
   });
 
   const cancelMutation = useMutation({
@@ -187,11 +188,18 @@ export default function MyBookingsPage() {
                 >
                   <p className="font-medium text-gray-900">{b.resource_name}</p>
                   <p className="text-xs text-gray-500">
+                    {RESOURCE_TYPE_LABELS[b.resource_type as ResourceType] ?? b.resource_type}
+                    {' · '}
                     {start.toLocaleString()} — {new Date(b.end_time).toLocaleString()}
                   </p>
-                  <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE_CLASS[b.status] ?? 'bg-gray-100 text-gray-600')}>
-                    {STATUS_LABEL[b.status] ?? b.status}
-                  </span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE_CLASS[b.status] ?? 'bg-gray-100 text-gray-600')}>
+                      {STATUS_LABEL[b.status] ?? b.status}
+                    </span>
+                    {b.checked_in_at && (
+                      <span className="text-xs text-green-700">✓ Check-in</span>
+                    )}
+                  </div>
                 </Link>
                 {canCancel ? (
                   <button
