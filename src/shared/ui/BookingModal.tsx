@@ -1,13 +1,60 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
+import dayjs from 'dayjs';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { RESOURCE_TYPE_LABELS } from '@/shared/config/constants';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { RESOURCE_TYPE_LABELS, RESOURCE_TYPES, USER_ROLES } from '@/shared/config/constants';
+import { useAuth } from '@/shared/hooks/useAuth';
 import { cn } from '@/shared/lib/cn';
-import type { Booking, BookingResourceListItem } from '@/shared/types';
+import type { Booking, BookingResourceListItem, CompanyMember } from '@/shared/types';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const TZ = 'Asia/Almaty';
+
+/** Format a datetime-local string with Asia/Almaty offset (e.g. "2025-04-20T09:00:00+05:00") */
+function toAlmatyIso(localDatetime: string): string {
+  if (!localDatetime) return '';
+  const d = dayjs.tz(localDatetime, TZ);
+  if (!d.isValid()) return '';
+  return d.format();
+}
+
+/** Max date string (YYYY-MM-DD) = today + N days */
+function maxDateStr(days: number): string {
+  return dayjs().tz(TZ).add(days, 'day').format('YYYY-MM-DD');
+}
+
+/** Map backend error detail strings to user-friendly Russian messages */
+function mapApiError(rawMessage: string, status?: number): string {
+  if (status === 409) return 'Выбранное время уже занято';
+  if (status === 403 && rawMessage.includes('cancel your own')) return 'Нельзя отменить чужую бронь';
+  if (rawMessage.includes('Datetime must include timezone')) return 'Ошибка формата даты';
+  if (rawMessage.includes('Desk booking must start within 14 days')) return 'Слишком далёкая дата';
+  if (rawMessage.includes('Meeting room booking minimum duration is 30')) return 'Минимальная длительность — 30 минут';
+  if (rawMessage.includes('Meeting room booking maximum duration is 4')) return 'Максимальная длительность — 4 часа';
+  if (rawMessage.includes('Parking booking must be whole-day only')) return 'Только целый день';
+  if (rawMessage.includes('Capsule booking minimum')) return rawMessage.replace(/Capsule booking minimum duration is (\d+) hours?\.?/, 'Мин. $1 ч');
+  if (rawMessage.includes('Capsule booking maximum')) return rawMessage.replace(/Capsule booking maximum duration is (\d+) hours?\.?/, 'Макс. $1 ч');
+  if (rawMessage.includes('Minimum booking duration is')) return rawMessage.replace(/Minimum booking duration is (\d+) minutes?\.?/, 'Мин. $1 минут');
+  if (rawMessage.includes('Active booking limit exceeded')) return 'Достигнут лимит броней';
+  return rawMessage;
+}
+
+function getBookingError(error: unknown): string {
+  const err = error as { response?: { status?: number; data?: { detail?: string } }; message?: string };
+  const status = err.response?.status;
+  const detail = err.response?.data?.detail ?? '';
+  if (detail) return mapApiError(detail, status);
+  if (status === 409) return 'Выбранное время уже занято';
+  if (err.message) return err.message;
+  return 'Произошла ошибка';
+}
 
 interface BookingModalProps {
   resource: BookingResourceListItem;
@@ -15,45 +62,77 @@ interface BookingModalProps {
   onClose: () => void;
 }
 
-function toIsoUtc(localDatetime: string): string {
-  if (!localDatetime) return '';
-  const d = new Date(localDatetime);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toISOString();
-}
-
 export function BookingModal({ resource, open, onClose }: BookingModalProps) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
+  const isParking = resource.type === RESOURCE_TYPES.PARKING;
+  const isMeetingRoom = resource.type === RESOURCE_TYPES.MEETING_ROOM;
+  const isDesk = resource.type === RESOURCE_TYPES.DESK;
+  const isCapsule = resource.type === RESOURCE_TYPES.CAPSULE;
+
+  const [selectedDate, setSelectedDate] = useState('');
   const [startLocal, setStartLocal] = useState('');
   const [endLocal, setEndLocal] = useState('');
   const [description, setDescription] = useState('');
+  const [participantIds, setParticipantIds] = useState<number[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const overlayRef = useRef<HTMLDivElement>(null);
   const firstFocusableRef = useRef<HTMLInputElement>(null);
 
+  const todayStr = dayjs().tz(TZ).format('YYYY-MM-DD');
+  const maxDateDesk = maxDateStr(14);
+  const maxDateParking = maxDateStr(7);
+
+  const maxDate = isDesk ? maxDateDesk : isParking ? maxDateParking : undefined;
+
+  // Min step for datetime-local (current moment in local time)
   const minStep = useMemo(() => {
-    const d = new Date();
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().slice(0, 16);
+    return dayjs().tz(TZ).format('YYYY-MM-DDTHH:mm');
   }, []);
 
-  // Reset form when modal opens for a (possibly different) resource
+  // Fetch company members for participant multi-select (only for meeting rooms)
+  const companyId = user?.company_id ? String(user.company_id) : null;
+
+  const { data: membersData, isLoading: loadingMembers } = useQuery({
+    queryKey: ['company-members-for-booking', companyId],
+    enabled: isMeetingRoom && open && companyId !== null,
+    queryFn: async () => {
+      const { data } = await apiClient.get<CompanyMember[] | { results: CompanyMember[] }>(
+        API.companies.members(companyId!),
+        { params: { page_size: 200 } },
+      );
+      return Array.isArray(data) ? data : data.results;
+    },
+  });
+  const userOptions = membersData ?? [];
+
+  // Reset form when modal opens or resource changes
   useEffect(() => {
     if (open) {
+      setSelectedDate('');
       setStartLocal('');
       setEndLocal('');
       setDescription('');
+      setParticipantIds([]);
       setErrorMsg(null);
       setSuccessMsg(null);
-      // Delay focus until the modal is rendered
       setTimeout(() => {
         firstFocusableRef.current?.focus();
       }, 50);
     }
   }, [open, resource.id]);
+
+  // Auto-set parking times when date is selected
+  useEffect(() => {
+    if (isParking && selectedDate) {
+      // start = 00:00, end = 23:59 in Asia/Almaty
+      setStartLocal(`${selectedDate}T00:00`);
+      setEndLocal(`${selectedDate}T23:59`);
+    }
+  }, [isParking, selectedDate]);
 
   // Escape key closes modal
   useEffect(() => {
@@ -77,39 +156,70 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
     };
   }, [open]);
 
+  /** Client-side validation before submit */
+  function validateBooking(): string | null {
+    const start = dayjs.tz(isParking ? `${selectedDate}T00:00` : startLocal, TZ);
+    const end = dayjs.tz(isParking ? `${selectedDate}T23:59` : endLocal, TZ);
+
+    if (!start.isValid() || !end.isValid()) return 'Укажите начало и конец бронирования.';
+
+    const durationMin = end.diff(start, 'minute');
+
+    if (isDesk) {
+      const maxDesk = dayjs().tz(TZ).add(14, 'day');
+      if (start.isAfter(maxDesk)) return 'Можно бронировать не более чем на 14 дней вперёд';
+    }
+
+    if (isParking) {
+      const maxParking = dayjs().tz(TZ).add(7, 'day');
+      if (start.isAfter(maxParking)) return 'Можно бронировать не более чем на 7 дней вперёд';
+    }
+
+    if (isMeetingRoom) {
+      if (durationMin < 30) return 'Минимальная длительность — 30 минут';
+      if (durationMin > 240) return 'Максимальная длительность — 4 часа';
+    }
+
+    if (isCapsule) {
+      if (durationMin < 60) return 'Минимальная длительность — 1 час';
+      if (durationMin > 480) return 'Максимальная длительность — 8 часов';
+    }
+
+    return null;
+  }
+
   const createMutation = useMutation({
     mutationFn: async () => {
-      const start_time = toIsoUtc(startLocal);
-      const end_time = toIsoUtc(endLocal);
+      const startDatetime = isParking ? `${selectedDate}T00:00` : startLocal;
+      const endDatetime = isParking ? `${selectedDate}T23:59` : endLocal;
+
+      const start_time = toAlmatyIso(startDatetime);
+      const end_time = toAlmatyIso(endDatetime);
+
       if (!start_time || !end_time) throw new Error('Укажите начало и конец бронирования.');
-      const { data } = await apiClient.post<Booking>(API.bookings.reservations.create, {
+
+      const payload: Record<string, unknown> = {
         resource_id: resource.id,
         start_time,
         end_time,
         description: description.trim(),
-        participant_ids: [],
-      });
+        participant_ids: isMeetingRoom ? participantIds : [],
+      };
+
+      const { data } = await apiClient.post<Booking>(API.bookings.reservations.create, payload);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['booking-resources'] });
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
       setSuccessMsg('Бронирование успешно создано!');
       setTimeout(() => {
         onClose();
       }, 1500);
     },
     onError: (e) => {
-      const axiosError = e as { response?: { status?: number } };
-      if (axiosError.response?.status === 409) {
-        setErrorMsg('Этот слот уже занят. Выберите другое время.');
-        return;
-      }
-      if (e instanceof Error && e.message && !('response' in e)) {
-        setErrorMsg(e.message);
-        return;
-      }
-      setErrorMsg(getApiErrorMessage(e));
+      setErrorMsg(getBookingError(e));
     },
   });
 
@@ -123,7 +233,18 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
+    const validationError = validateBooking();
+    if (validationError) {
+      setErrorMsg(validationError);
+      return;
+    }
     createMutation.mutate();
+  };
+
+  const toggleParticipant = (userId: number) => {
+    setParticipantIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId],
+    );
   };
 
   const floorZoneInfo = [
@@ -142,6 +263,10 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
   const fieldClass =
     'w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500';
 
+  // Determine if current user is admin/superadmin for display logic
+  const isAdmin =
+    user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN;
+
   if (!open) return null;
 
   return (
@@ -154,7 +279,7 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
       aria-label={`Бронирование: ${resource.name}`}
     >
       <div
-        className="relative w-full max-w-md rounded-2xl border border-gray-200 bg-white shadow-xl"
+        className="relative w-full max-w-md rounded-2xl border border-gray-200 bg-white shadow-xl overflow-y-auto max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -198,42 +323,152 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
             </div>
           )}
 
-          <div>
-            <label
-              className="mb-1 block text-sm font-semibold text-gray-900"
-              htmlFor="modal-booking-start"
-            >
-              Начало (локальное время)
-            </label>
-            <input
-              ref={firstFocusableRef}
-              id="modal-booking-start"
-              type="datetime-local"
-              required
-              min={minStep}
-              value={startLocal}
-              onChange={(e) => setStartLocal(e.target.value)}
-              className={fieldClass}
-            />
-          </div>
+          {/* Parking: date-only picker */}
+          {isParking ? (
+            <div>
+              <label
+                className="mb-1 block text-sm font-semibold text-gray-900"
+                htmlFor="modal-booking-date"
+              >
+                Дата бронирования
+              </label>
+              <input
+                ref={firstFocusableRef}
+                id="modal-booking-date"
+                type="date"
+                required
+                min={todayStr}
+                max={maxDateParking}
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className={fieldClass}
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Парковка бронируется на весь день (00:00 — 23:59)
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Date limits hint for desk */}
+              {isDesk && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  Рабочее место можно бронировать не более чем на 14 дней вперёд.
+                </p>
+              )}
+              {isCapsule && (
+                <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+                  Капсула: от 1 до 8 часов.
+                </p>
+              )}
+              {isMeetingRoom && (
+                <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+                  Переговорка: от 30 минут до 4 часов.
+                </p>
+              )}
 
-          <div>
-            <label
-              className="mb-1 block text-sm font-semibold text-gray-900"
-              htmlFor="modal-booking-end"
-            >
-              Окончание
-            </label>
-            <input
-              id="modal-booking-end"
-              type="datetime-local"
-              required
-              min={startLocal || minStep}
-              value={endLocal}
-              onChange={(e) => setEndLocal(e.target.value)}
-              className={fieldClass}
-            />
-          </div>
+              <div>
+                <label
+                  className="mb-1 block text-sm font-semibold text-gray-900"
+                  htmlFor="modal-booking-start"
+                >
+                  Начало
+                </label>
+                <input
+                  ref={firstFocusableRef}
+                  id="modal-booking-start"
+                  type="datetime-local"
+                  required
+                  min={minStep}
+                  max={maxDate ? `${maxDate}T23:59` : undefined}
+                  value={startLocal}
+                  onChange={(e) => setStartLocal(e.target.value)}
+                  className={fieldClass}
+                />
+              </div>
+
+              <div>
+                <label
+                  className="mb-1 block text-sm font-semibold text-gray-900"
+                  htmlFor="modal-booking-end"
+                >
+                  Окончание
+                </label>
+                <input
+                  id="modal-booking-end"
+                  type="datetime-local"
+                  required
+                  min={startLocal || minStep}
+                  max={maxDate ? `${maxDate}T23:59` : undefined}
+                  value={endLocal}
+                  onChange={(e) => setEndLocal(e.target.value)}
+                  className={fieldClass}
+                />
+              </div>
+            </>
+          )}
+
+          {/* Participants multi-select for meeting rooms */}
+          {isMeetingRoom && (
+            <div>
+              <p className="mb-2 text-sm font-semibold text-gray-900">
+                Участники{' '}
+                <span className="font-normal text-gray-500">(необязательно)</span>
+              </p>
+
+              {loadingMembers ? (
+                <p className="text-sm text-gray-500">Загрузка участников…</p>
+              ) : userOptions.filter((u) => u.id !== user?.id).length === 0 ? (
+                <p className="text-sm text-gray-400">Нет доступных участников</p>
+              ) : (
+                <>
+                  <div
+                    className="max-h-40 overflow-y-auto rounded-lg border border-gray-300 bg-white divide-y divide-gray-100"
+                    role="listbox"
+                    aria-multiselectable="true"
+                    aria-label="Выберите участников"
+                  >
+                    {userOptions
+                      .filter((u) => u.id !== user?.id)
+                      .map((u) => {
+                        const selected = participantIds.includes(u.id);
+                        return (
+                          <button
+                            key={u.id}
+                            type="button"
+                            role="option"
+                            aria-selected={selected}
+                            onClick={() => toggleParticipant(u.id)}
+                            className={cn(
+                              'flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors',
+                              selected && 'bg-blue-50',
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                'flex h-4 w-4 shrink-0 items-center justify-center rounded border text-xs font-bold',
+                                selected
+                                  ? 'border-blue-600 bg-blue-600 text-white'
+                                  : 'border-gray-300 text-transparent',
+                              )}
+                              aria-hidden="true"
+                            >
+                              ✓
+                            </span>
+                            <span className="text-gray-900">{u.full_name || u.email}</span>
+                            <span className="ml-auto text-xs text-gray-400">{u.email}</span>
+                          </button>
+                        );
+                      })}
+                  </div>
+                  {participantIds.length > 0 && (
+                    <p className="mt-1 text-xs text-blue-600">
+                      Выбрано: {participantIds.length}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
           <div>
             <label
@@ -253,9 +488,11 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
             />
           </div>
 
-          <p className="text-xs text-gray-500 leading-relaxed">
-            Время отправляется на сервер в UTC. Требуется подтверждённый email.
-          </p>
+          {!isAdmin && (
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Требуется подтверждённый email. Время отправляется с часовым поясом Asia/Almaty (+05:00).
+            </p>
+          )}
 
           <div className="flex gap-3 pt-1">
             <button

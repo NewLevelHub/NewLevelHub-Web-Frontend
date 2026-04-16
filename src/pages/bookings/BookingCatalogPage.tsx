@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { Bookmark, Search, Settings2 } from 'lucide-react';
+import { ArrowLeft, Bookmark, Search, Settings2 } from 'lucide-react';
+import dayjs from 'dayjs';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
 
 import { BookingModal } from '@/shared/ui/BookingModal';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -104,11 +110,11 @@ export default function BookingCatalogPage() {
   const equipTokens = RESOURCE_EQUIPMENT_KEYS.filter((k) => equipmentNeed[k]);
   if (equipTokens.length) queryParams.equipment = equipTokens.join(',');
   if (availFromLocal && availToLocal) {
-    const fromMs = new Date(availFromLocal).getTime();
-    const toMs = new Date(availToLocal).getTime();
-    if (!Number.isNaN(fromMs) && !Number.isNaN(toMs) && fromMs < toMs) {
-      queryParams.available_from = new Date(availFromLocal).toISOString();
-      queryParams.available_to = new Date(availToLocal).toISOString();
+    const fromDayjs = dayjs.tz(availFromLocal, 'Asia/Almaty');
+    const toDayjs = dayjs.tz(availToLocal, 'Asia/Almaty');
+    if (fromDayjs.isValid() && toDayjs.isValid() && fromDayjs.isBefore(toDayjs)) {
+      queryParams.available_from = fromDayjs.format();
+      queryParams.available_to = toDayjs.format();
     }
   }
 
@@ -193,6 +199,15 @@ export default function BookingCatalogPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {(user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN) && (
+            <Link
+              to="/admin/bookings"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Назад в бронирования (админ)
+            </Link>
+          )}
           {user?.role === USER_ROLES.SUPERADMIN && (
             <Link
               to="/resources"
