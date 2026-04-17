@@ -224,6 +224,7 @@ export const router = createBrowserRouter([
             element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN]} />,
             children: [
               { path: '/admin/bookings', element: <ManageBookingsPage /> },
+              { path: '/admin/bookings/:id', element: <BookingDetailPage /> },
             ],
           },
 

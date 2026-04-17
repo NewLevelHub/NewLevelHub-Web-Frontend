@@ -7,8 +7,9 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { BOOKING_STATUSES, RESOURCE_TYPES, RESOURCE_TYPE_LABELS, USER_ROLES, type ResourceType } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
+import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { cn } from '@/shared/lib/cn';
-import type { Booking, PaginatedResponse } from '@/shared/types';
+import type { Booking, BookingResourceDetail, CompanyMember, PaginatedResponse } from '@/shared/types';
 
 type MyBookingsStatusFilter = 'upcoming' | 'past' | 'cancelled';
 
@@ -47,6 +48,17 @@ function localDateTimeToIso(value: string): string | undefined {
   return date.toISOString();
 }
 
+function toDateTimeLocalValue(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
 export default function MyBookingsPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -54,6 +66,14 @@ export default function MyBookingsPage() {
   const [resourceType, setResourceType] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [editTarget, setEditTarget] = useState<Booking | null>(null);
+  const [editStart, setEditStart] = useState('');
+  const [editEnd, setEditEnd] = useState('');
+  const [selectedParticipantId, setSelectedParticipantId] = useState('');
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editSuccess, setEditSuccess] = useState<string | null>(null);
+  const canManageParticipants =
+    user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN;
 
   const queryParams = useMemo(() => {
     const params: Record<string, string> = { status: statusTab };
@@ -86,7 +106,125 @@ export default function MyBookingsPage() {
     },
   });
 
+  const { data: editBookingData } = useQuery({
+    queryKey: ['my-bookings', 'edit-booking', editTarget?.id],
+    enabled: Boolean(editTarget?.id),
+    queryFn: async () => {
+      const { data: res } = await apiClient.get<Booking>(
+        API.bookings.reservations.detail(String(editTarget!.id)),
+      );
+      return res;
+    },
+  });
+
+  const modalBooking = editBookingData ?? editTarget;
+
+  const { data: editResourceData } = useQuery({
+    queryKey: ['my-bookings', 'edit-resource', modalBooking?.resource],
+    enabled: Boolean(modalBooking?.resource),
+    queryFn: async () => {
+      const { data: res } = await apiClient.get<BookingResourceDetail>(
+        API.bookings.resources.detail(String(modalBooking!.resource)),
+      );
+      return res;
+    },
+  });
+
+  const { data: companyMembersData } = useQuery({
+    queryKey: ['my-bookings', 'company-members', user?.company_id],
+    enabled: Boolean(user?.company_id) && canManageParticipants,
+    queryFn: async () => {
+      const { data: res } = await apiClient.get<CompanyMember[] | PaginatedResponse<CompanyMember>>(
+        API.companies.members(String(user!.company_id)),
+        { params: { page_size: 1000 } },
+      );
+      return Array.isArray(res) ? res : res.results;
+    },
+  });
+
+  const updateTimeMutation = useMutation({
+    mutationFn: async ({ bookingId, startTime, endTime }: { bookingId: number; startTime: string; endTime: string }) => {
+      await apiClient.patch(API.bookings.reservations.detail(String(bookingId)), {
+        start_time: new Date(startTime).toISOString(),
+        end_time: new Date(endTime).toISOString(),
+      });
+    },
+    onSuccess: async () => {
+      setEditError(null);
+      setEditSuccess('Время бронирования обновлено.');
+      await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      await queryClient.invalidateQueries({ queryKey: ['my-bookings', 'edit-booking'] });
+    },
+    onError: (error: unknown) => {
+      setEditSuccess(null);
+      setEditError(getApiErrorMessage(error, 'Не удалось изменить время.'));
+    },
+  });
+
+  const addParticipantMutation = useMutation({
+    mutationFn: async ({ bookingId, userId }: { bookingId: number; userId: number }) => {
+      await apiClient.post(API.bookings.reservations.addParticipants(String(bookingId)), {
+        user_ids: [userId],
+      });
+    },
+    onSuccess: async () => {
+      setEditError(null);
+      setEditSuccess('Участник добавлен.');
+      setSelectedParticipantId('');
+      await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      await queryClient.invalidateQueries({ queryKey: ['my-bookings', 'edit-booking'] });
+    },
+    onError: (error: unknown) => {
+      setEditSuccess(null);
+      setEditError(getApiErrorMessage(error, 'Не удалось добавить участника.'));
+    },
+  });
+
+  const removeParticipantMutation = useMutation({
+    mutationFn: async ({ bookingId, userId }: { bookingId: number; userId: number }) => {
+      await apiClient.delete(API.bookings.reservations.removeParticipant(String(bookingId), String(userId)));
+    },
+    onSuccess: async () => {
+      setEditError(null);
+      setEditSuccess('Участник удален.');
+      await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      await queryClient.invalidateQueries({ queryKey: ['my-bookings', 'edit-booking'] });
+    },
+    onError: (error: unknown) => {
+      setEditSuccess(null);
+      setEditError(getApiErrorMessage(error, 'Не удалось удалить участника.'));
+    },
+  });
+
   const rows = data?.results ?? [];
+  const candidateMembers = useMemo(() => {
+    if (!modalBooking) return [];
+    const members = companyMembersData ?? [];
+    const participantIds = new Set((modalBooking.participants ?? []).map((participant) => participant.id));
+    return members
+      .filter((m) => m.id !== modalBooking.user)
+      .filter((m) => !participantIds.has(m.id))
+      .filter((m) => m.role === USER_ROLES.EMPLOYEE || m.role === USER_ROLES.COMPANY_ADMIN);
+  }, [companyMembersData, modalBooking]);
+
+  const openEditModal = (booking: Booking) => {
+    setEditTarget(booking);
+    setEditStart(toDateTimeLocalValue(booking.start_time));
+    setEditEnd(toDateTimeLocalValue(booking.end_time));
+    setSelectedParticipantId('');
+    setEditError(null);
+    setEditSuccess(null);
+  };
+
+  const closeEditModal = () => {
+    if (updateTimeMutation.isPending || addParticipantMutation.isPending || removeParticipantMutation.isPending) return;
+    setEditTarget(null);
+    setEditStart('');
+    setEditEnd('');
+    setSelectedParticipantId('');
+    setEditError(null);
+    setEditSuccess(null);
+  };
 
   return (
     <main className="px-4 py-8 max-w-3xl mx-auto space-y-6">
@@ -202,19 +340,177 @@ export default function MyBookingsPage() {
                   </div>
                 </Link>
                 {canCancel ? (
-                  <button
-                    type="button"
-                    onClick={() => cancelMutation.mutate({ bookingId: b.id })}
-                    disabled={cancelMutation.isPending}
-                    className="shrink-0 rounded-lg border border-red-300 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-                  >
-                    Отменить
-                  </button>
+                  <div className="shrink-0 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(b)}
+                      className="rounded-lg border border-blue-300 px-3 py-2 text-xs font-medium text-blue-700 hover:bg-blue-50"
+                    >
+                      Изменить
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => cancelMutation.mutate({ bookingId: b.id })}
+                      disabled={cancelMutation.isPending}
+                      className="rounded-lg border border-red-300 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      Отменить
+                    </button>
+                  </div>
                 ) : null}
               </li>
             );
           })}
         </ul>
+      )}
+
+      {editTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Изменение бронирования"
+          onClick={closeEditModal}
+        >
+          <div
+            className="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-5 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 className="text-lg font-semibold text-gray-900">Изменение бронирования #{modalBooking?.id ?? editTarget.id}</h2>
+            <p className="mt-1 text-sm text-gray-600">
+              {modalBooking?.resource_name ?? editTarget.resource_name} · {modalBooking?.user_name ?? editTarget.user_name}
+            </p>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="text-sm text-gray-700">
+                Начало
+                <input
+                  type="datetime-local"
+                  value={editStart}
+                  onChange={(event) => setEditStart(event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                />
+              </label>
+              <label className="text-sm text-gray-700">
+                Конец
+                <input
+                  type="datetime-local"
+                  value={editEnd}
+                  onChange={(event) => setEditEnd(event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                />
+              </label>
+            </div>
+
+            {editResourceData?.type === RESOURCE_TYPES.MEETING_ROOM ? (
+              <div className="mt-4 space-y-3">
+                {canManageParticipants ? (
+                  <>
+                    <label className="text-sm text-gray-700">
+                      Добавить участника
+                      <select
+                        value={selectedParticipantId}
+                        onChange={(event) => setSelectedParticipantId(event.target.value)}
+                        className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                      >
+                        <option value="">Выберите пользователя</option>
+                        {candidateMembers.map((member) => (
+                          <option key={member.id} value={String(member.id)}>
+                            {member.full_name} ({member.email})
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <button
+                      type="button"
+                      disabled={!selectedParticipantId || addParticipantMutation.isPending}
+                      onClick={() => {
+                        addParticipantMutation.mutate({
+                          bookingId: modalBooking?.id ?? editTarget.id,
+                          userId: Number(selectedParticipantId),
+                        });
+                      }}
+                      className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+                    >
+                      Добавить участника
+                    </button>
+                    <ul className="space-y-2">
+                      {(modalBooking?.participants ?? []).map((participant) => (
+                        <li
+                          key={participant.id}
+                          className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2"
+                        >
+                          <span className="text-sm text-gray-700">{participant.full_name || participant.email}</span>
+                          <button
+                            type="button"
+                            disabled={removeParticipantMutation.isPending}
+                            onClick={() => {
+                              removeParticipantMutation.mutate({
+                                bookingId: modalBooking?.id ?? editTarget.id,
+                                userId: participant.id,
+                              });
+                            }}
+                            className="rounded-lg border border-rose-300 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+                          >
+                            Удалить
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    Управление участниками для этой брони доступно только администратору компании.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="mt-4 text-sm text-gray-500">
+                Управление участниками доступно только для бронирований переговорок.
+              </p>
+            )}
+
+            {editError ? (
+              <p className="mt-3 text-sm text-rose-700" role="alert">
+                {editError}
+              </p>
+            ) : null}
+            {editSuccess ? (
+              <p className="mt-3 text-sm text-emerald-700">{editSuccess}</p>
+            ) : null}
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeEditModal}
+                disabled={updateTimeMutation.isPending}
+                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Закрыть
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!editStart || !editEnd) {
+                    setEditError('Укажите start_time и end_time.');
+                    return;
+                  }
+                  setEditError(null);
+                  setEditSuccess(null);
+                  updateTimeMutation.mutate({
+                    bookingId: modalBooking?.id ?? editTarget.id,
+                    startTime: editStart,
+                    endTime: editEnd,
+                  });
+                }}
+                disabled={updateTimeMutation.isPending}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {updateTimeMutation.isPending ? 'Сохранение…' : 'Сохранить время'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );
