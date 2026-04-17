@@ -30,13 +30,14 @@ export default function OnboardingWizardPage() {
 
   const companyId = user?.company?.id ? String(user.company.id) : null;
 
-  const { data, isLoading, isError } = useQuery<OnboardingStatus>({
+  const { data, isPending, isError, refetch } = useQuery<OnboardingStatus>({
     queryKey: ['onboarding-status', companyId],
     queryFn: () =>
       apiClient
         .get<OnboardingStatus>(API.companies.onboardingStatus(companyId!))
         .then((r) => r.data),
     enabled: companyId !== null,
+    retry: false,
   });
 
   const skipMutation = useMutation({
@@ -63,7 +64,7 @@ export default function OnboardingWizardPage() {
     );
   }
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-950">
         <p className="text-gray-400">Загрузка онбординга…</p>
@@ -74,7 +75,16 @@ export default function OnboardingWizardPage() {
   if (isError || !data) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-950">
-        <p className="text-red-400">Не удалось загрузить онбординг.</p>
+        <div className="text-center">
+          <p className="text-red-400">Не удалось загрузить онбординг.</p>
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className="mt-4 rounded-lg border border-gray-700 px-5 py-2.5 text-sm text-gray-400 transition-colors hover:border-gray-500 hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
+          >
+            Попробовать снова
+          </button>
+        </div>
       </div>
     );
   }
