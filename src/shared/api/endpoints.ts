@@ -68,6 +68,7 @@ export const API = {
       my: '/bookings/reservations/my/',
       cancel: (id: string) => `/bookings/reservations/${id}/cancel/`,
       adminCancel: (id: string) => `/bookings/reservations/${id}/admin-cancel/`,
+      checkIn: (id: string) => `/bookings/reservations/${id}/check-in/`,
       addParticipants: (id: string) => `/bookings/reservations/${id}/participants/`,
       removeParticipant: (id: string, userId: string) =>
         `/bookings/reservations/${id}/participants/${userId}/`,

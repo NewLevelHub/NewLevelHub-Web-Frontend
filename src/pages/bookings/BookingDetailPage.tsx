@@ -12,16 +12,18 @@ import type { Booking, BookingResourceDetail, CompanyMember, PaginatedResponse }
 
 const STATUS_LABEL: Record<string, string> = {
   [BOOKING_STATUSES.CONFIRMED]: 'Подтверждено',
+  [BOOKING_STATUSES.CHECKED_IN]: 'Отмечен',
   [BOOKING_STATUSES.CANCELLED]: 'Отменено',
   [BOOKING_STATUSES.COMPLETED]: 'Завершено',
-  [BOOKING_STATUSES.NO_SHOW]: 'Не явился',
+  [BOOKING_STATUSES.NO_SHOW]: 'Неявка',
 };
 
 const STATUS_BADGE_CLASS: Record<string, string> = {
-  [BOOKING_STATUSES.CONFIRMED]: 'bg-green-100 text-green-800',
+  [BOOKING_STATUSES.CONFIRMED]: 'bg-blue-100 text-blue-800',
+  [BOOKING_STATUSES.CHECKED_IN]: 'bg-emerald-100 text-emerald-800',
   [BOOKING_STATUSES.COMPLETED]: 'bg-gray-100 text-gray-600',
-  [BOOKING_STATUSES.CANCELLED]: 'bg-red-100 text-red-700',
-  [BOOKING_STATUSES.NO_SHOW]: 'bg-orange-100 text-orange-700',
+  [BOOKING_STATUSES.CANCELLED]: 'bg-gray-100 text-gray-600',
+  [BOOKING_STATUSES.NO_SHOW]: 'bg-red-100 text-red-800',
 };
 
 function toDateTimeLocalValue(iso: string): string {
@@ -158,6 +160,38 @@ export default function BookingDetailPage() {
     },
   });
 
+  const checkInMutation = useMutation({
+    mutationFn: async () => {
+      await apiClient.post(API.bookings.reservations.checkIn(bookingId));
+    },
+    onSuccess: async () => {
+      setFormError(null);
+      setFormSuccess('Чек-ин выполнен успешно.');
+      await queryClient.invalidateQueries({ queryKey: ['booking-reservation', bookingId] });
+      await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+    },
+    onError: (error: unknown) => {
+      setFormSuccess(null);
+      setFormError(getApiErrorMessage(error, 'Не удалось выполнить чек-ин.'));
+    },
+  });
+
+  const isMutationPending = useMemo(
+    () =>
+      updateTimeMutation.isPending ||
+      addParticipantMutation.isPending ||
+      removeParticipantMutation.isPending ||
+      cancelMutation.isPending ||
+      checkInMutation.isPending,
+    [
+      updateTimeMutation.isPending,
+      addParticipantMutation.isPending,
+      removeParticipantMutation.isPending,
+      cancelMutation.isPending,
+      checkInMutation.isPending,
+    ],
+  );
+
   if (!bookingId) {
     return (
       <main className="px-4 py-8 max-w-lg mx-auto">
@@ -187,9 +221,18 @@ export default function BookingDetailPage() {
 
   const start = new Date(data.start_time);
   const end = new Date(data.end_time);
+  const now = new Date();
   const isMeetingRoom = resourceData?.type === RESOURCE_TYPES.MEETING_ROOM;
   const canEditTime = data.status === BOOKING_STATUSES.CONFIRMED;
   const canCancel = user !== null && data.user === user.id && data.status === BOOKING_STATUSES.CONFIRMED;
+
+  const canCheckIn =
+    user !== null &&
+    data.user === user.id &&
+    data.status === BOOKING_STATUSES.CONFIRMED &&
+    now >= start &&
+    now <= end &&
+    !data.checked_in_at;
 
   const participantIds = new Set(data.participants.map((participant) => participant.id));
   const candidateMembers = (companyMembersData?.results ?? []).filter(
@@ -197,19 +240,6 @@ export default function BookingDetailPage() {
   );
 
   const selectedParticipantUserId = Number(selectedUserId);
-  const isMutationPending = useMemo(
-    () =>
-      updateTimeMutation.isPending ||
-      addParticipantMutation.isPending ||
-      removeParticipantMutation.isPending ||
-      cancelMutation.isPending,
-    [
-      updateTimeMutation.isPending,
-      addParticipantMutation.isPending,
-      removeParticipantMutation.isPending,
-      cancelMutation.isPending,
-    ],
-  );
 
   return (
     <main className="px-4 py-8 max-w-lg mx-auto space-y-6">
@@ -228,6 +258,12 @@ export default function BookingDetailPage() {
             {STATUS_LABEL[data.status] ?? data.status}
           </span>
         </p>
+        {data.checked_in_at ? (
+          <p className="text-sm text-gray-600">
+            <span className="font-medium text-gray-700">Чек-ин: </span>
+            {new Date(data.checked_in_at).toLocaleString('ru-RU')}
+          </p>
+        ) : null}
         {data.description ? <p className="text-sm text-gray-600">{data.description}</p> : null}
         {data.user_name ? (
           <p className="text-sm text-gray-600">
@@ -238,12 +274,27 @@ export default function BookingDetailPage() {
       </section>
 
       {formError ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</div>
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{formError}</div>
       ) : null}
       {formSuccess ? (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
           {formSuccess}
         </div>
+      ) : null}
+
+      {canCheckIn ? (
+        <button
+          type="button"
+          disabled={isMutationPending}
+          onClick={() => {
+            setFormError(null);
+            setFormSuccess(null);
+            checkInMutation.mutate();
+          }}
+          className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+        >
+          {checkInMutation.isPending ? 'Выполняется чек-ин…' : 'Отметить чек-ин'}
+        </button>
       ) : null}
 
       {canCancel ? (

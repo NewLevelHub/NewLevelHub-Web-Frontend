@@ -62,6 +62,7 @@ export type CapsuleZone = (typeof CAPSULE_ZONES)[keyof typeof CAPSULE_ZONES];
 
 export const BOOKING_STATUSES = {
   CONFIRMED: 'confirmed',
+  CHECKED_IN: 'checked_in',
   CANCELLED: 'cancelled',
   COMPLETED: 'completed',
   NO_SHOW: 'no_show',
