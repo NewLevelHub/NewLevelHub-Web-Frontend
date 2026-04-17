@@ -144,6 +144,7 @@ export interface BookingResourceListItem {
   equipment: ResourceEquipment | null;
   is_active: boolean;
   is_hot_desk: boolean;
+  availability_days?: number[];
   parking_type: ParkingType | null;
   capsule_zone: string;
   status: BookingResourceCatalogStatus;

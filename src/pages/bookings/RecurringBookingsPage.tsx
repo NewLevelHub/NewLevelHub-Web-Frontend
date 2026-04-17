@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -66,6 +66,34 @@ export default function RecurringBookingsPage() {
     return map;
   }, [resourcesData]);
 
+  const selectedResource = useMemo(() => {
+    const id = Number(resourceId);
+    if (!id) return null;
+    return (resourcesData ?? []).find((resource) => resource.id === id) ?? null;
+  }, [resourceId, resourcesData]);
+
+  const allowedWeekdayValues = useMemo(() => {
+    const sourceDays = selectedResource?.availability_days;
+    if (!sourceDays || sourceDays.length === 0) {
+      return WEEKDAY_OPTIONS.map((option) => option.value);
+    }
+    return Array.from(
+      new Set(sourceDays.filter((day) => Number.isInteger(day) && day >= 0 && day <= 6)),
+    ).sort((left, right) => left - right);
+  }, [selectedResource]);
+
+  const allowedWeekdayOptions = useMemo(
+    () => WEEKDAY_OPTIONS.filter((option) => allowedWeekdayValues.includes(option.value)),
+    [allowedWeekdayValues],
+  );
+
+  useEffect(() => {
+    if (allowedWeekdayValues.length === 0) return;
+    if (!allowedWeekdayValues.includes(Number(dayOfWeek))) {
+      setDayOfWeek(String(allowedWeekdayValues[0]));
+    }
+  }, [allowedWeekdayValues, dayOfWeek]);
+
   const createMutation = useMutation({
     mutationFn: async (payload: RecurringBookingCreatePayload) => {
       const { data } = await apiClient.post<RecurringBookingCreateResponse>(
@@ -75,8 +103,20 @@ export default function RecurringBookingsPage() {
       return data;
     },
     onSuccess: async (data) => {
+      const skippedDates = data.skipped_dates ?? [];
+      if (skippedDates.length > 0) {
+        try {
+          await apiClient.delete(API.bookings.recurring.detail(String(data.id)));
+        } catch {
+          // Если откат не удался, всё равно показываем понятную причину пользователю.
+        }
+        setLastSkippedDates(skippedDates);
+        setErrorMessage('Серия не создана: обнаружены конфликты в выбранном диапазоне.');
+        await queryClient.invalidateQueries({ queryKey: ['recurring-bookings', 'list'] });
+        return;
+      }
       setErrorMessage(null);
-      setLastSkippedDates(data.skipped_dates ?? []);
+      setLastSkippedDates([]);
       await queryClient.invalidateQueries({ queryKey: ['recurring-bookings', 'list'] });
     },
     onError: (error: unknown) => {
@@ -117,8 +157,8 @@ export default function RecurringBookingsPage() {
       )}
 
       {lastSkippedDates.length > 0 && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          <p className="font-medium">Серия создана с пропусками (конфликты):</p>
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <p className="font-medium">Конфликты на датах:</p>
           <p className="mt-1">{lastSkippedDates.join(', ')}</p>
         </div>
       )}
@@ -165,8 +205,9 @@ export default function RecurringBookingsPage() {
               value={dayOfWeek}
               onChange={(event) => setDayOfWeek(event.target.value)}
               className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+              disabled={allowedWeekdayOptions.length === 0}
             >
-              {WEEKDAY_OPTIONS.map((option) => (
+              {allowedWeekdayOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -211,12 +252,21 @@ export default function RecurringBookingsPage() {
           <div className="sm:col-span-2 lg:col-span-1 flex items-end">
             <button
               type="submit"
-              disabled={createMutation.isPending || !resourceId}
+              disabled={createMutation.isPending || !resourceId || allowedWeekdayOptions.length === 0}
               className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {createMutation.isPending ? 'Создание…' : 'Создать серию'}
             </button>
           </div>
+
+          {resourceId && (
+            <p className="sm:col-span-2 lg:col-span-3 text-xs text-gray-500">
+              Доступные дни ресурса:{' '}
+              {allowedWeekdayOptions.length > 0
+                ? allowedWeekdayOptions.map((option) => option.label).join(', ')
+                : 'не настроены'}
+            </p>
+          )}
         </form>
       </section>
 

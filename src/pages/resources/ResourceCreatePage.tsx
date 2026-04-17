@@ -55,13 +55,13 @@ type CreateMutationInput = {
 };
 
 const DAY_OPTIONS = [
-  { value: 0, label: 'Вс' },
-  { value: 1, label: 'Пн' },
-  { value: 2, label: 'Вт' },
-  { value: 3, label: 'Ср' },
-  { value: 4, label: 'Чт' },
-  { value: 5, label: 'Пт' },
-  { value: 6, label: 'Сб' },
+  { value: 0, label: 'Пн' },
+  { value: 1, label: 'Вт' },
+  { value: 2, label: 'Ср' },
+  { value: 3, label: 'Чт' },
+  { value: 4, label: 'Пт' },
+  { value: 5, label: 'Сб' },
+  { value: 6, label: 'Вс' },
 ];
 
 function defaultEquipment(): EquipmentState {
@@ -183,7 +183,7 @@ export default function ResourceCreatePage() {
     capacity: '',
     availability_start: '09:00',
     availability_end: '18:00',
-    availability_days: [1, 2, 3, 4, 5],
+    availability_days: [0, 1, 2, 3, 4],
     is_active: true,
     has_monitor: false,
     has_dock: false,
