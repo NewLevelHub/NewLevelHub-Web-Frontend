@@ -50,12 +50,14 @@ const ORDERING_OPTIONS: { value: string; label: string }[] = [
 const STATUS_LABELS: Record<string, string> = {
   [BOOKING_RESOURCE_CATALOG_STATUS.FREE]: 'Свободен',
   [BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED]: 'Занят',
+  [BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED]: 'Заблокирован',
   [BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE]: 'Скоро свободен',
 };
 
 const STATUS_BADGE_CLASS: Record<string, string> = {
   [BOOKING_RESOURCE_CATALOG_STATUS.FREE]: 'bg-emerald-600/90',
   [BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED]: 'bg-rose-600/90',
+  [BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED]: 'bg-slate-700/90',
   [BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE]: 'bg-amber-600/90',
 };
 
@@ -460,6 +462,9 @@ export default function BookingCatalogPage() {
                         {whenFree && r.status === BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE && (
                           <p className="text-xs text-amber-800">Освободится: {whenFree}</p>
                         )}
+                        {r.status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED && r.reason && (
+                          <p className="text-xs text-slate-700">Причина блокировки: {r.reason}</p>
+                        )}
                         {r.is_hot_desk && r.type === RESOURCE_TYPES.DESK && (
                           <span className="text-xs font-medium text-blue-700">Hot desk</span>
                         )}
@@ -471,6 +476,14 @@ export default function BookingCatalogPage() {
                               className="inline-flex w-full justify-center rounded-lg bg-gray-200 px-3 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
                             >
                               Занят
+                            </button>
+                          ) : r.status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED ? (
+                            <button
+                              type="button"
+                              disabled
+                              className="inline-flex w-full justify-center rounded-lg bg-slate-200 px-3 py-2 text-sm font-medium text-slate-600 cursor-not-allowed"
+                            >
+                              Заблокирован
                             </button>
                           ) : (
                             <button

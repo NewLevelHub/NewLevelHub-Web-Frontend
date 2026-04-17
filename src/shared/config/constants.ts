@@ -73,6 +73,7 @@ export type BookingStatus = (typeof BOOKING_STATUSES)[keyof typeof BOOKING_STATU
 export const BOOKING_RESOURCE_CATALOG_STATUS = {
   FREE: 'free',
   OCCUPIED: 'occupied',
+  BLOCKED: 'blocked',
   SOON_AVAILABLE: 'soon_available',
 } as const;
 

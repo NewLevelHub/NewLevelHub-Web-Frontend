@@ -38,10 +38,31 @@ import {
   resourcePageNarrow,
   resTitle,
 } from '@/shared/ui/resourcePageStyles';
-import type { BookingResourceDetail, Company, PaginatedResponse, ResourceScheduleSlot } from '@/shared/types';
+import type {
+  BookingResourceDetail,
+  Company,
+  PaginatedResponse,
+  ResourceBlock,
+  ResourceScheduleSlot,
+} from '@/shared/types';
 import { ResourceDayTimeline } from '@/pages/bookings/components/ResourceDayTimeline';
+import { cn } from '@/shared/lib/cn';
 
 type EquipmentState = Record<ResourceEquipmentKey, boolean>;
+type BlockFormState = {
+  start_date: string;
+  start_clock: string;
+  end_date: string;
+  end_clock: string;
+  reason: string;
+};
+
+function localDateTimeToIso(datePart: string, timePart: string): string | null {
+  if (!datePart || !timePart) return null;
+  const date = new Date(`${datePart}T${timePart}`);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString();
+}
 
 function localIsoDate(d: Date): string {
   const y = d.getFullYear();
@@ -71,6 +92,14 @@ export default function ResourceDetailPage() {
   const [deleteModal, setDeleteModal] = useState(false);
   const [deactivateModal, setDeactivateModal] = useState(false);
   const [scheduleDay, setScheduleDay] = useState(() => localIsoDate(new Date()));
+  const [blockForm, setBlockForm] = useState<BlockFormState>({
+    start_date: localIsoDate(new Date()),
+    start_clock: '09:00',
+    end_date: localIsoDate(new Date()),
+    end_clock: '18:00',
+    reason: '',
+  });
+  const [blockFormError, setBlockFormError] = useState<string | null>(null);
 
   const resourceId = id ? Number(id) : NaN;
 
@@ -96,6 +125,25 @@ export default function ResourceDetailPage() {
       return res;
     },
   });
+
+  const { data: blocks = [], isLoading: blocksLoading } = useQuery({
+    queryKey: ['booking-resource-blocks', resourceId],
+    enabled: Number.isFinite(resourceId),
+    queryFn: async () => {
+      const { data: res } = await apiClient.get<ResourceBlock[]>(
+        API.bookings.resources.blocks(String(resourceId)),
+      );
+      return res;
+    },
+  });
+  const activeBlock = useMemo(() => {
+    const now = Date.now();
+    return blocks.find((block) => {
+      const start = new Date(block.start_time).getTime();
+      const end = new Date(block.end_time).getTime();
+      return start <= now && end > now;
+    }) ?? null;
+  }, [blocks]);
 
   const weekAnchors = useMemo(() => {
     const [y, m, d] = scheduleDay.split('-').map(Number);
@@ -277,8 +325,82 @@ export default function ResourceDetailPage() {
     },
   });
 
+  const blockMutation = useMutation({
+    mutationFn: async (payload: { start_time: string; end_time: string; reason: string }) => {
+      const { data: res } = await apiClient.post(
+        API.bookings.resources.block(String(resourceId)),
+        payload,
+      );
+      return res;
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['booking-resource', resourceId] }),
+        queryClient.invalidateQueries({ queryKey: ['booking-resource-schedule', resourceId] }),
+        queryClient.invalidateQueries({ queryKey: ['booking-resource-blocks', resourceId] }),
+        queryClient.invalidateQueries({ queryKey: ['booking-resources'] }),
+        queryClient.invalidateQueries({ queryKey: ['admin-bookings'] }),
+      ]);
+      setBlockForm({
+        start_date: localIsoDate(new Date()),
+        start_clock: '09:00',
+        end_date: localIsoDate(new Date()),
+        end_clock: '18:00',
+        reason: '',
+      });
+      setBlockFormError(null);
+      setErrorMsg(null);
+    },
+    onError: (e) => {
+      const message = getApiErrorMessage(e);
+      setBlockFormError(message);
+      setErrorMsg(message);
+    },
+  });
+
+  const unblockMutation = useMutation({
+    mutationFn: async (blockId: number) => {
+      await apiClient.delete(API.bookings.resources.unblock(String(resourceId), String(blockId)));
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['booking-resource', resourceId] }),
+        queryClient.invalidateQueries({ queryKey: ['booking-resource-schedule', resourceId] }),
+        queryClient.invalidateQueries({ queryKey: ['booking-resource-blocks', resourceId] }),
+        queryClient.invalidateQueries({ queryKey: ['booking-resources'] }),
+      ]);
+      setErrorMsg(null);
+    },
+    onError: (e) => setErrorMsg(getApiErrorMessage(e)),
+  });
+
   function toggleEquipment(key: ResourceEquipmentKey) {
     setEquipment((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  function submitBlockForm() {
+    const startIso = localDateTimeToIso(blockForm.start_date, blockForm.start_clock);
+    const endIso = localDateTimeToIso(blockForm.end_date, blockForm.end_clock);
+    const payload = {
+      start_time: startIso ?? '',
+      end_time: endIso ?? '',
+      reason: blockForm.reason.trim(),
+    };
+    if (!startIso || !endIso) {
+      setBlockFormError('Укажите дату и время начала и конца блокировки.');
+      return;
+    }
+    if (!payload.reason) {
+      setBlockFormError('Укажите причину блокировки.');
+      return;
+    }
+    if (new Date(startIso).getTime() >= new Date(endIso).getTime()) {
+      setBlockFormError('Окончание блокировки должно быть позже начала.');
+      return;
+    }
+    setBlockFormError(null);
+    setErrorMsg(null);
+    blockMutation.mutate(payload);
   }
 
   if (!Number.isFinite(resourceId)) {
@@ -321,6 +443,13 @@ export default function ResourceDetailPage() {
           <p className={resSubtitle}>
             {RESOURCE_TYPE_LABELS[data.type]} · этаж {data.floor}
           </p>
+          {activeBlock ? (
+            <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              Текущая активная блокировка: {new Date(activeBlock.start_time).toLocaleString()} -{' '}
+              {new Date(activeBlock.end_time).toLocaleString()}
+              {activeBlock.reason ? ` · ${activeBlock.reason}` : ''}
+            </div>
+          ) : null}
         </div>
         {data.photo && (
           <img
@@ -372,6 +501,150 @@ export default function ResourceDetailPage() {
         ) : (
           <ResourceDayTimeline dayDate={scheduleDay} slots={scheduleSlots} />
         )}
+      </section>
+
+      <section className={`${resFormCard} space-y-4`}>
+        <div>
+          <h2 className="text-base font-semibold text-gray-900">Блокировки ресурса</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Суперадмин может заблокировать ресурс на период ремонта или мероприятия. Пересекающиеся бронирования будут автоматически отменены.
+          </p>
+        </div>
+
+        {activeBlock && (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            Ресурс сейчас заблокирован{activeBlock.reason ? `: ${activeBlock.reason}` : '.'}
+          </div>
+        )}
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-3">
+            <span className={resLabel}>Начало блокировки</span>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="mb-1 block text-xs text-gray-500">Дата</span>
+                <input
+                  type="date"
+                  value={blockForm.start_date}
+                  onChange={(e) => {
+                    setBlockForm((prev) => ({ ...prev, start_date: e.target.value }));
+                    if (blockFormError) setBlockFormError(null);
+                  }}
+                  className={resInput}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs text-gray-500">Время</span>
+                <input
+                  type="time"
+                  step={300}
+                  value={blockForm.start_clock}
+                  onChange={(e) => {
+                    setBlockForm((prev) => ({ ...prev, start_clock: e.target.value }));
+                    if (blockFormError) setBlockFormError(null);
+                  }}
+                  className={resInput}
+                />
+              </label>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <span className={resLabel}>Конец блокировки</span>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="mb-1 block text-xs text-gray-500">Дата</span>
+                <input
+                  type="date"
+                  value={blockForm.end_date}
+                  onChange={(e) => {
+                    setBlockForm((prev) => ({ ...prev, end_date: e.target.value }));
+                    if (blockFormError) setBlockFormError(null);
+                  }}
+                  className={resInput}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs text-gray-500">Время</span>
+                <input
+                  type="time"
+                  step={300}
+                  value={blockForm.end_clock}
+                  onChange={(e) => {
+                    setBlockForm((prev) => ({ ...prev, end_clock: e.target.value }));
+                    if (blockFormError) setBlockFormError(null);
+                  }}
+                  className={resInput}
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <label className="block">
+          <span className={resLabel}>Причина</span>
+          <textarea
+            rows={3}
+            value={blockForm.reason}
+            onChange={(e) => {
+              setBlockForm((prev) => ({ ...prev, reason: e.target.value }));
+              if (blockFormError) setBlockFormError(null);
+            }}
+            placeholder="Например: ремонт кондиционера"
+            className={resInput}
+          />
+        </label>
+
+        {blockFormError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {blockFormError}
+          </div>
+        )}
+
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={submitBlockForm}
+            disabled={blockMutation.isPending}
+            className={cn(
+              'rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900 disabled:opacity-50',
+            )}
+          >
+            {blockMutation.isPending ? 'Блокировка...' : 'Заблокировать ресурс'}
+          </button>
+        </div>
+
+        <div className="space-y-3 border-t border-gray-200 pt-4">
+          <h3 className="text-sm font-semibold text-gray-900">Список блокировок</h3>
+          {blocksLoading ? (
+            <p className="text-sm text-gray-500">Загрузка блокировок...</p>
+          ) : blocks.length === 0 ? (
+            <p className="text-sm text-gray-500">Для ресурса пока нет блокировок.</p>
+          ) : (
+            <ul className="space-y-3">
+              {blocks.map((block) => (
+                <li
+                  key={block.id}
+                  className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 md:flex-row md:items-start md:justify-between"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900">
+                      {new Date(block.start_time).toLocaleString()} - {new Date(block.end_time).toLocaleString()}
+                    </p>
+                    <p className="mt-1 text-sm text-gray-600">{block.reason || 'Без причины'}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => unblockMutation.mutate(block.id)}
+                    disabled={unblockMutation.isPending}
+                    className="rounded-lg border border-rose-300 px-3 py-2 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+                  >
+                    {unblockMutation.isPending ? 'Снятие...' : 'Снять досрочно'}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </section>
 
       <form
