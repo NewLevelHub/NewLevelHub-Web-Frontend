@@ -242,8 +242,37 @@ export interface Booking {
   cancelled_by: number | null;
   cancel_reason: string;
   participants: { id: number; email: string; full_name: string }[];
+  recurring_booking_id?: number | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface RecurringBooking {
+  id: number;
+  resource: number;
+  resource_id: number;
+  user: number;
+  company: number | null;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  is_active: boolean;
+  valid_from: string;
+  valid_until: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RecurringBookingCreatePayload {
+  resource_id: number;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  repeat_until: string;
+}
+
+export interface RecurringBookingCreateResponse extends RecurringBooking {
+  skipped_dates: string[];
 }
 
 export interface Board {

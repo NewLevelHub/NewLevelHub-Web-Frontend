@@ -225,6 +225,16 @@ export default function BookingCatalogPage() {
           >
             Мои бронирования
           </Link>
+          {(user?.role === USER_ROLES.SUPERADMIN
+            || user?.role === USER_ROLES.COMPANY_ADMIN
+            || user?.role === USER_ROLES.EMPLOYEE) && (
+            <Link
+              to="/bookings/recurring"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
+            >
+              Рекуррентные брони
+            </Link>
+          )}
         </div>
       </div>
 

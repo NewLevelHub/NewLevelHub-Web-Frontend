@@ -46,6 +46,7 @@ import BookingCreatePage from '@/pages/bookings/BookingCreatePage';
 import BookingDetailPage from '@/pages/bookings/BookingDetailPage';
 import MyBookingsPage from '@/pages/bookings/MyBookingsPage';
 import ManageBookingsPage from '@/pages/bookings/ManageBookingsPage';
+import RecurringBookingsPage from '@/pages/bookings/RecurringBookingsPage';
 
 // Resources (superadmin)
 import ResourceListPage from '@/pages/resources/ResourceListPage';
@@ -165,6 +166,7 @@ export const router = createBrowserRouter([
           {
             element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE]} />,
             children: [
+              { path: '/bookings/recurring', element: <RecurringBookingsPage /> },
               { path: '/crm', element: <BoardListPage /> },
               { path: '/crm/boards/:id', element: <BoardDetailPage /> },
               { path: '/crm/my-tasks', element: <MyTasksPage /> },
