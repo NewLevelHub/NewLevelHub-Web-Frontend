@@ -348,11 +348,11 @@ export interface FileItem {
 
 export interface Notification {
   id: number;
+  notification_type: string;
   title: string;
   body: string;
-  notification_type: string;
+  url: string | null;
   is_read: boolean;
-  url: string;
   created_at: string;
 }
 

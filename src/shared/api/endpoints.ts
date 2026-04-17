@@ -126,6 +126,7 @@ export const API = {
   },
   notifications: {
     list: '/notifications/',
+    unreadCount: '/notifications/unread-count/',
     markRead: (id: string) => `/notifications/${id}/read/`,
     markAllRead: '/notifications/read-all/',
     settings: '/notifications/settings/',

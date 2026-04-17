@@ -8,6 +8,7 @@ import { API } from '@/shared/api/endpoints';
 import { BOOKING_STATUSES, RESOURCE_TYPES, RESOURCE_TYPE_LABELS, USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { cn } from '@/shared/lib/cn';
 import type { Booking, BookingResourceDetail, CompanyMember, PaginatedResponse } from '@/shared/types';
 
 type MyBookingsStatusFilter = 'upcoming' | 'past' | 'cancelled';
@@ -16,7 +17,14 @@ const STATUS_LABEL: Record<string, string> = {
   [BOOKING_STATUSES.CONFIRMED]: 'Подтверждено',
   [BOOKING_STATUSES.CANCELLED]: 'Отменено',
   [BOOKING_STATUSES.COMPLETED]: 'Завершено',
-  [BOOKING_STATUSES.NO_SHOW]: 'Неявка',
+  [BOOKING_STATUSES.NO_SHOW]: 'Не явился',
+};
+
+const STATUS_BADGE_CLASS: Record<string, string> = {
+  [BOOKING_STATUSES.CONFIRMED]: 'bg-green-100 text-green-800',
+  [BOOKING_STATUSES.COMPLETED]: 'bg-gray-100 text-gray-600',
+  [BOOKING_STATUSES.CANCELLED]: 'bg-red-100 text-red-700',
+  [BOOKING_STATUSES.NO_SHOW]: 'bg-orange-100 text-orange-700',
 };
 
 const TAB_OPTIONS: Array<{ value: MyBookingsStatusFilter; label: string }> = [
@@ -319,7 +327,7 @@ export default function MyBookingsPage() {
                   <p className="text-xs text-gray-500">
                     {start.toLocaleString()} — {new Date(b.end_time).toLocaleString()}
                   </p>
-                  <span className="text-xs font-medium text-gray-600">
+                  <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE_CLASS[b.status] ?? 'bg-gray-100 text-gray-600')}>
                     {STATUS_LABEL[b.status] ?? b.status}
                   </span>
                 </Link>

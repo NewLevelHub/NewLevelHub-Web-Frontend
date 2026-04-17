@@ -7,13 +7,21 @@ import { API } from '@/shared/api/endpoints';
 import { BOOKING_STATUSES, RESOURCE_TYPES, USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { cn } from '@/shared/lib/cn';
 import type { Booking, BookingResourceDetail, CompanyMember, PaginatedResponse } from '@/shared/types';
 
 const STATUS_LABEL: Record<string, string> = {
   [BOOKING_STATUSES.CONFIRMED]: 'Подтверждено',
   [BOOKING_STATUSES.CANCELLED]: 'Отменено',
   [BOOKING_STATUSES.COMPLETED]: 'Завершено',
-  [BOOKING_STATUSES.NO_SHOW]: 'Неявка',
+  [BOOKING_STATUSES.NO_SHOW]: 'Не явился',
+};
+
+const STATUS_BADGE_CLASS: Record<string, string> = {
+  [BOOKING_STATUSES.CONFIRMED]: 'bg-green-100 text-green-800',
+  [BOOKING_STATUSES.COMPLETED]: 'bg-gray-100 text-gray-600',
+  [BOOKING_STATUSES.CANCELLED]: 'bg-red-100 text-red-700',
+  [BOOKING_STATUSES.NO_SHOW]: 'bg-orange-100 text-orange-700',
 };
 
 function toDateTimeLocalValue(iso: string): string {
@@ -216,9 +224,17 @@ export default function BookingDetailPage() {
         </p>
         <p className="text-sm">
           <span className="font-medium text-gray-700">Статус: </span>
-          {STATUS_LABEL[data.status] ?? data.status}
+          <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE_CLASS[data.status] ?? 'bg-gray-100 text-gray-600')}>
+            {STATUS_LABEL[data.status] ?? data.status}
+          </span>
         </p>
         {data.description ? <p className="text-sm text-gray-600">{data.description}</p> : null}
+        {data.user_name ? (
+          <p className="text-sm text-gray-600">
+            <span className="font-medium text-gray-700">Забронировал: </span>
+            {data.user_name}
+          </p>
+        ) : null}
       </section>
 
       {formError ? (
