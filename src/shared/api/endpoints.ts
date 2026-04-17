@@ -36,8 +36,8 @@ export const API = {
       `/companies/${companyId}/members/${userId}/activate/`,
     memberRemove: (companyId: string, userId: string, reassignTo?: string) =>
       `/companies/${companyId}/members/${userId}/${reassignTo ? `?reassign_to=${reassignTo}` : ''}`,
-    onboardingStatus: (companyId: string) => `/companies/${companyId}/onboarding/status/`,
-    onboardingSkip: (companyId: string) => `/companies/${companyId}/onboarding/skip/`,
+    onboardingStatus: (companyId: string) => `/companies/${companyId}/onboarding-status/`,
+    onboardingSkip: (companyId: string) => `/companies/${companyId}/onboarding-status/skip/`,
   },
   resources: {
     list: '/resources/',
