@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
+import { USER_ROLES } from '@/shared/config/constants';
+import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import type {
   BookingResourceListItem,
@@ -29,6 +31,7 @@ function todayIsoDate(): string {
 
 export default function RecurringBookingsPage() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [resourceId, setResourceId] = useState('');
   const [dayOfWeek, setDayOfWeek] = useState('0');
   const [startTime, setStartTime] = useState('10:00');
@@ -137,6 +140,28 @@ export default function RecurringBookingsPage() {
       setErrorMessage(getApiErrorMessage(error, 'Не удалось отменить серию.'));
     },
   });
+
+  const visibleRecurringRows = useMemo(() => {
+    const rows = recurringRows ?? [];
+    if (!user) return rows;
+    if (user.role === USER_ROLES.EMPLOYEE) {
+      return rows.filter((row) => row.user === user.id);
+    }
+    return rows;
+  }, [recurringRows, user]);
+
+  function canCancelSeries(row: RecurringBooking): boolean {
+    if (!user) return false;
+    if (user.role === USER_ROLES.SUPERADMIN) return true;
+    if (user.role === USER_ROLES.COMPANY_ADMIN) {
+      if (row.user === user.id) return true;
+      return row.company === user.company_id && row.user_role === USER_ROLES.EMPLOYEE;
+    }
+    if (user.role === USER_ROLES.EMPLOYEE) {
+      return row.user === user.id;
+    }
+    return false;
+  }
 
   return (
     <main className="px-4 py-8 max-w-5xl mx-auto space-y-6">
@@ -271,17 +296,21 @@ export default function RecurringBookingsPage() {
       </section>
 
       <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900">Мои серии</h2>
+        <h2 className="text-lg font-semibold text-gray-900">
+          {user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN
+            ? 'Доступные серии'
+            : 'Мои серии'}
+        </h2>
 
         {recurringError ? (
           <p className="mt-3 text-sm text-red-600">Не удалось загрузить список серий.</p>
         ) : recurringLoading ? (
           <p className="mt-3 text-sm text-gray-500">Загрузка…</p>
-        ) : (recurringRows ?? []).length === 0 ? (
+        ) : visibleRecurringRows.length === 0 ? (
           <p className="mt-3 text-sm text-gray-500">Серий пока нет.</p>
         ) : (
           <ul className="mt-4 divide-y divide-gray-100 rounded-xl border border-gray-100">
-            {(recurringRows ?? []).map((row) => (
+            {visibleRecurringRows.map((row) => (
               <li
                 key={row.id}
                 className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
@@ -294,15 +323,24 @@ export default function RecurringBookingsPage() {
                     {WEEKDAY_OPTIONS[row.day_of_week]?.label ?? `День ${row.day_of_week}`},{' '}
                     {row.start_time.slice(0, 5)}-{row.end_time.slice(0, 5)} · до {row.valid_until ?? 'без даты'}
                   </p>
+                  {user?.role === USER_ROLES.COMPANY_ADMIN && row.user_name && (
+                    <p className="text-xs text-gray-500">Сотрудник: {row.user_name}</p>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => deleteMutation.mutate(row.id)}
-                  disabled={deleteMutation.isPending}
-                  className="rounded-lg border border-red-300 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-                >
-                  Отменить серию
-                </button>
+                {canCancelSeries(row) ? (
+                  <button
+                    type="button"
+                    onClick={() => deleteMutation.mutate(row.id)}
+                    disabled={deleteMutation.isPending}
+                    className="rounded-lg border border-red-300 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                  >
+                    Отменить серию
+                  </button>
+                ) : (
+                  <span className="rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-500">
+                    Нет доступа к отмене
+                  </span>
+                )}
               </li>
             ))}
           </ul>

@@ -253,6 +253,8 @@ export interface RecurringBooking {
   resource: number;
   resource_id: number;
   user: number;
+  user_name?: string;
+  user_role?: UserRole;
   company: number | null;
   day_of_week: number;
   start_time: string;
