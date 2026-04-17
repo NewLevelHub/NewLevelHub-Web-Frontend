@@ -15,16 +15,18 @@ type MyBookingsStatusFilter = 'upcoming' | 'past' | 'cancelled';
 
 const STATUS_LABEL: Record<string, string> = {
   [BOOKING_STATUSES.CONFIRMED]: 'Подтверждено',
+  [BOOKING_STATUSES.CHECKED_IN]: 'Отмечен',
   [BOOKING_STATUSES.CANCELLED]: 'Отменено',
   [BOOKING_STATUSES.COMPLETED]: 'Завершено',
-  [BOOKING_STATUSES.NO_SHOW]: 'Не явился',
+  [BOOKING_STATUSES.NO_SHOW]: 'Неявка',
 };
 
 const STATUS_BADGE_CLASS: Record<string, string> = {
-  [BOOKING_STATUSES.CONFIRMED]: 'bg-green-100 text-green-800',
+  [BOOKING_STATUSES.CONFIRMED]: 'bg-blue-100 text-blue-800',
+  [BOOKING_STATUSES.CHECKED_IN]: 'bg-emerald-100 text-emerald-800',
   [BOOKING_STATUSES.COMPLETED]: 'bg-gray-100 text-gray-600',
-  [BOOKING_STATUSES.CANCELLED]: 'bg-red-100 text-red-700',
-  [BOOKING_STATUSES.NO_SHOW]: 'bg-orange-100 text-orange-700',
+  [BOOKING_STATUSES.CANCELLED]: 'bg-gray-100 text-gray-600',
+  [BOOKING_STATUSES.NO_SHOW]: 'bg-red-100 text-red-800',
 };
 
 const TAB_OPTIONS: Array<{ value: MyBookingsStatusFilter; label: string }> = [
@@ -72,6 +74,7 @@ export default function MyBookingsPage() {
   const [selectedParticipantId, setSelectedParticipantId] = useState('');
   const [editError, setEditError] = useState<string | null>(null);
   const [editSuccess, setEditSuccess] = useState<string | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
   const canManageParticipants =
     user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN;
 
@@ -102,7 +105,25 @@ export default function MyBookingsPage() {
       await apiClient.post(API.bookings.reservations.cancel(String(bookingId)), { reason: '' });
     },
     onSuccess: async () => {
+      setListError(null);
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+    },
+    onError: (error: unknown) => {
+      setListError(getApiErrorMessage(error, 'Не удалось отменить бронирование.'));
+    },
+  });
+
+  const checkInMutation = useMutation({
+    mutationFn: async ({ bookingId }: { bookingId: number }) => {
+      await apiClient.post(API.bookings.reservations.checkIn(String(bookingId)));
+    },
+    onSuccess: async () => {
+      setListError(null);
+      await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      await queryClient.invalidateQueries({ queryKey: ['booking-reservation'] });
+    },
+    onError: (error: unknown) => {
+      setListError(getApiErrorMessage(error, 'Не удалось выполнить чек-ин.'));
     },
   });
 
@@ -305,9 +326,14 @@ export default function MyBookingsPage() {
       {isError && (
         <p className="text-sm text-red-600">Не удалось загрузить список.</p>
       )}
-      {cancelMutation.isError && (
-        <p className="text-sm text-red-600">Не удалось отменить бронирование.</p>
-      )}
+      {listError ? (
+        <div
+          className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+          role="alert"
+        >
+          {listError}
+        </div>
+      ) : null}
 
       {isLoading ? (
         <p className="text-sm text-gray-500">Загрузка…</p>
@@ -317,7 +343,19 @@ export default function MyBookingsPage() {
         <ul className="divide-y divide-gray-100 rounded-2xl border border-gray-100 bg-white shadow-sm">
           {rows.map((b) => {
             const start = new Date(b.start_time);
-            const canCancel = statusTab === 'upcoming' && b.status === BOOKING_STATUSES.CONFIRMED;
+            const end = new Date(b.end_time);
+            const now = new Date();
+            const canCancel =
+              statusTab === 'upcoming' &&
+              b.status === BOOKING_STATUSES.CONFIRMED;
+            const canCheckIn =
+              statusTab === 'upcoming' &&
+              b.status === BOOKING_STATUSES.CONFIRMED &&
+              user !== null &&
+              b.user === user.id &&
+              now >= start &&
+              now <= end &&
+              !b.checked_in_at;
             return (
               <li key={b.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <Link
@@ -328,36 +366,57 @@ export default function MyBookingsPage() {
                   <p className="text-xs text-gray-500">
                     {RESOURCE_TYPE_LABELS[b.resource_type as ResourceType] ?? b.resource_type}
                     {' · '}
-                    {start.toLocaleString()} — {new Date(b.end_time).toLocaleString()}
+                    {start.toLocaleString()} — {end.toLocaleString()}
                   </p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE_CLASS[b.status] ?? 'bg-gray-100 text-gray-600')}>
                       {STATUS_LABEL[b.status] ?? b.status}
                     </span>
-                    {b.checked_in_at && (
-                      <span className="text-xs text-green-700">✓ Check-in</span>
-                    )}
+                    {b.checked_in_at ? (
+                      <span className="text-xs text-emerald-700">
+                        Чек-ин: {new Date(b.checked_in_at).toLocaleString('ru-RU')}
+                      </span>
+                    ) : null}
                   </div>
                 </Link>
-                {canCancel ? (
-                  <div className="shrink-0 flex items-center gap-2">
+                <div className="shrink-0 flex items-center gap-2">
+                  {canCheckIn ? (
                     <button
                       type="button"
-                      onClick={() => openEditModal(b)}
-                      className="rounded-lg border border-blue-300 px-3 py-2 text-xs font-medium text-blue-700 hover:bg-blue-50"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        setListError(null);
+                        checkInMutation.mutate({ bookingId: b.id });
+                      }}
+                      disabled={checkInMutation.isPending}
+                      className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
                     >
-                      Изменить
+                      {checkInMutation.isPending ? '…' : 'Чек-ин'}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => cancelMutation.mutate({ bookingId: b.id })}
-                      disabled={cancelMutation.isPending}
-                      className="rounded-lg border border-red-300 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-                    >
-                      Отменить
-                    </button>
-                  </div>
-                ) : null}
+                  ) : null}
+                  {canCancel ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(b)}
+                        className="rounded-lg border border-blue-300 px-3 py-2 text-xs font-medium text-blue-700 hover:bg-blue-50"
+                      >
+                        Изменить
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setListError(null);
+                          cancelMutation.mutate({ bookingId: b.id });
+                        }}
+                        disabled={cancelMutation.isPending}
+                        className="rounded-lg border border-red-300 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                      >
+                        Отменить
+                      </button>
+                    </>
+                  ) : null}
+                </div>
               </li>
             );
           })}
