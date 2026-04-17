@@ -73,6 +73,11 @@ export const API = {
       removeParticipant: (id: string, userId: string) =>
         `/bookings/reservations/${id}/participants/${userId}/`,
     },
+    recurring: {
+      list: '/bookings/recurring/',
+      create: '/bookings/recurring/',
+      detail: (id: string) => `/bookings/recurring/${id}/`,
+    },
   },
   crm: {
     boards: '/crm/boards/',
