@@ -265,6 +265,12 @@ export default function BookingDetailPage() {
           </p>
         ) : null}
         {data.description ? <p className="text-sm text-gray-600">{data.description}</p> : null}
+        {data.user_name ? (
+          <p className="text-sm text-gray-600">
+            <span className="font-medium text-gray-700">Забронировал: </span>
+            {data.user_name}
+          </p>
+        ) : null}
       </section>
 
       {formError ? (
