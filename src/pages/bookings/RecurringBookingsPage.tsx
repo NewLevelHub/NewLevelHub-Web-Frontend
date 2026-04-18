@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
+import { USER_ROLES } from '@/shared/config/constants';
+import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import type {
   BookingResourceListItem,
@@ -29,6 +31,7 @@ function todayIsoDate(): string {
 
 export default function RecurringBookingsPage() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [resourceId, setResourceId] = useState('');
   const [dayOfWeek, setDayOfWeek] = useState('0');
   const [startTime, setStartTime] = useState('10:00');
@@ -66,6 +69,34 @@ export default function RecurringBookingsPage() {
     return map;
   }, [resourcesData]);
 
+  const selectedResource = useMemo(() => {
+    const id = Number(resourceId);
+    if (!id) return null;
+    return (resourcesData ?? []).find((resource) => resource.id === id) ?? null;
+  }, [resourceId, resourcesData]);
+
+  const allowedWeekdayValues = useMemo(() => {
+    const sourceDays = selectedResource?.availability_days;
+    if (!sourceDays || sourceDays.length === 0) {
+      return WEEKDAY_OPTIONS.map((option) => option.value);
+    }
+    return Array.from(
+      new Set(sourceDays.filter((day) => Number.isInteger(day) && day >= 0 && day <= 6)),
+    ).sort((left, right) => left - right);
+  }, [selectedResource]);
+
+  const allowedWeekdayOptions = useMemo(
+    () => WEEKDAY_OPTIONS.filter((option) => allowedWeekdayValues.includes(option.value)),
+    [allowedWeekdayValues],
+  );
+
+  useEffect(() => {
+    if (allowedWeekdayValues.length === 0) return;
+    if (!allowedWeekdayValues.includes(Number(dayOfWeek))) {
+      setDayOfWeek(String(allowedWeekdayValues[0]));
+    }
+  }, [allowedWeekdayValues, dayOfWeek]);
+
   const createMutation = useMutation({
     mutationFn: async (payload: RecurringBookingCreatePayload) => {
       const { data } = await apiClient.post<RecurringBookingCreateResponse>(
@@ -75,8 +106,20 @@ export default function RecurringBookingsPage() {
       return data;
     },
     onSuccess: async (data) => {
+      const skippedDates = data.skipped_dates ?? [];
+      if (skippedDates.length > 0) {
+        try {
+          await apiClient.delete(API.bookings.recurring.detail(String(data.id)));
+        } catch {
+          // Если откат не удался, всё равно показываем понятную причину пользователю.
+        }
+        setLastSkippedDates(skippedDates);
+        setErrorMessage('Серия не создана: обнаружены конфликты в выбранном диапазоне.');
+        await queryClient.invalidateQueries({ queryKey: ['recurring-bookings', 'list'] });
+        return;
+      }
       setErrorMessage(null);
-      setLastSkippedDates(data.skipped_dates ?? []);
+      setLastSkippedDates([]);
       await queryClient.invalidateQueries({ queryKey: ['recurring-bookings', 'list'] });
     },
     onError: (error: unknown) => {
@@ -98,6 +141,28 @@ export default function RecurringBookingsPage() {
     },
   });
 
+  const visibleRecurringRows = useMemo(() => {
+    const rows = recurringRows ?? [];
+    if (!user) return rows;
+    if (user.role === USER_ROLES.EMPLOYEE) {
+      return rows.filter((row) => row.user === user.id);
+    }
+    return rows;
+  }, [recurringRows, user]);
+
+  function canCancelSeries(row: RecurringBooking): boolean {
+    if (!user) return false;
+    if (user.role === USER_ROLES.SUPERADMIN) return true;
+    if (user.role === USER_ROLES.COMPANY_ADMIN) {
+      if (row.user === user.id) return true;
+      return row.company === user.company_id && row.user_role === USER_ROLES.EMPLOYEE;
+    }
+    if (user.role === USER_ROLES.EMPLOYEE) {
+      return row.user === user.id;
+    }
+    return false;
+  }
+
   return (
     <main className="px-4 py-8 max-w-5xl mx-auto space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -117,8 +182,8 @@ export default function RecurringBookingsPage() {
       )}
 
       {lastSkippedDates.length > 0 && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          <p className="font-medium">Серия создана с пропусками (конфликты):</p>
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <p className="font-medium">Конфликты на датах:</p>
           <p className="mt-1">{lastSkippedDates.join(', ')}</p>
         </div>
       )}
@@ -165,8 +230,9 @@ export default function RecurringBookingsPage() {
               value={dayOfWeek}
               onChange={(event) => setDayOfWeek(event.target.value)}
               className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+              disabled={allowedWeekdayOptions.length === 0}
             >
-              {WEEKDAY_OPTIONS.map((option) => (
+              {allowedWeekdayOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -211,27 +277,40 @@ export default function RecurringBookingsPage() {
           <div className="sm:col-span-2 lg:col-span-1 flex items-end">
             <button
               type="submit"
-              disabled={createMutation.isPending || !resourceId}
+              disabled={createMutation.isPending || !resourceId || allowedWeekdayOptions.length === 0}
               className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {createMutation.isPending ? 'Создание…' : 'Создать серию'}
             </button>
           </div>
+
+          {resourceId && (
+            <p className="sm:col-span-2 lg:col-span-3 text-xs text-gray-500">
+              Доступные дни ресурса:{' '}
+              {allowedWeekdayOptions.length > 0
+                ? allowedWeekdayOptions.map((option) => option.label).join(', ')
+                : 'не настроены'}
+            </p>
+          )}
         </form>
       </section>
 
       <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900">Мои серии</h2>
+        <h2 className="text-lg font-semibold text-gray-900">
+          {user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN
+            ? 'Доступные серии'
+            : 'Мои серии'}
+        </h2>
 
         {recurringError ? (
           <p className="mt-3 text-sm text-red-600">Не удалось загрузить список серий.</p>
         ) : recurringLoading ? (
           <p className="mt-3 text-sm text-gray-500">Загрузка…</p>
-        ) : (recurringRows ?? []).length === 0 ? (
+        ) : visibleRecurringRows.length === 0 ? (
           <p className="mt-3 text-sm text-gray-500">Серий пока нет.</p>
         ) : (
           <ul className="mt-4 divide-y divide-gray-100 rounded-xl border border-gray-100">
-            {(recurringRows ?? []).map((row) => (
+            {visibleRecurringRows.map((row) => (
               <li
                 key={row.id}
                 className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
@@ -244,15 +323,24 @@ export default function RecurringBookingsPage() {
                     {WEEKDAY_OPTIONS[row.day_of_week]?.label ?? `День ${row.day_of_week}`},{' '}
                     {row.start_time.slice(0, 5)}-{row.end_time.slice(0, 5)} · до {row.valid_until ?? 'без даты'}
                   </p>
+                  {user?.role === USER_ROLES.COMPANY_ADMIN && row.user_name && (
+                    <p className="text-xs text-gray-500">Сотрудник: {row.user_name}</p>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => deleteMutation.mutate(row.id)}
-                  disabled={deleteMutation.isPending}
-                  className="rounded-lg border border-red-300 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-                >
-                  Отменить серию
-                </button>
+                {canCancelSeries(row) ? (
+                  <button
+                    type="button"
+                    onClick={() => deleteMutation.mutate(row.id)}
+                    disabled={deleteMutation.isPending}
+                    className="rounded-lg border border-red-300 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                  >
+                    Отменить серию
+                  </button>
+                ) : (
+                  <span className="rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-500">
+                    Нет доступа к отмене
+                  </span>
+                )}
               </li>
             ))}
           </ul>

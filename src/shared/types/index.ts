@@ -144,6 +144,7 @@ export interface BookingResourceListItem {
   equipment: ResourceEquipment | null;
   is_active: boolean;
   is_hot_desk: boolean;
+  availability_days?: number[];
   parking_type: ParkingType | null;
   capsule_zone: string;
   status: BookingResourceCatalogStatus;
@@ -254,6 +255,8 @@ export interface RecurringBooking {
   resource: number;
   resource_id: number;
   user: number;
+  user_name?: string;
+  user_role?: UserRole;
   company: number | null;
   day_of_week: number;
   start_time: string;
