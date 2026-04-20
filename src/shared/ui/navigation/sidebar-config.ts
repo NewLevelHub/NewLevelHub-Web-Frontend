@@ -55,6 +55,12 @@ const superadminNav: NavSection[] = [
     ],
   },
   {
+    title: 'CRM',
+    items: [
+      { label: 'CRM Доски', path: '/admin/crm/boards', icon: Columns3 },
+    ],
+  },
+  {
     title: 'Аналитика',
     items: [{ label: 'Аналитика', path: '/analytics', icon: BarChart3 }],
   },

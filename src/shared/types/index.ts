@@ -462,3 +462,20 @@ export interface OnboardingStatus {
   completed: boolean;
   steps: OnboardingStep[];
 }
+
+export interface CrmBoard {
+  id: number;
+  name: string;
+  description: string | null;
+  is_archived: boolean;
+  created_at: string;
+  updated_at: string;
+  company: number;
+}
+
+export interface CrmColumn {
+  id: number;
+  name: string;
+  order: number;
+  board: number;
+}
