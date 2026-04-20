@@ -6,6 +6,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
+import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import type { UserListItem, PaginatedResponse } from '@/shared/types';
 
 // ---------------------------------------------------------------------------
@@ -80,11 +81,12 @@ interface UserAvatarProps {
 
 function UserAvatar({ src, firstName, lastName }: UserAvatarProps) {
   const initials = getInitials(firstName, lastName);
+  const avatarSrc = resolveMediaUrl(src) ?? src;
 
-  if (src) {
+  if (avatarSrc) {
     return (
       <img
-        src={src}
+        src={avatarSrc}
         alt={`${firstName} ${lastName}`}
         className="w-10 h-10 rounded-full object-cover shrink-0"
       />

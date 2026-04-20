@@ -6,6 +6,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
+import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import { useAuth } from '@/shared/hooks/useAuth';
 import type {
   Company,
@@ -59,12 +60,20 @@ function roleBadgeClass(role: string) {
 }
 
 function MemberAvatar({ src, fullName }: { src: string | null; fullName: string }) {
-  if (src) {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [src]);
+
+  const avatarSrc = !hasError ? (resolveMediaUrl(src) ?? src) : null;
+  if (avatarSrc) {
     return (
       <img
-        src={src}
+        src={avatarSrc}
         alt={fullName}
         className="h-11 w-11 rounded-full object-cover"
+        onError={() => setHasError(true)}
       />
     );
   }
