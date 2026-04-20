@@ -128,6 +128,11 @@ export const API = {
     create: '/leave/requests/',
     detail: (id: string) => `/leave/requests/${id}/`,
   },
+  storage: {
+    folders: '/storage/folders/',
+    folder: (id: string) => `/storage/folders/${id}/`,
+    files: '/storage/files/',
+  },
   files: {
     list: '/files/',
     upload: '/files/upload/',
