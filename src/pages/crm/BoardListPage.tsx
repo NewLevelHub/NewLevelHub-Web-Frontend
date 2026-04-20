@@ -1,18 +1,443 @@
-import { PageStub } from '@/shared/ui/PageStub';
+import { useState, useRef, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router';
+import { Plus, Archive, LayoutGrid, Calendar, X, AlertCircle, Inbox } from 'lucide-react';
+import { API } from '@/shared/api/endpoints';
+import { apiClient } from '@/shared/api/client';
+import { cn } from '@/shared/lib/cn';
+import type { CrmBoard } from '@/shared/types';
+
+// ─── Create Board Modal ───────────────────────────────────────────────────────
+
+interface CreateBoardModalProps {
+  onClose: () => void;
+}
+
+function CreateBoardModal({ onClose }: CreateBoardModalProps) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [limitError, setLimitError] = useState<string | null>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    nameRef.current?.focus();
+  }, []);
+
+  const mutation = useMutation({
+    mutationFn: async (payload: { name: string; description?: string }) => {
+      const { data } = await apiClient.post<CrmBoard>(API.crm.boards, payload);
+      return data;
+    },
+    onSuccess: (newBoard) => {
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'boards'] });
+      void navigate(`/crm/boards/${newBoard.id}`);
+    },
+    onError: (error: unknown) => {
+      const axiosError = error as {
+        response?: { status?: number; data?: { detail?: string; non_field_errors?: string[] } };
+      };
+      if (axiosError.response?.status === 400) {
+        const responseData = axiosError.response.data;
+        const message =
+          responseData?.detail ??
+          responseData?.non_field_errors?.[0] ??
+          'Достигнут лимит досок для вашего тарифа.';
+        setLimitError(message);
+      }
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setLimitError(null);
+    mutation.mutate({
+      name: name.trim(),
+      ...(description.trim() ? { description: description.trim() } : {}),
+    });
+  };
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) onClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={handleBackdropClick}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="create-board-title"
+    >
+      <div className="w-full max-w-md rounded-xl bg-gray-900 border border-gray-800 shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+          <h2 id="create-board-title" className="text-lg font-semibold text-white">
+            Создать доску
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-400 hover:text-white transition-colors rounded-md p-1 hover:bg-gray-800"
+            aria-label="Закрыть"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          {limitError && (
+            <div className="flex items-start gap-2 rounded-lg bg-red-900/30 border border-red-800 px-4 py-3 text-sm text-red-300">
+              <AlertCircle size={16} className="mt-0.5 shrink-0" />
+              <span>{limitError}</span>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label htmlFor="board-name" className="block text-sm font-medium text-gray-300">
+              Название <span className="text-red-400">*</span>
+            </label>
+            <input
+              ref={nameRef}
+              id="board-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Например: Разработка продукта"
+              required
+              maxLength={100}
+              className={cn(
+                'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500',
+                'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
+                'border-gray-700 focus:border-blue-500',
+              )}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="board-description" className="block text-sm font-medium text-gray-300">
+              Описание{' '}
+              <span className="text-gray-500 font-normal">(необязательно)</span>
+            </label>
+            <textarea
+              id="board-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Краткое описание доски..."
+              rows={3}
+              maxLength={500}
+              className={cn(
+                'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 resize-none',
+                'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
+                'border-gray-700 focus:border-blue-500',
+              )}
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg px-4 py-2 text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              disabled={!name.trim() || mutation.isPending}
+              className={cn(
+                'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                'bg-blue-600 text-white hover:bg-blue-500',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+              )}
+            >
+              {mutation.isPending ? 'Создание...' : 'Создать'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Archive Confirm Dialog ───────────────────────────────────────────────────
+
+interface ArchiveConfirmProps {
+  board: CrmBoard;
+  onCancel: () => void;
+  onConfirm: () => void;
+  isPending: boolean;
+}
+
+function ArchiveConfirm({ board, onCancel, onConfirm, isPending }: ArchiveConfirmProps) {
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) onCancel();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={handleBackdropClick}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="archive-confirm-title"
+    >
+      <div className="w-full max-w-sm rounded-xl bg-gray-900 border border-gray-800 shadow-2xl px-6 py-5 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="rounded-full bg-amber-900/40 p-2">
+            <Archive size={18} className="text-amber-400" />
+          </div>
+          <h2 id="archive-confirm-title" className="text-base font-semibold text-white">
+            Архивировать доску?
+          </h2>
+        </div>
+        <p className="text-sm text-gray-400">
+          Доска <span className="font-medium text-gray-200">«{board.name}»</span> будет
+          перемещена в архив. Вы сможете найти её через фильтр.
+        </p>
+        <div className="flex items-center justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-lg px-4 py-2 text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+          >
+            Отмена
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isPending}
+            className={cn(
+              'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+              'bg-amber-600 text-white hover:bg-amber-500',
+              'disabled:opacity-50 disabled:cursor-not-allowed',
+            )}
+          >
+            {isPending ? 'Архивирование...' : 'Архивировать'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Board Card ───────────────────────────────────────────────────────────────
+
+interface BoardCardProps {
+  board: CrmBoard;
+  onArchive: (board: CrmBoard) => void;
+  onClick: (board: CrmBoard) => void;
+}
+
+function BoardCard({ board, onArchive, onClick }: BoardCardProps) {
+  console.log('Rendering BoardCard for:', board);
+  const formattedDate = new Date(board.created_at).toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const handleArchiveClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onArchive(board);
+  };
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={`Открыть доску ${board.name}`}
+      onClick={() => onClick(board)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick(board);
+        }
+      }}
+      className={cn(
+        'group relative flex flex-col rounded-xl border border-gray-800 bg-gray-900',
+        'p-5 cursor-pointer transition-all duration-200',
+        'hover:border-gray-600 hover:bg-gray-800/60 hover:shadow-lg',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+      )}
+    >
+      {/* Icon + title */}
+      <div className="flex items-start gap-3 mb-3">
+        <div className="mt-0.5 rounded-lg bg-blue-600/20 p-2 shrink-0">
+          <LayoutGrid size={18} className="text-blue-400" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold text-white text-sm leading-tight truncate">
+            {board.name}
+          </h3>
+          {board.description && (
+            <p className="mt-1 text-xs text-gray-400 line-clamp-2">{board.description}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Date */}
+      <div className="mt-auto flex items-center gap-1.5 text-xs text-gray-500">
+        <Calendar size={12} />
+        <span>{formattedDate}</span>
+      </div>
+
+      {/* Archive button — visible on hover */}
+      <button
+        type="button"
+        onClick={handleArchiveClick}
+        aria-label={`Архивировать доску ${board.name}`}
+        className={cn(
+          'absolute top-3 right-3 rounded-md p-1.5 transition-all duration-150',
+          'text-gray-600 hover:text-amber-400 hover:bg-amber-900/30',
+          'opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500',
+        )}
+      >
+        <Archive size={14} />
+      </button>
+    </div>
+  );
+}
+
+// ─── BoardListPage ────────────────────────────────────────────────────────────
 
 export default function BoardListPage() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [boardToArchive, setBoardToArchive] = useState<CrmBoard | null>(null);
+
+  const { data: boards, isLoading, isError } = useQuery({
+    queryKey: ['crm', 'boards'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<CrmBoard[] | { results: CrmBoard[] }>(API.crm.boards);
+      return Array.isArray(data) ? data : data.results;
+    },
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: async (boardId: number) => {
+      const { data } = await apiClient.post(API.crm.boardArchive(String(boardId)));
+      return data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'boards'] });
+      setBoardToArchive(null);
+    },
+  });
+
+  const handleBoardClick = (board: CrmBoard) => {
+    void navigate(`/crm/boards/${board.id}`);
+  };
+
+  // ── Loading state ──
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="h-7 w-36 rounded-lg bg-gray-800 animate-pulse" />
+          <div className="h-9 w-36 rounded-lg bg-gray-800 animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-28 rounded-xl bg-gray-800 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Error state ──
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-3">
+        <AlertCircle size={40} className="text-red-400" />
+        <p className="text-gray-400">
+          Не удалось загрузить доски. Попробуйте обновить страницу.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <PageStub
-      title="CRM — Доски"
-      description="Канбан-доски компании"
-      todos={[
-        'Список досок компании (карточки)',
-        'Создание новой доски (модалка)',
-        'Архивирование доски',
-        'Лимит досок в зависимости от тарифа',
-        'Клик → /crm/boards/:id',
-        'Интеграция с GET /api/v1/crm/boards/',
-      ]}
-    />
+    <>
+      <div className="space-y-6">
+        {/* Page header */}
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-semibold text-white">CRM — Доски</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Канбан-доски вашей компании</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowCreateModal(true)}
+            className={cn(
+              'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+              'bg-blue-600 text-white hover:bg-blue-500',
+            )}
+          >
+            <Plus size={16} />
+            Создать доску
+          </button>
+        </div>
+
+        {/* Empty state */}
+        {boards?.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-24 gap-4">
+            <div className="rounded-full bg-gray-800 p-5">
+              <Inbox size={32} className="text-gray-500" />
+            </div>
+            <div className="text-center">
+              <p className="font-medium text-gray-300">Нет досок</p>
+              <p className="text-sm text-gray-500 mt-1">Создайте первую!</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+            >
+              <Plus size={16} />
+              Создать доску
+            </button>
+          </div>
+        )}
+
+        {/* Board grid */}
+        {boards && boards.length > 0 && (
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {boards.map((board) => (
+              <BoardCard
+                key={board.id}
+                board={board}
+                onClick={handleBoardClick}
+                onArchive={setBoardToArchive}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Create modal */}
+      {showCreateModal && (
+        <CreateBoardModal
+          onClose={() => setShowCreateModal(false)}
+        />
+      )}
+
+      {/* Archive confirm */}
+      {boardToArchive && (
+        <ArchiveConfirm
+          board={boardToArchive}
+          onCancel={() => setBoardToArchive(null)}
+          onConfirm={() => archiveMutation.mutate(boardToArchive.id)}
+          isPending={archiveMutation.isPending}
+        />
+      )}
+    </>
   );
 }
