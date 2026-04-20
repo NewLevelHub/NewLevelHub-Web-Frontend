@@ -83,6 +83,7 @@ export const API = {
     boards: '/crm/boards/',
     board: (id: string) => `/crm/boards/${id}/`,
     boardArchive: (id: string) => `/crm/boards/${id}/archive/`,
+    boardUnarchive: (id: string) => `/crm/boards/${id}/unarchive/`,
     columns: (boardId: string) => `/crm/boards/${boardId}/columns/`,
     tasks: (boardId: string) => `/crm/boards/${boardId}/tasks/`,
     task: (boardId: string, taskId: string) => `/crm/boards/${boardId}/tasks/${taskId}/`,

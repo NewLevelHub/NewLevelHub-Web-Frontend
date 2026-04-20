@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
-import { Plus, Archive, LayoutGrid, Calendar, X, AlertCircle, Inbox } from 'lucide-react';
+import { Plus, Archive, LayoutGrid, Calendar, X, AlertCircle, Inbox, ArchiveRestore } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
 import type { CrmBoard } from '@/shared/types';
+import { useAuth } from '@/shared/hooks/useAuth';
+import { USER_ROLES } from '@/shared/config/constants';
 
 // ─── Create Board Modal ───────────────────────────────────────────────────────
 
@@ -224,16 +226,85 @@ function ArchiveConfirm({ board, onCancel, onConfirm, isPending }: ArchiveConfir
   );
 }
 
+// ─── Unarchive Confirm Dialog ─────────────────────────────────────────────────
+
+interface UnarchiveConfirmProps {
+  board: CrmBoard;
+  onCancel: () => void;
+  onConfirm: () => void;
+  isPending: boolean;
+  error: string | null;
+}
+
+function UnarchiveConfirm({ board, onCancel, onConfirm, isPending, error }: UnarchiveConfirmProps) {
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) onCancel();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={handleBackdropClick}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="unarchive-confirm-title"
+    >
+      <div className="w-full max-w-sm rounded-xl bg-gray-900 border border-gray-800 shadow-2xl px-6 py-5 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="rounded-full bg-blue-900/40 p-2">
+            <ArchiveRestore size={18} className="text-blue-400" />
+          </div>
+          <h2 id="unarchive-confirm-title" className="text-base font-semibold text-white">
+            Разархивировать доску?
+          </h2>
+        </div>
+        <p className="text-sm text-gray-400">
+          Доска <span className="font-medium text-gray-200">«{board.name}»</span> будет
+          восстановлена и снова станет активной.
+        </p>
+        {error && (
+          <div className="flex items-start gap-2 rounded-lg bg-red-900/30 border border-red-800 px-4 py-3 text-sm text-red-300">
+            <AlertCircle size={16} className="mt-0.5 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+        <div className="flex items-center justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-lg px-4 py-2 text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+          >
+            Отмена
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isPending}
+            className={cn(
+              'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+              'bg-blue-600 text-white hover:bg-blue-500',
+              'disabled:opacity-50 disabled:cursor-not-allowed',
+            )}
+          >
+            {isPending ? 'Восстановление...' : 'Разархивировать'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Board Card ───────────────────────────────────────────────────────────────
 
 interface BoardCardProps {
   board: CrmBoard;
   onArchive: (board: CrmBoard) => void;
+  onUnarchive: (board: CrmBoard) => void;
   onClick: (board: CrmBoard) => void;
+  canManage: boolean;
 }
 
-function BoardCard({ board, onArchive, onClick }: BoardCardProps) {
-  console.log('Rendering BoardCard for:', board);
+function BoardCard({ board, onArchive, onUnarchive, onClick, canManage }: BoardCardProps) {
   const formattedDate = new Date(board.created_at).toLocaleDateString('ru-RU', {
     day: 'numeric',
     month: 'long',
@@ -245,27 +316,54 @@ function BoardCard({ board, onArchive, onClick }: BoardCardProps) {
     onArchive(board);
   };
 
+  const handleUnarchiveClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onUnarchive(board);
+  };
+
+  const handleCardClick = () => {
+    if (!board.is_archived) {
+      onClick(board);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!board.is_archived && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      onClick(board);
+    }
+  };
+
   return (
     <div
-      role="button"
+      role={board.is_archived ? 'article' : 'button'}
       tabIndex={0}
-      aria-label={`Открыть доску ${board.name}`}
-      onClick={() => onClick(board)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick(board);
-        }
-      }}
+      aria-label={
+        board.is_archived
+          ? `Архивная доска ${board.name}`
+          : `Открыть доску ${board.name}`
+      }
+      onClick={handleCardClick}
+      onKeyDown={handleKeyDown}
       className={cn(
         'group relative flex flex-col rounded-xl border border-gray-800 bg-gray-900',
-        'p-5 cursor-pointer transition-all duration-200',
-        'hover:border-gray-600 hover:bg-gray-800/60 hover:shadow-lg',
+        'p-5 transition-all duration-200',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+        board.is_archived
+          ? 'opacity-60 cursor-default'
+          : 'cursor-pointer hover:border-gray-600 hover:bg-gray-800/60 hover:shadow-lg',
       )}
     >
+      {/* Archived badge */}
+      {board.is_archived && (
+        <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-md bg-amber-900/40 border border-amber-800/60 px-2 py-0.5 text-xs font-medium text-amber-400">
+          <Archive size={10} />
+          Архив
+        </span>
+      )}
+
       {/* Icon + title */}
-      <div className="flex items-start gap-3 mb-3">
+      <div className={cn('flex items-start gap-3 mb-3', board.is_archived && 'mt-5')}>
         <div className="mt-0.5 rounded-lg bg-blue-600/20 p-2 shrink-0">
           <LayoutGrid size={18} className="text-blue-400" />
         </div>
@@ -285,20 +383,38 @@ function BoardCard({ board, onArchive, onClick }: BoardCardProps) {
         <span>{formattedDate}</span>
       </div>
 
-      {/* Archive button — visible on hover */}
-      <button
-        type="button"
-        onClick={handleArchiveClick}
-        aria-label={`Архивировать доску ${board.name}`}
-        className={cn(
-          'absolute top-3 right-3 rounded-md p-1.5 transition-all duration-150',
-          'text-gray-600 hover:text-amber-400 hover:bg-amber-900/30',
-          'opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500',
-        )}
-      >
-        <Archive size={14} />
-      </button>
+      {/* Action button — visible on hover, only for managers */}
+      {canManage && (
+        board.is_archived ? (
+          <button
+            type="button"
+            onClick={handleUnarchiveClick}
+            aria-label={`Разархивировать доску ${board.name}`}
+            className={cn(
+              'absolute top-3 right-3 rounded-md p-1.5 transition-all duration-150',
+              'text-gray-600 hover:text-blue-400 hover:bg-blue-900/30',
+              'opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+            )}
+          >
+            <ArchiveRestore size={14} />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleArchiveClick}
+            aria-label={`Архивировать доску ${board.name}`}
+            className={cn(
+              'absolute top-3 right-3 rounded-md p-1.5 transition-all duration-150',
+              'text-gray-600 hover:text-amber-400 hover:bg-amber-900/30',
+              'opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500',
+            )}
+          >
+            <Archive size={14} />
+          </button>
+        )
+      )}
     </div>
   );
 }
@@ -308,13 +424,23 @@ function BoardCard({ board, onArchive, onClick }: BoardCardProps) {
 export default function BoardListPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [boardToArchive, setBoardToArchive] = useState<CrmBoard | null>(null);
+  const [boardToUnarchive, setBoardToUnarchive] = useState<CrmBoard | null>(null);
+  const [unarchiveError, setUnarchiveError] = useState<string | null>(null);
+
+  const canManage =
+    user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN;
 
   const { data: boards, isLoading, isError } = useQuery({
-    queryKey: ['crm', 'boards'],
+    queryKey: ['crm', 'boards', showArchived],
     queryFn: async () => {
-      const { data } = await apiClient.get<CrmBoard[] | { results: CrmBoard[] }>(API.crm.boards);
+      const url = showArchived
+        ? `${API.crm.boards}?include_archived=true`
+        : API.crm.boards;
+      const { data } = await apiClient.get<CrmBoard[] | { results: CrmBoard[] }>(url);
       return Array.isArray(data) ? data : data.results;
     },
   });
@@ -330,8 +456,38 @@ export default function BoardListPage() {
     },
   });
 
+  const unarchiveMutation = useMutation({
+    mutationFn: async (boardId: number) => {
+      const { data } = await apiClient.post<CrmBoard>(API.crm.boardUnarchive(String(boardId)));
+      return data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'boards'] });
+      setBoardToUnarchive(null);
+      setUnarchiveError(null);
+    },
+    onError: (error: unknown) => {
+      const axiosError = error as {
+        response?: { status?: number; data?: { detail?: string; non_field_errors?: string[] } };
+      };
+      if (axiosError.response?.status === 400) {
+        const responseData = axiosError.response.data;
+        const message =
+          responseData?.detail ??
+          responseData?.non_field_errors?.[0] ??
+          'Невозможно разархивировать: достигнут лимит досок для вашего тарифа';
+        setUnarchiveError(message);
+      }
+    },
+  });
+
   const handleBoardClick = (board: CrmBoard) => {
     void navigate(`/crm/boards/${board.id}`);
+  };
+
+  const handleOpenUnarchive = (board: CrmBoard) => {
+    setUnarchiveError(null);
+    setBoardToUnarchive(board);
   };
 
   // ── Loading state ──
@@ -372,17 +528,34 @@ export default function BoardListPage() {
             <h1 className="text-xl font-semibold text-white">CRM — Доски</h1>
             <p className="text-sm text-gray-500 mt-0.5">Канбан-доски вашей компании</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowCreateModal(true)}
-            className={cn(
-              'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-              'bg-blue-600 text-white hover:bg-blue-500',
+          <div className="flex items-center gap-2">
+            {canManage && (
+              <button
+                type="button"
+                onClick={() => setShowArchived((v) => !v)}
+                className={cn(
+                  'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors border',
+                  showArchived
+                    ? 'bg-amber-600/20 border-amber-600 text-amber-400'
+                    : 'border-gray-700 text-gray-400 hover:text-white hover:border-gray-500',
+                )}
+              >
+                <Archive size={16} />
+                {showArchived ? 'Скрыть архив' : 'Архив'}
+              </button>
             )}
-          >
-            <Plus size={16} />
-            Создать доску
-          </button>
+            <button
+              type="button"
+              onClick={() => setShowCreateModal(true)}
+              className={cn(
+                'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                'bg-blue-600 text-white hover:bg-blue-500',
+              )}
+            >
+              <Plus size={16} />
+              Создать доску
+            </button>
+          </div>
         </div>
 
         {/* Empty state */}
@@ -392,23 +565,28 @@ export default function BoardListPage() {
               <Inbox size={32} className="text-gray-500" />
             </div>
             <div className="text-center">
-              <p className="font-medium text-gray-300">Нет досок</p>
-              <p className="text-sm text-gray-500 mt-1">Создайте первую!</p>
+              <p className="font-medium text-gray-300">
+                {showArchived ? 'Нет архивных досок' : 'Нет досок'}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                {showArchived ? 'Архивированные доски появятся здесь.' : 'Создайте первую!'}
+              </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 transition-colors"
-            >
-              <Plus size={16} />
-              Создать доску
-            </button>
+            {!showArchived && (
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(true)}
+                className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+              >
+                <Plus size={16} />
+                Создать доску
+              </button>
+            )}
           </div>
         )}
 
         {/* Board grid */}
         {boards && boards.length > 0 && (
-          
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {boards.map((board) => (
               <BoardCard
@@ -416,6 +594,8 @@ export default function BoardListPage() {
                 board={board}
                 onClick={handleBoardClick}
                 onArchive={setBoardToArchive}
+                onUnarchive={handleOpenUnarchive}
+                canManage={canManage}
               />
             ))}
           </div>
@@ -424,9 +604,7 @@ export default function BoardListPage() {
 
       {/* Create modal */}
       {showCreateModal && (
-        <CreateBoardModal
-          onClose={() => setShowCreateModal(false)}
-        />
+        <CreateBoardModal onClose={() => setShowCreateModal(false)} />
       )}
 
       {/* Archive confirm */}
@@ -436,6 +614,20 @@ export default function BoardListPage() {
           onCancel={() => setBoardToArchive(null)}
           onConfirm={() => archiveMutation.mutate(boardToArchive.id)}
           isPending={archiveMutation.isPending}
+        />
+      )}
+
+      {/* Unarchive confirm */}
+      {boardToUnarchive && (
+        <UnarchiveConfirm
+          board={boardToUnarchive}
+          onCancel={() => {
+            setBoardToUnarchive(null);
+            setUnarchiveError(null);
+          }}
+          onConfirm={() => unarchiveMutation.mutate(boardToUnarchive.id)}
+          isPending={unarchiveMutation.isPending}
+          error={unarchiveError}
         />
       )}
     </>
