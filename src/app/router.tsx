@@ -35,6 +35,7 @@ import TeamManagePage from '@/pages/team/TeamManagePage';
 import BoardListPage from '@/pages/crm/BoardListPage';
 import BoardDetailPage from '@/pages/crm/BoardDetailPage';
 import MyTasksPage from '@/pages/crm/MyTasksPage';
+import AdminBoardsPage from '@/pages/crm/AdminBoardsPage';
 
 // Calendar
 import CalendarPage from '@/pages/calendar/CalendarPage';
@@ -234,6 +235,7 @@ export const router = createBrowserRouter([
           {
             element: <RequireRole allowed={[SUPERADMIN]} />,
             children: [
+              { path: '/admin/crm/boards', element: <AdminBoardsPage /> },
               { path: '/resources', element: <ResourceListPage /> },
               { path: '/resources/new', element: <ResourceCreatePage /> },
               { path: '/resources/:id', element: <ResourceDetailPage /> },
