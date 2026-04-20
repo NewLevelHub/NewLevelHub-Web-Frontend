@@ -93,6 +93,23 @@ export interface MemberActivity {
   bookings_last_30_days: number;
 }
 
+export interface CompanyDirectoryMember {
+  id: number;
+  avatar: string | null;
+  full_name: string;
+  position: string | null;
+  email: string;
+  phone: string | null;
+  role: string;
+  is_active: boolean;
+  last_login: string | null;
+}
+
+export interface CompanyDirectoryMemberProfile extends CompanyDirectoryMember {
+  tasks_count: number;
+  bookings_last_30_days: number;
+}
+
 export interface CompanySettings {
   custom_task_categories: string[];
   custom_labels: Array<{ name: string; color: string }>;

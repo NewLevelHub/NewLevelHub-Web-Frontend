@@ -30,6 +30,9 @@ export const API = {
     settings: (id: string) => `/companies/${id}/settings/`,
     memberActivity: (companyId: string, userId: string) =>
       `/companies/${companyId}/members/${userId}/activity/`,
+    directory: (companyId: string) => `/companies/${companyId}/directory/`,
+    directoryProfile: (companyId: string, userId: string) =>
+      `/companies/${companyId}/directory/${userId}/`,
     memberDeactivate: (companyId: string, userId: string) =>
       `/companies/${companyId}/members/${userId}/deactivate/`,
     memberActivate: (companyId: string, userId: string) =>

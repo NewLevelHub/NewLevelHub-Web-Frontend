@@ -171,6 +171,7 @@ export const router = createBrowserRouter([
               { path: '/crm/boards/:id', element: <BoardDetailPage /> },
               { path: '/crm/my-tasks', element: <MyTasksPage /> },
               { path: '/team', element: <TeamDirectoryPage /> },
+              { path: '/company/team', element: <TeamDirectoryPage /> },
               { path: '/calendar', element: <CalendarPage /> },
               { path: '/leave', element: <LeaveRequestListPage /> },
               { path: '/leave/new', element: <LeaveRequestCreatePage /> },
