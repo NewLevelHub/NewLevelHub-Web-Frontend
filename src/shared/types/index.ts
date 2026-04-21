@@ -495,4 +495,18 @@ export interface CrmColumn {
   name: string;
   order: number;
   board: number;
+  wip_limit: number | null;
+}
+
+export interface CrmTask {
+  id: number;
+  title: string;
+  description: string | null;
+  column: number;
+  order: number;
+  priority: 'low' | 'medium' | 'high' | null;
+  deadline: string | null;
+  assignee: number | null;
+  created_at: string;
+  updated_at: string;
 }
