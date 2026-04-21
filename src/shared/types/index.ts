@@ -409,6 +409,36 @@ export interface FileItem {
   created_at: string;
 }
 
+export interface StorageFolder {
+  id: number;
+  name: string;
+  scope: 'personal' | 'company';
+  parent: number | null;
+  children_count: number;
+  files_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StorageFile {
+  id: number;
+  name: string;
+  file: string;
+  file_size: number;
+  content_type: string;
+  folder: number | null;
+  owner: number;
+  owner_name: string;
+  company: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StorageFolderDetail extends StorageFolder {
+  folders: StorageFolder[];
+  files: StorageFile[];
+}
+
 export interface Notification {
   id: number;
   notification_type: string;
