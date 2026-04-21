@@ -174,8 +174,10 @@ export const router = createBrowserRouter([
               { path: '/team', element: <TeamDirectoryPage /> },
               { path: '/company/team', element: <TeamDirectoryPage /> },
               { path: '/calendar', element: <CalendarPage /> },
-              { path: '/leave', element: <LeaveRequestListPage /> },
-              { path: '/leave/new', element: <LeaveRequestCreatePage /> },
+              { path: '/hr/leaves', element: <LeaveRequestListPage /> },
+              { path: '/hr/leaves/new', element: <LeaveRequestCreatePage /> },
+              { path: '/leave', element: <Navigate to="/hr/leaves" replace /> },
+              { path: '/leave/new', element: <Navigate to="/hr/leaves/new" replace /> },
             ],
           },
 

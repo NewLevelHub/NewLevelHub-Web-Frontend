@@ -129,9 +129,9 @@ export const API = {
     detail: (id: string) => `/announcements/${id}/`,
   },
   leave: {
-    requests: '/leave/requests/',
-    create: '/leave/requests/',
-    detail: (id: string) => `/leave/requests/${id}/`,
+    requests: '/hr/leaves/',
+    create: '/hr/leaves/',
+    detail: (id: string) => `/hr/leaves/${id}/`,
   },
   storage: {
     folders: '/storage/folders/',
