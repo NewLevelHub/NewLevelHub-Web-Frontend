@@ -41,7 +41,6 @@ import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
 import { useAuth } from '@/shared/hooks/useAuth';
-import { USER_ROLES } from '@/shared/config/constants';
 import type { CrmBoard, CrmColumn, CrmTask, CompanyMember, PaginatedResponse } from '@/shared/types';
 
 // ─── Priority helpers ─────────────────────────────────────────────────────────
@@ -369,7 +368,6 @@ function CreateTaskModal({ boardId, columnId, onClose }: CreateTaskModalProps) {
                 <option value="low">Низкий</option>
                 <option value="medium">Средний</option>
                 <option value="high">Высокий</option>
-                <option value="critical">Критический</option>
               </select>
             </div>
 
@@ -1254,7 +1252,6 @@ interface KanbanColumnProps {
   onTaskClick: (taskId: number) => void;
   dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>;
   isDragOverlay?: boolean;
-  canManage?: boolean;
 }
 
 function KanbanColumn({
@@ -1265,7 +1262,6 @@ function KanbanColumn({
   onTaskClick,
   dragHandleProps,
   isDragOverlay,
-  canManage = true,
 }: KanbanColumnProps) {
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -1300,7 +1296,7 @@ function KanbanColumn({
             )}
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            {!isDragOverlay && canManage && (
+            {!isDragOverlay && (
               <ColumnHeaderMenu
                 column={column}
                 onEdit={() => setShowEdit(true)}
@@ -1345,7 +1341,7 @@ function KanbanColumn({
         </div>
 
         {/* Add task button */}
-        {!isDragOverlay && canManage && (
+        {!isDragOverlay && (
           <div className="px-3 pb-3">
             <button
               type="button"
@@ -1399,10 +1395,9 @@ interface SortableColumnProps {
   boardId: string;
   tasks: CrmTask[];
   onTaskClick: (taskId: number) => void;
-  canManage?: boolean;
 }
 
-function SortableColumn({ column, allColumns, boardId, tasks, onTaskClick, canManage }: SortableColumnProps) {
+function SortableColumn({ column, allColumns, boardId, tasks, onTaskClick }: SortableColumnProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: column.id,
   });
@@ -1421,7 +1416,6 @@ function SortableColumn({ column, allColumns, boardId, tasks, onTaskClick, canMa
         tasks={tasks}
         onTaskClick={onTaskClick}
         dragHandleProps={{ ...attributes, ...listeners }}
-        canManage={canManage}
       />
     </div>
   );
@@ -1560,7 +1554,6 @@ export default function BoardDetailPage() {
   const boardId = id ?? '';
 
   const { user } = useAuth();
-  const isEmployee = user?.role === USER_ROLES.EMPLOYEE;
 
   const queryClient = useQueryClient();
   const [localColumns, setLocalColumns] = useState<CrmColumn[]>([]);
@@ -1753,19 +1746,17 @@ export default function BoardDetailPage() {
         <div className="flex flex-col items-center justify-center py-24 gap-3">
           <Inbox size={32} className="text-gray-600" />
           <p className="text-gray-500 text-sm">В этой доске нет колонок</p>
-          {!isEmployee && (
-            <button
-              type="button"
-              onClick={() => setShowAddColumn(true)}
-              className={cn(
-                'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-                'bg-blue-600 text-white hover:bg-blue-500',
-              )}
-            >
-              <Plus size={16} />
-              Добавить колонку
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setShowAddColumn(true)}
+            className={cn(
+              'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+              'bg-blue-600 text-white hover:bg-blue-500',
+            )}
+          >
+            <Plus size={16} />
+            Добавить колонку
+          </button>
         </div>
       ) : (
         <DndContext
@@ -1792,20 +1783,17 @@ export default function BoardDetailPage() {
                   boardId={boardId}
                   tasks={isTasksLoading ? [] : (tasksByColumn[column.id] ?? [])}
                   onTaskClick={(taskId) => setSelectedTaskId(taskId)}
-                  canManage={!isEmployee}
                 />
               ))}
 
-              {/* Inline add column form or add button — hidden for employees */}
-              {!isEmployee && (
-                showAddColumn ? (
-                  <InlineAddColumn
-                    boardId={boardId}
-                    onDone={() => setShowAddColumn(false)}
-                  />
-                ) : (
-                  <AddColumnButton onClick={() => setShowAddColumn(true)} />
-                )
+              {/* Inline add column form or add button */}
+              {showAddColumn ? (
+                <InlineAddColumn
+                  boardId={boardId}
+                  onDone={() => setShowAddColumn(false)}
+                />
+              ) : (
+                <AddColumnButton onClick={() => setShowAddColumn(true)} />
               )}
             </div>
           </SortableContext>
@@ -1818,7 +1806,6 @@ export default function BoardDetailPage() {
                 tasks={tasksByColumn[activeColumn.id] ?? []}
                 onTaskClick={() => undefined}
                 isDragOverlay
-                canManage={false}
               />
             ) : null}
           </DragOverlay>
