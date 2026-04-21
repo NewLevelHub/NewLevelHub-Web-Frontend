@@ -536,13 +536,16 @@ export interface CrmColumn {
 
 export interface CrmTask {
   id: number;
+  board_id: number;
+  column_id: number;
   title: string;
   description: string | null;
-  column: number;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  deadline: string | null; // ISO date
+  assignee: { id: number; first_name: string; last_name: string; avatar?: string } | null;
+  label_ids: number[];
+  comments_count: number;
+  attachments_count: number;
   order: number;
-  priority: 'low' | 'medium' | 'high' | null;
-  deadline: string | null;
-  assignee: number | null;
   created_at: string;
-  updated_at: string;
 }
