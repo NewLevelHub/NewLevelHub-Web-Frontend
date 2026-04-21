@@ -129,9 +129,13 @@ export const API = {
     detail: (id: string) => `/announcements/${id}/`,
   },
   leave: {
-    requests: '/leave/requests/',
-    create: '/leave/requests/',
-    detail: (id: string) => `/leave/requests/${id}/`,
+    requests: '/hr/leaves/',
+    create: '/hr/leaves/',
+    detail: (id: string) => `/hr/leaves/${id}/`,
+    review: (id: string) => `/hr/leaves/${id}/review/`,
+    balance: '/hr/leaves/balance/',
+    balanceSet: '/hr/leaves/balance/set/',
+    balanceTeam: '/hr/leaves/balance/team/',
   },
   storage: {
     folders: '/storage/folders/',

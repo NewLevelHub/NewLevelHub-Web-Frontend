@@ -388,14 +388,31 @@ export interface Announcement {
 
 export interface LeaveRequest {
   id: number;
-  type: LeaveType;
+  user: number;
+  user_name: string;
+  company: number;
+  leave_type: LeaveType;
+  duration_days: number;
   start_date: string;
   end_date: string;
-  comment: string | null;
+  comment: string;
   status: LeaveStatus;
-  reviewer_comment: string | null;
-  user: User;
+  reviewed_by: number | null;
+  review_comment: string;
+  reviewed_at: string | null;
   created_at: string;
+}
+
+export interface LeaveBalance {
+  year: number;
+  total_days: number;
+  used_days: number;
+  remaining_days: number;
+}
+
+export interface TeamLeaveBalance extends LeaveBalance {
+  user_id: number;
+  user_name: string;
 }
 
 export interface FileItem {
