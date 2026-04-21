@@ -78,6 +78,7 @@ const companyAdminNav: NavSection[] = [
       { label: 'Команда', path: '/company/team', icon: Users },
       { label: 'Сотрудники', path: '/team/manage', icon: Users },
       { label: 'Настройки', path: '/company/settings', icon: Settings },
+      { label: 'Онбординг шаблоны', path: '/company/settings/onboarding', icon: ListTodo },
     ],
   },
   {
