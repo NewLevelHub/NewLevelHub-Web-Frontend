@@ -23,6 +23,7 @@ import { cn } from '@/shared/lib/cn';
 import { mapApiUser } from '@/shared/lib/mapUser';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import type { UserDetail } from '@/shared/types';
 
 // ---------------------------------------------------------------------------
@@ -85,11 +86,12 @@ interface LargeAvatarProps {
 
 function LargeAvatar({ src, firstName, lastName }: LargeAvatarProps) {
   const initials = getInitials(firstName, lastName);
+  const avatarSrc = resolveMediaUrl(src) ?? src;
 
-  if (src) {
+  if (avatarSrc) {
     return (
       <img
-        src={src}
+        src={avatarSrc}
         alt={`${firstName} ${lastName}`}
         className="w-24 h-24 rounded-full object-cover ring-4 ring-white shadow-md shrink-0"
       />

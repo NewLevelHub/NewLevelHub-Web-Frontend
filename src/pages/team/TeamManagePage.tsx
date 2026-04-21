@@ -26,6 +26,7 @@ import { USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { cn } from '@/shared/lib/cn';
+import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import type {
   Company,
   CompanyMember,
@@ -95,12 +96,20 @@ interface AvatarProps {
 }
 
 const Avatar = memo<AvatarProps>(({ src, fullName }) => {
-  if (src) {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [src]);
+
+  const avatarSrc = !hasError ? (resolveMediaUrl(src) ?? src) : null;
+  if (avatarSrc) {
     return (
       <img
-        src={src}
+        src={avatarSrc}
         alt={fullName}
         className="h-9 w-9 rounded-full object-cover"
+        onError={() => setHasError(true)}
       />
     );
   }

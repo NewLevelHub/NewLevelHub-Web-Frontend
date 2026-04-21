@@ -6,6 +6,7 @@ import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
 import { mapApiUser } from '@/shared/lib/mapUser';
+import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import { useAuth } from '@/shared/hooks/useAuth';
 import type { User as UserType } from '@/shared/types';
 
@@ -54,11 +55,12 @@ interface AvatarProps {
 function Avatar({ src, firstName, lastName, size = 80 }: AvatarProps) {
   const sizeClass = `w-${size / 4} h-${size / 4}`;
   const initials = getInitials(firstName, lastName);
+  const avatarSrc = resolveMediaUrl(src) ?? src;
 
-  if (src) {
+  if (avatarSrc) {
     return (
       <img
-        src={src}
+        src={avatarSrc}
         alt={`${firstName} ${lastName}`}
         style={{ width: size, height: size }}
         className="rounded-full object-cover ring-2 ring-white shadow"
