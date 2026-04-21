@@ -136,8 +136,8 @@ export default function FileBrowserPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Файловый менеджер</h1>
-        <p className="mt-1 text-sm text-slate-500">Личное и общее хранилище с навигацией по папкам.</p>
+        <h1 className="text-2xl font-semibold text-white">Файловый менеджер</h1>
+        <p className="mt-1 text-sm text-slate-400">Личное и общее хранилище с навигацией по папкам.</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -149,8 +149,8 @@ export default function FileBrowserPage() {
           }}
           className={`rounded-md border px-3 py-1.5 text-sm ${
             scope === 'personal'
-              ? 'border-slate-900 bg-slate-900 text-white'
-              : 'border-slate-300 text-slate-700'
+              ? 'border-indigo-600 bg-indigo-600 text-white'
+              : 'border-slate-700 text-slate-300 bg-slate-800'
           }`}
         >
           Личное
@@ -163,22 +163,22 @@ export default function FileBrowserPage() {
           }}
           className={`rounded-md border px-3 py-1.5 text-sm ${
             scope === 'company'
-              ? 'border-slate-900 bg-slate-900 text-white'
-              : 'border-slate-300 text-slate-700'
+              ? 'border-indigo-600 bg-indigo-600 text-white'
+              : 'border-slate-700 text-slate-300 bg-slate-800'
           }`}
         >
           Общее хранилище
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-        <button type="button" onClick={resetToRoot} className="text-blue-600 hover:underline">
+      <div className="flex flex-wrap items-center gap-2 text-sm text-slate-400">
+        <button type="button" onClick={resetToRoot} className="text-indigo-300 hover:underline">
           Корень
         </button>
         {trail.map((folder, idx) => (
           <span key={folder.id} className="flex items-center gap-2">
             <span>/</span>
-            <button type="button" onClick={() => goToTrailIndex(idx)} className="text-blue-600 hover:underline">
+            <button type="button" onClick={() => goToTrailIndex(idx)} className="text-indigo-300 hover:underline">
               {folder.name}
             </button>
           </span>
@@ -190,40 +190,40 @@ export default function FileBrowserPage() {
           value={newFolderName}
           onChange={(e) => setNewFolderName(e.target.value)}
           placeholder="Название новой папки"
-          className="w-full max-w-sm rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="w-full max-w-sm rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white"
         />
         <button
           type="button"
           disabled={!newFolderName.trim() || createFolderMutation.isPending}
           onClick={() => createFolderMutation.mutate()}
-          className="rounded-md bg-blue-600 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-md bg-indigo-600 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           Создать папку
         </button>
       </div>
 
-      {isLoading ? <p className="text-sm text-slate-500">Загрузка...</p> : null}
+      {isLoading ? <p className="text-sm text-slate-400">Загрузка...</p> : null}
       {isError ? (
-        <p className="text-sm text-rose-600">Не удалось загрузить данные хранилища. Попробуйте обновить страницу.</p>
+        <p className="text-sm text-rose-300">Не удалось загрузить данные хранилища. Попробуйте обновить страницу.</p>
       ) : null}
 
       {!isLoading && !isError ? (
         <div className="grid gap-6 lg:grid-cols-2">
-          <section className="rounded-lg border border-slate-200 p-4">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Папки</h2>
+          <section className="rounded-lg border border-slate-700 bg-slate-800 p-4">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">Папки</h2>
             {folders.length === 0 ? (
-              <p className="text-sm text-slate-500">Папок нет.</p>
+              <p className="text-sm text-slate-400">Папок нет.</p>
             ) : (
               <ul className="space-y-2">
                 {folders.map((folder) => (
                   <li
                     key={folder.id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-200 px-3 py-2"
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-700 px-3 py-2"
                   >
                     <button
                       type="button"
                       onClick={() => openFolder(folder)}
-                      className="text-left text-sm font-medium text-blue-600 hover:underline"
+                      className="text-left text-sm font-medium text-indigo-300 hover:underline"
                     >
                       {folder.name}
                     </button>
@@ -231,14 +231,14 @@ export default function FileBrowserPage() {
                       <button
                         type="button"
                         onClick={() => handleRename(folder)}
-                        className="rounded border border-slate-300 px-2 py-1 text-slate-700"
+                        className="rounded border border-slate-600 px-2 py-1 text-slate-300"
                       >
                         Переименовать
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDelete(folder)}
-                        className="rounded border border-rose-300 px-2 py-1 text-rose-700"
+                        className="rounded border border-rose-800 px-2 py-1 text-rose-300"
                       >
                         Удалить
                       </button>
@@ -249,21 +249,21 @@ export default function FileBrowserPage() {
             )}
           </section>
 
-          <section className="rounded-lg border border-slate-200 p-4">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Файлы</h2>
+          <section className="rounded-lg border border-slate-700 bg-slate-800 p-4">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">Файлы</h2>
             {currentFolder === null ? (
-              <p className="text-sm text-slate-500">Откройте папку, чтобы увидеть файлы.</p>
+              <p className="text-sm text-slate-400">Откройте папку, чтобы увидеть файлы.</p>
             ) : files.length === 0 ? (
-              <p className="text-sm text-slate-500">В этой папке пока нет файлов.</p>
+              <p className="text-sm text-slate-400">В этой папке пока нет файлов.</p>
             ) : (
               <ul className="space-y-2">
                 {files.map((file) => (
                   <li
                     key={file.id}
-                    className="flex items-center justify-between gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm"
+                    className="flex items-center justify-between gap-2 rounded-md border border-slate-700 px-3 py-2 text-sm"
                   >
-                    <span className="truncate text-slate-800">{file.name}</span>
-                    <span className="shrink-0 text-slate-500">{formatFileSize(file.file_size)}</span>
+                    <span className="truncate text-slate-200">{file.name}</span>
+                    <span className="shrink-0 text-slate-400">{formatFileSize(file.file_size)}</span>
                   </li>
                 ))}
               </ul>

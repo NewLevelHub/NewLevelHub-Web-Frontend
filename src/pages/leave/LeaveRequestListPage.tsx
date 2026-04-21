@@ -34,9 +34,9 @@ const TYPE_OPTIONS: Array<{ value: ''; label: string } | { value: LeaveType; lab
 ];
 
 const STATUS_BADGE_CLASS: Record<LeaveStatus, string> = {
-  [LEAVE_STATUSES.PENDING]: 'bg-amber-100 text-amber-800',
-  [LEAVE_STATUSES.APPROVED]: 'bg-emerald-100 text-emerald-800',
-  [LEAVE_STATUSES.REJECTED]: 'bg-rose-100 text-rose-800',
+  [LEAVE_STATUSES.PENDING]: 'bg-amber-900/60 text-amber-300',
+  [LEAVE_STATUSES.APPROVED]: 'bg-emerald-900/60 text-emerald-300',
+  [LEAVE_STATUSES.REJECTED]: 'bg-rose-900/60 text-rose-300',
 };
 
 export default function LeaveRequestListPage() {
@@ -113,24 +113,24 @@ export default function LeaveRequestListPage() {
   const showUserColumn = isAdmin;
 
   return (
-    <main className="mx-auto max-w-6xl space-y-6 px-4 py-8">
+    <main className="mx-auto max-w-6xl space-y-6 p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Заявки на отсутствие</h1>
+        <h1 className="text-2xl font-bold text-white">Заявки на отсутствие</h1>
         <Link
           to="/leave/new"
-          className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
         >
           Подать заявку
         </Link>
       </div>
 
-      <section className="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-2">
-        <label className="text-sm text-gray-700">
+      <section className="grid gap-3 rounded-xl border border-gray-700 bg-gray-800 p-4 sm:grid-cols-2">
+        <label className="text-sm text-gray-300">
           Статус
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value as LeaveStatus | '')}
-            className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
           >
             {STATUS_OPTIONS.map(option => (
               <option key={option.value || 'all'} value={option.value}>
@@ -139,12 +139,12 @@ export default function LeaveRequestListPage() {
             ))}
           </select>
         </label>
-        <label className="text-sm text-gray-700">
+        <label className="text-sm text-gray-300">
           Тип отсутствия
           <select
             value={typeFilter}
             onChange={(event) => setTypeFilter(event.target.value as LeaveType | '')}
-            className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
           >
             {TYPE_OPTIONS.map(option => (
               <option key={option.value || 'all'} value={option.value}>
@@ -155,8 +155,8 @@ export default function LeaveRequestListPage() {
         </label>
       </section>
 
-      <section className="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-4">
-        <label className="text-sm text-gray-700">
+      <section className="grid gap-3 rounded-xl border border-gray-700 bg-gray-800 p-4 sm:grid-cols-4">
+        <label className="text-sm text-gray-300">
           Год
           <input
             type="number"
@@ -164,55 +164,55 @@ export default function LeaveRequestListPage() {
             max={3000}
             value={year}
             onChange={(event) => setYear(Number(event.target.value))}
-            className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
           />
         </label>
-        <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-          <div className="text-xs text-gray-500">Всего дней</div>
-          <div className="text-lg font-semibold text-gray-900">{balance?.total_days ?? 0}</div>
+        <div className="rounded-lg border border-gray-700 bg-gray-900 p-3">
+          <div className="text-xs text-gray-400">Всего дней</div>
+          <div className="text-lg font-semibold text-white">{balance?.total_days ?? 0}</div>
         </div>
-        <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-          <div className="text-xs text-gray-500">Использовано</div>
-          <div className="text-lg font-semibold text-gray-900">{balance?.used_days ?? 0}</div>
+        <div className="rounded-lg border border-gray-700 bg-gray-900 p-3">
+          <div className="text-xs text-gray-400">Использовано</div>
+          <div className="text-lg font-semibold text-white">{balance?.used_days ?? 0}</div>
         </div>
-        <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-          <div className="text-xs text-gray-500">Осталось</div>
-          <div className="text-lg font-semibold text-emerald-700">{balance?.remaining_days ?? 0}</div>
+        <div className="rounded-lg border border-gray-700 bg-gray-900 p-3">
+          <div className="text-xs text-gray-400">Осталось</div>
+          <div className="text-lg font-semibold text-emerald-400">{balance?.remaining_days ?? 0}</div>
         </div>
       </section>
 
       {mutationError ? (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
+        <div className="rounded-lg border border-rose-800 bg-rose-950/30 px-3 py-2 text-sm text-rose-300" role="alert">
           {mutationError}
         </div>
       ) : null}
 
       {error ? (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
+        <div className="rounded-lg border border-rose-800 bg-rose-950/30 px-3 py-2 text-sm text-rose-300" role="alert">
           {getApiErrorMessage(error, 'Не удалось загрузить заявки.')}
         </div>
       ) : null}
 
       {isLoading ? (
-        <p className="text-sm text-gray-500">Загрузка...</p>
+        <p className="text-sm text-gray-400">Загрузка...</p>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-gray-500">Заявок пока нет.</p>
+        <p className="text-sm text-gray-400">Заявок пока нет.</p>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-gray-100">
-            <thead className="bg-gray-50">
+        <div className="overflow-hidden rounded-2xl border border-gray-700 bg-gray-800">
+          <table className="min-w-full divide-y divide-gray-700/60">
+            <thead className="bg-gray-900/60">
               <tr>
-                {showUserColumn ? <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Сотрудник</th> : null}
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Тип</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Период</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Статус</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Комментарий</th>
-                {isAdmin ? <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Действия</th> : null}
+                {showUserColumn ? <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Сотрудник</th> : null}
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Тип</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Период</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Статус</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Комментарий</th>
+                {isAdmin ? <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Действия</th> : null}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-700/60">
               {rows.map((leave) => (
-                <tr key={leave.id} className="text-sm text-gray-800">
+                <tr key={leave.id} className="text-sm text-gray-200">
                   {showUserColumn ? (
                     <td className="px-4 py-3">
                       {leave.user_name?.trim() || `ID ${leave.user}`}
@@ -231,14 +231,14 @@ export default function LeaveRequestListPage() {
                       {LEAVE_STATUS_LABELS[leave.status] ?? leave.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{leave.comment || '-'}</td>
+                  <td className="px-4 py-3 text-gray-300">{leave.comment || '-'}</td>
                   {isAdmin ? (
                     <td className="px-4 py-3">
                       {leave.status === LEAVE_STATUSES.PENDING ? (
                         <div className="flex gap-2">
                           <button
                             type="button"
-                            className="rounded-md bg-emerald-600 px-2 py-1 text-xs text-white hover:bg-emerald-700"
+                            className="rounded-md border border-emerald-700 bg-emerald-900/30 px-2 py-1 text-xs text-emerald-300 hover:bg-emerald-900/50"
                             disabled={reviewMutation.isPending}
                             onClick={() => reviewMutation.mutate({ id: leave.id, status: LEAVE_STATUSES.APPROVED })}
                           >
@@ -246,15 +246,24 @@ export default function LeaveRequestListPage() {
                           </button>
                           <button
                             type="button"
-                            className="rounded-md bg-rose-600 px-2 py-1 text-xs text-white hover:bg-rose-700"
+                            className="rounded-md border border-rose-800 bg-rose-900/30 px-2 py-1 text-xs text-rose-300 hover:bg-rose-900/50"
                             disabled={reviewMutation.isPending}
                             onClick={() => reviewMutation.mutate({ id: leave.id, status: LEAVE_STATUSES.REJECTED })}
                           >
                             Отклонить
                           </button>
                         </div>
+                      ) : leave.status === LEAVE_STATUSES.APPROVED ? (
+                        <button
+                          type="button"
+                          className="rounded-md border border-amber-800 bg-amber-900/30 px-2 py-1 text-xs text-amber-300 hover:bg-amber-900/50"
+                          disabled={reviewMutation.isPending}
+                          onClick={() => reviewMutation.mutate({ id: leave.id, status: LEAVE_STATUSES.REJECTED })}
+                        >
+                          Отменить одобрение
+                        </button>
                       ) : (
-                        <span className="text-xs text-gray-400">—</span>
+                        <span className="text-xs text-gray-500">—</span>
                       )}
                     </td>
                   ) : null}
@@ -266,29 +275,29 @@ export default function LeaveRequestListPage() {
       )}
 
       {isAdmin ? (
-        <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-          <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-700">
+        <section className="overflow-hidden rounded-2xl border border-gray-700 bg-gray-800">
+          <div className="border-b border-gray-700 px-4 py-3 text-sm font-semibold text-white">
             Балансы команды
           </div>
           {isTeamBalancesLoading ? (
-            <p className="px-4 py-4 text-sm text-gray-500">Загрузка балансов...</p>
+            <p className="px-4 py-4 text-sm text-gray-400">Загрузка балансов...</p>
           ) : !teamBalances?.length ? (
-            <p className="px-4 py-4 text-sm text-gray-500">Сотрудники не найдены.</p>
+            <p className="px-4 py-4 text-sm text-gray-400">Сотрудники не найдены.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-100">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-700/60">
+                <thead className="bg-gray-900/60">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Сотрудник</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Всего</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Использовано</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Осталось</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Установить</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Сотрудник</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Всего</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Использовано</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Осталось</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Установить</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-700/60">
                   {teamBalances.map((row) => (
-                    <tr key={row.user_id} className="text-sm text-gray-800">
+                    <tr key={row.user_id} className="text-sm text-gray-200">
                       <td className="px-4 py-3">{row.user_name}</td>
                       <td className="px-4 py-3">{row.total_days}</td>
                       <td className="px-4 py-3">{row.used_days}</td>
@@ -302,11 +311,11 @@ export default function LeaveRequestListPage() {
                             onChange={(event) =>
                               setTeamTotals((prev) => ({ ...prev, [row.user_id]: event.target.value }))
                             }
-                            className="w-20 rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900"
+                            className="w-20 rounded-md border border-gray-700 bg-gray-900 px-2 py-1 text-xs text-white"
                           />
                           <button
                             type="button"
-                            className="rounded-md bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700"
+                            className="rounded-md bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-500"
                             disabled={setBalanceMutation.isPending}
                             onClick={() =>
                               setBalanceMutation.mutate({

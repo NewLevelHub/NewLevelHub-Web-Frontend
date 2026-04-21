@@ -37,9 +37,9 @@ const PLAN_LABELS: Record<string, string> = {
 };
 
 const PLAN_BADGE_COLORS: Record<string, string> = {
-  [COMPANY_TIERS.BASIC]: 'bg-gray-100 text-gray-700',
-  [COMPANY_TIERS.STANDARD]: 'bg-blue-100 text-blue-700',
-  [COMPANY_TIERS.PREMIUM]: 'bg-purple-100 text-purple-700',
+  [COMPANY_TIERS.BASIC]: 'bg-gray-700 text-gray-200',
+  [COMPANY_TIERS.STANDARD]: 'bg-blue-900/60 text-blue-300',
+  [COMPANY_TIERS.PREMIUM]: 'bg-purple-900/60 text-purple-300',
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -75,10 +75,10 @@ interface InfoRowProps {
 function InfoRow({ icon, label, value }: InfoRowProps) {
   return (
     <div className="flex items-start gap-3">
-      <div className="mt-0.5 text-gray-400 shrink-0">{icon}</div>
+      <div className="mt-0.5 text-gray-500 shrink-0">{icon}</div>
       <div className="min-w-0">
-        <p className="text-xs text-gray-500 mb-0.5">{label}</p>
-        <p className="text-sm font-medium text-gray-900 break-words">{value}</p>
+        <p className="text-xs text-gray-400 mb-0.5">{label}</p>
+        <p className="text-sm font-medium text-gray-100 break-words">{value}</p>
       </div>
     </div>
   );
@@ -92,13 +92,13 @@ interface StatCardProps {
 
 function StatCard({ icon, label, value }: StatCardProps) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
-      <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center shrink-0 text-blue-600">
+    <div className="bg-gray-800 rounded-2xl border border-gray-700 p-5 flex items-center gap-4">
+      <div className="w-12 h-12 rounded-xl bg-blue-900/40 flex items-center justify-center shrink-0 text-blue-300">
         {icon}
       </div>
       <div>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
-        <p className="text-sm text-gray-500">{label}</p>
+        <p className="text-2xl font-bold text-white">{value}</p>
+        <p className="text-sm text-gray-400">{label}</p>
       </div>
     </div>
   );
@@ -115,9 +115,9 @@ function LimitBar({ label, current, max, unit = '' }: LimitBarProps) {
   const percent = getUsagePercent(current, max);
   const tone = usageTone(percent);
   const barColor =
-    tone === 'danger' ? 'bg-red-500' : tone === 'warning' ? 'bg-amber-500' : 'bg-blue-600';
+    tone === 'danger' ? 'bg-red-500' : tone === 'warning' ? 'bg-amber-500' : 'bg-indigo-500';
   const textColor =
-    tone === 'danger' ? 'text-red-700' : tone === 'warning' ? 'text-amber-700' : 'text-gray-900';
+    tone === 'danger' ? 'text-red-300' : tone === 'warning' ? 'text-amber-300' : 'text-gray-100';
 
   const valueLabel = `${current.toFixed(1).replace('.0', '')}${unit}`;
   const maxLabel = `${max.toFixed(1).replace('.0', '')}${unit}`;
@@ -125,11 +125,11 @@ function LimitBar({ label, current, max, unit = '' }: LimitBarProps) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-gray-700">{label}</p>
+        <p className="text-sm font-medium text-gray-300">{label}</p>
         <p className={cn('text-sm font-semibold', textColor)}>{percent}%</p>
       </div>
       <div
-        className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden"
+        className="w-full h-2.5 bg-gray-700 rounded-full overflow-hidden"
         role="progressbar"
         aria-valuenow={percent}
         aria-valuemin={0}
@@ -138,7 +138,7 @@ function LimitBar({ label, current, max, unit = '' }: LimitBarProps) {
       >
         <div className={cn('h-full rounded-full transition-all duration-500', barColor)} style={{ width: `${percent}%` }} />
       </div>
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-gray-400">
         {valueLabel} из {maxLabel}
       </p>
     </div>
@@ -638,13 +638,13 @@ export default function CompanyDetailPage() {
           <button
             type="button"
             onClick={() => navigate(companiesBasePath)}
-            className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 mb-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+            className="inline-flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-gray-200 mb-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
             aria-label="Назад к списку компаний"
           >
             <ArrowLeft size={16} aria-hidden="true" />
             Назад к списку
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">{company.name}</h1>
+          <h1 className="text-2xl font-bold text-white">{company.name}</h1>
         </div>
 
         {!isEditing && (
@@ -652,7 +652,7 @@ export default function CompanyDetailPage() {
             {isSuperadmin && (
               <Link
                 to={`/company/settings?company=${company.id}`}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 shrink-0"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-gray-700 text-gray-300 hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 shrink-0"
                 aria-label="Настройки компании"
               >
                 <Settings size={15} aria-hidden="true" />
@@ -663,7 +663,7 @@ export default function CompanyDetailPage() {
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 shrink-0"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 shrink-0"
                 aria-label="Редактировать компанию"
               >
                 <Pencil size={15} aria-hidden="true" />
@@ -676,7 +676,7 @@ export default function CompanyDetailPage() {
 
       {/* Profile card */}
       <section
-        className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-6"
+        className="bg-gray-800 rounded-2xl border border-gray-700 p-6 space-y-6"
         aria-label="Информация о компании"
       >
         {/* Logo + name row */}
@@ -685,21 +685,21 @@ export default function CompanyDetailPage() {
             <img
               src={company.logo}
               alt={`Логотип ${company.name}`}
-              className="w-24 h-24 rounded-2xl object-cover ring-4 ring-white shadow-md shrink-0"
+              className="w-24 h-24 rounded-2xl object-cover ring-2 ring-gray-700 shadow-md shrink-0"
             />
           ) : (
             <div
-              className="w-24 h-24 rounded-2xl bg-blue-50 flex items-center justify-center ring-4 ring-white shadow-md shrink-0"
+              className="w-24 h-24 rounded-2xl bg-blue-900/30 flex items-center justify-center ring-2 ring-gray-700 shadow-md shrink-0"
               aria-hidden="true"
             >
-              <Building2 className="w-12 h-12 text-blue-400" />
+              <Building2 className="w-12 h-12 text-blue-300" />
             </div>
           )}
 
           <div className="space-y-2">
-            <p className="text-xl font-semibold text-gray-900">{company.name}</p>
+            <p className="text-xl font-semibold text-white">{company.name}</p>
             {company.description && (
-              <p className="text-sm text-gray-500 max-w-lg">{company.description}</p>
+              <p className="text-sm text-gray-400 max-w-lg">{company.description}</p>
             )}
             <div className="flex flex-wrap gap-2 pt-1">
               <span
@@ -714,8 +714,8 @@ export default function CompanyDetailPage() {
                 className={cn(
                   'inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full',
                   company.is_active
-                    ? 'bg-green-50 text-green-700 border border-green-200'
-                    : 'bg-red-50 text-red-700 border border-red-200',
+                    ? 'bg-green-900/30 text-green-300 border border-green-800'
+                    : 'bg-red-900/30 text-red-300 border border-red-800',
                 )}
               >
                 {company.is_active ? 'Активна' : 'Неактивна'}
@@ -796,7 +796,7 @@ export default function CompanyDetailPage() {
           value={
             <span>
               {limitStorageUsedGb.toFixed(1)}{' '}
-              <span className="text-base font-semibold text-gray-500">/ {limitStorageMaxGb} ГБ</span>
+              <span className="text-base font-semibold text-gray-400">/ {limitStorageMaxGb} ГБ</span>
             </span>
           }
         />
@@ -804,12 +804,12 @@ export default function CompanyDetailPage() {
 
       {/* Limits widget */}
       <section
-        className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"
+        className="bg-gray-800 rounded-2xl border border-gray-700 p-5"
         aria-label="Лимиты компании"
       >
         <div className="mb-4">
-          <p className="text-base font-semibold text-gray-900">Лимиты тарифа</p>
-          <p className="text-sm text-gray-500">Индикаторы меняют цвет с 80% и 95% использования.</p>
+          <p className="text-base font-semibold text-white">Лимиты тарифа</p>
+          <p className="text-sm text-gray-400">Индикаторы меняют цвет с 80% и 95% использования.</p>
         </div>
         <div className="space-y-5">
           <LimitBar label="Сотрудники" current={limitEmployeesCurrent} max={limitEmployeesMax} />
