@@ -478,6 +478,7 @@ export interface CrmColumn {
   name: string;
   order: number;
   board: number;
+  wip_limit: number | null;
 }
 
 export interface CrmTask {
