@@ -97,7 +97,7 @@ const companyAdminNav: NavSection[] = [
       { label: 'Гостевые пропуска', path: '/passes', icon: ShieldCheck },
       { label: 'Файлы', path: '/files', icon: FileText },
       { label: 'Объявления', path: '/announcements', icon: Megaphone },
-      { label: 'Отпуска', path: '/leave', icon: Clock },
+      { label: 'Отпуска', path: '/hr/leaves', icon: Clock },
     ],
   },
   {
@@ -133,7 +133,7 @@ const employeeNav: NavSection[] = [
       { label: 'Гостевые пропуска', path: '/passes', icon: ShieldCheck },
       { label: 'Файлы', path: '/files', icon: FileText },
       { label: 'Объявления', path: '/announcements', icon: Megaphone },
-      { label: 'Отпуска', path: '/leave', icon: Clock },
+      { label: 'Отпуска', path: '/hr/leaves', icon: Clock },
     ],
   },
   {

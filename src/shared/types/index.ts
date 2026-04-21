@@ -388,13 +388,19 @@ export interface Announcement {
 
 export interface LeaveRequest {
   id: number;
-  type: LeaveType;
+  user: number;
+  user_name?: string;
+  company: number;
+  leave_type: LeaveType;
   start_date: string;
   end_date: string;
-  comment: string | null;
+  duration_days?: number;
+  comment: string;
   status: LeaveStatus;
-  reviewer_comment: string | null;
-  user: User;
+  reviewed_by: number | null;
+  reviewer?: number | null;
+  review_comment: string;
+  reviewed_at: string | null;
   created_at: string;
 }
 
