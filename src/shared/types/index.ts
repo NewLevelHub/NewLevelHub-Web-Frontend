@@ -389,15 +389,16 @@ export interface Announcement {
 export interface LeaveRequest {
   id: number;
   user: number;
-  user_name: string;
+  user_name?: string;
   company: number;
   leave_type: LeaveType;
-  duration_days: number;
   start_date: string;
   end_date: string;
+  duration_days?: number;
   comment: string;
   status: LeaveStatus;
   reviewed_by: number | null;
+  reviewer?: number | null;
   review_comment: string;
   reviewed_at: string | null;
   created_at: string;
@@ -547,13 +548,16 @@ export interface CrmColumn {
 
 export interface CrmTask {
   id: number;
+  board_id: number;
+  column_id: number;
   title: string;
   description: string | null;
-  column: number;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  deadline: string | null; // ISO date
+  assignee: { id: number; first_name: string; last_name: string; avatar?: string } | null;
+  label_ids: number[];
+  comments_count: number;
+  attachments_count: number;
   order: number;
-  priority: 'low' | 'medium' | 'high' | null;
-  deadline: string | null;
-  assignee: number | null;
   created_at: string;
-  updated_at: string;
 }

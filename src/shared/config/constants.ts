@@ -128,6 +128,13 @@ export const LEAVE_TYPES = {
 
 export type LeaveType = (typeof LEAVE_TYPES)[keyof typeof LEAVE_TYPES];
 
+export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
+  [LEAVE_TYPES.VACATION]: 'Отпуск',
+  [LEAVE_TYPES.DAY_OFF]: 'Отгул',
+  [LEAVE_TYPES.SICK_LEAVE]: 'Больничный',
+  [LEAVE_TYPES.REMOTE]: 'Удаленно',
+};
+
 export const LEAVE_STATUSES = {
   PENDING: 'pending',
   APPROVED: 'approved',
@@ -135,6 +142,12 @@ export const LEAVE_STATUSES = {
 } as const;
 
 export type LeaveStatus = (typeof LEAVE_STATUSES)[keyof typeof LEAVE_STATUSES];
+
+export const LEAVE_STATUS_LABELS: Record<LeaveStatus, string> = {
+  [LEAVE_STATUSES.PENDING]: 'На рассмотрении',
+  [LEAVE_STATUSES.APPROVED]: 'Одобрено',
+  [LEAVE_STATUSES.REJECTED]: 'Отклонено',
+};
 
 export const COMPANY_TIERS = {
   BASIC: 'basic',

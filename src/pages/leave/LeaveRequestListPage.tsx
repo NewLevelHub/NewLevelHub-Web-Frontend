@@ -1,91 +1,98 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { USER_ROLES } from '@/shared/config/constants';
+import {
+  LEAVE_STATUSES,
+  LEAVE_STATUS_LABELS,
+  LEAVE_TYPES,
+  LEAVE_TYPE_LABELS,
+  USER_ROLES,
+  type LeaveStatus,
+  type LeaveType,
+} from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { cn } from '@/shared/lib/cn';
 import type { LeaveBalance, LeaveRequest, PaginatedResponse, TeamLeaveBalance } from '@/shared/types';
 
-type LeaveListResponse = LeaveRequest[] | PaginatedResponse<LeaveRequest>;
+const STATUS_OPTIONS: Array<{ value: ''; label: string } | { value: LeaveStatus; label: string }> = [
+  { value: '', label: 'Все статусы' },
+  { value: LEAVE_STATUSES.PENDING, label: LEAVE_STATUS_LABELS[LEAVE_STATUSES.PENDING] },
+  { value: LEAVE_STATUSES.APPROVED, label: LEAVE_STATUS_LABELS[LEAVE_STATUSES.APPROVED] },
+  { value: LEAVE_STATUSES.REJECTED, label: LEAVE_STATUS_LABELS[LEAVE_STATUSES.REJECTED] },
+];
 
-const currentYear = new Date().getFullYear();
+const TYPE_OPTIONS: Array<{ value: ''; label: string } | { value: LeaveType; label: string }> = [
+  { value: '', label: 'Все типы' },
+  { value: LEAVE_TYPES.VACATION, label: LEAVE_TYPE_LABELS[LEAVE_TYPES.VACATION] },
+  { value: LEAVE_TYPES.DAY_OFF, label: LEAVE_TYPE_LABELS[LEAVE_TYPES.DAY_OFF] },
+  { value: LEAVE_TYPES.SICK_LEAVE, label: LEAVE_TYPE_LABELS[LEAVE_TYPES.SICK_LEAVE] },
+  { value: LEAVE_TYPES.REMOTE, label: LEAVE_TYPE_LABELS[LEAVE_TYPES.REMOTE] },
+];
 
-function formatDate(value: string): string {
-  return new Date(value).toLocaleDateString('ru-RU');
-}
-
-function statusLabel(status: string): string {
-  if (status === 'approved') return 'Одобрена';
-  if (status === 'rejected') return 'Отклонена';
-  return 'На рассмотрении';
-}
-
-function leaveTypeLabel(leaveType: string): string {
-  if (leaveType === 'vacation') return 'Отпуск';
-  if (leaveType === 'day_off') return 'Отгул';
-  if (leaveType === 'sick_leave') return 'Больничный';
-  if (leaveType === 'remote') return 'Удаленка';
-  return leaveType;
-}
+const STATUS_BADGE_CLASS: Record<LeaveStatus, string> = {
+  [LEAVE_STATUSES.PENDING]: 'bg-amber-100 text-amber-800',
+  [LEAVE_STATUSES.APPROVED]: 'bg-emerald-100 text-emerald-800',
+  [LEAVE_STATUSES.REJECTED]: 'bg-rose-100 text-rose-800',
+};
 
 export default function LeaveRequestListPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [year, setYear] = useState<number>(currentYear);
-  const [errorText, setErrorText] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<LeaveStatus | ''>('');
+  const [typeFilter, setTypeFilter] = useState<LeaveType | ''>('');
+  const [year, setYear] = useState<number>(new Date().getFullYear());
   const [teamTotals, setTeamTotals] = useState<Record<number, string>>({});
+  const [mutationError, setMutationError] = useState<string | null>(null);
+
+  const queryParams = useMemo(() => {
+    const params: Record<string, string> = {};
+    if (statusFilter) params.status = statusFilter;
+    if (typeFilter) params.leave_type = typeFilter;
+    return params;
+  }, [statusFilter, typeFilter]);
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['leave-requests', queryParams],
+    queryFn: () =>
+      apiClient.get<PaginatedResponse<LeaveRequest>>(API.leave.requests, { params: queryParams }).then(r => r.data),
+  });
+
+  const { data: balance } = useQuery({
+    queryKey: ['leave-balance', year],
+    queryFn: () => apiClient.get<LeaveBalance>(API.leave.balance, { params: { year } }).then(r => r.data),
+  });
 
   const isAdmin = user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN;
-
-  const { data: leaveResponse, isLoading: isLeavesLoading } = useQuery<LeaveListResponse>({
-    queryKey: ['leave-requests'],
-    queryFn: () => apiClient.get<LeaveListResponse>(API.leave.requests).then((r) => r.data),
-  });
-
-  const leaveItems = useMemo(() => {
-    if (!leaveResponse) return [];
-    return Array.isArray(leaveResponse) ? leaveResponse : leaveResponse.results;
-  }, [leaveResponse]);
-
-  const { data: balance, isLoading: isBalanceLoading } = useQuery<LeaveBalance>({
-    queryKey: ['leave-balance', year],
-    queryFn: () =>
-      apiClient
-        .get<LeaveBalance>(API.leave.balance, { params: { year } })
-        .then((r) => r.data),
-  });
-
-  const { data: teamBalances, isLoading: isTeamLoading } = useQuery<TeamLeaveBalance[]>({
+  const { data: teamBalances, isLoading: isTeamBalancesLoading } = useQuery({
     queryKey: ['leave-team-balance', year],
-    queryFn: () =>
-      apiClient
-        .get<TeamLeaveBalance[]>(API.leave.balanceTeam, { params: { year } })
-        .then((r) => r.data),
+    queryFn: () => apiClient.get<TeamLeaveBalance[]>(API.leave.balanceTeam, { params: { year } }).then(r => r.data),
     enabled: isAdmin,
   });
 
   useEffect(() => {
     if (!teamBalances) return;
-    const initial: Record<number, string> = {};
+    const totals: Record<number, string> = {};
     for (const row of teamBalances) {
-      initial[row.user_id] = String(row.total_days);
+      totals[row.user_id] = String(row.total_days);
     }
-    setTeamTotals(initial);
+    setTeamTotals(totals);
   }, [teamBalances]);
 
   const reviewMutation = useMutation({
-    mutationFn: ({ id, status }: { id: number; status: 'approved' | 'rejected' }) =>
+    mutationFn: ({ id, status }: { id: number; status: LeaveStatus }) =>
       apiClient.post(API.leave.review(String(id)), { status }),
     onSuccess: async () => {
-      setErrorText(null);
+      setMutationError(null);
       await queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
       await queryClient.invalidateQueries({ queryKey: ['leave-balance'] });
       await queryClient.invalidateQueries({ queryKey: ['leave-team-balance'] });
     },
-    onError: (error: unknown) => {
-      setErrorText(getApiErrorMessage(error, 'Не удалось обновить статус заявки.'));
+    onError: (err) => {
+      setMutationError(getApiErrorMessage(err, 'Не удалось обновить заявку.'));
     },
   });
 
@@ -93,161 +100,195 @@ export default function LeaveRequestListPage() {
     mutationFn: ({ userId, totalDays }: { userId: number; totalDays: number }) =>
       apiClient.post(API.leave.balanceSet, { user_id: userId, year, total_days: totalDays }),
     onSuccess: async () => {
-      setErrorText(null);
+      setMutationError(null);
       await queryClient.invalidateQueries({ queryKey: ['leave-team-balance', year] });
       await queryClient.invalidateQueries({ queryKey: ['leave-balance', year] });
     },
-    onError: (error: unknown) => {
-      setErrorText(getApiErrorMessage(error, 'Не удалось обновить баланс сотрудника.'));
+    onError: (err) => {
+      setMutationError(getApiErrorMessage(err, 'Не удалось установить баланс.'));
     },
   });
 
+  const rows = data?.results ?? [];
+  const showUserColumn = isAdmin;
+
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Отпуска</h1>
-          <p className="mt-1 text-sm text-gray-400">Заявки и баланс отпускных дней</p>
-        </div>
+    <main className="mx-auto max-w-6xl space-y-6 px-4 py-8">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Заявки на отсутствие</h1>
         <Link
           to="/leave/new"
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+          className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
-          Новая заявка
+          Подать заявку
         </Link>
       </div>
 
-      <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
-        <label htmlFor="leave-year" className="mb-1 block text-xs font-medium text-gray-400">
-          Год баланса
+      <section className="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-2">
+        <label className="text-sm text-gray-700">
+          Статус
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value as LeaveStatus | '')}
+            className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+          >
+            {STATUS_OPTIONS.map(option => (
+              <option key={option.value || 'all'} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </label>
-        <input
-          id="leave-year"
-          type="number"
-          min={1900}
-          max={3000}
-          value={year}
-          onChange={(e) => setYear(Number(e.target.value))}
-          className="w-full max-w-40 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
-        />
-      </div>
+        <label className="text-sm text-gray-700">
+          Тип отсутствия
+          <select
+            value={typeFilter}
+            onChange={(event) => setTypeFilter(event.target.value as LeaveType | '')}
+            className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+          >
+            {TYPE_OPTIONS.map(option => (
+              <option key={option.value || 'all'} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </section>
 
-      {errorText && (
-        <div className="rounded-lg border border-red-800 bg-red-950/40 px-3 py-2 text-sm text-red-300">
-          {errorText}
+      <section className="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-4">
+        <label className="text-sm text-gray-700">
+          Год
+          <input
+            type="number"
+            min={1900}
+            max={3000}
+            value={year}
+            onChange={(event) => setYear(Number(event.target.value))}
+            className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+          />
+        </label>
+        <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+          <div className="text-xs text-gray-500">Всего дней</div>
+          <div className="text-lg font-semibold text-gray-900">{balance?.total_days ?? 0}</div>
+        </div>
+        <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+          <div className="text-xs text-gray-500">Использовано</div>
+          <div className="text-lg font-semibold text-gray-900">{balance?.used_days ?? 0}</div>
+        </div>
+        <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+          <div className="text-xs text-gray-500">Осталось</div>
+          <div className="text-lg font-semibold text-emerald-700">{balance?.remaining_days ?? 0}</div>
+        </div>
+      </section>
+
+      {mutationError ? (
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
+          {mutationError}
+        </div>
+      ) : null}
+
+      {error ? (
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
+          {getApiErrorMessage(error, 'Не удалось загрузить заявки.')}
+        </div>
+      ) : null}
+
+      {isLoading ? (
+        <p className="text-sm text-gray-500">Загрузка...</p>
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-gray-500">Заявок пока нет.</p>
+      ) : (
+        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+          <table className="min-w-full divide-y divide-gray-100">
+            <thead className="bg-gray-50">
+              <tr>
+                {showUserColumn ? <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Сотрудник</th> : null}
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Тип</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Период</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Статус</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Комментарий</th>
+                {isAdmin ? <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Действия</th> : null}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {rows.map((leave) => (
+                <tr key={leave.id} className="text-sm text-gray-800">
+                  {showUserColumn ? (
+                    <td className="px-4 py-3">
+                      {leave.user_name?.trim() || `ID ${leave.user}`}
+                    </td>
+                  ) : null}
+                  <td className="px-4 py-3">
+                    {LEAVE_TYPE_LABELS[leave.leave_type] ?? leave.leave_type}
+                  </td>
+                  <td className="px-4 py-3">
+                    {new Date(leave.start_date).toLocaleDateString('ru-RU')}
+                    {' - '}
+                    {new Date(leave.end_date).toLocaleDateString('ru-RU')}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE_CLASS[leave.status])}>
+                      {LEAVE_STATUS_LABELS[leave.status] ?? leave.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">{leave.comment || '-'}</td>
+                  {isAdmin ? (
+                    <td className="px-4 py-3">
+                      {leave.status === LEAVE_STATUSES.PENDING ? (
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            className="rounded-md bg-emerald-600 px-2 py-1 text-xs text-white hover:bg-emerald-700"
+                            disabled={reviewMutation.isPending}
+                            onClick={() => reviewMutation.mutate({ id: leave.id, status: LEAVE_STATUSES.APPROVED })}
+                          >
+                            Одобрить
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded-md bg-rose-600 px-2 py-1 text-xs text-white hover:bg-rose-700"
+                            disabled={reviewMutation.isPending}
+                            onClick={() => reviewMutation.mutate({ id: leave.id, status: LEAVE_STATUSES.REJECTED })}
+                          >
+                            Отклонить
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
+                    </td>
+                  ) : null}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-        <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
-          <p className="text-xs text-gray-400">Год</p>
-          <p className="mt-1 text-xl font-semibold text-white">{isBalanceLoading ? '...' : balance?.year ?? year}</p>
-        </div>
-        <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
-          <p className="text-xs text-gray-400">Всего дней</p>
-          <p className="mt-1 text-xl font-semibold text-white">{isBalanceLoading ? '...' : balance?.total_days ?? 0}</p>
-        </div>
-        <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
-          <p className="text-xs text-gray-400">Использовано</p>
-          <p className="mt-1 text-xl font-semibold text-white">{isBalanceLoading ? '...' : balance?.used_days ?? 0}</p>
-        </div>
-        <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
-          <p className="text-xs text-gray-400">Осталось</p>
-          <p className="mt-1 text-xl font-semibold text-emerald-400">
-            {isBalanceLoading ? '...' : balance?.remaining_days ?? 0}
-          </p>
-        </div>
-      </div>
-
-      <div className="overflow-hidden rounded-xl border border-gray-700 bg-gray-800">
-        <div className="border-b border-gray-700 px-4 py-3">
-          <h2 className="text-sm font-semibold text-white">Заявки</h2>
-        </div>
-        {isLeavesLoading ? (
-          <p className="px-4 py-6 text-sm text-gray-400">Загрузка заявок…</p>
-        ) : !leaveItems.length ? (
-          <p className="px-4 py-6 text-sm text-gray-400">Заявок пока нет.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-gray-900/60 text-xs uppercase tracking-wide text-gray-400">
-                <tr>
-                  <th className="px-4 py-3">Сотрудник</th>
-                  <th className="px-4 py-3">Тип</th>
-                  <th className="px-4 py-3">Период</th>
-                  <th className="px-4 py-3">Дней</th>
-                  <th className="px-4 py-3">Статус</th>
-                  {isAdmin && <th className="px-4 py-3">Действия</th>}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-700/50">
-                {leaveItems.map((item) => (
-                  <tr key={item.id} className="text-gray-200">
-                    <td className="px-4 py-3">{item.user_name}</td>
-                    <td className="px-4 py-3">{leaveTypeLabel(item.leave_type)}</td>
-                    <td className="px-4 py-3">
-                      {formatDate(item.start_date)} - {formatDate(item.end_date)}
-                    </td>
-                    <td className="px-4 py-3">{item.duration_days}</td>
-                    <td className="px-4 py-3">{statusLabel(item.status)}</td>
-                    {isAdmin && (
-                      <td className="px-4 py-3">
-                        {item.status === 'pending' ? (
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              disabled={reviewMutation.isPending}
-                              onClick={() => reviewMutation.mutate({ id: item.id, status: 'approved' })}
-                              className="rounded-md border border-emerald-700 bg-emerald-900/30 px-2 py-1 text-xs text-emerald-300"
-                            >
-                              Одобрить
-                            </button>
-                            <button
-                              type="button"
-                              disabled={reviewMutation.isPending}
-                              onClick={() => reviewMutation.mutate({ id: item.id, status: 'rejected' })}
-                              className="rounded-md border border-red-800 bg-red-900/30 px-2 py-1 text-xs text-red-300"
-                            >
-                              Отклонить
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-gray-500">—</span>
-                        )}
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {isAdmin ? (
+        <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+          <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-700">
+            Балансы команды
           </div>
-        )}
-      </div>
-
-      {isAdmin && (
-        <div className="overflow-hidden rounded-xl border border-gray-700 bg-gray-800">
-          <div className="border-b border-gray-700 px-4 py-3">
-            <h2 className="text-sm font-semibold text-white">Балансы команды</h2>
-          </div>
-          {isTeamLoading ? (
-            <p className="px-4 py-6 text-sm text-gray-400">Загрузка балансов команды…</p>
+          {isTeamBalancesLoading ? (
+            <p className="px-4 py-4 text-sm text-gray-500">Загрузка балансов...</p>
           ) : !teamBalances?.length ? (
-            <p className="px-4 py-6 text-sm text-gray-400">Нет сотрудников для отображения.</p>
+            <p className="px-4 py-4 text-sm text-gray-500">Сотрудники не найдены.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-gray-900/60 text-xs uppercase tracking-wide text-gray-400">
+              <table className="min-w-full divide-y divide-gray-100">
+                <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3">Сотрудник</th>
-                    <th className="px-4 py-3">Всего</th>
-                    <th className="px-4 py-3">Использовано</th>
-                    <th className="px-4 py-3">Осталось</th>
-                    <th className="px-4 py-3">Установить</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Сотрудник</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Всего</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Использовано</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Осталось</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Установить</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-700/50 text-gray-200">
+                <tbody className="divide-y divide-gray-100">
                   {teamBalances.map((row) => (
-                    <tr key={row.user_id}>
+                    <tr key={row.user_id} className="text-sm text-gray-800">
                       <td className="px-4 py-3">{row.user_name}</td>
                       <td className="px-4 py-3">{row.total_days}</td>
                       <td className="px-4 py-3">{row.used_days}</td>
@@ -258,13 +299,14 @@ export default function LeaveRequestListPage() {
                             type="number"
                             min={0}
                             value={teamTotals[row.user_id] ?? String(row.total_days)}
-                            onChange={(e) =>
-                              setTeamTotals((prev) => ({ ...prev, [row.user_id]: e.target.value }))
+                            onChange={(event) =>
+                              setTeamTotals((prev) => ({ ...prev, [row.user_id]: event.target.value }))
                             }
-                            className="w-20 rounded-md border border-gray-700 bg-gray-900 px-2 py-1 text-xs text-white"
+                            className="w-20 rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900"
                           />
                           <button
                             type="button"
+                            className="rounded-md bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700"
                             disabled={setBalanceMutation.isPending}
                             onClick={() =>
                               setBalanceMutation.mutate({
@@ -272,7 +314,6 @@ export default function LeaveRequestListPage() {
                                 totalDays: Number(teamTotals[row.user_id] ?? row.total_days),
                               })
                             }
-                            className="rounded-md bg-indigo-600 px-2 py-1 text-xs font-medium text-white"
                           >
                             Сохранить
                           </button>
@@ -284,8 +325,8 @@ export default function LeaveRequestListPage() {
               </table>
             </div>
           )}
-        </div>
-      )}
-    </div>
+        </section>
+      ) : null}
+    </main>
   );
 }

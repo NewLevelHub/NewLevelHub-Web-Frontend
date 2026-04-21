@@ -93,6 +93,8 @@ export const API = {
     tasks: (boardId: string) => `/crm/boards/${boardId}/tasks/`,
     task: (boardId: string, taskId: string) => `/crm/boards/${boardId}/tasks/${taskId}/`,
     myTasks: '/crm/tasks/my/',
+    tasksList: '/crm/tasks/',
+    taskDetail: (id: number) => `/crm/tasks/${id}/`,
   },
   team: {
     directory: '/team/',
