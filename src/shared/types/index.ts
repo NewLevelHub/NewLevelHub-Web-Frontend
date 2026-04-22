@@ -565,7 +565,7 @@ export interface CrmTask {
   label_ids: number[];
   comments_count: number;
   attachments_count: number;
-  order: number;
+  position: number;
   created_at: string;
   checklists: CrmChecklist[];
 }
