@@ -573,7 +573,6 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
   });
 
   const handleArchive = () => {
-    if (!window.confirm('Архивировать задачу?')) return;
     archiveMutation.mutate();
   };
 
