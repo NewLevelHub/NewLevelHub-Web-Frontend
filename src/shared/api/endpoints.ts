@@ -95,6 +95,10 @@ export const API = {
     myTasks: '/crm/tasks/my/',
     tasksList: '/crm/tasks/',
     taskDetail: (id: number) => `/crm/tasks/${id}/`,
+    taskChecklists: (taskId: number) => `/crm/tasks/${taskId}/checklists/`,
+    checklistDetail: (checklistId: number) => `/crm/checklists/${checklistId}/`,
+    checklistItems: (checklistId: number) => `/crm/checklists/${checklistId}/items/`,
+    checklistItemDetail: (itemId: number) => `/crm/items/${itemId}/`,
   },
   team: {
     directory: '/team/',
