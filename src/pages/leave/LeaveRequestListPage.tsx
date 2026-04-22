@@ -39,6 +39,7 @@ const STATUS_BADGE_CLASS: Record<LeaveStatus, string> = {
   [LEAVE_STATUSES.REJECTED]: 'bg-rose-900/60 text-rose-300',
 };
 const LIVE_REFETCH_MS = 15000;
+type ReviewStatus = Extract<LeaveStatus, 'approved' | 'rejected'>;
 
 export default function LeaveRequestListPage() {
   const { user } = useAuth();
@@ -91,8 +92,8 @@ export default function LeaveRequestListPage() {
   }, [teamBalances]);
 
   const reviewMutation = useMutation({
-    mutationFn: ({ id, status }: { id: number; status: LeaveStatus }) =>
-      apiClient.post(API.leave.review(String(id)), { status }),
+    mutationFn: ({ id, status, reviewComment }: { id: number; status: ReviewStatus; reviewComment: string }) =>
+      apiClient.post(API.leave.review(String(id)), { status, review_comment: reviewComment }),
     onSuccess: async () => {
       setMutationError(null);
       await queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
@@ -119,6 +120,17 @@ export default function LeaveRequestListPage() {
 
   const rows = data?.results ?? [];
   const showUserColumn = isAdmin;
+
+  const handleReview = (leaveId: number, status: ReviewStatus) => {
+    const promptTitle =
+      status === LEAVE_STATUSES.APPROVED
+        ? 'Комментарий к одобрению (необязательно):'
+        : 'Комментарий к отклонению (необязательно):';
+    const reviewComment = window.prompt(promptTitle, '');
+
+    if (reviewComment === null) return;
+    reviewMutation.mutate({ id: leaveId, status, reviewComment: reviewComment.trim() });
+  };
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 p-6">
@@ -248,7 +260,7 @@ export default function LeaveRequestListPage() {
                             type="button"
                             className="rounded-md border border-emerald-700 bg-emerald-900/30 px-2 py-1 text-xs text-emerald-300 hover:bg-emerald-900/50"
                             disabled={reviewMutation.isPending}
-                            onClick={() => reviewMutation.mutate({ id: leave.id, status: LEAVE_STATUSES.APPROVED })}
+                            onClick={() => handleReview(leave.id, LEAVE_STATUSES.APPROVED)}
                           >
                             Одобрить
                           </button>
@@ -256,7 +268,7 @@ export default function LeaveRequestListPage() {
                             type="button"
                             className="rounded-md border border-rose-800 bg-rose-900/30 px-2 py-1 text-xs text-rose-300 hover:bg-rose-900/50"
                             disabled={reviewMutation.isPending}
-                            onClick={() => reviewMutation.mutate({ id: leave.id, status: LEAVE_STATUSES.REJECTED })}
+                            onClick={() => handleReview(leave.id, LEAVE_STATUSES.REJECTED)}
                           >
                             Отклонить
                           </button>
@@ -266,7 +278,7 @@ export default function LeaveRequestListPage() {
                           type="button"
                           className="rounded-md border border-amber-800 bg-amber-900/30 px-2 py-1 text-xs text-amber-300 hover:bg-amber-900/50"
                           disabled={reviewMutation.isPending}
-                          onClick={() => reviewMutation.mutate({ id: leave.id, status: LEAVE_STATUSES.REJECTED })}
+                          onClick={() => handleReview(leave.id, LEAVE_STATUSES.REJECTED)}
                         >
                           Отменить одобрение
                         </button>
