@@ -1723,13 +1723,9 @@ export default function BoardDetailPage() {
     for (const col of Object.keys(grouped)) {
       grouped[Number(col)].sort((a, b) => a.position - b.position || a.id - b.id);
     }
+    localTasksByColumnRef.current = grouped;
     setLocalTasksByColumn(grouped);
   }, [tasksData]);
-
-  // Keep ref in sync with state so DnD event handlers always read the latest value
-  useEffect(() => {
-    localTasksByColumnRef.current = localTasksByColumn;
-  }, [localTasksByColumn]);
 
   const reorderMutation = useMutation({
     mutationFn: (columnIds: number[]) =>
@@ -1751,6 +1747,7 @@ export default function BoardDetailPage() {
       apiClient.post(API.crm.taskMove(taskId), { column_id: columnId, position }),
     onError: (error: unknown) => {
       // Rollback optimistic update
+      localTasksByColumnRef.current = taskSnapshotRef.current;
       setLocalTasksByColumn(taskSnapshotRef.current);
       // Check for WIP limit error (HTTP 400)
       let message = 'Не удалось переместить задачу.';
@@ -1899,6 +1896,7 @@ export default function BoardDetailPage() {
     if (dragType === 'column') {
       setLocalColumns(snapshotRef.current);
     } else if (dragType === 'task') {
+      localTasksByColumnRef.current = taskSnapshotRef.current;
       setLocalTasksByColumn(taskSnapshotRef.current);
     }
   };
