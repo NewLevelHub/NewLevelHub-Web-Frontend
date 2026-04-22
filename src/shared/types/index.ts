@@ -404,6 +404,18 @@ export interface LeaveRequest {
   created_at: string;
 }
 
+export interface LeaveBalance {
+  year: number;
+  total_days: number;
+  used_days: number;
+  remaining_days: number;
+}
+
+export interface TeamLeaveBalance extends LeaveBalance {
+  user_id: number;
+  user_name: string;
+}
+
 export interface FileItem {
   id: number;
   name: string;

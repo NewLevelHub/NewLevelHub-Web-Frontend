@@ -36,9 +36,9 @@ const PLAN_LABELS: Record<string, string> = {
 };
 
 const PLAN_COLORS: Record<string, string> = {
-  [COMPANY_TIERS.BASIC]: 'bg-gray-100 text-gray-700',
-  [COMPANY_TIERS.STANDARD]: 'bg-blue-100 text-blue-700',
-  [COMPANY_TIERS.PREMIUM]: 'bg-purple-100 text-purple-700',
+  [COMPANY_TIERS.BASIC]: 'bg-gray-700 text-gray-200',
+  [COMPANY_TIERS.STANDARD]: 'bg-blue-900/60 text-blue-300',
+  [COMPANY_TIERS.PREMIUM]: 'bg-purple-900/60 text-purple-300',
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -237,8 +237,8 @@ export default function CompanyListPage() {
     return (
       <main className="px-4 py-8 max-w-7xl mx-auto">
         <div className="flex h-64 flex-col items-center justify-center gap-2 text-center">
-          <p className="text-sm font-medium text-red-600">Ошибка загрузки компаний.</p>
-          <p className="text-xs text-gray-500">Проверьте соединение и обновите страницу.</p>
+          <p className="text-sm font-medium text-red-300">Ошибка загрузки компаний.</p>
+          <p className="text-xs text-gray-400">Проверьте соединение и обновите страницу.</p>
         </div>
       </main>
     );
@@ -251,9 +251,9 @@ export default function CompanyListPage() {
       {/* Page header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Компании-арендаторы</h1>
+          <h1 className="text-2xl font-bold text-white">Компании-арендаторы</h1>
           {!isLoading && (
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-gray-400">
               Всего: {totalCount}
             </p>
           )}
@@ -261,7 +261,7 @@ export default function CompanyListPage() {
         {isSuperadmin && (
           <Link
             to={`${companiesBasePath}/new`}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
             Создать компанию
@@ -273,7 +273,7 @@ export default function CompanyListPage() {
       {mutationError && (
         <div
           role="alert"
-          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          className="rounded-lg border border-red-800 bg-red-950/30 px-4 py-3 text-sm text-red-300"
         >
           {mutationError}
         </div>
@@ -282,7 +282,7 @@ export default function CompanyListPage() {
       {/* Filters — superadmin only */}
       {isSuperadmin && (
         <section
-          className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4"
+          className="bg-gray-800 rounded-2xl border border-gray-700 p-4"
           aria-label="Фильтры компаний"
         >
           <div className="flex flex-wrap gap-3">
@@ -299,7 +299,7 @@ export default function CompanyListPage() {
                 onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Поиск по названию..."
                 aria-label="Поиск компаний"
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border border-gray-700 bg-gray-900 py-2 pl-9 pr-3 text-sm text-white placeholder:text-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 
@@ -308,7 +308,7 @@ export default function CompanyListPage() {
               value={planFilter}
               onChange={(e) => setPlanFilter(e.target.value)}
               aria-label="Фильтр по тарифу"
-              className="px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="">Все тарифы</option>
               <option value={COMPANY_TIERS.BASIC}>Базовый</option>
@@ -321,7 +321,7 @@ export default function CompanyListPage() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               aria-label="Фильтр по статусу"
-              className="px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="">Все статусы</option>
               <option value="true">Активные</option>
@@ -332,7 +332,7 @@ export default function CompanyListPage() {
       )}
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table
             className="w-full text-sm"
@@ -340,22 +340,22 @@ export default function CompanyListPage() {
             aria-label="Список компаний"
           >
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-50 text-left">
+              <tr className="border-b border-gray-700 bg-gray-900/60 text-left">
                 <th
                   scope="col"
-                  className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400"
                 >
                   Компания
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400"
                 >
                   Тариф
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400"
                 >
                   <span className="inline-flex items-center gap-1">
                     <Users className="h-3.5 w-3.5" aria-hidden="true" />
@@ -364,7 +364,7 @@ export default function CompanyListPage() {
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400"
                 >
                   <span className="inline-flex items-center gap-1">
                     <HardDrive className="h-3.5 w-3.5" aria-hidden="true" />
@@ -373,7 +373,7 @@ export default function CompanyListPage() {
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400"
                 >
                   Статус
                 </th>
@@ -382,7 +382,7 @@ export default function CompanyListPage() {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-gray-700/60">
               {isLoading ? (
                 Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)
               ) : companies.length === 0 ? (
@@ -390,7 +390,7 @@ export default function CompanyListPage() {
                   <td colSpan={6} className="py-16 text-center">
                     <div className="flex flex-col items-center gap-2">
                       <Building2 className="h-8 w-8 text-gray-300" aria-hidden="true" />
-                      <p className="text-sm text-gray-500">Компании не найдены</p>
+                      <p className="text-sm text-gray-400">Компании не найдены</p>
                     </div>
                   </td>
                 </tr>
@@ -415,13 +415,13 @@ export default function CompanyListPage() {
       {/* Pagination */}
       {!isLoading && totalCount > 0 && (
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-400">
             Показано{' '}
-            <span className="font-medium text-gray-900">
+            <span className="font-medium text-white">
               {rangeStart}–{rangeEnd}
             </span>{' '}
             из{' '}
-            <span className="font-medium text-gray-900">{totalCount}</span> компаний
+            <span className="font-medium text-white">{totalCount}</span> компаний
           </p>
 
           <nav aria-label="Пагинация" className="flex items-center gap-1">
@@ -431,10 +431,10 @@ export default function CompanyListPage() {
               disabled={page === 1}
               aria-label="Предыдущая страница"
               className={cn(
-                'p-2 rounded-lg border text-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                'rounded-lg border p-2 text-gray-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
                 page === 1
-                  ? 'border-gray-200 text-gray-300 cursor-not-allowed'
-                  : 'border-gray-300 hover:bg-gray-50',
+                  ? 'cursor-not-allowed border-gray-800 text-gray-600'
+                  : 'border-gray-700 hover:bg-gray-700',
               )}
             >
               <ChevronLeft size={16} aria-hidden="true" />
@@ -463,10 +463,10 @@ export default function CompanyListPage() {
                     aria-label={`Страница ${item}`}
                     aria-current={item === page ? 'page' : undefined}
                     className={cn(
-                      'w-9 h-9 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                      'h-9 w-9 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
                       item === page
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-700 hover:bg-gray-100 border border-gray-300',
+                        ? 'bg-indigo-600 text-white'
+                        : 'border border-gray-700 text-gray-300 hover:bg-gray-700',
                     )}
                   >
                     {item}
@@ -480,10 +480,10 @@ export default function CompanyListPage() {
               disabled={page === totalPages}
               aria-label="Следующая страница"
               className={cn(
-                'p-2 rounded-lg border text-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                'rounded-lg border p-2 text-gray-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
                 page === totalPages
-                  ? 'border-gray-200 text-gray-300 cursor-not-allowed'
-                  : 'border-gray-300 hover:bg-gray-50',
+                  ? 'cursor-not-allowed border-gray-800 text-gray-600'
+                  : 'border-gray-700 hover:bg-gray-700',
               )}
             >
               <ChevronRight size={16} aria-hidden="true" />
@@ -529,7 +529,7 @@ function CompanyRow({
   onDelete,
 }: CompanyRowProps) {
   return (
-    <tr className="group transition-colors hover:bg-gray-50">
+    <tr className="group transition-colors hover:bg-gray-700/40">
       {/* Logo + Name + office */}
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
@@ -541,21 +541,21 @@ function CompanyRow({
             />
           ) : (
             <div
-              className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0"
+              className="w-8 h-8 rounded-lg bg-blue-900/40 flex items-center justify-center shrink-0"
               aria-hidden="true"
             >
-              <Building2 className="w-4 h-4 text-blue-500" />
+              <Building2 className="w-4 h-4 text-blue-300" />
             </div>
           )}
           <div>
             <Link
               to={`${detailBasePath}/${company.id}`}
-              className="font-medium text-blue-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+              className="font-medium text-blue-300 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
             >
               {company.name}
             </Link>
             {(company.floor != null || company.office_number) && (
-              <div className="mt-0.5 text-xs text-gray-400">
+              <div className="mt-0.5 text-xs text-gray-500">
                 {company.floor != null && `Этаж ${company.floor}`}
                 {company.floor != null && company.office_number && ', '}
                 {company.office_number && `офис ${company.office_number}`}
@@ -570,7 +570,7 @@ function CompanyRow({
         <span
           className={cn(
             'inline-block rounded-full px-2.5 py-0.5 text-xs font-medium',
-            PLAN_COLORS[company.plan] ?? 'bg-gray-100 text-gray-700',
+            PLAN_COLORS[company.plan] ?? 'bg-gray-700 text-gray-200',
           )}
         >
           {PLAN_LABELS[company.plan] ?? company.plan}
@@ -578,15 +578,15 @@ function CompanyRow({
       </td>
 
       {/* Max employees */}
-      <td className="px-4 py-3 text-gray-700">{company.max_employees}</td>
+      <td className="px-4 py-3 text-gray-300">{company.max_employees}</td>
 
       {/* Storage limit */}
-      <td className="px-4 py-3 text-gray-700">{company.storage_limit_gb} ГБ</td>
+      <td className="px-4 py-3 text-gray-300">{company.storage_limit_gb} ГБ</td>
 
       {/* Status */}
       <td className="px-4 py-3">
         {company.is_active ? (
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-300">
             <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
             Активна
           </span>
@@ -603,7 +603,7 @@ function CompanyRow({
         <div className="flex items-center gap-1">
           <Link
             to={`${detailBasePath}/${company.id}`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-300 bg-blue-900/30 hover:bg-blue-900/50 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             aria-label={`Открыть ${company.name}`}
           >
             <ExternalLink size={13} aria-hidden="true" />
@@ -617,7 +617,7 @@ function CompanyRow({
                   type="button"
                   onClick={onDeactivate}
                   title="Деактивировать"
-                  className="rounded-lg p-1.5 text-amber-500 transition-colors hover:bg-amber-50 hover:text-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                  className="rounded-lg p-1.5 text-amber-400 transition-colors hover:bg-amber-900/30 hover:text-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
                 >
                   <PowerOff className="h-4 w-4" aria-hidden="true" />
                   <span className="sr-only">Деактивировать {company.name}</span>
@@ -627,7 +627,7 @@ function CompanyRow({
                   type="button"
                   onClick={onActivate}
                   title="Активировать"
-                  className="rounded-lg p-1.5 text-emerald-500 transition-colors hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  className="rounded-lg p-1.5 text-emerald-400 transition-colors hover:bg-emerald-900/30 hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                   <Power className="h-4 w-4" aria-hidden="true" />
                   <span className="sr-only">Активировать {company.name}</span>
@@ -638,7 +638,7 @@ function CompanyRow({
                 type="button"
                 onClick={onDelete}
                 title="Удалить"
-                className="rounded-lg p-1.5 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                className="rounded-lg p-1.5 text-red-400 transition-colors hover:bg-red-900/30 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
               >
                 <Trash2 className="h-4 w-4" aria-hidden="true" />
                 <span className="sr-only">Удалить {company.name}</span>

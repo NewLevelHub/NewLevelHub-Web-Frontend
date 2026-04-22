@@ -36,7 +36,8 @@ export default function LeaveRequestCreatePage() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
-      navigate('/hr/leaves');
+      await queryClient.invalidateQueries({ queryKey: ['leave-balance'] });
+      navigate('/leave');
     },
     onError: (error: unknown) => {
       setFormError(getApiErrorMessage(error, 'Не удалось подать заявку.'));
@@ -65,19 +66,19 @@ export default function LeaveRequestCreatePage() {
   };
 
   return (
-    <main className="mx-auto max-w-2xl space-y-6 px-4 py-8">
+    <main className="mx-auto max-w-2xl space-y-6 p-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-gray-900">Подать заявку на отсутствие</h1>
-        <p className="text-sm text-gray-500">Заполните тип, даты и при необходимости добавьте комментарий.</p>
+        <h1 className="text-2xl font-bold text-white">Подать заявку на отсутствие</h1>
+        <p className="text-sm text-gray-400">Заполните тип, даты и при необходимости добавьте комментарий.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <label className="block text-sm text-gray-700">
+      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-gray-700 bg-gray-800 p-5">
+        <label className="block text-sm text-gray-300">
           Тип отсутствия
           <select
             value={leaveType}
             onChange={(event) => setLeaveType(event.target.value as LeaveType)}
-            className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
           >
             {TYPE_OPTIONS.map(option => (
               <option key={option.value} value={option.value}>
@@ -88,56 +89,56 @@ export default function LeaveRequestCreatePage() {
         </label>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block text-sm text-gray-700">
+          <label className="block text-sm text-gray-300">
             Дата начала
             <input
               type="date"
               value={startDate}
               onChange={(event) => setStartDate(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
               required
             />
           </label>
-          <label className="block text-sm text-gray-700">
+          <label className="block text-sm text-gray-300">
             Дата окончания
             <input
               type="date"
               value={endDate}
               onChange={(event) => setEndDate(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
               required
             />
           </label>
         </div>
 
-        <label className="block text-sm text-gray-700">
+        <label className="block text-sm text-gray-300">
           Комментарий
           <textarea
             value={comment}
             onChange={(event) => setComment(event.target.value)}
             rows={4}
-            className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
             placeholder="Например: поездка к врачу"
           />
         </label>
 
         {formError ? (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
+          <div className="rounded-lg border border-rose-800 bg-rose-950/30 px-3 py-2 text-sm text-rose-300" role="alert">
             {formError}
           </div>
         ) : null}
 
         <div className="flex items-center justify-end gap-2">
           <Link
-            to="/hr/leaves"
-            className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            to="/leave"
+            className="inline-flex items-center rounded-lg border border-gray-700 bg-transparent px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700"
           >
             Отмена
           </Link>
           <button
             type="submit"
             disabled={createLeaveMutation.isPending}
-            className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
           >
             {createLeaveMutation.isPending ? 'Отправка...' : 'Подать заявку'}
           </button>

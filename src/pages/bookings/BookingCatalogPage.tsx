@@ -67,12 +67,12 @@ function emptyEquipmentFilters(): Record<ResourceEquipmentKey, boolean> {
   ) as Record<ResourceEquipmentKey, boolean>;
 }
 
-/** Подписи и поля в сайдбаре — явный тёмный текст (в т.ч. при тёмной теме ОС). */
-const sbLabel = 'text-sm font-medium text-gray-900';
+/** Подписи и поля в сайдбаре в тёмной теме. */
+const sbLabel = 'text-sm font-medium text-gray-300';
 const sbInput =
-  'mt-1 w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white text-gray-900 placeholder:text-gray-500';
+  'mt-1 w-full px-3 py-2 text-sm rounded-lg border border-gray-700 bg-gray-900 text-white placeholder:text-gray-500';
 const sbSelect =
-  'mt-1 w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white text-gray-900 [&>option]:bg-white [&>option]:text-gray-900';
+  'mt-1 w-full px-3 py-2 text-sm rounded-lg border border-gray-700 bg-gray-900 text-white [&>option]:bg-gray-900 [&>option]:text-white';
 
 function formatAvailableAt(iso: string | null): string | null {
   if (!iso) return null;
@@ -195,8 +195,8 @@ export default function BookingCatalogPage() {
     <main className="px-4 py-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Каталог ресурсов</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-white">Каталог ресурсов</h1>
+          <p className="mt-1 text-sm text-gray-400">
             Подбор площадок и мест для бронирования. Фильтры слева, карточки справа.
           </p>
         </div>
@@ -204,7 +204,7 @@ export default function BookingCatalogPage() {
           {(user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN) && (
             <Link
               to="/admin/bookings"
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-200 hover:bg-gray-700"
             >
               <ArrowLeft className="h-4 w-4" />
               Назад в бронирования (админ)
@@ -213,7 +213,7 @@ export default function BookingCatalogPage() {
           {user?.role === USER_ROLES.SUPERADMIN && (
             <Link
               to="/resources"
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-200 hover:bg-gray-700"
             >
               <Settings2 className="h-4 w-4" />
               Управление ресурсами
@@ -221,7 +221,7 @@ export default function BookingCatalogPage() {
           )}
           <Link
             to="/bookings/my"
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-200 hover:bg-gray-700"
           >
             Мои бронирования
           </Link>
@@ -230,7 +230,7 @@ export default function BookingCatalogPage() {
             || user?.role === USER_ROLES.EMPLOYEE) && (
             <Link
               to="/bookings/recurring"
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-200 hover:bg-gray-700"
             >
               Рекуррентные брони
             </Link>
@@ -241,7 +241,7 @@ export default function BookingCatalogPage() {
       {isError && (
         <div
           role="alert"
-          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          className="rounded-lg border border-red-800 bg-red-950/30 px-4 py-3 text-sm text-red-300"
         >
           Не удалось загрузить каталог. Проверьте сеть и токен.
         </div>
@@ -250,11 +250,11 @@ export default function BookingCatalogPage() {
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
         <aside
           className={cn(
-            'w-full shrink-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm text-gray-900',
+            'w-full shrink-0 rounded-2xl border border-gray-700 bg-gray-800 p-4 text-gray-200',
             'lg:w-80 lg:sticky lg:top-4',
           )}
         >
-          <h2 className="text-sm font-semibold text-gray-900">Фильтры</h2>
+          <h2 className="text-sm font-semibold text-white">Фильтры</h2>
           <div className="mt-4 space-y-4">
             <label className="block">
               <span className={sbLabel}>Поиск по названию</span>
@@ -269,8 +269,8 @@ export default function BookingCatalogPage() {
                   onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Например, Байтерек"
                   className={cn(
-                    'w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 bg-white text-gray-900 placeholder:text-gray-500',
-                    'focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-700 bg-gray-900 text-white placeholder:text-gray-500',
+                    'focus:outline-none focus:ring-2 focus:ring-indigo-500',
                   )}
                 />
               </div>
@@ -281,7 +281,7 @@ export default function BookingCatalogPage() {
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className={cn(sbSelect, 'focus:ring-2 focus:ring-blue-500 focus:outline-none')}
+                className={cn(sbSelect, 'focus:ring-2 focus:ring-indigo-500 focus:outline-none')}
               >
                 {TYPE_OPTIONS.map((o) => (
                   <option key={o.value || 'all'} value={o.value}>
@@ -298,7 +298,7 @@ export default function BookingCatalogPage() {
                 value={floorFilter}
                 onChange={(e) => setFloorFilter(e.target.value)}
                 placeholder="Любой"
-                className={cn(sbInput, 'focus:ring-2 focus:ring-blue-500 focus:outline-none')}
+                className={cn(sbInput, 'focus:ring-2 focus:ring-indigo-500 focus:outline-none')}
               />
             </label>
 
@@ -311,7 +311,7 @@ export default function BookingCatalogPage() {
                   value={capacityMin}
                   onChange={(e) => setCapacityMin(e.target.value)}
                   placeholder="—"
-                  className={cn(sbInput, 'px-2 focus:ring-2 focus:ring-blue-500 focus:outline-none')}
+                  className={cn(sbInput, 'px-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none')}
                 />
               </label>
               <label className="block min-w-0">
@@ -322,7 +322,7 @@ export default function BookingCatalogPage() {
                   value={capacityMax}
                   onChange={(e) => setCapacityMax(e.target.value)}
                   placeholder="—"
-                  className={cn(sbInput, 'px-2 focus:ring-2 focus:ring-blue-500 focus:outline-none')}
+                  className={cn(sbInput, 'px-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none')}
                 />
               </label>
             </div>
@@ -330,7 +330,7 @@ export default function BookingCatalogPage() {
             <fieldset className="min-w-0">
               <legend className={sbLabel}>Оборудование в переговорке</legend>
               {equipmentFacetKeys.length === 0 ? (
-                <p className="mt-3 text-sm text-gray-600">
+                <p className="mt-3 text-sm text-gray-400">
                   Нет переговорок с оборудованием в этой выборке — смените фильтры или тип «Переговорка».
                 </p>
               ) : (
@@ -338,7 +338,7 @@ export default function BookingCatalogPage() {
                   {equipmentFacetKeys.map((key) => (
                     <label
                       key={key}
-                      className="flex cursor-pointer items-center gap-2 text-sm text-gray-900"
+                      className="flex cursor-pointer items-center gap-2 text-sm text-gray-300"
                     >
                       <input
                         type="checkbox"
@@ -346,7 +346,7 @@ export default function BookingCatalogPage() {
                         onChange={() =>
                           setEquipmentNeed((prev) => ({ ...prev, [key]: !prev[key] }))
                         }
-                        className="size-4 shrink-0 rounded border-gray-400 text-blue-600 focus:ring-blue-500"
+                        className="size-4 shrink-0 rounded border-gray-600 bg-gray-900 text-indigo-600 focus:ring-indigo-500"
                       />
                       {RESOURCE_EQUIPMENT_LABELS[key]}
                     </label>
@@ -355,28 +355,28 @@ export default function BookingCatalogPage() {
               )}
             </fieldset>
 
-            <div className="space-y-2 rounded-lg border border-gray-100 bg-gray-50/80 p-3">
+            <div className="space-y-2 rounded-lg border border-gray-700 bg-gray-900/60 p-3">
               <span className={sbLabel}>Свободен в интервале</span>
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-gray-400">
                 Укажите «с» и «до» (локальное время). Отфильтруются ресурсы без пересечений с
                 бронированиями и блокировками.
               </p>
               <label className="block">
-                <span className="text-xs text-gray-700">С</span>
+                <span className="text-xs text-gray-400">С</span>
                 <input
                   type="datetime-local"
                   value={availFromLocal}
                   onChange={(e) => setAvailFromLocal(e.target.value)}
-                  className={cn(sbInput, 'focus:ring-2 focus:ring-blue-500 focus:outline-none')}
+                  className={cn(sbInput, 'focus:ring-2 focus:ring-indigo-500 focus:outline-none')}
                 />
               </label>
               <label className="block">
-                <span className="text-xs text-gray-700">До</span>
+                <span className="text-xs text-gray-400">До</span>
                 <input
                   type="datetime-local"
                   value={availToLocal}
                   onChange={(e) => setAvailToLocal(e.target.value)}
-                  className={cn(sbInput, 'focus:ring-2 focus:ring-blue-500 focus:outline-none')}
+                  className={cn(sbInput, 'focus:ring-2 focus:ring-indigo-500 focus:outline-none')}
                 />
               </label>
             </div>
@@ -386,7 +386,7 @@ export default function BookingCatalogPage() {
               <select
                 value={ordering}
                 onChange={(e) => setOrdering(e.target.value)}
-                className={cn(sbSelect, 'focus:ring-2 focus:ring-blue-500 focus:outline-none')}
+                className={cn(sbSelect, 'focus:ring-2 focus:ring-indigo-500 focus:outline-none')}
               >
                 {ORDERING_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -399,7 +399,7 @@ export default function BookingCatalogPage() {
             <button
               type="button"
               onClick={resetFilters}
-              className="w-full rounded-lg border border-gray-300 bg-gray-50 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100"
+              className="w-full rounded-lg border border-gray-700 bg-gray-900 py-2 text-sm font-medium text-gray-200 hover:bg-gray-700"
             >
               Сбросить
             </button>
@@ -408,9 +408,9 @@ export default function BookingCatalogPage() {
 
         <div className="min-w-0 flex-1 space-y-4">
           {isLoading ? (
-            <div className="py-20 text-center text-sm text-gray-500">Загрузка каталога…</div>
+            <div className="py-20 text-center text-sm text-gray-400">Загрузка каталога…</div>
           ) : results.length === 0 ? (
-            <div className="py-20 text-center text-sm text-gray-500">Нет ресурсов по заданным условиям.</div>
+            <div className="py-20 text-center text-sm text-gray-400">Нет ресурсов по заданным условиям.</div>
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {results.map((r) => {
@@ -422,19 +422,20 @@ export default function BookingCatalogPage() {
                   <li key={r.id}>
                     <article
                       className={cn(
-                        'h-full flex flex-col rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden',
+                        'h-full flex flex-col overflow-hidden rounded-2xl border border-gray-700 bg-gray-800 shadow-sm transition-all',
+                        'hover:-translate-y-0.5 hover:border-indigo-500/50 hover:shadow-indigo-900/20',
                         !r.is_active && 'opacity-60',
                       )}
                     >
-                      <div className="aspect-[16/10] bg-gray-100 relative">
+                      <div className="relative aspect-[16/10] bg-gray-900">
                         {imgSrc ? (
                           <img src={imgSrc} alt="" className="h-full w-full object-cover" />
                         ) : (
                           <div className="flex h-full items-center justify-center">
-                            <Bookmark className="h-10 w-10 text-gray-300" />
+                            <Bookmark className="h-10 w-10 text-gray-600" />
                           </div>
                         )}
-                        <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
+                        <span className="absolute left-2 top-2 rounded-full border border-white/15 bg-black/60 px-2 py-0.5 text-xs font-medium text-gray-100">
                           {RESOURCE_TYPE_LABELS[r.type]}
                         </span>
                         <span
@@ -446,15 +447,15 @@ export default function BookingCatalogPage() {
                           {statusLabel}
                         </span>
                       </div>
-                      <div className="flex flex-1 flex-col p-4 gap-2">
-                        <h2 className="font-semibold text-gray-900">{r.name}</h2>
-                        <p className="text-xs text-gray-500">
+                      <div className="flex flex-1 flex-col gap-2 p-4">
+                        <h2 className="font-semibold text-white">{r.name}</h2>
+                        <p className="text-xs text-gray-400">
                           Этаж {r.floor}
                           {r.zone ? ` · ${r.zone}` : ''}
                           {r.parking_type ? ` · ${r.parking_type === 'vip' ? 'VIP' : 'Обычная'}` : ''}
                           {r.capsule_zone ? ` · ${r.capsule_zone === 'quiet' ? 'тихая зона' : 'обычная'}` : ''}
                         </p>
-                        <p className="text-xs text-gray-500">Вместимость: {r.capacity}</p>
+                        <p className="text-xs text-gray-400">Вместимость: {r.capacity}</p>
                         {r.equipment && r.type === RESOURCE_TYPES.MEETING_ROOM && (
                           <ul className="flex flex-wrap gap-1">
                             {Object.entries(r.equipment)
@@ -462,7 +463,7 @@ export default function BookingCatalogPage() {
                               .map(([key]) => (
                                 <li
                                   key={key}
-                                  className="rounded bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-700"
+                                  className="rounded border border-gray-600 bg-gray-700 px-2 py-0.5 text-[10px] font-medium text-gray-200"
                                 >
                                   {RESOURCE_EQUIPMENT_LABELS[key as keyof typeof RESOURCE_EQUIPMENT_LABELS] ?? key}
                                 </li>
@@ -470,20 +471,20 @@ export default function BookingCatalogPage() {
                           </ul>
                         )}
                         {whenFree && r.status === BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE && (
-                          <p className="text-xs text-amber-800">Освободится: {whenFree}</p>
+                          <p className="text-xs text-amber-300">Освободится: {whenFree}</p>
                         )}
                         {r.status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED && r.reason && (
-                          <p className="text-xs text-slate-700">Причина блокировки: {r.reason}</p>
+                          <p className="text-xs text-slate-300">Причина блокировки: {r.reason}</p>
                         )}
                         {r.is_hot_desk && r.type === RESOURCE_TYPES.DESK && (
-                          <span className="text-xs font-medium text-blue-700">Hot desk</span>
+                          <span className="text-xs font-medium text-blue-300">Hot desk</span>
                         )}
                         <div className="mt-auto pt-2">
                           {r.status === BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED ? (
                             <button
                               type="button"
                               disabled
-                              className="inline-flex w-full justify-center rounded-lg bg-gray-200 px-3 py-2 text-sm font-medium text-gray-500 cursor-not-allowed"
+                              className="inline-flex w-full cursor-not-allowed justify-center rounded-lg bg-gray-700 px-3 py-2 text-sm font-medium text-gray-400"
                             >
                               Занят
                             </button>
@@ -491,7 +492,7 @@ export default function BookingCatalogPage() {
                             <button
                               type="button"
                               disabled
-                              className="inline-flex w-full justify-center rounded-lg bg-slate-200 px-3 py-2 text-sm font-medium text-slate-600 cursor-not-allowed"
+                              className="inline-flex w-full cursor-not-allowed justify-center rounded-lg bg-slate-700 px-3 py-2 text-sm font-medium text-slate-300"
                             >
                               Заблокирован
                             </button>
@@ -499,7 +500,7 @@ export default function BookingCatalogPage() {
                             <button
                               type="button"
                               onClick={() => setSelectedResource(r)}
-                              className="inline-flex w-full justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="inline-flex w-full justify-center rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             >
                               Забронировать
                             </button>
@@ -519,18 +520,18 @@ export default function BookingCatalogPage() {
                 type="button"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm disabled:opacity-40"
+                className="rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-300 disabled:opacity-40"
               >
                 Назад
               </button>
-              <span className="self-center text-sm text-gray-600">
+              <span className="self-center text-sm text-gray-400">
                 {page} / {totalPages}
               </span>
               <button
                 type="button"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm disabled:opacity-40"
+                className="rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-300 disabled:opacity-40"
               >
                 Вперёд
               </button>

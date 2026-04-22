@@ -121,8 +121,8 @@ export type ServiceRequestStatus =
 export const LEAVE_TYPES = {
   VACATION: 'vacation',
   DAY_OFF: 'day_off',
-  SICK_LEAVE: 'sick_leave',
   SICK: 'sick_leave',
+  SICK_LEAVE: 'sick_leave',
   REMOTE: 'remote',
 } as const;
 
