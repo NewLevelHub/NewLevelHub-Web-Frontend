@@ -8,13 +8,17 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragStartEvent,
   type DragCancelEvent,
+  type DragOverEvent,
   DragOverlay,
   closestCenter,
+  pointerWithin,
 } from '@dnd-kit/core';
 import {
   SortableContext,
   horizontalListSortingStrategy,
+  verticalListSortingStrategy,
   useSortable,
   arrayMove,
   sortableKeyboardCoordinates,
@@ -36,6 +40,7 @@ import {
   Paperclip,
   Calendar,
   User,
+  Archive,
 } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
@@ -117,29 +122,36 @@ interface TaskCardProps {
 function TaskCard({ task, onClick }: TaskCardProps) {
   const overdue = task.deadline ? isOverdue(task.deadline) : false;
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onClick();
-    }
-  };
-
   return (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={handleKeyDown}
       aria-label={`Задача: ${task.title}`}
       className={cn(
-        'group rounded-lg border border-gray-700 bg-gray-800 px-3 py-2.5 cursor-pointer',
+        'group relative rounded-lg border border-gray-700 bg-gray-800 px-3 py-2.5',
         'hover:border-gray-600 hover:bg-gray-750 transition-colors',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
         'space-y-2',
       )}
     >
+      {/* Edit button — visible on hover */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
+        className={cn(
+          'absolute top-2 right-2 z-10',
+          'p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity',
+          'text-gray-500 hover:text-gray-200 hover:bg-gray-700',
+          'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:opacity-100',
+        )}
+        aria-label={`Редактировать задачу: ${task.title}`}
+      >
+        <Pencil size={12} />
+      </button>
+
       {/* Title */}
-      <p className="text-sm text-white leading-snug line-clamp-2">{task.title}</p>
+      <p className="text-sm text-white leading-snug line-clamp-2 pr-6">{task.title}</p>
 
       {/* Priority badge */}
       <span
@@ -186,6 +198,40 @@ function TaskCard({ task, onClick }: TaskCardProps) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Sortable Task Card ───────────────────────────────────────────────────────
+
+interface SortableTaskCardProps {
+  task: CrmTask;
+  onTaskClick: (taskId: number) => void;
+}
+
+function SortableTaskCard({ task, onTaskClick }: SortableTaskCardProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: `task-${task.id}`,
+    data: { type: 'task', task },
+  });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={cn(
+        isDragging && 'opacity-40',
+        'cursor-grab active:cursor-grabbing',
+      )}
+    >
+      <TaskCard task={task} onClick={() => onTaskClick(task.id)} />
     </div>
   );
 }
@@ -447,7 +493,7 @@ function CreateTaskModal({ boardId, columnId, onClose }: CreateTaskModalProps) {
 
           {/* Error */}
           {mutation.isError && (
-            <p className="text-sm text-red-400">Не удалось создать задачу.</p>
+            <p className="text-sm text-red-400">Превышен WIP-лимит колонки.</p>
           )}
         </form>
       </div>
@@ -515,6 +561,20 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'task', taskId] });
     },
   });
+
+  const archiveMutation = useMutation({
+    mutationFn: async () => {
+      await apiClient.post(API.crm.taskArchive(taskId));
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+      onClose();
+    },
+  });
+
+  const handleArchive = () => {
+    archiveMutation.mutate();
+  };
 
   const assigneeMutation = useMutation({
     mutationFn: async (newAssigneeId: number | null) => {
@@ -749,6 +809,26 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
               {patchMutation.isError && (
                 <p className="text-xs text-red-400">Не удалось сохранить изменения.</p>
               )}
+
+              {/* Archive */}
+              <div className="pt-2 border-t border-gray-800">
+                {archiveMutation.isError && (
+                  <p className="text-xs text-red-400 mb-2">Не удалось архивировать задачу.</p>
+                )}
+                <button
+                  type="button"
+                  onClick={handleArchive}
+                  disabled={archiveMutation.isPending}
+                  className={cn(
+                    'flex items-center gap-1.5 text-sm transition-colors',
+                    'text-red-400 hover:text-red-300',
+                    'disabled:opacity-50 disabled:cursor-not-allowed',
+                  )}
+                >
+                  <Archive size={14} />
+                  {archiveMutation.isPending ? 'Архивирование...' : 'Архивировать'}
+                </button>
+              </div>
             </>
           )}
         </div>
@@ -1012,7 +1092,7 @@ function EditColumnModal({ boardId, column, onClose }: EditColumnModalProps) {
 
           <div className="space-y-1.5">
             <label htmlFor="edit-column-position" className="block text-sm font-medium text-gray-300">
-              Позиция <span className="text-red-400">*</span>
+              Позиция
             </label>
             <input
               id="edit-column-position"
@@ -1020,7 +1100,6 @@ function EditColumnModal({ boardId, column, onClose }: EditColumnModalProps) {
               min={1}
               value={position}
               onChange={(e) => setPosition(e.target.value)}
-              required
               className={cn(
                 'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500',
                 'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
@@ -1320,25 +1399,30 @@ function KanbanColumn({
         </div>
 
         {/* Tasks area */}
-        <div className="flex flex-col flex-1 px-3 py-3 gap-2 min-h-[200px]">
-          {tasks.length === 0 ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8 text-center">
-              <Inbox size={20} className="text-gray-600" />
-              <p className="text-xs text-gray-600">Нет задач</p>
-            </div>
-          ) : (
-            tasks
-              .slice()
-              .sort((a, b) => a.order - b.order)
-              .map((task) => (
-                <TaskCard
+        <SortableContext
+          items={tasks.map(t => `task-${t.id}`)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div
+            className="flex flex-col flex-1 px-3 py-3 gap-2 min-h-[200px]"
+            data-column-id={column.id}
+          >
+            {tasks.length === 0 ? (
+              <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8 text-center">
+                <Inbox size={20} className="text-gray-600" />
+                <p className="text-xs text-gray-600">Нет задач</p>
+              </div>
+            ) : (
+              tasks.map((task) => (
+                <SortableTaskCard
                   key={task.id}
                   task={task}
-                  onClick={() => onTaskClick(task.id)}
+                  onTaskClick={onTaskClick}
                 />
               ))
-          )}
-        </div>
+            )}
+          </div>
+        </SortableContext>
 
         {/* Add task button */}
         {!isDragOverlay && (
@@ -1557,12 +1641,21 @@ export default function BoardDetailPage() {
 
   const queryClient = useQueryClient();
   const [localColumns, setLocalColumns] = useState<CrmColumn[]>([]);
+  const [localTasksByColumn, setLocalTasksByColumn] = useState<Record<number, CrmTask[]>>({});
   const [activeColumn, setActiveColumn] = useState<CrmColumn | null>(null);
+  const [activeTask, setActiveTask] = useState<CrmTask | null>(null);
+  const [activeDragType, setActiveDragType] = useState<'column' | 'task' | null>(null);
   const [showAddColumn, setShowAddColumn] = useState(false);
   const [reorderError, setReorderError] = useState(false);
+  const [taskMoveError, setTaskMoveError] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   const reorderErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const taskMoveErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const snapshotRef = useRef<CrmColumn[]>([]);
+  const taskSnapshotRef = useRef<Record<number, CrmTask[]>>({});
+  // Refs to avoid stale closures in DnD event handlers
+  const activeDragTypeRef = useRef<'column' | 'task' | null>(null);
+  const localTasksByColumnRef = useRef<Record<number, CrmTask[]>>({});
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -1615,17 +1708,24 @@ export default function BoardDetailPage() {
 
   const tasks = tasksData ?? [];
 
-  // Group tasks by column_id
-  const tasksByColumn = tasks.reduce<Record<number, CrmTask[]>>((acc, task) => {
-    const col = task.column_id;
-    if (!acc[col]) acc[col] = [];
-    acc[col].push(task);
-    return acc;
-  }, {});
-
   useEffect(() => {
     if (columns) setLocalColumns([...columns].sort((a, b) => a.order - b.order));
   }, [columns]);
+
+  useEffect(() => {
+    if (!tasksData) return;
+    const grouped = tasksData.reduce<Record<number, CrmTask[]>>((acc, task) => {
+      const col = task.column_id;
+      if (!acc[col]) acc[col] = [];
+      acc[col].push(task);
+      return acc;
+    }, {});
+    for (const col of Object.keys(grouped)) {
+      grouped[Number(col)].sort((a, b) => a.position - b.position || a.id - b.id);
+    }
+    localTasksByColumnRef.current = grouped;
+    setLocalTasksByColumn(grouped);
+  }, [tasksData]);
 
   const reorderMutation = useMutation({
     mutationFn: (columnIds: number[]) =>
@@ -1642,37 +1742,257 @@ export default function BoardDetailPage() {
     },
   });
 
-  const handleDragStart = (event: { active: { id: string | number } }) => {
-    const col = localColumns.find(c => c.id === event.active.id);
-    setActiveColumn(col ?? null);
-    snapshotRef.current = [...localColumns];
+  const taskMoveMutation = useMutation({
+    mutationFn: ({ taskId, columnId, position }: { taskId: number; columnId: number; position: number }) =>
+      apiClient.post(API.crm.taskMove(taskId), { column_id: columnId, position }),
+    onError: (error: unknown) => {
+      // Rollback optimistic update
+      localTasksByColumnRef.current = taskSnapshotRef.current;
+      setLocalTasksByColumn(taskSnapshotRef.current);
+      // Check for WIP limit error (HTTP 400)
+      let message = 'Не удалось переместить задачу.';
+      const axiosError = error as { response?: { status?: number; data?: unknown } };
+      if (axiosError.response?.status === 400) {
+        const data = axiosError.response.data as Record<string, unknown> | undefined;
+        const raw = data?.detail ?? (data?.non_field_errors as unknown[])?.[0];
+        const detail = typeof raw === 'string' ? raw : JSON.stringify(raw ?? '');
+        if (detail.toLowerCase().includes('wip')) {
+          message = 'Превышен WIP-лимит колонки.';
+        }
+      }
+      setTaskMoveError(message);
+      if (taskMoveErrorTimerRef.current) clearTimeout(taskMoveErrorTimerRef.current);
+      taskMoveErrorTimerRef.current = setTimeout(() => setTaskMoveError(null), 4000);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+    },
+  });
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const id = String(event.active.id);
+    if (id.startsWith('task-')) {
+      const taskId = Number(id.replace('task-', ''));
+      const task = tasks.find(t => t.id === taskId) ?? null;
+      setActiveTask(task);
+      setActiveDragType('task');
+      activeDragTypeRef.current = 'task';
+      taskSnapshotRef.current = structuredClone(localTasksByColumnRef.current);
+    } else {
+      const col = localColumns.find(c => c.id === event.active.id);
+      setActiveColumn(col ?? null);
+      setActiveDragType('column');
+      activeDragTypeRef.current = 'column';
+      snapshotRef.current = [...localColumns];
+    }
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    if (activeDragTypeRef.current !== 'task') return;
+
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = String(active.id);
+    const overId = over.id;
+
+    if (!activeId.startsWith('task-')) return;
+
+    const activeTaskId = Number(activeId.replace('task-', ''));
+
+    // Always read from the ref — it is updated synchronously below so
+    // consecutive onDragOver calls within the same React render cycle see the
+    // correct intermediate state.
+    const currentTasksByColumn = localTasksByColumnRef.current;
+
+    // Find which column the task currently lives in (after optimistic moves)
+    let sourceColId: number | undefined;
+    for (const [colId, colTasks] of Object.entries(currentTasksByColumn)) {
+      if (colTasks.some(t => t.id === activeTaskId)) {
+        sourceColId = Number(colId);
+        break;
+      }
+    }
+    if (sourceColId === undefined) return;
+
+    // Determine the target column id.
+    // over.id may be a task id (string "task-X") or a column id (number).
+    let targetColId: number;
+    if (typeof overId === 'string' && overId.startsWith('task-')) {
+      const overTaskId = Number(overId.replace('task-', ''));
+      let overTaskColId: number | undefined;
+      for (const [colId, colTasks] of Object.entries(currentTasksByColumn)) {
+        if (colTasks.some(t => t.id === overTaskId)) {
+          overTaskColId = Number(colId);
+          break;
+        }
+      }
+      targetColId = overTaskColId ?? sourceColId;
+    } else if (typeof overId === 'number') {
+      // Dragged over a column's empty area directly.
+      targetColId = overId;
+    } else {
+      return;
+    }
+
+    if (sourceColId === targetColId) {
+      // Same-column reorder: apply optimistic arrayMove so the list reflects
+      // the in-progress position during the drag.
+      if (typeof overId === 'string' && overId.startsWith('task-')) {
+        const overTaskId = Number(overId.replace('task-', ''));
+        const list = [...(currentTasksByColumn[sourceColId] ?? [])];
+        const fromIdx = list.findIndex(t => t.id === activeTaskId);
+        const toIdx = list.findIndex(t => t.id === overTaskId);
+        if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;
+        const reordered = arrayMove(list, fromIdx, toIdx);
+        // Update ref synchronously so the next onDragOver call reads the
+        // already-moved position rather than the stale one.
+        localTasksByColumnRef.current = {
+          ...currentTasksByColumn,
+          [sourceColId]: reordered,
+        };
+        setLocalTasksByColumn(localTasksByColumnRef.current);
+      }
+      return;
+    }
+
+    // Move task between columns optimistically.
+    const sourceList = [...(currentTasksByColumn[sourceColId] ?? [])];
+    const targetList = [...(currentTasksByColumn[targetColId] ?? [])];
+    const taskIndex = sourceList.findIndex(t => t.id === activeTaskId);
+    if (taskIndex === -1) return;
+    const [movedTask] = sourceList.splice(taskIndex, 1);
+    const updatedTask = { ...movedTask, column_id: targetColId };
+
+    // Insert at the position of the over-task inside the target column, or
+    // append to the end when dropping on the column container itself.
+    if (typeof overId === 'string' && overId.startsWith('task-')) {
+      const overTaskId = Number(overId.replace('task-', ''));
+      const overIdx = targetList.findIndex(t => t.id === overTaskId);
+      if (overIdx !== -1) {
+        targetList.splice(overIdx, 0, updatedTask);
+      } else {
+        targetList.push(updatedTask);
+      }
+    } else {
+      targetList.push(updatedTask);
+    }
+
+    // Update ref synchronously before scheduling the state update.
+    localTasksByColumnRef.current = {
+      ...currentTasksByColumn,
+      [sourceColId]: sourceList,
+      [targetColId]: targetList,
+    };
+    setLocalTasksByColumn(localTasksByColumnRef.current);
   };
 
   const handleDragCancel = (_event: DragCancelEvent) => {
+    const dragType = activeDragTypeRef.current;
     setActiveColumn(null);
-    setLocalColumns(snapshotRef.current);
+    setActiveTask(null);
+    setActiveDragType(null);
+    activeDragTypeRef.current = null;
+    if (dragType === 'column') {
+      setLocalColumns(snapshotRef.current);
+    } else if (dragType === 'task') {
+      localTasksByColumnRef.current = taskSnapshotRef.current;
+      setLocalTasksByColumn(taskSnapshotRef.current);
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    // Read the type from the ref before clearing — state may still be the
+    // pre-update value due to async setState batching.
+    const dragType = activeDragTypeRef.current;
     setActiveColumn(null);
+    setActiveTask(null);
+    setActiveDragType(null);
+    activeDragTypeRef.current = null;
 
-    if (!over) {
-      setLocalColumns(snapshotRef.current);
+    if (dragType === 'column') {
+      if (!over) {
+        setLocalColumns(snapshotRef.current);
+        return;
+      }
+      if (active.id === over.id) return;
+
+      const oldIndex = localColumns.findIndex(c => c.id === active.id);
+      const newIndex = localColumns.findIndex(c => c.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      const reordered = arrayMove(localColumns, oldIndex, newIndex).map((col, idx) => ({
+        ...col,
+        order: idx + 1,
+      }));
+      setLocalColumns(reordered);
+      reorderMutation.mutate(reordered.map(c => c.id));
       return;
     }
 
-    if (active.id === over.id) return;
+    if (dragType === 'task') {
+      if (!over) {
+        setLocalTasksByColumn(taskSnapshotRef.current);
+        return;
+      }
 
-    const oldIndex = localColumns.findIndex(c => c.id === active.id);
-    const newIndex = localColumns.findIndex(c => c.id === over.id);
-    const reordered = arrayMove(localColumns, oldIndex, newIndex).map((col, idx) => ({
-      ...col,
-      order: idx + 1,
-    }));
+      const activeId = active.id as string;
 
-    setLocalColumns(reordered);
-    reorderMutation.mutate(reordered.map(c => c.id));
+      if (!activeId.startsWith('task-')) return;
+
+      const activeTaskId = Number(activeId.replace('task-', ''));
+
+      // The ref is always kept in sync synchronously inside handleDragOver,
+      // so it reflects the final optimistic position at drop time.
+      const finalTasksByColumn = localTasksByColumnRef.current;
+
+      // Find the task's final column and 1-based index after all optimistic moves.
+      let targetColId: number | null = null;
+      let taskOrderInTarget = 1;
+
+      for (const [colIdStr, colTasks] of Object.entries(finalTasksByColumn)) {
+        const idx = colTasks.findIndex(t => t.id === activeTaskId);
+        if (idx !== -1) {
+          targetColId = Number(colIdStr);
+          taskOrderInTarget = idx + 1;
+          break;
+        }
+      }
+
+      if (targetColId === null) {
+        setLocalTasksByColumn(taskSnapshotRef.current);
+        return;
+      }
+
+      // Find the original column and visual index from the snapshot.
+      // We compare visual indices (not the backend `position` field) because
+      // local task objects keep their stale backend position until the next
+      // query invalidation; comparing against that value produces false
+      // "no-change" results after any prior move.
+      let originalColId: number | null = null;
+      let originalVisualIndex = -1;
+      for (const [colIdStr, colTasks] of Object.entries(taskSnapshotRef.current)) {
+        const idx = colTasks.findIndex(t => t.id === activeTaskId);
+        if (idx !== -1) {
+          originalColId = Number(colIdStr);
+          originalVisualIndex = idx;
+          break;
+        }
+      }
+
+      const hasColumnChanged = originalColId !== targetColId;
+      // taskOrderInTarget is 1-based; originalVisualIndex is 0-based.
+      const hasPositionChanged = originalVisualIndex !== taskOrderInTarget - 1;
+
+      if (!hasColumnChanged && !hasPositionChanged) return;
+
+      taskMoveMutation.mutate({
+        taskId: activeTaskId,
+        columnId: targetColId,
+        position: taskOrderInTarget,
+      });
+    }
   };
 
   const isLoading = isBoardLoading || isColumnsLoading;
@@ -1741,6 +2061,18 @@ export default function BoardDetailPage() {
         </div>
       )}
 
+      {/* Task move error banner */}
+      {taskMoveError && (
+        <div
+          className="flex items-center gap-2 rounded-lg border border-orange-800 bg-orange-900/30 px-4 py-3 text-sm text-orange-300"
+          role="alert"
+          aria-live="assertive"
+        >
+          <AlertCircle size={16} className="shrink-0" />
+          <span>{taskMoveError}</span>
+        </div>
+      )}
+
       {/* Kanban board */}
       {localColumns.length === 0 && !showAddColumn ? (
         <div className="flex flex-col items-center justify-center py-24 gap-3">
@@ -1761,8 +2093,9 @@ export default function BoardDetailPage() {
       ) : (
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCenter}
+          collisionDetection={pointerWithin}
           onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
           onDragCancel={handleDragCancel}
         >
@@ -1781,7 +2114,7 @@ export default function BoardDetailPage() {
                   column={column}
                   allColumns={localColumns}
                   boardId={boardId}
-                  tasks={isTasksLoading ? [] : (tasksByColumn[column.id] ?? [])}
+                  tasks={isTasksLoading ? [] : (localTasksByColumn[column.id] ?? [])}
                   onTaskClick={(taskId) => setSelectedTaskId(taskId)}
                 />
               ))}
@@ -1798,15 +2131,19 @@ export default function BoardDetailPage() {
             </div>
           </SortableContext>
           <DragOverlay>
-            {activeColumn ? (
+            {activeDragType === 'column' && activeColumn ? (
               <KanbanColumn
                 column={activeColumn}
                 allColumns={localColumns}
                 boardId={boardId}
-                tasks={tasksByColumn[activeColumn.id] ?? []}
+                tasks={localTasksByColumn[activeColumn.id] ?? []}
                 onTaskClick={() => undefined}
                 isDragOverlay
               />
+            ) : activeDragType === 'task' && activeTask ? (
+              <div className="rotate-2 opacity-90 shadow-2xl">
+                <TaskCard task={activeTask} onClick={() => undefined} />
+              </div>
             ) : null}
           </DragOverlay>
         </DndContext>
