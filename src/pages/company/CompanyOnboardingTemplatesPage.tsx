@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Save, ListChecks, Pencil } from 'lucide-react';
+import { Plus, Save, ListChecks, Pencil, Trash2 } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
@@ -86,6 +86,26 @@ export default function CompanyOnboardingTemplatesPage() {
     onError: (mutationError: unknown) => {
       setSuccess(null);
       setError(getApiErrorMessage(mutationError, 'Не удалось сохранить шаблон онбординга.'));
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (templateId: number) => {
+      await apiClient.delete(API.onboarding.template(templateId));
+      return 'Шаблон удалён.';
+    },
+    onSuccess: async (message, templateId) => {
+      setError(null);
+      setSuccess(message);
+      if (editingTemplateId === templateId) {
+        setEditingTemplateId(null);
+        setForm(getInitialState());
+      }
+      await queryClient.invalidateQueries({ queryKey: ['onboarding-templates'] });
+    },
+    onError: (mutationError: unknown) => {
+      setSuccess(null);
+      setError(getApiErrorMessage(mutationError, 'Не удалось удалить шаблон онбординга.'));
     },
   });
 
@@ -263,14 +283,33 @@ export default function CompanyOnboardingTemplatesPage() {
                     {activeTemplate?.id === template.id ? ' (используется по умолчанию)' : ''}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => startEditing(template)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-800"
-                >
-                  <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                  Изменить
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => startEditing(template)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-800"
+                  >
+                    <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                    Изменить
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deleteMutation.isPending}
+                    onClick={() => {
+                      const isConfirmed = window.confirm(
+                        `Удалить шаблон "${template.name}"? Это действие нельзя отменить.`,
+                      );
+                      if (!isConfirmed) return;
+                      setError(null);
+                      setSuccess(null);
+                      deleteMutation.mutate(template.id);
+                    }}
+                    className="inline-flex items-center gap-1 rounded-lg border border-red-800 bg-red-900/30 px-3 py-1.5 text-xs text-red-300 hover:bg-red-900/50 disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    Удалить
+                  </button>
+                </div>
               </div>
             </div>
           ))}
