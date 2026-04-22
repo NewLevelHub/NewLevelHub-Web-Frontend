@@ -38,6 +38,7 @@ const STATUS_BADGE_CLASS: Record<LeaveStatus, string> = {
   [LEAVE_STATUSES.APPROVED]: 'bg-emerald-900/60 text-emerald-300',
   [LEAVE_STATUSES.REJECTED]: 'bg-rose-900/60 text-rose-300',
 };
+const LIVE_REFETCH_MS = 15000;
 
 export default function LeaveRequestListPage() {
   const { user } = useAuth();
@@ -52,18 +53,23 @@ export default function LeaveRequestListPage() {
     const params: Record<string, string> = {};
     if (statusFilter) params.status = statusFilter;
     if (typeFilter) params.leave_type = typeFilter;
+    params.year = String(year);
     return params;
-  }, [statusFilter, typeFilter]);
+  }, [statusFilter, typeFilter, year]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['leave-requests', queryParams],
     queryFn: () =>
       apiClient.get<PaginatedResponse<LeaveRequest>>(API.leave.requests, { params: queryParams }).then(r => r.data),
+    refetchInterval: LIVE_REFETCH_MS,
+    refetchIntervalInBackground: true,
   });
 
   const { data: balance } = useQuery({
     queryKey: ['leave-balance', year],
     queryFn: () => apiClient.get<LeaveBalance>(API.leave.balance, { params: { year } }).then(r => r.data),
+    refetchInterval: LIVE_REFETCH_MS,
+    refetchIntervalInBackground: true,
   });
 
   const isAdmin = user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN;
@@ -71,6 +77,8 @@ export default function LeaveRequestListPage() {
     queryKey: ['leave-team-balance', year],
     queryFn: () => apiClient.get<TeamLeaveBalance[]>(API.leave.balanceTeam, { params: { year } }).then(r => r.data),
     enabled: isAdmin,
+    refetchInterval: LIVE_REFETCH_MS,
+    refetchIntervalInBackground: true,
   });
 
   useEffect(() => {
