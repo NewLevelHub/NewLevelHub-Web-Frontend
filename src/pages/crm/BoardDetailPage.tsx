@@ -493,7 +493,7 @@ function CreateTaskModal({ boardId, columnId, onClose }: CreateTaskModalProps) {
 
           {/* Error */}
           {mutation.isError && (
-            <p className="text-sm text-red-400">Не удалось создать задачу.</p>
+            <p className="text-sm text-red-400">Превышен WIP-лимит колонки.</p>
           )}
         </form>
       </div>
