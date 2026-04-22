@@ -150,6 +150,7 @@ export const router = createBrowserRouter([
           { path: '/building/map', element: <BuildingMapPage /> },
           { path: '/announcements', element: <AnnouncementListPage /> },
           { path: '/files', element: <FileBrowserPage /> },
+          { path: '/storage', element: <FileBrowserPage /> },
           { path: '/passes', element: <PassListPage /> },
           { path: '/passes/new', element: <PassCreatePage /> },
           { path: '/service-requests', element: <ServiceRequestListPage /> },

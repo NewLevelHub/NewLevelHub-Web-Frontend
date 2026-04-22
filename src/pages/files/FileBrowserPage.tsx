@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
+import { getApiErrorMessage } from '@/shared/lib/apiError';
 import type {
   PaginatedResponse,
   StorageFile,
@@ -10,6 +11,7 @@ import type {
 } from '@/shared/types';
 
 type StorageScope = 'personal' | 'company';
+const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 
 function formatFileSize(size: number) {
   if (size <= 0) return '0 B';
@@ -27,8 +29,17 @@ export default function FileBrowserPage() {
   const queryClient = useQueryClient();
   const [scope, setScope] = useState<StorageScope>('personal');
   const [newFolderName, setNewFolderName] = useState('');
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [trail, setTrail] = useState<StorageFolder[]>([]);
   const currentFolder = trail.length > 0 ? trail[trail.length - 1] : null;
+
+  const refreshStorageData = () => {
+    queryClient.invalidateQueries({ queryKey: ['storage', 'folders', scope, 'root'] });
+    if (currentFolder) {
+      queryClient.invalidateQueries({ queryKey: ['storage', 'folder', currentFolder.id] });
+    }
+  };
 
   const rootFoldersQuery = useQuery({
     queryKey: ['storage', 'folders', scope, 'root'],
@@ -63,10 +74,7 @@ export default function FileBrowserPage() {
     },
     onSuccess: () => {
       setNewFolderName('');
-      queryClient.invalidateQueries({ queryKey: ['storage', 'folders', scope, 'root'] });
-      if (currentFolder) {
-        queryClient.invalidateQueries({ queryKey: ['storage', 'folder', currentFolder.id] });
-      }
+      refreshStorageData();
     },
   });
 
@@ -75,10 +83,7 @@ export default function FileBrowserPage() {
       await apiClient.patch(API.storage.folder(String(folderId)), { name });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['storage', 'folders', scope, 'root'] });
-      if (currentFolder) {
-        queryClient.invalidateQueries({ queryKey: ['storage', 'folder', currentFolder.id] });
-      }
+      refreshStorageData();
     },
   });
 
@@ -90,11 +95,67 @@ export default function FileBrowserPage() {
       if (currentFolder?.id === folderId) {
         setTrail([]);
       } else {
-        queryClient.invalidateQueries({ queryKey: ['storage', 'folders', scope, 'root'] });
-        if (currentFolder) {
-          queryClient.invalidateQueries({ queryKey: ['storage', 'folder', currentFolder.id] });
-        }
+        refreshStorageData();
       }
+    },
+  });
+
+  const uploadFileMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const form = new FormData();
+      form.append('name', file.name);
+      form.append('file', file);
+      if (currentFolder) {
+        form.append('folder_id', String(currentFolder.id));
+      }
+      await apiClient.post(API.storage.files, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    },
+    onSuccess: () => {
+      setUploadFile(null);
+      setUploadError(null);
+      refreshStorageData();
+    },
+    onError: (error) => {
+      setUploadError(getApiErrorMessage(error, 'Не удалось загрузить файл'));
+    },
+  });
+
+  const renameFileMutation = useMutation({
+    mutationFn: async ({ fileId, name }: { fileId: number; name: string }) => {
+      await apiClient.patch(API.storage.file(String(fileId)), { name });
+    },
+    onSuccess: () => {
+      refreshStorageData();
+    },
+  });
+
+  const deleteFileMutation = useMutation({
+    mutationFn: async (fileId: number) => {
+      await apiClient.delete(API.storage.file(String(fileId)));
+    },
+    onSuccess: () => {
+      refreshStorageData();
+    },
+  });
+
+  const downloadFileMutation = useMutation({
+    mutationFn: async (file: StorageFile) => {
+      const response = await apiClient.get(API.storage.fileDownload(String(file.id)), {
+        responseType: 'blob',
+      });
+      const blob = new Blob([response.data], {
+        type: file.mime_type ?? file.content_type ?? 'application/octet-stream',
+      });
+      const objectUrl = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = file.name;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(objectUrl);
     },
   });
 
@@ -131,6 +192,39 @@ export default function FileBrowserPage() {
     const ok = window.confirm(`Удалить папку "${folder.name}" со всем содержимым?`);
     if (!ok) return;
     deleteFolderMutation.mutate(folder.id);
+  };
+
+  const handleFileRename = (file: StorageFile) => {
+    const nextName = window.prompt('Новое имя файла', file.name);
+    if (!nextName || !nextName.trim() || nextName.trim() === file.name) return;
+    renameFileMutation.mutate({ fileId: file.id, name: nextName.trim() });
+  };
+
+  const handleFileDelete = (file: StorageFile) => {
+    const ok = window.confirm(`Удалить файл "${file.name}"?`);
+    if (!ok) return;
+    deleteFileMutation.mutate(file.id);
+  };
+
+  const handleFileUpload = () => {
+    if (!uploadFile) return;
+    setUploadError(null);
+    uploadFileMutation.mutate(uploadFile);
+  };
+
+  const handleUploadInputChange = (file: File | null) => {
+    if (!file) {
+      setUploadFile(null);
+      setUploadError(null);
+      return;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setUploadFile(null);
+      setUploadError('Файл превышает лимит 100 MB. Выберите файл меньшего размера.');
+      return;
+    }
+    setUploadError(null);
+    setUploadFile(file);
   };
 
   return (
@@ -202,6 +296,24 @@ export default function FileBrowserPage() {
         </button>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="file"
+          onChange={(e) => handleUploadInputChange(e.target.files?.[0] ?? null)}
+          className="w-full max-w-sm rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-300"
+        />
+        <button
+          type="button"
+          disabled={!uploadFile || uploadFileMutation.isPending}
+          onClick={handleFileUpload}
+          className="rounded-md bg-emerald-600 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Загрузить файл
+        </button>
+        <p className="text-xs text-slate-400">Максимальный размер файла: 100 MB</p>
+        {uploadError ? <p className="w-full text-xs text-rose-300">{uploadError}</p> : null}
+      </div>
+
       {isLoading ? <p className="text-sm text-slate-400">Загрузка...</p> : null}
       {isError ? (
         <p className="text-sm text-rose-300">Не удалось загрузить данные хранилища. Попробуйте обновить страницу.</p>
@@ -260,10 +372,35 @@ export default function FileBrowserPage() {
                 {files.map((file) => (
                   <li
                     key={file.id}
-                    className="flex items-center justify-between gap-2 rounded-md border border-slate-700 px-3 py-2 text-sm"
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-700 px-3 py-2 text-sm"
                   >
-                    <span className="truncate text-slate-200">{file.name}</span>
-                    <span className="shrink-0 text-slate-400">{formatFileSize(file.file_size)}</span>
+                    <div className="min-w-0">
+                      <span className="block truncate text-slate-200">{file.name}</span>
+                      <span className="text-xs text-slate-500">{formatFileSize(file.size ?? file.file_size)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => downloadFileMutation.mutate(file)}
+                        className="rounded border border-slate-600 px-2 py-1 text-slate-300"
+                      >
+                        Скачать
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleFileRename(file)}
+                        className="rounded border border-slate-600 px-2 py-1 text-slate-300"
+                      >
+                        Переименовать
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleFileDelete(file)}
+                        className="rounded border border-rose-800 px-2 py-1 text-rose-300"
+                      >
+                        Удалить
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
