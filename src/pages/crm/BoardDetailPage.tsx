@@ -569,7 +569,7 @@ function ChecklistItemRow({ item, onToggle, onDelete, onUpdateText, isPending }:
         <span
           onDoubleClick={() => setEditing(true)}
           className={cn(
-            'flex-1 text-sm cursor-default select-none',
+            'flex-1 text-sm cursor-default select-none break-all',
             item.is_completed ? 'line-through text-gray-500' : 'text-gray-200',
           )}
           title="Двойной клик для редактирования"
