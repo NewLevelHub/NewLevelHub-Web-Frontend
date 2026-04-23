@@ -45,13 +45,14 @@ import {
   ChevronRight,
   ListChecks,
   Send,
+  Clock,
 } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { USER_ROLES } from '@/shared/config/constants';
-import type { CrmBoard, CrmColumn, CrmTask, CrmComment, CrmChecklist, CrmChecklistItem, CompanyMember, PaginatedResponse } from '@/shared/types';
+import type { CrmBoard, CrmColumn, CrmTask, CrmComment, CrmChecklist, CrmChecklistItem, CrmTaskHistory, CompanyMember, PaginatedResponse } from '@/shared/types';
 
 // ─── Priority helpers ─────────────────────────────────────────────────────────
 
@@ -1310,6 +1311,167 @@ function CommentSection({ taskId }: CommentSectionProps) {
   );
 }
 
+// ─── History Section ──────────────────────────────────────────────────────────
+
+const ACTION_LABELS: Record<string, string> = {
+  updated_title: 'изменил(а) название',
+  updated_description: 'изменил(а) описание',
+  updated_priority: 'изменил(а) приоритет',
+  updated_deadline: 'изменил(а) дедлайн',
+  updated_assignee: 'изменил(а) исполнителя',
+  updated_column: 'переместил(а) в колонку',
+  label_added: 'добавил(а) метку',
+  label_removed: 'удалил(а) метку',
+  archived: 'архивировал(а) задачу',
+  moved: 'переместил(а) задачу',
+};
+
+function formatHistoryDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString('ru-RU', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+interface HistorySectionProps {
+  taskId: number;
+}
+
+function HistorySection({ taskId }: HistorySectionProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const { data: history, isLoading, isError } = useQuery({
+    queryKey: ['crm', 'task', taskId, 'history'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<CrmTaskHistory[] | { results: CrmTaskHistory[] }>(
+        API.crm.taskHistory(taskId),
+      );
+      return Array.isArray(data) ? data : data.results;
+    },
+    enabled: isOpen,
+  });
+
+  return (
+    <div className="space-y-3 pt-2 border-t border-gray-800">
+      {/* Collapsible header */}
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={cn(
+          'flex items-center gap-2 w-full text-left',
+          'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded',
+        )}
+        aria-expanded={isOpen}
+      >
+        <Clock size={14} className="text-gray-500 shrink-0" />
+        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide flex-1">
+          История изменений
+        </h3>
+        {isOpen ? (
+          <ChevronDown size={14} className="text-gray-500 shrink-0" />
+        ) : (
+          <ChevronRight size={14} className="text-gray-500 shrink-0" />
+        )}
+      </button>
+
+      {isOpen && (
+        <div>
+          {/* Loading skeleton */}
+          {isLoading && (
+            <div className="space-y-4 animate-pulse pl-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex gap-3 items-start">
+                  <div className="w-6 h-6 rounded-full bg-gray-700 shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3 w-48 rounded bg-gray-700" />
+                    <div className="h-3 w-32 rounded bg-gray-700" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {isError && (
+            <p className="text-xs text-red-400 pl-3">Не удалось загрузить историю изменений.</p>
+          )}
+
+          {!isLoading && !isError && history && history.length === 0 && (
+            <p className="text-xs text-gray-600 pl-3">История изменений пуста.</p>
+          )}
+
+          {!isLoading && !isError && history && history.length > 0 && (
+            <ol className="relative border-l border-gray-700 ml-3 space-y-4">
+              {history.map((entry) => {
+                const actionLabel = ACTION_LABELS[entry.action] ?? entry.action;
+                const initials = entry.user.full_name
+                  .split(' ')
+                  .slice(0, 2)
+                  .map((w) => w[0] ?? '')
+                  .join('')
+                  .toUpperCase();
+
+                return (
+                  <li key={entry.id} className="pl-4 relative">
+                    {/* Timeline dot */}
+                    <span
+                      className="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-gray-600 border border-gray-500 shrink-0"
+                      aria-hidden="true"
+                    />
+
+                    <div className="flex items-start gap-2">
+                      {/* User avatar */}
+                      {entry.user.avatar ? (
+                        <img
+                          src={entry.user.avatar}
+                          alt={entry.user.full_name}
+                          className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5"
+                        />
+                      ) : (
+                        <span
+                          className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-medium flex items-center justify-center shrink-0 mt-0.5"
+                          aria-label={entry.user.full_name}
+                        >
+                          {initials}
+                        </span>
+                      )}
+
+                      <div className="min-w-0 flex-1">
+                        {/* Action line */}
+                        <p className="text-xs text-gray-300 leading-snug">
+                          <span className="font-medium text-gray-200">{entry.user.full_name}</span>
+                          {' '}
+                          <span>{actionLabel}</span>
+                          <span className="text-gray-600 ml-1.5">{formatHistoryDate(entry.created_at)}</span>
+                        </p>
+
+                        {/* Value change */}
+                        {entry.old_value && entry.new_value && (
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            «{entry.old_value}»{' '}
+                            <span className="text-gray-600">→</span>{' '}
+                            «{entry.new_value}»
+                          </p>
+                        )}
+                        {!entry.old_value && entry.new_value && (
+                          <p className="text-xs text-gray-500 mt-0.5">«{entry.new_value}»</p>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Task Detail Modal ────────────────────────────────────────────────────────
 
 interface TaskDetailModalProps {
@@ -1615,6 +1777,9 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
 
               {/* Comments */}
               <CommentSection taskId={taskId} />
+
+              {/* History */}
+              <HistorySection taskId={taskId} />
 
               {/* Archive */}
               <div className="pt-2 border-t border-gray-800">
