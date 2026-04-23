@@ -154,7 +154,6 @@ const guestNav: NavSection[] = [
     items: [
       { label: 'Бронирование', path: '/bookings/catalog', icon: Bookmark },
       { label: 'Карта здания', path: '/building/map', icon: Map },
-      { label: 'Мои файлы', path: '/storage', icon: FileText },
       { label: 'Объявления', path: '/announcements', icon: Megaphone },
       { label: 'Гостевые пропуска', path: '/passes', icon: ShieldCheck },
       { label: 'Сервисная заявка', path: '/service-requests', icon: Wrench },

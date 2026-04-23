@@ -2,12 +2,14 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
+import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import type {
   PaginatedResponse,
   StorageFile,
   StorageFolder,
   StorageFolderDetail,
+  StorageUsage,
 } from '@/shared/types';
 
 type StorageScope = 'personal' | 'company';
@@ -26,18 +28,28 @@ function formatFileSize(size: number) {
 }
 
 export default function FileBrowserPage() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [scope, setScope] = useState<StorageScope>('personal');
+  const [searchTerm, setSearchTerm] = useState('');
   const [newFolderName, setNewFolderName] = useState('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [trail, setTrail] = useState<StorageFolder[]>([]);
   const currentFolder = trail.length > 0 ? trail[trail.length - 1] : null;
+  const normalizedSearchTerm = searchTerm.trim();
+  const isSearching = normalizedSearchTerm.length > 0;
 
   const refreshStorageData = () => {
     queryClient.invalidateQueries({ queryKey: ['storage', 'folders', scope, 'root'] });
+    queryClient.invalidateQueries({ queryKey: ['storage', 'files-search'] });
+    queryClient.invalidateQueries({ queryKey: ['storage', 'usage'] });
     if (currentFolder) {
       queryClient.invalidateQueries({ queryKey: ['storage', 'folder', currentFolder.id] });
+    }
+    if (user?.company_id) {
+      queryClient.invalidateQueries({ queryKey: ['company-limits', String(user.company_id)] });
+      queryClient.invalidateQueries({ queryKey: ['company', String(user.company_id)] });
     }
   };
 
@@ -61,6 +73,29 @@ export default function FileBrowserPage() {
       return data;
     },
     enabled: currentFolder !== null,
+  });
+
+  const searchedFilesQuery = useQuery({
+    queryKey: ['storage', 'files-search', normalizedSearchTerm],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PaginatedResponse<StorageFile>>(API.storage.files, {
+        params: {
+          search: normalizedSearchTerm,
+          ordering: 'name',
+          page_size: 100,
+        },
+      });
+      return data;
+    },
+    enabled: isSearching,
+  });
+
+  const storageUsageQuery = useQuery({
+    queryKey: ['storage', 'usage'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<StorageUsage>(API.storage.usage);
+      return data;
+    },
   });
 
   const createFolderMutation = useMutation({
@@ -165,12 +200,13 @@ export default function FileBrowserPage() {
   }, [currentFolder, folderDetailQuery.data?.folders, rootFoldersQuery.data?.results]);
 
   const files = useMemo<StorageFile[]>(() => {
+    if (isSearching) return searchedFilesQuery.data?.results ?? [];
     if (!currentFolder) return [];
     return folderDetailQuery.data?.files ?? [];
-  }, [currentFolder, folderDetailQuery.data?.files]);
+  }, [currentFolder, folderDetailQuery.data?.files, isSearching, searchedFilesQuery.data?.results]);
 
-  const isLoading = rootFoldersQuery.isLoading || folderDetailQuery.isLoading;
-  const isError = rootFoldersQuery.isError || folderDetailQuery.isError;
+  const isLoading = rootFoldersQuery.isLoading || folderDetailQuery.isLoading || searchedFilesQuery.isLoading;
+  const isError = rootFoldersQuery.isError || folderDetailQuery.isError || searchedFilesQuery.isError;
 
   const openFolder = (folder: StorageFolder) => {
     setTrail((prev) => [...prev, folder]);
@@ -226,6 +262,10 @@ export default function FileBrowserPage() {
     setUploadError(null);
     setUploadFile(file);
   };
+
+  const usedBytes = storageUsageQuery.data?.used_bytes ?? 0;
+  const limitBytes = storageUsageQuery.data?.limit_bytes ?? 0;
+  const usedPercent = storageUsageQuery.data?.used_percent ?? 0;
 
   return (
     <div className="space-y-6">
@@ -298,6 +338,38 @@ export default function FileBrowserPage() {
 
       <div className="flex flex-wrap items-center gap-2">
         <input
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Поиск файлов по имени"
+          className="w-full max-w-sm rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white"
+        />
+        {isSearching ? (
+          <p className="text-xs text-slate-400">Поиск по всем доступным файлам ({files.length} найдено)</p>
+        ) : (
+          <p className="text-xs text-slate-400">Введите имя файла для поиска</p>
+        )}
+      </div>
+
+      <div className="rounded-lg border border-slate-700 bg-slate-800 p-4">
+        <div className="mb-2 flex items-center justify-between text-sm">
+          <p className="font-medium text-slate-200">Использование хранилища</p>
+          <p className="text-slate-300">
+            {formatFileSize(usedBytes)} / {formatFileSize(limitBytes)}
+          </p>
+        </div>
+        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-700">
+          <div
+            className="h-full rounded-full bg-indigo-500 transition-all"
+            style={{ width: `${Math.max(0, Math.min(100, usedPercent))}%` }}
+          />
+        </div>
+        <p className="mt-2 text-xs text-slate-400">
+          {storageUsageQuery.isError ? 'Не удалось обновить лимиты хранилища' : `${usedPercent.toFixed(1)}% использовано`}
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <input
           type="file"
           onChange={(e) => handleUploadInputChange(e.target.files?.[0] ?? null)}
           className="w-full max-w-sm rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-300"
@@ -363,7 +435,9 @@ export default function FileBrowserPage() {
 
           <section className="rounded-lg border border-slate-700 bg-slate-800 p-4">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">Файлы</h2>
-            {currentFolder === null ? (
+            {isSearching && files.length === 0 ? (
+              <p className="text-sm text-slate-400">По вашему запросу ничего не найдено.</p>
+            ) : currentFolder === null && !isSearching ? (
               <p className="text-sm text-slate-400">Откройте папку, чтобы увидеть файлы.</p>
             ) : files.length === 0 ? (
               <p className="text-sm text-slate-400">В этой папке пока нет файлов.</p>

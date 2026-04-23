@@ -461,6 +461,12 @@ export interface StorageFolderDetail extends StorageFolder {
   files: StorageFile[];
 }
 
+export interface StorageUsage {
+  used_bytes: number;
+  limit_bytes: number;
+  used_percent: number;
+}
+
 export interface Notification {
   id: number;
   notification_type: string;

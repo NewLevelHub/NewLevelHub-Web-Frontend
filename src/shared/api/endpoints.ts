@@ -148,6 +148,7 @@ export const API = {
     file: (id: string) => `/storage/files/${id}/`,
     fileDownload: (id: string) => `/storage/files/${id}/download/`,
     fileMove: (id: string) => `/storage/files/${id}/move/`,
+    usage: '/storage/usage/',
   },
   files: {
     list: '/files/',
