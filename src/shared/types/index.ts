@@ -546,6 +546,19 @@ export interface CrmColumn {
   wip_limit: number | null;
 }
 
+export interface CrmCommentAuthor {
+  id: number;
+  full_name: string;
+  avatar: string | null;
+}
+
+export interface CrmComment {
+  id: number;
+  text: string;
+  author: CrmCommentAuthor;
+  created_at: string;
+}
+
 export interface CrmTask {
   id: number;
   board_id: number;
