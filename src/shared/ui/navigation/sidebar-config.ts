@@ -15,6 +15,7 @@ import {
   Clock,
   ListTodo,
   Repeat,
+  MailPlus,
   type LucideIcon,
 } from 'lucide-react';
 import { USER_ROLES, type UserRole } from '@/shared/config/constants';
@@ -40,6 +41,7 @@ const superadminNav: NavSection[] = [
       { label: 'Пользователи', path: '/admin/users', icon: Users },
       { label: 'Команда', path: '/company/team', icon: Users },
       { label: 'Сотрудники', path: '/team/manage', icon: Users },
+      { label: 'Инвайты', path: '/company/settings/members', icon: MailPlus },
       { label: 'Компании', path: '/admin/companies', icon: Building2 },
       { label: 'Ресурсы', path: '/resources', icon: Bookmark },
       { label: 'Бронирования', path: '/admin/bookings', icon: CalendarDays },
@@ -78,6 +80,8 @@ const companyAdminNav: NavSection[] = [
       { label: 'Команда', path: '/company/team', icon: Users },
       { label: 'Сотрудники', path: '/team/manage', icon: Users },
       { label: 'Настройки', path: '/company/settings', icon: Settings },
+      { label: 'Инвайты', path: '/company/settings/members', icon: MailPlus },
+      { label: 'Онбординг шаблоны', path: '/company/settings/onboarding', icon: ListTodo },
     ],
   },
   {
