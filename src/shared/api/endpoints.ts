@@ -161,6 +161,9 @@ export const API = {
     file: (id: string) => `/storage/files/${id}/`,
     fileDownload: (id: string) => `/storage/files/${id}/download/`,
     fileMove: (id: string) => `/storage/files/${id}/move/`,
+    shares: '/storage/shares/',
+    share: (id: string) => `/storage/shares/${id}/`,
+    fileShares: (id: string) => `/storage/files/${id}/shares/`,
     usage: '/storage/usage/',
   },
   files: {

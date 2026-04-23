@@ -467,6 +467,24 @@ export interface StorageUsage {
   used_percent: number;
 }
 
+export type StorageSharePermission = 'view' | 'download' | 'full';
+
+export interface StorageFileShare {
+  id: number;
+  file: number;
+  file_id: number;
+  file_name: string;
+  file_owner_id: number;
+  file_owner_name: string;
+  shared_with: number;
+  shared_with_user_id: number;
+  shared_with_name: string;
+  shared_by: number;
+  shared_by_name: string;
+  permission: StorageSharePermission;
+  created_at: string;
+}
+
 export interface Notification {
   id: number;
   notification_type: string;
