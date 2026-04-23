@@ -8,6 +8,8 @@ import {
   CALENDAR_EVENT_TYPES,
   CALENDAR_EVENT_TYPE_LABELS,
   CALENDAR_VIEWS,
+  LEAVE_TYPE_LABELS,
+  LEAVE_TYPES,
   USER_ROLES,
   type CalendarEventType,
   type CalendarView,
@@ -110,6 +112,28 @@ const EVENT_BADGE_CLASS: Record<CalendarEventType, string> = {
   [CALENDAR_EVENT_TYPES.LEAVE]: 'bg-emerald-900/40 text-emerald-300 border-emerald-700',
   [CALENDAR_EVENT_TYPES.GUEST_VISIT]: 'bg-violet-900/40 text-violet-300 border-violet-700',
 };
+
+const LEAVE_CALENDAR_LABELS = {
+  [LEAVE_TYPES.VACATION]: LEAVE_TYPE_LABELS[LEAVE_TYPES.VACATION],
+  [LEAVE_TYPES.DAY_OFF]: LEAVE_TYPE_LABELS[LEAVE_TYPES.DAY_OFF],
+  [LEAVE_TYPES.SICK_LEAVE]: LEAVE_TYPE_LABELS[LEAVE_TYPES.SICK_LEAVE],
+  [LEAVE_TYPES.REMOTE]: LEAVE_TYPE_LABELS[LEAVE_TYPES.REMOTE],
+} as const;
+
+function formatCalendarTitle(event: CalendarEvent) {
+  if (event.type !== CALENDAR_EVENT_TYPES.LEAVE) {
+    return event.title;
+  }
+
+  const [namePart, leaveTypeRaw] = event.title.split(' — ');
+  if (!leaveTypeRaw) return event.title;
+
+  const leaveType = leaveTypeRaw.trim().toLowerCase() as keyof typeof LEAVE_CALENDAR_LABELS;
+  const translated = LEAVE_CALENDAR_LABELS[leaveType];
+  if (!translated) return event.title;
+
+  return `${namePart} — ${translated}`;
+}
 
 export default function CalendarPage() {
   const { user } = useAuth();
@@ -389,7 +413,7 @@ export default function CalendarPage() {
                           <span className={cn('rounded-full border px-2 py-0.5 text-xs font-medium', EVENT_BADGE_CLASS[event.type])}>
                             {CALENDAR_EVENT_TYPE_LABELS[event.type]}
                           </span>
-                          <span className="text-sm font-medium text-white">{event.title}</span>
+                          <span className="text-sm font-medium text-white">{formatCalendarTitle(event)}</span>
                         </div>
                         <p className="text-xs text-gray-400">
                           {formatDateTime(event.start)} - {formatDateTime(event.end)}
