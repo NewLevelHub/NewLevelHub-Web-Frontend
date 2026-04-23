@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/shared/store/auth';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -7,6 +8,7 @@ import { USER_ROLES } from '@/shared/config/constants';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { authPrimaryBtn } from '@/shared/ui/authFormStyles';
 import { cn } from '@/shared/lib/cn';
+import type { OnboardingStatus } from '@/shared/types';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -14,15 +16,22 @@ export default function DashboardPage() {
   const logout = useAuthStore((s) => s.logout);
   const fetchMe = useAuthStore((s) => s.fetchMe);
 
-  // Redirect company_admin or employee with unfinished onboarding to wizard
+  const requiresOnboarding =
+    user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.EMPLOYEE;
+
+  const { data: onboardingProgress } = useQuery<OnboardingStatus>({
+    queryKey: ['onboarding-progress'],
+    queryFn: () => apiClient.get<OnboardingStatus>(API.onboarding.progress).then((r) => r.data),
+    enabled: Boolean(user) && requiresOnboarding,
+    retry: false,
+  });
+
+  // Redirect company_admin or employee with unfinished onboarding to wizard.
   useEffect(() => {
-    if (
-      (user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.EMPLOYEE) &&
-      user.company?.onboarding_completed === false
-    ) {
+    if (requiresOnboarding && onboardingProgress && onboardingProgress.completed === false) {
       void navigate('/onboarding', { replace: true });
     }
-  }, [user, navigate]);
+  }, [requiresOnboarding, onboardingProgress, navigate]);
 
   const [resendMsg, setResendMsg] = useState('');
   const [resendErr, setResendErr] = useState('');

@@ -518,14 +518,28 @@ export interface UserDetail extends UserListItem {
 }
 
 export interface OnboardingStep {
-  key: 'upload_logo' | 'fill_description' | 'create_first_board' | 'invite_first_employee';
+  id: number;
   title: string;
-  completed: boolean;
+  is_completed: boolean;
 }
 
 export interface OnboardingStatus {
   completed: boolean;
   steps: OnboardingStep[];
+}
+
+export interface OnboardingTemplateStepInput {
+  title: string;
+  description: string;
+  order: number;
+}
+
+export interface OnboardingTemplate {
+  id: number;
+  name: string;
+  is_active: boolean;
+  steps: Array<OnboardingTemplateStepInput & { id: number }>;
+  created_at: string;
 }
 
 export interface CrmBoard {

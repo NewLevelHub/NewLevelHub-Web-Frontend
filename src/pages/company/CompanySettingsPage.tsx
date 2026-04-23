@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Settings2, Plus, Trash2 } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
@@ -112,6 +113,20 @@ export default function CompanySettingsPage() {
       <div className="flex items-center gap-2">
         <Settings2 className="h-5 w-5 text-indigo-400" aria-hidden="true" />
         <h1 className="text-2xl font-semibold text-white">Настройки компании</h1>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Link
+          to="/company/settings/members"
+          className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-800"
+        >
+          Перейти к инвайтам сотрудников
+        </Link>
+        <Link
+          to="/company/settings/onboarding"
+          className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-800"
+        >
+          Шаблоны онбординга
+        </Link>
       </div>
 
       {error && (

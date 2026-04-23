@@ -26,6 +26,7 @@ import CompanyDetailPage from '@/pages/companies/CompanyDetailPage';
 // Company settings (company admin)
 import CompanySettingsPage from '@/pages/company/CompanySettingsPage';
 import CompanyMembersPage from '@/pages/company/CompanyMembersPage';
+import CompanyOnboardingTemplatesPage from '@/pages/company/CompanyOnboardingTemplatesPage';
 
 // Team
 import TeamDirectoryPage from '@/pages/team/TeamDirectoryPage';
@@ -204,6 +205,7 @@ export const router = createBrowserRouter([
             element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN]} />,
             children: [
               { path: '/company/settings/members', element: <CompanyMembersPage /> },
+              { path: '/company/settings/onboarding', element: <CompanyOnboardingTemplatesPage /> },
             ],
           },
 

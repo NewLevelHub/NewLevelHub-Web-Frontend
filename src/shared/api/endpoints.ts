@@ -145,6 +145,13 @@ export const API = {
     balanceSet: '/hr/leaves/balance/set/',
     balanceTeam: '/hr/leaves/balance/team/',
   },
+  onboarding: {
+    progress: '/hr/onboarding/progress/',
+    completeStep: (stepId: number) => `/hr/onboarding/progress/steps/${stepId}/complete/`,
+    teamProgress: '/hr/onboarding/progress/team/',
+    templates: '/hr/onboarding/templates/',
+    template: (templateId: number) => `/hr/onboarding/templates/${templateId}/`,
+  },
   storage: {
     folders: '/storage/folders/',
     folder: (id: string) => `/storage/folders/${id}/`,
