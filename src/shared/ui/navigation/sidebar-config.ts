@@ -15,6 +15,7 @@ import {
   Clock,
   ListTodo,
   Repeat,
+  MailPlus,
   type LucideIcon,
 } from 'lucide-react';
 import { USER_ROLES, type UserRole } from '@/shared/config/constants';
@@ -40,6 +41,7 @@ const superadminNav: NavSection[] = [
       { label: 'Пользователи', path: '/admin/users', icon: Users },
       { label: 'Команда', path: '/company/team', icon: Users },
       { label: 'Сотрудники', path: '/team/manage', icon: Users },
+      { label: 'Инвайты', path: '/company/settings/members', icon: MailPlus },
       { label: 'Компании', path: '/admin/companies', icon: Building2 },
       { label: 'Ресурсы', path: '/resources', icon: Bookmark },
       { label: 'Бронирования', path: '/admin/bookings', icon: CalendarDays },
@@ -78,6 +80,8 @@ const companyAdminNav: NavSection[] = [
       { label: 'Команда', path: '/company/team', icon: Users },
       { label: 'Сотрудники', path: '/team/manage', icon: Users },
       { label: 'Настройки', path: '/company/settings', icon: Settings },
+      { label: 'Инвайты', path: '/company/settings/members', icon: MailPlus },
+      { label: 'Онбординг шаблоны', path: '/company/settings/onboarding', icon: ListTodo },
     ],
   },
   {
@@ -95,7 +99,7 @@ const companyAdminNav: NavSection[] = [
       { label: 'Рекуррентные брони', path: '/bookings/recurring', icon: Repeat },
       { label: 'Бронирования (админ)', path: '/admin/bookings', icon: CalendarDays },
       { label: 'Гостевые пропуска', path: '/passes', icon: ShieldCheck },
-      { label: 'Файлы', path: '/files', icon: FileText },
+      { label: 'Файлы', path: '/storage', icon: FileText },
       { label: 'Объявления', path: '/announcements', icon: Megaphone },
       { label: 'Отпуска', path: '/hr/leaves', icon: Clock },
     ],
@@ -131,7 +135,7 @@ const employeeNav: NavSection[] = [
       { label: 'Бронирование', path: '/bookings/catalog', icon: Bookmark },
       { label: 'Рекуррентные брони', path: '/bookings/recurring', icon: Repeat },
       { label: 'Гостевые пропуска', path: '/passes', icon: ShieldCheck },
-      { label: 'Файлы', path: '/files', icon: FileText },
+      { label: 'Файлы', path: '/storage', icon: FileText },
       { label: 'Объявления', path: '/announcements', icon: Megaphone },
       { label: 'Отпуска', path: '/hr/leaves', icon: Clock },
     ],
@@ -154,7 +158,6 @@ const guestNav: NavSection[] = [
     items: [
       { label: 'Бронирование', path: '/bookings/catalog', icon: Bookmark },
       { label: 'Карта здания', path: '/building/map', icon: Map },
-      { label: 'Мои файлы', path: '/files', icon: FileText },
       { label: 'Объявления', path: '/announcements', icon: Megaphone },
       { label: 'Гостевые пропуска', path: '/passes', icon: ShieldCheck },
       { label: 'Сервисная заявка', path: '/service-requests', icon: Wrench },

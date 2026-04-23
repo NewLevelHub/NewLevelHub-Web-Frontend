@@ -26,6 +26,7 @@ import CompanyDetailPage from '@/pages/companies/CompanyDetailPage';
 // Company settings (company admin)
 import CompanySettingsPage from '@/pages/company/CompanySettingsPage';
 import CompanyMembersPage from '@/pages/company/CompanyMembersPage';
+import CompanyOnboardingTemplatesPage from '@/pages/company/CompanyOnboardingTemplatesPage';
 
 // Team
 import TeamDirectoryPage from '@/pages/team/TeamDirectoryPage';
@@ -149,7 +150,6 @@ export const router = createBrowserRouter([
           { path: '/bookings/:id', element: <BookingDetailPage /> },
           { path: '/building/map', element: <BuildingMapPage /> },
           { path: '/announcements', element: <AnnouncementListPage /> },
-          { path: '/files', element: <FileBrowserPage /> },
           { path: '/passes', element: <PassListPage /> },
           { path: '/passes/new', element: <PassCreatePage /> },
           { path: '/service-requests', element: <ServiceRequestListPage /> },
@@ -168,6 +168,8 @@ export const router = createBrowserRouter([
             element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE]} />,
             children: [
               { path: '/bookings/recurring', element: <RecurringBookingsPage /> },
+              { path: '/files', element: <FileBrowserPage /> },
+              { path: '/storage', element: <FileBrowserPage /> },
               { path: '/crm', element: <BoardListPage /> },
               { path: '/crm/boards/:id', element: <BoardDetailPage /> },
               { path: '/crm/my-tasks', element: <MyTasksPage /> },
@@ -204,6 +206,7 @@ export const router = createBrowserRouter([
             element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN]} />,
             children: [
               { path: '/company/settings/members', element: <CompanyMembersPage /> },
+              { path: '/company/settings/onboarding', element: <CompanyOnboardingTemplatesPage /> },
             ],
           },
 

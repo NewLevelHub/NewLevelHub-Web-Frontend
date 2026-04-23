@@ -98,8 +98,8 @@ export default function LeaveRequestListPage() {
   }, [teamBalances]);
 
   const reviewMutation = useMutation({
-    mutationFn: ({ id, status, reviewComment }: { id: number; status: ReviewStatus; reviewComment: string }) =>
-      apiClient.post(API.leave.review(String(id)), { status, review_comment: reviewComment }),
+    mutationFn: ({ id, status }: { id: number; status: LeaveStatus }) =>
+      apiClient.post(API.leave.review(String(id)), { status }),
     onSuccess: async () => {
       setMutationError(null);
       setReviewDialog(null);

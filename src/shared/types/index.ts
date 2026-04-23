@@ -444,9 +444,13 @@ export interface StorageFile {
   file: string;
   file_size: number;
   content_type: string;
+  size?: number;
+  mime_type?: string;
+  download_url?: string;
   folder: number | null;
   owner: number;
   owner_name: string;
+  uploaded_by?: string;
   company: number | null;
   created_at: string;
   updated_at: string;
@@ -455,6 +459,12 @@ export interface StorageFile {
 export interface StorageFolderDetail extends StorageFolder {
   folders: StorageFolder[];
   files: StorageFile[];
+}
+
+export interface StorageUsage {
+  used_bytes: number;
+  limit_bytes: number;
+  used_percent: number;
 }
 
 export interface Notification {
@@ -518,14 +528,28 @@ export interface UserDetail extends UserListItem {
 }
 
 export interface OnboardingStep {
-  key: 'upload_logo' | 'fill_description' | 'create_first_board' | 'invite_first_employee';
+  id: number;
   title: string;
-  completed: boolean;
+  is_completed: boolean;
 }
 
 export interface OnboardingStatus {
   completed: boolean;
   steps: OnboardingStep[];
+}
+
+export interface OnboardingTemplateStepInput {
+  title: string;
+  description: string;
+  order: number;
+}
+
+export interface OnboardingTemplate {
+  id: number;
+  name: string;
+  is_active: boolean;
+  steps: Array<OnboardingTemplateStepInput & { id: number }>;
+  created_at: string;
 }
 
 export interface CrmBoard {
@@ -546,6 +570,38 @@ export interface CrmColumn {
   wip_limit: number | null;
 }
 
+export interface CrmChecklistItem {
+  id: number;
+  text: string;
+  is_completed: boolean;
+  order: number;
+}
+
+export interface CrmChecklistProgress {
+  total: number;
+  completed: number;
+}
+
+export interface CrmChecklist {
+  id: number;
+  title: string;
+  items: CrmChecklistItem[];
+  checklist_progress: CrmChecklistProgress;
+}
+
+export interface CrmCommentAuthor {
+  id: number;
+  full_name: string;
+  avatar: string | null;
+}
+
+export interface CrmComment {
+  id: number;
+  text: string;
+  author: CrmCommentAuthor;
+  created_at: string;
+}
+
 export interface CrmTask {
   id: number;
   board_id: number;
@@ -560,4 +616,5 @@ export interface CrmTask {
   attachments_count: number;
   position: number;
   created_at: string;
+  checklists: CrmChecklist[];
 }

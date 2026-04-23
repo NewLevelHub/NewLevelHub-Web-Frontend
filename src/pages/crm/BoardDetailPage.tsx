@@ -41,12 +41,17 @@ import {
   Calendar,
   User,
   Archive,
+  ChevronDown,
+  ChevronRight,
+  ListChecks,
+  Send,
 } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
 import { useAuth } from '@/shared/hooks/useAuth';
-import type { CrmBoard, CrmColumn, CrmTask, CompanyMember, PaginatedResponse } from '@/shared/types';
+import { USER_ROLES } from '@/shared/config/constants';
+import type { CrmBoard, CrmColumn, CrmTask, CrmComment, CrmChecklist, CrmChecklistItem, CompanyMember, PaginatedResponse } from '@/shared/types';
 
 // ─── Priority helpers ─────────────────────────────────────────────────────────
 
@@ -501,6 +506,810 @@ function CreateTaskModal({ boardId, columnId, onClose }: CreateTaskModalProps) {
   );
 }
 
+// ─── Checklist Components ─────────────────────────────────────────────────────
+
+interface ChecklistItemRowProps {
+  item: CrmChecklistItem;
+  onToggle: (itemId: number, isCompleted: boolean) => void;
+  onDelete: (itemId: number) => void;
+  onUpdateText: (itemId: number, text: string) => void;
+  isPending: boolean;
+}
+
+function ChecklistItemRow({ item, onToggle, onDelete, onUpdateText, isPending }: ChecklistItemRowProps) {
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(item.text);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) inputRef.current?.focus();
+  }, [editing]);
+
+  const commitEdit = () => {
+    const trimmed = editText.trim();
+    if (!trimmed) {
+      setEditText(item.text);
+    } else if (trimmed !== item.text) {
+      onUpdateText(item.id, trimmed);
+    }
+    setEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') commitEdit();
+    if (e.key === 'Escape') {
+      setEditText(item.text);
+      setEditing(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 group/item py-1">
+      <input
+        type="checkbox"
+        checked={item.is_completed}
+        onChange={(e) => onToggle(item.id, e.target.checked)}
+        disabled={isPending}
+        aria-label={`Отметить: ${item.text}`}
+        className="w-4 h-4 shrink-0 accent-green-500 cursor-pointer disabled:opacity-50"
+      />
+      {editing ? (
+        <input
+          ref={inputRef}
+          type="text"
+          value={editText}
+          onChange={(e) => setEditText(e.target.value)}
+          onBlur={commitEdit}
+          onKeyDown={handleKeyDown}
+          className={cn(
+            'flex-1 rounded border bg-gray-700 px-2 py-0.5 text-sm text-white',
+            'focus:outline-none focus:ring-1 focus:ring-blue-500 border-gray-600',
+          )}
+          maxLength={500}
+        />
+      ) : (
+        <span
+          onDoubleClick={() => setEditing(true)}
+          className={cn(
+            'flex-1 text-sm cursor-default select-none break-all',
+            item.is_completed ? 'line-through text-gray-500' : 'text-gray-200',
+          )}
+          title="Двойной клик для редактирования"
+        >
+          {item.text}
+        </span>
+      )}
+      <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity shrink-0">
+        {!editing && (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="p-0.5 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-colors"
+            aria-label="Редактировать пункт"
+          >
+            <Pencil size={11} />
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => onDelete(item.id)}
+          disabled={isPending}
+          className="p-0.5 rounded text-gray-500 hover:text-red-400 hover:bg-gray-700 transition-colors disabled:opacity-50"
+          aria-label="Удалить пункт"
+        >
+          <X size={11} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface ChecklistBlockProps {
+  checklist: CrmChecklist;
+  taskId: number;
+  boardId: string;
+}
+
+function ChecklistBlock({ checklist, taskId, boardId }: ChecklistBlockProps) {
+  const queryClient = useQueryClient();
+  const [collapsed, setCollapsed] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleValue, setTitleValue] = useState(checklist.title);
+  const [addingItem, setAddingItem] = useState(false);
+  const [newItemText, setNewItemText] = useState('');
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const newItemRef = useRef<HTMLInputElement>(null);
+
+  const { total, completed } = checklist.checklist_progress;
+  const progressPct = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+  useEffect(() => {
+    if (editingTitle) titleInputRef.current?.focus();
+  }, [editingTitle]);
+
+  useEffect(() => {
+    if (addingItem) newItemRef.current?.focus();
+  }, [addingItem]);
+
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: ['crm', 'task', taskId] });
+    void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+  };
+
+  const deleteMutation = useMutation({
+    mutationFn: () => apiClient.delete(API.crm.checklistDetail(checklist.id)),
+    onSuccess: invalidate,
+  });
+
+  const updateTitleMutation = useMutation({
+    mutationFn: (title: string) =>
+      apiClient.patch(API.crm.checklistDetail(checklist.id), { title }),
+    onSuccess: invalidate,
+  });
+
+  const createItemMutation = useMutation({
+    mutationFn: (text: string) =>
+      apiClient.post(API.crm.checklistItems(checklist.id), { text }),
+    onSuccess: () => {
+      setNewItemText('');
+      setAddingItem(false);
+      invalidate();
+    },
+  });
+
+  const updateItemMutation = useMutation({
+    mutationFn: ({ itemId, payload }: { itemId: number; payload: Partial<CrmChecklistItem> }) =>
+      apiClient.patch(API.crm.checklistItemDetail(itemId), payload),
+    onSuccess: invalidate,
+  });
+
+  const deleteItemMutation = useMutation({
+    mutationFn: (itemId: number) => apiClient.delete(API.crm.checklistItemDetail(itemId)),
+    onSuccess: invalidate,
+  });
+
+  const commitTitleEdit = () => {
+    const trimmed = titleValue.trim();
+    if (!trimmed) {
+      setTitleValue(checklist.title);
+    } else if (trimmed !== checklist.title) {
+      updateTitleMutation.mutate(trimmed);
+    }
+    setEditingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') commitTitleEdit();
+    if (e.key === 'Escape') {
+      setTitleValue(checklist.title);
+      setEditingTitle(false);
+    }
+  };
+
+  const handleDelete = () => {
+    deleteMutation.mutate();
+  };
+
+  const handleAddItem = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newItemText.trim();
+    if (!trimmed || createItemMutation.isPending) return;
+    createItemMutation.mutate(trimmed);
+  };
+
+  const handleToggleItem = (itemId: number, isCompleted: boolean) => {
+    updateItemMutation.mutate({ itemId, payload: { is_completed: isCompleted } });
+  };
+
+  const handleDeleteItem = (itemId: number) => {
+    deleteItemMutation.mutate(itemId);
+  };
+
+  const handleUpdateItemText = (itemId: number, text: string) => {
+    updateItemMutation.mutate({ itemId, payload: { text } });
+  };
+
+  const anyItemPending = updateItemMutation.isPending || deleteItemMutation.isPending;
+
+  return (
+    <div className="rounded-lg border border-gray-700 bg-gray-800/50">
+      {/* Checklist header */}
+      <div className="flex items-center gap-2 px-3 py-2.5 group/header">
+        <button
+          type="button"
+          onClick={() => setCollapsed((v) => !v)}
+          className="flex items-center gap-2 flex-1 min-w-0 text-left focus:outline-none"
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? 'Развернуть чеклист' : 'Свернуть чеклист'}
+        >
+          {collapsed
+            ? <ChevronRight size={14} className="text-gray-500 shrink-0" />
+            : <ChevronDown size={14} className="text-gray-500 shrink-0" />
+          }
+          {editingTitle ? (
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={titleValue}
+              onChange={(e) => setTitleValue(e.target.value)}
+              onBlur={commitTitleEdit}
+              onKeyDown={handleTitleKeyDown}
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                'flex-1 rounded border bg-gray-700 px-2 py-0.5 text-sm font-medium text-white',
+                'focus:outline-none focus:ring-1 focus:ring-blue-500 border-gray-600',
+              )}
+              maxLength={200}
+            />
+          ) : (
+            <span className="text-sm font-medium text-white truncate">{checklist.title}</span>
+          )}
+        </button>
+
+        <div className="flex items-center gap-1 shrink-0">
+          <span className="text-xs text-gray-500 tabular-nums">
+            {completed}/{total}
+          </span>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setEditingTitle(true); }}
+            className="p-1 rounded text-gray-600 hover:text-gray-300 hover:bg-gray-700 transition-colors opacity-0 group-hover/header:opacity-100"
+            aria-label="Переименовать чеклист"
+          >
+            <Pencil size={12} />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); handleDelete(); }}
+            disabled={deleteMutation.isPending}
+            className="p-1 rounded text-gray-600 hover:text-red-400 hover:bg-gray-700 transition-colors opacity-0 group-hover/header:opacity-100 disabled:opacity-30"
+            aria-label="Удалить чеклист"
+          >
+            <Trash2 size={12} />
+          </button>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      {total > 0 && (
+        <div className="px-3 pb-2">
+          <div
+            className="h-1.5 w-full rounded-full bg-gray-700 overflow-hidden"
+            role="progressbar"
+            aria-valuenow={progressPct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`Прогресс: ${completed} из ${total}`}
+          >
+            <div
+              className="h-full rounded-full bg-green-500 transition-all duration-300"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Items */}
+      {!collapsed && (
+        <div className="px-3 pb-2 space-y-0">
+          {checklist.items
+            .slice()
+            .sort((a, b) => a.order - b.order)
+            .map((item) => (
+              <ChecklistItemRow
+                key={item.id}
+                item={item}
+                onToggle={handleToggleItem}
+                onDelete={handleDeleteItem}
+                onUpdateText={handleUpdateItemText}
+                isPending={anyItemPending}
+              />
+            ))}
+
+          {/* Add item form */}
+          {addingItem ? (
+            <form onSubmit={handleAddItem} className="flex items-center gap-2 pt-1">
+              <input
+                ref={newItemRef}
+                type="text"
+                value={newItemText}
+                onChange={(e) => setNewItemText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Escape') { setAddingItem(false); setNewItemText(''); } }}
+                placeholder="Новый пункт..."
+                maxLength={500}
+                className={cn(
+                  'flex-1 rounded border bg-gray-700 px-2 py-1 text-sm text-white placeholder-gray-500',
+                  'focus:outline-none focus:ring-1 focus:ring-blue-500 border-gray-600',
+                )}
+              />
+              <button
+                type="submit"
+                disabled={!newItemText.trim() || createItemMutation.isPending}
+                className={cn(
+                  'shrink-0 rounded px-2.5 py-1 text-xs font-medium transition-colors',
+                  'bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed',
+                )}
+              >
+                <Check size={12} />
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAddingItem(false); setNewItemText(''); }}
+                className="shrink-0 rounded p-1 text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-colors"
+                aria-label="Отмена"
+              >
+                <X size={12} />
+              </button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAddingItem(true)}
+              className="flex items-center gap-1.5 mt-1 text-xs text-gray-500 hover:text-gray-300 transition-colors rounded px-1 py-0.5 hover:bg-gray-700"
+            >
+              <Plus size={12} />
+              Добавить пункт
+            </button>
+          )}
+        </div>
+      )}
+
+      {(deleteMutation.isError || updateTitleMutation.isError) && (
+        <p className="px-3 pb-2 text-xs text-red-400">Не удалось выполнить операцию.</p>
+      )}
+    </div>
+  );
+}
+
+interface ChecklistSectionProps {
+  taskId: number;
+  boardId: string;
+  checklists: CrmChecklist[];
+}
+
+function ChecklistSection({ taskId, boardId, checklists }: ChecklistSectionProps) {
+  const queryClient = useQueryClient();
+  const [addingChecklist, setAddingChecklist] = useState(false);
+  const [newChecklistTitle, setNewChecklistTitle] = useState('');
+  const addInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (addingChecklist) addInputRef.current?.focus();
+  }, [addingChecklist]);
+
+  const createChecklistMutation = useMutation({
+    mutationFn: (title: string) =>
+      apiClient.post(API.crm.taskChecklists(taskId), { title }),
+    onSuccess: () => {
+      setNewChecklistTitle('');
+      setAddingChecklist(false);
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'task', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+    },
+  });
+
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newChecklistTitle.trim();
+    if (!trimmed || createChecklistMutation.isPending) return;
+    createChecklistMutation.mutate(trimmed);
+  };
+
+  return (
+    <div className="space-y-2">
+      {/* Section header */}
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide">
+          <ListChecks size={13} />
+          Чеклисты
+        </span>
+        {!addingChecklist && (
+          <button
+            type="button"
+            onClick={() => setAddingChecklist(true)}
+            className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors rounded px-1.5 py-0.5 hover:bg-gray-800"
+          >
+            <Plus size={12} />
+            Добавить чеклист
+          </button>
+        )}
+      </div>
+
+      {/* Existing checklists */}
+      {checklists.map((cl) => (
+        <ChecklistBlock
+          key={cl.id}
+          checklist={cl}
+          taskId={taskId}
+          boardId={boardId}
+        />
+      ))}
+
+      {/* New checklist form */}
+      {addingChecklist && (
+        <form
+          onSubmit={handleCreate}
+          className="flex items-center gap-2 rounded-lg border border-blue-600/40 bg-gray-800/50 px-3 py-2"
+        >
+          <input
+            ref={addInputRef}
+            type="text"
+            value={newChecklistTitle}
+            onChange={(e) => setNewChecklistTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setAddingChecklist(false);
+                setNewChecklistTitle('');
+              }
+            }}
+            placeholder="Название чеклиста..."
+            maxLength={200}
+            className={cn(
+              'flex-1 rounded border bg-gray-700 px-2 py-1 text-sm text-white placeholder-gray-500',
+              'focus:outline-none focus:ring-1 focus:ring-blue-500 border-gray-600',
+            )}
+          />
+          <button
+            type="submit"
+            disabled={!newChecklistTitle.trim() || createChecklistMutation.isPending}
+            className={cn(
+              'shrink-0 rounded px-3 py-1 text-xs font-medium transition-colors',
+              'bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed',
+            )}
+          >
+            {createChecklistMutation.isPending ? '...' : 'Создать'}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setAddingChecklist(false); setNewChecklistTitle(''); }}
+            className="shrink-0 rounded p-1 text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-colors"
+            aria-label="Отмена"
+          >
+            <X size={13} />
+          </button>
+        </form>
+      )}
+
+      {createChecklistMutation.isError && (
+        <p className="text-xs text-red-400">Не удалось создать чеклист.</p>
+      )}
+    </div>
+  );
+}
+
+// ─── Comment helpers ──────────────────────────────────────────────────────────
+
+function formatCommentDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString('ru-RU', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+// ─── Comment Item ─────────────────────────────────────────────────────────────
+
+interface CommentItemProps {
+  comment: CrmComment;
+  currentUserId: number;
+  currentUserRole: string;
+  onUpdate: (commentId: number, text: string) => void;
+  onDelete: (commentId: number) => void;
+  isUpdating: boolean;
+  isDeleting: boolean;
+}
+
+function CommentItem({
+  comment,
+  currentUserId,
+  currentUserRole,
+  onUpdate,
+  onDelete,
+  isUpdating,
+  isDeleting,
+}: CommentItemProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(comment.text);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const isAuthor = comment.author.id === currentUserId;
+  const canEdit = isAuthor;
+  const canDelete = isAuthor || currentUserRole === USER_ROLES.COMPANY_ADMIN;
+
+  const initials = comment.author.full_name
+    .split(' ')
+    .map((n) => n[0] ?? '')
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
+  const handleEditStart = () => {
+    setEditText(comment.text);
+    setIsEditing(true);
+  };
+
+  const handleEditCancel = () => {
+    setEditText(comment.text);
+    setIsEditing(false);
+  };
+
+  const handleEditSave = () => {
+    const trimmed = editText.trim();
+    if (!trimmed || trimmed === comment.text) {
+      setIsEditing(false);
+      return;
+    }
+    onUpdate(comment.id, trimmed);
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Escape') handleEditCancel();
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleEditSave();
+  };
+
+  useEffect(() => {
+    if (isEditing) textareaRef.current?.focus();
+  }, [isEditing]);
+
+  return (
+    <div className="flex gap-3">
+      {/* Avatar */}
+      {comment.author.avatar ? (
+        <img
+          src={comment.author.avatar}
+          alt={comment.author.full_name}
+          className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5"
+        />
+      ) : (
+        <span
+          className="w-7 h-7 rounded-full bg-gray-700 text-gray-300 text-xs font-medium flex items-center justify-center shrink-0 mt-0.5"
+          aria-label={comment.author.full_name}
+        >
+          {initials}
+        </span>
+      )}
+
+      <div className="flex-1 min-w-0 space-y-1">
+        {/* Author + date row */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-medium text-gray-300">{comment.author.full_name}</span>
+          <span className="text-xs text-gray-600">{formatCommentDate(comment.created_at)}</span>
+        </div>
+
+        {/* Text or edit form */}
+        {isEditing ? (
+          <div className="space-y-2">
+            <textarea
+              ref={textareaRef}
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              rows={3}
+              className={cn(
+                'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white',
+                'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
+                'border-gray-700 resize-none',
+              )}
+              aria-label="Редактировать комментарий"
+            />
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleEditSave}
+                disabled={!editText.trim() || isUpdating}
+                className={cn(
+                  'rounded-md px-3 py-1 text-xs font-medium transition-colors',
+                  'bg-blue-600 text-white hover:bg-blue-500',
+                  'disabled:opacity-50 disabled:cursor-not-allowed',
+                )}
+              >
+                {isUpdating ? 'Сохранение...' : 'Сохранить'}
+              </button>
+              <button
+                type="button"
+                onClick={handleEditCancel}
+                className="rounded-md px-3 py-1 text-xs font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-300 whitespace-pre-wrap break-words">{comment.text}</p>
+        )}
+
+        {/* Actions */}
+        {!isEditing && (canEdit || canDelete) && (
+          <div className="flex items-center gap-3 pt-0.5">
+            {canEdit && (
+              <button
+                type="button"
+                onClick={handleEditStart}
+                className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
+              >
+                Редактировать
+              </button>
+            )}
+            {canDelete && (
+              <button
+                type="button"
+                onClick={() => onDelete(comment.id)}
+                disabled={isDeleting}
+                className="text-xs text-red-600 hover:text-red-400 transition-colors disabled:opacity-50"
+              >
+                {isDeleting ? 'Удаление...' : 'Удалить'}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Comment Section ──────────────────────────────────────────────────────────
+
+interface CommentSectionProps {
+  taskId: number;
+}
+
+function CommentSection({ taskId }: CommentSectionProps) {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const [newText, setNewText] = useState('');
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
+
+  const commentsQueryKey = ['crm', 'task', taskId, 'comments'] as const;
+
+  const { data: comments, isLoading, isError } = useQuery({
+    queryKey: commentsQueryKey,
+    queryFn: async () => {
+      const { data } = await apiClient.get<CrmComment[] | { results: CrmComment[] }>(
+        API.crm.taskComments(taskId),
+      );
+      return Array.isArray(data) ? data : data.results;
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (text: string) =>
+      apiClient.post<CrmComment>(API.crm.taskComments(taskId), { text }).then((r) => r.data),
+    onSuccess: () => {
+      setNewText('');
+      void queryClient.invalidateQueries({ queryKey: commentsQueryKey });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ commentId, text }: { commentId: number; text: string }) =>
+      apiClient
+        .patch<CrmComment>(API.crm.taskCommentDetail(taskId, commentId), { text })
+        .then((r) => r.data),
+    onMutate: ({ commentId }) => setUpdatingId(commentId),
+    onSettled: () => setUpdatingId(null),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: commentsQueryKey });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (commentId: number) =>
+      apiClient.delete(API.crm.taskCommentDetail(taskId, commentId)),
+    onMutate: (commentId) => setDeletingId(commentId),
+    onSettled: () => setDeletingId(null),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: commentsQueryKey });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newText.trim();
+    if (!trimmed || createMutation.isPending) return;
+    createMutation.mutate(trimmed);
+  };
+
+  const handleNewTextKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      const trimmed = newText.trim();
+      if (trimmed && !createMutation.isPending) {
+        createMutation.mutate(trimmed);
+      }
+    }
+  };
+
+  return (
+    <div className="space-y-4 pt-2 border-t border-gray-800">
+      {/* Section heading */}
+      <div className="flex items-center gap-2">
+        <MessageSquare size={14} className="text-gray-500 shrink-0" />
+        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">Комментарии</h3>
+      </div>
+
+      {/* Comment list */}
+      {isLoading && (
+        <div className="space-y-3 animate-pulse">
+          {[1, 2].map((i) => (
+            <div key={i} className="flex gap-3">
+              <div className="w-7 h-7 rounded-full bg-gray-700 shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-3 w-24 rounded bg-gray-700" />
+                <div className="h-4 w-full rounded bg-gray-700" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {isError && (
+        <p className="text-xs text-red-400">Не удалось загрузить комментарии.</p>
+      )}
+
+      {!isLoading && !isError && comments && comments.length === 0 && (
+        <p className="text-xs text-gray-600">Комментариев пока нет.</p>
+      )}
+
+      {!isLoading && !isError && comments && comments.length > 0 && (
+        <div className="space-y-4">
+          {comments.map((comment) => (
+            <CommentItem
+              key={comment.id}
+              comment={comment}
+              currentUserId={user?.id ?? -1}
+              currentUserRole={user?.role ?? ''}
+              onUpdate={(commentId, text) => updateMutation.mutate({ commentId, text })}
+              onDelete={(commentId) => deleteMutation.mutate(commentId)}
+              isUpdating={updatingId === comment.id && updateMutation.isPending}
+              isDeleting={deletingId === comment.id && deleteMutation.isPending}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* New comment form */}
+      <form onSubmit={handleSubmit} className="space-y-2">
+        <textarea
+          value={newText}
+          onChange={(e) => setNewText(e.target.value)}
+          onKeyDown={handleNewTextKeyDown}
+          placeholder="Написать комментарий..."
+          rows={3}
+          className={cn(
+            'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-600',
+            'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
+            'border-gray-700 resize-none',
+          )}
+          aria-label="Текст нового комментария"
+        />
+        <div className="flex items-center justify-between">
+          {createMutation.isError && (
+            <p className="text-xs text-red-400">Не удалось отправить комментарий.</p>
+          )}
+          <div className="ml-auto">
+            <button
+              type="submit"
+              disabled={!newText.trim() || createMutation.isPending}
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+                'bg-blue-600 text-white hover:bg-blue-500',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+              )}
+            >
+              <Send size={13} />
+              {createMutation.isPending ? 'Отправка...' : 'Отправить'}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 // ─── Task Detail Modal ────────────────────────────────────────────────────────
 
 interface TaskDetailModalProps {
@@ -788,27 +1597,24 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
                 />
               </div>
 
-              {/* Comments + Attachments badges */}
-              {(task.comments_count > 0 || task.attachments_count > 0) && (
+              {/* Checklists */}
+              <ChecklistSection taskId={taskId} boardId={boardId} checklists={task.checklists ?? []} />
+
+              {(task.comments_count > 0 || task.attachments_count > 0)&& (
                 <div className="flex items-center gap-4 pt-1 border-t border-gray-800">
-                  {task.comments_count > 0 && (
-                    <span className="flex items-center gap-1.5 text-sm text-gray-400">
-                      <MessageSquare size={14} />
-                      {task.comments_count} {task.comments_count === 1 ? 'комментарий' : 'комментариев'}
-                    </span>
-                  )}
-                  {task.attachments_count > 0 && (
-                    <span className="flex items-center gap-1.5 text-sm text-gray-400">
-                      <Paperclip size={14} />
-                      {task.attachments_count} {task.attachments_count === 1 ? 'файл' : 'файлов'}
-                    </span>
-                  )}
+                  <span className="flex items-center gap-1.5 text-sm text-gray-400">
+                    <Paperclip size={14} />
+                    {task.attachments_count} {task.attachments_count === 1 ? 'файл' : 'файлов'}
+                  </span>
                 </div>
               )}
 
               {patchMutation.isError && (
                 <p className="text-xs text-red-400">Не удалось сохранить изменения.</p>
               )}
+
+              {/* Comments */}
+              <CommentSection taskId={taskId} />
 
               {/* Archive */}
               <div className="pt-2 border-t border-gray-800">
