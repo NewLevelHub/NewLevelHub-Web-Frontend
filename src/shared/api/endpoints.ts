@@ -158,6 +158,10 @@ export const API = {
     folders: '/storage/folders/',
     folder: (id: string) => `/storage/folders/${id}/`,
     files: '/storage/files/',
+    file: (id: string) => `/storage/files/${id}/`,
+    fileDownload: (id: string) => `/storage/files/${id}/download/`,
+    fileMove: (id: string) => `/storage/files/${id}/move/`,
+    usage: '/storage/usage/',
   },
   files: {
     list: '/files/',

@@ -444,9 +444,13 @@ export interface StorageFile {
   file: string;
   file_size: number;
   content_type: string;
+  size?: number;
+  mime_type?: string;
+  download_url?: string;
   folder: number | null;
   owner: number;
   owner_name: string;
+  uploaded_by?: string;
   company: number | null;
   created_at: string;
   updated_at: string;
@@ -455,6 +459,12 @@ export interface StorageFile {
 export interface StorageFolderDetail extends StorageFolder {
   folders: StorageFolder[];
   files: StorageFile[];
+}
+
+export interface StorageUsage {
+  used_bytes: number;
+  limit_bytes: number;
+  used_percent: number;
 }
 
 export interface Notification {

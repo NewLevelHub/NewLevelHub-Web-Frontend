@@ -150,7 +150,6 @@ export const router = createBrowserRouter([
           { path: '/bookings/:id', element: <BookingDetailPage /> },
           { path: '/building/map', element: <BuildingMapPage /> },
           { path: '/announcements', element: <AnnouncementListPage /> },
-          { path: '/files', element: <FileBrowserPage /> },
           { path: '/passes', element: <PassListPage /> },
           { path: '/passes/new', element: <PassCreatePage /> },
           { path: '/service-requests', element: <ServiceRequestListPage /> },
@@ -169,6 +168,8 @@ export const router = createBrowserRouter([
             element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE]} />,
             children: [
               { path: '/bookings/recurring', element: <RecurringBookingsPage /> },
+              { path: '/files', element: <FileBrowserPage /> },
+              { path: '/storage', element: <FileBrowserPage /> },
               { path: '/crm', element: <BoardListPage /> },
               { path: '/crm/boards/:id', element: <BoardDetailPage /> },
               { path: '/crm/my-tasks', element: <MyTasksPage /> },
