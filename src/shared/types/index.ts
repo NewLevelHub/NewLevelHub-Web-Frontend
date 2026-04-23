@@ -546,6 +546,25 @@ export interface CrmColumn {
   wip_limit: number | null;
 }
 
+export interface CrmChecklistItem {
+  id: number;
+  text: string;
+  is_completed: boolean;
+  order: number;
+}
+
+export interface CrmChecklistProgress {
+  total: number;
+  completed: number;
+}
+
+export interface CrmChecklist {
+  id: number;
+  title: string;
+  items: CrmChecklistItem[];
+  checklist_progress: CrmChecklistProgress;
+}
+
 export interface CrmCommentAuthor {
   id: number;
   full_name: string;
@@ -573,4 +592,5 @@ export interface CrmTask {
   attachments_count: number;
   position: number;
   created_at: string;
+  checklists: CrmChecklist[];
 }
