@@ -181,3 +181,27 @@ export const ANNOUNCEMENT_CATEGORIES = {
 
 export type AnnouncementCategory =
   (typeof ANNOUNCEMENT_CATEGORIES)[keyof typeof ANNOUNCEMENT_CATEGORIES];
+
+export const CALENDAR_EVENT_TYPES = {
+  BOOKING: 'booking',
+  TASK_DEADLINE: 'task_deadline',
+  LEAVE: 'leave',
+  GUEST_VISIT: 'guest_visit',
+} as const;
+
+export type CalendarEventType = (typeof CALENDAR_EVENT_TYPES)[keyof typeof CALENDAR_EVENT_TYPES];
+
+export const CALENDAR_EVENT_TYPE_LABELS: Record<CalendarEventType, string> = {
+  [CALENDAR_EVENT_TYPES.BOOKING]: 'Бронирование',
+  [CALENDAR_EVENT_TYPES.TASK_DEADLINE]: 'Дедлайн CRM',
+  [CALENDAR_EVENT_TYPES.LEAVE]: 'Отпуск/отсутствие',
+  [CALENDAR_EVENT_TYPES.GUEST_VISIT]: 'Гостевой визит',
+};
+
+export const CALENDAR_VIEWS = {
+  DAY: 'day',
+  WEEK: 'week',
+  MONTH: 'month',
+} as const;
+
+export type CalendarView = (typeof CALENDAR_VIEWS)[keyof typeof CALENDAR_VIEWS];

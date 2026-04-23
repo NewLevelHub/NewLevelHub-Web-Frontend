@@ -89,7 +89,7 @@ const companyAdminNav: NavSection[] = [
     items: [
       { label: 'CRM Доски', path: '/crm', icon: Columns3 },
       { label: 'Мои задачи', path: '/crm/my-tasks', icon: ListTodo },
-      { label: 'Календарь', path: '/calendar', icon: CalendarDays },
+      { label: 'Календарь', path: '/company/calendar', icon: CalendarDays },
     ],
   },
   {
@@ -126,7 +126,7 @@ const employeeNav: NavSection[] = [
       { label: 'CRM Доски', path: '/crm', icon: Columns3 },
       { label: 'Мои задачи', path: '/crm/my-tasks', icon: ListTodo },
       { label: 'Команда', path: '/company/team', icon: Users },
-      { label: 'Календарь', path: '/calendar', icon: CalendarDays },
+      { label: 'Календарь', path: '/company/calendar', icon: CalendarDays },
     ],
   },
   {
