@@ -48,13 +48,16 @@ import {
   ChevronRight,
   ListChecks,
   Send,
+  Clock,
+  Tag,
+  Settings,
 } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { USER_ROLES } from '@/shared/config/constants';
-import type { CrmBoard, CrmColumn, CrmTask, CrmComment, CrmChecklist, CrmChecklistItem, CompanyMember, PaginatedResponse } from '@/shared/types';
+import type { CrmBoard, CrmColumn, CrmTask, CrmLabel, CrmComment, CrmChecklist, CrmChecklistItem, CrmTaskHistory, CompanyMember, PaginatedResponse } from '@/shared/types';
 
 // ─── Priority helpers ─────────────────────────────────────────────────────────
 
@@ -157,6 +160,21 @@ function TaskCard({ task, onClick }: TaskCardProps) {
       >
         <Pencil size={12} />
       </button>
+
+      {/* Label strips */}
+      {task.labels && task.labels.length > 0 && (
+        <div className="flex flex-wrap gap-1 pr-6">
+          {task.labels.map((label) => (
+            <span
+              key={label.id}
+              title={label.name}
+              className="h-1.5 w-8 rounded-full shrink-0"
+              style={{ backgroundColor: label.color }}
+              aria-label={label.name}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Title */}
       <p className="text-sm text-white leading-snug line-clamp-2 pr-6">{task.title}</p>
@@ -1313,6 +1331,822 @@ function CommentSection({ taskId }: CommentSectionProps) {
   );
 }
 
+// ─── History Section ──────────────────────────────────────────────────────────
+
+const ACTION_LABELS: Record<string, string> = {
+  updated_title: 'изменил(а) название',
+  updated_description: 'обновил(а) описание задачи',
+  updated_priority: 'изменил(а) приоритет',
+  updated_deadline: 'изменил(а) дедлайн',
+  updated_assignee: 'изменил(а) исполнителя',
+  updated_column: 'переместил(а) задачу',
+  label_added: 'добавил(а) метку',
+  label_removed: 'удалил(а) метку',
+  archived: 'архивировал(а) задачу',
+  moved: 'переместил(а) задачу',
+};
+
+const HISTORY_PRIORITY_BADGE: Record<string, string> = {
+  low: 'bg-gray-700 text-gray-300 border-gray-600',
+  medium: 'bg-amber-900/60 text-amber-300 border-amber-700',
+  high: 'bg-orange-900/60 text-orange-300 border-orange-700',
+};
+
+const HISTORY_PRIORITY_LABELS: Record<string, string> = {
+  low: 'Низкий',
+  medium: 'Средний',
+  high: 'Высокий',
+};
+
+function formatHistoryDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString('ru-RU', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function formatHistoryDeadline(value: string | null): string {
+  if (!value || value === 'null') return 'не задан';
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return value;
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function truncate(text: string, max: number): string {
+  return text.length > max ? text.slice(0, max) + '…' : text;
+}
+
+function PriorityBadge({ value }: { value: string }) {
+  const label = HISTORY_PRIORITY_LABELS[value] ?? value;
+  const cls = HISTORY_PRIORITY_BADGE[value] ?? 'bg-gray-700 text-gray-300 border-gray-600';
+  return (
+    <span className={cn('inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-medium', cls)}>
+      {label}
+    </span>
+  );
+}
+
+function HistoryValueChange({ entry }: { entry: CrmTaskHistory }) {
+  const { action, old_value, new_value } = entry;
+
+  if (action === 'updated_description') {
+    return null;
+  }
+
+  if (action === 'archived') {
+    return null;
+  }
+
+  if (action === 'updated_priority') {
+    return (
+      <div className="flex items-center gap-1.5 mt-1">
+        {old_value && old_value !== 'null' && <PriorityBadge value={old_value} />}
+        {old_value && old_value !== 'null' && new_value && new_value !== 'null' && (
+          <span className="text-gray-600 text-xs">→</span>
+        )}
+        {new_value && new_value !== 'null' && <PriorityBadge value={new_value} />}
+      </div>
+    );
+  }
+
+  if (action === 'updated_deadline') {
+    const oldLabel = formatHistoryDeadline(old_value);
+    const newLabel = formatHistoryDeadline(new_value);
+    return (
+      <p className="text-xs text-gray-500 mt-1">
+        <span className={cn(old_value && old_value !== 'null' ? 'line-through text-gray-600' : 'text-gray-600')}>
+          {oldLabel}
+        </span>
+        <span className="text-gray-600 mx-1.5">→</span>
+        <span className="text-gray-300">{newLabel}</span>
+      </p>
+    );
+  }
+
+  if (action === 'updated_assignee') {
+    const oldName = !old_value || old_value === 'null' ? 'не назначен' : old_value;
+    const newName = !new_value || new_value === 'null' ? 'не назначен' : new_value;
+    return (
+      <p className="text-xs text-gray-500 mt-1">
+        <span className="text-gray-600">{oldName}</span>
+        <span className="text-gray-600 mx-1.5">→</span>
+        <span className="text-gray-300">{newName}</span>
+      </p>
+    );
+  }
+
+  if (action === 'updated_title') {
+    const oldTitle = old_value ? truncate(old_value, 40) : null;
+    const newTitle = new_value ? truncate(new_value, 40) : null;
+    return (
+      <p className="text-xs text-gray-500 mt-1 italic">
+        {oldTitle && <span className="text-gray-600">«{oldTitle}»</span>}
+        {oldTitle && newTitle && <span className="text-gray-600 mx-1.5">→</span>}
+        {newTitle && <span className="text-gray-300">«{newTitle}»</span>}
+      </p>
+    );
+  }
+
+  if (action === 'updated_column') {
+    const oldCol = old_value && old_value !== 'null' ? old_value : null;
+    const newCol = new_value && new_value !== 'null' ? new_value : null;
+    return (
+      <p className="text-xs text-gray-500 mt-1">
+        {oldCol && (
+          <>
+            <span>из </span>
+            <span className="font-semibold text-gray-300">"{oldCol}"</span>
+          </>
+        )}
+        {newCol && (
+          <>
+            <span className="mx-1.5">→</span>
+            <span>в </span>
+            <span className="font-semibold text-gray-300">"{newCol}"</span>
+          </>
+        )}
+      </p>
+    );
+  }
+
+  if (action === 'label_added' || action === 'label_removed') {
+    const rawValue = new_value ?? old_value;
+    if (!rawValue || rawValue === 'null') return null;
+
+    let parsedLabel: { name: string; color: string } | null = null;
+    try {
+      const parsed = JSON.parse(rawValue);
+      if (parsed && typeof parsed.name === 'string' && typeof parsed.color === 'string') {
+        parsedLabel = parsed as { name: string; color: string };
+      }
+    } catch {
+      // old format — plain string, fall through to legacy render
+    }
+
+    if (parsedLabel) {
+      const hex = parsedLabel.color ?? '#6b7280';
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return (
+        <div className="mt-1">
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium"
+            style={{
+              backgroundColor: `rgba(${r},${g},${b},0.12)`,
+              borderColor: hex,
+              color: hex,
+            }}
+          >
+            {parsedLabel.name}
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mt-1">
+        <span className="inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-medium bg-indigo-900/60 text-indigo-300 border-indigo-700">
+          {rawValue}
+        </span>
+      </div>
+    );
+  }
+
+  if (action === 'moved') {
+    if (!new_value || new_value === 'null') return null;
+    return (
+      <p className="text-xs text-gray-500 mt-1">
+        <span className="text-gray-400">{new_value}</span>
+      </p>
+    );
+  }
+
+  // Generic fallback
+  if (old_value && new_value) {
+    return (
+      <p className="text-xs text-gray-500 mt-1">
+        <span className="text-gray-600">«{old_value}»</span>
+        <span className="text-gray-600 mx-1.5">→</span>
+        <span className="text-gray-300">«{new_value}»</span>
+      </p>
+    );
+  }
+  if (!old_value && new_value) {
+    return <p className="text-xs text-gray-500 mt-1">«{new_value}»</p>;
+  }
+  return null;
+}
+
+interface HistorySectionProps {
+  taskId: number;
+}
+
+function HistorySection({ taskId }: HistorySectionProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const { data: history, isLoading, isError } = useQuery({
+    queryKey: ['crm', 'task', taskId, 'history'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<CrmTaskHistory[] | { results: CrmTaskHistory[] }>(
+        API.crm.taskHistory(taskId),
+      );
+      return Array.isArray(data) ? data : data.results;
+    },
+    enabled: isOpen,
+  });
+
+  return (
+    <div className="space-y-3 pt-2 border-t border-gray-800">
+      {/* Collapsible header */}
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={cn(
+          'flex items-center gap-2 w-full text-left',
+          'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded',
+        )}
+        aria-expanded={isOpen}
+      >
+        <Clock size={14} className="text-gray-500 shrink-0" />
+        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide flex-1">
+          История изменений
+        </h3>
+        {isOpen ? (
+          <ChevronDown size={14} className="text-gray-500 shrink-0" />
+        ) : (
+          <ChevronRight size={14} className="text-gray-500 shrink-0" />
+        )}
+      </button>
+
+      {isOpen && (
+        <div>
+          {/* Loading skeleton */}
+          {isLoading && (
+            <div className="space-y-4 animate-pulse pl-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex gap-3 items-start">
+                  <div className="w-6 h-6 rounded-full bg-gray-700 shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3 w-48 rounded bg-gray-700" />
+                    <div className="h-3 w-32 rounded bg-gray-700" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {isError && (
+            <p className="text-xs text-red-400 pl-3">Не удалось загрузить историю изменений.</p>
+          )}
+
+          {!isLoading && !isError && history && history.length === 0 && (
+            <p className="text-xs text-gray-600 pl-3">История изменений пуста.</p>
+          )}
+
+          {!isLoading && !isError && history && history.length > 0 && (
+            <ol className="relative border-l border-gray-700 ml-3 space-y-4">
+              {history.map((entry) => {
+                const actionLabel = ACTION_LABELS[entry.action] ?? entry.action;
+                const initials = entry.user.full_name
+                  .split(' ')
+                  .slice(0, 2)
+                  .map((w) => w[0] ?? '')
+                  .join('')
+                  .toUpperCase();
+
+                return (
+                  <li key={entry.id} className="pl-4 relative">
+                    {/* Timeline dot */}
+                    <span
+                      className="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-gray-600 border border-gray-500 shrink-0"
+                      aria-hidden="true"
+                    />
+
+                    <div className="flex items-start gap-2">
+                      {/* User avatar */}
+                      {entry.user.avatar ? (
+                        <img
+                          src={entry.user.avatar}
+                          alt={entry.user.full_name}
+                          className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5"
+                        />
+                      ) : (
+                        <span
+                          className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-medium flex items-center justify-center shrink-0 mt-0.5"
+                          aria-label={entry.user.full_name}
+                        >
+                          {initials}
+                        </span>
+                      )}
+
+                      <div className="min-w-0 flex-1">
+                        {/* Action line */}
+                        <div className="flex items-baseline justify-between gap-2">
+                          <p className="text-xs text-gray-300 leading-snug">
+                            <span className="font-medium text-gray-200">{entry.user.full_name}</span>
+                            {' '}
+                            <span className="text-gray-400">{actionLabel}</span>
+                            {entry.action === 'archived' && (
+                              <Archive size={11} className="inline ml-1 text-gray-500 align-middle" aria-hidden="true" />
+                            )}
+                          </p>
+                          <span className="text-xs text-gray-600 shrink-0 whitespace-nowrap">
+                            {formatHistoryDate(entry.created_at)}
+                          </span>
+                        </div>
+
+                        {/* Value visualisation */}
+                        <HistoryValueChange entry={entry} />
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Labels Manager Modal ─────────────────────────────────────────────────────
+
+interface LabelsManagerModalProps {
+  onClose: () => void;
+}
+
+function LabelsManagerModal({ onClose }: LabelsManagerModalProps) {
+  const queryClient = useQueryClient();
+  const [newName, setNewName] = useState('');
+  const [newColor, setNewColor] = useState('#6366f1');
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editColor, setEditColor] = useState('');
+
+  const { data: labels, isLoading } = useQuery({
+    queryKey: ['crm', 'labels'],
+    queryFn: () =>
+      apiClient.get<CrmLabel[]>(API.crm.labels).then((r) => {
+        const data = r.data;
+        return Array.isArray(data) ? data : (data as { results: CrmLabel[] }).results;
+      }),
+  });
+
+  const invalidate = () => void queryClient.invalidateQueries({ queryKey: ['crm', 'labels'] });
+
+  const createMutation = useMutation({
+    mutationFn: (payload: { name: string; color: string }) =>
+      apiClient.post<CrmLabel>(API.crm.labels, payload).then((r) => r.data),
+    onSuccess: () => {
+      setNewName('');
+      setNewColor('#6366f1');
+      invalidate();
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: { name: string; color: string } }) =>
+      apiClient.patch<CrmLabel>(API.crm.labelDetail(id), payload).then((r) => r.data),
+    onSuccess: () => {
+      setEditingId(null);
+      invalidate();
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiClient.delete(API.crm.labelDetail(id)),
+    onSuccess: invalidate,
+  });
+
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newName.trim();
+    if (!trimmed || createMutation.isPending) return;
+    createMutation.mutate({ name: trimmed, color: newColor });
+  };
+
+  const startEdit = (label: CrmLabel) => {
+    setEditingId(label.id);
+    setEditName(label.name);
+    setEditColor(label.color);
+  };
+
+  const cancelEdit = () => setEditingId(null);
+
+  const handleSaveEdit = () => {
+    const trimmed = editName.trim();
+    if (!trimmed || updateMutation.isPending) return;
+    updateMutation.mutate({ id: editingId!, payload: { name: trimmed, color: editColor } });
+  };
+
+  const handleDelete = (id: number) => {
+    if (!window.confirm('Удалить метку? Она будет снята со всех задач.')) return;
+    deleteMutation.mutate(id);
+  };
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) onClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4"
+      onClick={handleBackdropClick}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="labels-manager-title"
+    >
+      <div className="w-full max-w-md rounded-xl border border-gray-700 bg-gray-900 shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+          <h2 id="labels-manager-title" className="text-base font-semibold text-white flex items-center gap-2">
+            <Tag size={16} />
+            Управление метками
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-400 hover:text-white transition-colors rounded-md p-1 hover:bg-gray-800"
+            aria-label="Закрыть"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
+          {/* Existing labels */}
+          {isLoading && (
+            <div className="space-y-2 animate-pulse">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-9 rounded-lg bg-gray-800" />
+              ))}
+            </div>
+          )}
+
+          {!isLoading && labels && labels.length === 0 && (
+            <p className="text-sm text-gray-500">Меток пока нет. Создайте первую.</p>
+          )}
+
+          {!isLoading && labels && labels.length > 0 && (
+            <ul className="space-y-1.5" aria-label="Список меток">
+              {labels.map((label) => (
+                <li key={label.id}>
+                  {editingId === label.id ? (
+                    <div className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2">
+                      <input
+                        type="color"
+                        value={editColor}
+                        onChange={(e) => setEditColor(e.target.value)}
+                        className="w-7 h-7 rounded cursor-pointer border-0 bg-transparent p-0"
+                        aria-label="Цвет метки"
+                      />
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        maxLength={50}
+                        className={cn(
+                          'flex-1 rounded border bg-gray-700 px-2 py-1 text-sm text-white',
+                          'focus:outline-none focus:ring-1 focus:ring-blue-500 border-gray-600',
+                        )}
+                        aria-label="Название метки"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveEdit();
+                          if (e.key === 'Escape') cancelEdit();
+                        }}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveEdit}
+                        disabled={!editName.trim() || updateMutation.isPending}
+                        className={cn(
+                          'rounded px-2.5 py-1 text-xs font-medium transition-colors',
+                          'bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed',
+                        )}
+                      >
+                        {updateMutation.isPending ? '...' : 'Сохранить'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        className="rounded p-1 text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-colors"
+                        aria-label="Отмена"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="group flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2">
+                      <span
+                        className="w-4 h-4 rounded shrink-0"
+                        style={{ backgroundColor: label.color }}
+                        aria-hidden="true"
+                      />
+                      <span className="flex-1 text-sm text-gray-200 truncate">{label.name}</span>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(label)}
+                          className="rounded p-1 text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-colors"
+                          aria-label={`Редактировать метку ${label.name}`}
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(label.id)}
+                          disabled={deleteMutation.isPending}
+                          className="rounded p-1 text-gray-500 hover:text-red-400 hover:bg-gray-700 transition-colors disabled:opacity-50"
+                          aria-label={`Удалить метку ${label.name}`}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {/* Create new label */}
+          <div className="border-t border-gray-800 pt-4">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Новая метка</p>
+            <form onSubmit={handleCreate} className="flex items-center gap-2">
+              <input
+                type="color"
+                value={newColor}
+                onChange={(e) => setNewColor(e.target.value)}
+                className="w-9 h-9 rounded cursor-pointer border border-gray-700 bg-gray-800 p-0.5"
+                aria-label="Выбрать цвет"
+              />
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Название метки"
+                maxLength={50}
+                className={cn(
+                  'flex-1 rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500',
+                  'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-gray-700',
+                )}
+                aria-label="Название новой метки"
+              />
+              <button
+                type="submit"
+                disabled={!newName.trim() || createMutation.isPending}
+                className={cn(
+                  'rounded-lg px-3 py-2 text-sm font-medium transition-colors shrink-0',
+                  'bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed',
+                )}
+              >
+                {createMutation.isPending ? '...' : 'Создать'}
+              </button>
+            </form>
+            {createMutation.isError && (
+              <p className="mt-2 text-xs text-red-400">Не удалось создать метку.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Task Labels Section ───────────────────────────────────────────────────────
+
+interface TaskLabelsSectionProps {
+  taskId: number;
+  boardId: string;
+  taskLabels: CrmLabel[];
+}
+
+function TaskLabelsSection({ taskId, boardId, taskLabels }: TaskLabelsSectionProps) {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [managerOpen, setManagerOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const isAdmin = user?.role === USER_ROLES.COMPANY_ADMIN;
+
+  const { data: allLabels } = useQuery({
+    queryKey: ['crm', 'labels'],
+    queryFn: () =>
+      apiClient.get<CrmLabel[]>(API.crm.labels).then((r) => {
+        const data = r.data;
+        return Array.isArray(data) ? data : (data as { results: CrmLabel[] }).results;
+      }),
+  });
+
+  const updateLabelsMutation = useMutation({
+    mutationFn: (labelIds: number[]) =>
+      apiClient.patch<CrmTask>(API.crm.taskDetail(taskId), { label_ids: labelIds }).then((r) => r.data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'task', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+    },
+  });
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+        setSearch('');
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [dropdownOpen]);
+
+  // Focus search when dropdown opens
+  useEffect(() => {
+    if (dropdownOpen) searchRef.current?.focus();
+  }, [dropdownOpen]);
+
+  const toggleLabel = (labelId: number) => {
+    const currentIds = taskLabels.map((l) => l.id);
+    const updated = currentIds.includes(labelId)
+      ? currentIds.filter((id) => id !== labelId)
+      : [...currentIds, labelId];
+    updateLabelsMutation.mutate(updated);
+  };
+
+  const removeLabel = (labelId: number) => {
+    const updated = taskLabels.map((l) => l.id).filter((id) => id !== labelId);
+    updateLabelsMutation.mutate(updated);
+  };
+
+  const filteredLabels = (allLabels ?? []).filter((l) =>
+    l.name.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  return (
+    <div className="space-y-2">
+      <span className="block text-xs font-medium text-gray-500 uppercase tracking-wide">Метки</span>
+
+      {/* Current labels */}
+      <div className="flex flex-wrap gap-1.5">
+        {taskLabels.map((label) => {
+          // Parse hex to rgba for transparent background
+          const hex = label.color ?? '#6b7280';
+          const r = parseInt(hex.slice(1, 3), 16);
+          const g = parseInt(hex.slice(3, 5), 16);
+          const b = parseInt(hex.slice(5, 7), 16);
+          return (
+            <span
+              key={label.id}
+              className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium"
+              style={{
+                backgroundColor: `rgba(${r},${g},${b},0.12)`,
+                borderColor: hex,
+                color: hex,
+              }}
+            >
+              {label.name}
+              <button
+                type="button"
+                onClick={() => removeLabel(label.id)}
+                disabled={updateLabelsMutation.isPending}
+                className="rounded-full hover:opacity-70 transition-opacity disabled:opacity-40"
+                aria-label={`Снять метку ${label.name}`}
+              >
+                <X size={10} />
+              </button>
+            </span>
+          );
+        })}
+
+        {/* Add label button */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            type="button"
+            onClick={() => setDropdownOpen((v) => !v)}
+            className={cn(
+              'inline-flex items-center gap-1 rounded-full border border-dashed border-gray-600',
+              'px-2.5 py-0.5 text-xs text-gray-500 hover:text-gray-300 hover:border-gray-400 transition-colors',
+            )}
+            aria-haspopup="listbox"
+            aria-expanded={dropdownOpen}
+          >
+            <Plus size={11} />
+            Добавить метку
+          </button>
+
+          {dropdownOpen && (
+            <div
+              className={cn(
+                'absolute left-0 top-full mt-1 z-10',
+                'w-56 rounded-lg border border-gray-700 bg-gray-900 shadow-xl',
+              )}
+              role="listbox"
+              aria-label="Выбор меток"
+            >
+              {/* Search */}
+              <div className="p-2 border-b border-gray-800">
+                <div className="relative">
+                  <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                  <input
+                    ref={searchRef}
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Найти метку..."
+                    className={cn(
+                      'w-full rounded-md border bg-gray-800 pl-7 pr-2 py-1.5 text-xs text-white placeholder-gray-500',
+                      'focus:outline-none focus:ring-1 focus:ring-blue-500 border-gray-700',
+                    )}
+                    aria-label="Поиск меток"
+                  />
+                </div>
+              </div>
+
+              {/* Label list */}
+              <ul className="max-h-48 overflow-y-auto py-1">
+                {filteredLabels.length === 0 && (
+                  <li className="px-3 py-2 text-xs text-gray-500">Метки не найдены</li>
+                )}
+                {filteredLabels.map((label) => {
+                  const checked = taskLabels.some((l) => l.id === label.id);
+                  return (
+                    <li key={label.id}>
+                      <button
+                        type="button"
+                        onClick={() => toggleLabel(label.id)}
+                        role="option"
+                        aria-selected={checked}
+                        className={cn(
+                          'flex items-center gap-2.5 w-full px-3 py-1.5 text-xs text-left',
+                          'hover:bg-gray-800 transition-colors',
+                        )}
+                      >
+                        <span
+                          className="w-3 h-3 rounded-sm border shrink-0 flex items-center justify-center"
+                          style={{
+                            backgroundColor: checked ? label.color : 'transparent',
+                            borderColor: label.color,
+                          }}
+                        >
+                          {checked && <Check size={8} className="text-white" />}
+                        </span>
+                        <span
+                          className="w-3 h-3 rounded-full shrink-0"
+                          style={{ backgroundColor: label.color }}
+                          aria-hidden="true"
+                        />
+                        <span className="flex-1 text-gray-200 truncate">{label.name}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {/* Manage labels (company_admin only) */}
+              {isAdmin && (
+                <div className="border-t border-gray-800 p-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      setManagerOpen(true);
+                    }}
+                    className={cn(
+                      'flex items-center gap-2 w-full rounded-md px-3 py-1.5 text-xs',
+                      'text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors',
+                    )}
+                  >
+                    <Settings size={12} />
+                    Управление метками
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {updateLabelsMutation.isError && (
+        <p className="text-xs text-red-400">Не удалось обновить метки.</p>
+      )}
+
+      {/* Labels manager modal */}
+      {managerOpen && <LabelsManagerModal onClose={() => setManagerOpen(false)} />}
+    </div>
+  );
+}
+
 // ─── Task Detail Modal ────────────────────────────────────────────────────────
 
 interface TaskDetailModalProps {
@@ -1519,7 +2353,6 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
                     <option value="low">Низкий</option>
                     <option value="medium">Средний</option>
                     <option value="high">Высокий</option>
-                    <option value="critical">Критический</option>
                   </select>
                 </div>
 
@@ -1581,6 +2414,13 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
                 )}
               </div>
 
+              {/* Labels */}
+              <TaskLabelsSection
+                taskId={taskId}
+                boardId={boardId}
+                taskLabels={task.labels ?? []}
+              />
+
               {/* Description */}
               <div className="space-y-1.5">
                 <label htmlFor="task-description" className="block text-xs font-medium text-gray-500 uppercase tracking-wide">
@@ -1618,6 +2458,9 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
 
               {/* Comments */}
               <CommentSection taskId={taskId} />
+
+              {/* History */}
+              <HistorySection taskId={taskId} />
 
               {/* Archive */}
               <div className="pt-2 border-t border-gray-800">

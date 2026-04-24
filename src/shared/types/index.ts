@@ -638,6 +638,27 @@ export interface CrmComment {
   created_at: string;
 }
 
+export interface CrmHistoryUser {
+  id: number;
+  full_name: string;
+  avatar: string | null;
+}
+
+export interface CrmTaskHistory {
+  id: number;
+  user: CrmHistoryUser;
+  action: string;
+  old_value: string | null;
+  new_value: string | null;
+  created_at: string;
+}
+
+export interface CrmLabel {
+  id: number;
+  name: string;
+  color: string; // hex, e.g. "#ef4444"
+}
+
 export interface CrmTask {
   id: number;
   board_id: number;
@@ -648,6 +669,7 @@ export interface CrmTask {
   deadline: string | null; // ISO date
   assignee: { id: number; first_name: string; last_name: string; avatar?: string } | null;
   label_ids: number[];
+  labels: CrmLabel[];
   comments_count: number;
   attachments_count: number;
   position: number;
