@@ -13,6 +13,7 @@ import type {
   LeaveStatus,
   CompanyTier,
   AnnouncementCategory,
+  CalendarEventType,
 } from '@/shared/config/constants';
 
 export interface User {
@@ -414,6 +415,23 @@ export interface LeaveBalance {
 export interface TeamLeaveBalance extends LeaveBalance {
   user_id: number;
   user_name: string;
+}
+
+export interface CalendarEvent {
+  type: CalendarEventType;
+  title: string;
+  start: string;
+  end: string;
+  user: {
+    id: number;
+    full_name: string;
+  };
+}
+
+export interface CalendarBusySlot {
+  start: string;
+  end: string;
+  type?: CalendarEventType;
 }
 
 export interface FileItem {

@@ -41,6 +41,8 @@ export const API = {
       `/companies/${companyId}/members/${userId}/${reassignTo ? `?reassign_to=${reassignTo}` : ''}`,
     onboardingStatus: (companyId: string) => `/companies/${companyId}/onboarding-status/`,
     onboardingSkip: (companyId: string) => `/companies/${companyId}/onboarding-status/skip/`,
+    calendar: (companyId: string) => `/companies/${companyId}/calendar/`,
+    calendarBusy: (companyId: string) => `/companies/${companyId}/calendar/busy/`,
   },
   resources: {
     list: '/resources/',
@@ -109,9 +111,6 @@ export const API = {
     member: (id: string) => `/team/${id}/`,
     manage: '/team/manage/',
     invites: '/team/invites/',
-  },
-  calendar: {
-    events: '/calendar/events/',
   },
   passes: {
     list: '/access/passes/',
