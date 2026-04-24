@@ -1474,12 +1474,44 @@ function HistoryValueChange({ entry }: { entry: CrmTaskHistory }) {
   }
 
   if (action === 'label_added' || action === 'label_removed') {
-    const labelName = new_value ?? old_value;
-    if (!labelName || labelName === 'null') return null;
+    const rawValue = new_value ?? old_value;
+    if (!rawValue || rawValue === 'null') return null;
+
+    let parsedLabel: { name: string; color: string } | null = null;
+    try {
+      const parsed = JSON.parse(rawValue);
+      if (parsed && typeof parsed.name === 'string' && typeof parsed.color === 'string') {
+        parsedLabel = parsed as { name: string; color: string };
+      }
+    } catch {
+      // old format — plain string, fall through to legacy render
+    }
+
+    if (parsedLabel) {
+      const hex = parsedLabel.color ?? '#6b7280';
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return (
+        <div className="mt-1">
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium"
+            style={{
+              backgroundColor: `rgba(${r},${g},${b},0.12)`,
+              borderColor: hex,
+              color: hex,
+            }}
+          >
+            {parsedLabel.name}
+          </span>
+        </div>
+      );
+    }
+
     return (
       <div className="mt-1">
         <span className="inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-medium bg-indigo-900/60 text-indigo-300 border-indigo-700">
-          {labelName}
+          {rawValue}
         </span>
       </div>
     );
