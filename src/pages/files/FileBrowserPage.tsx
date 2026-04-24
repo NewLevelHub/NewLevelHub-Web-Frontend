@@ -44,6 +44,7 @@ export default function FileBrowserPage() {
   const [newFolderName, setNewFolderName] = useState('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [shareTargetUserId, setShareTargetUserId] = useState('');
   const [sharePermission, setSharePermission] = useState<StorageSharePermission>('view');
   const [selectedShareFileId, setSelectedShareFileId] = useState<number | null>(null);
@@ -56,6 +57,7 @@ export default function FileBrowserPage() {
 
   const refreshStorageData = () => {
     queryClient.invalidateQueries({ queryKey: ['storage', 'folders', scope, 'root'] });
+    queryClient.invalidateQueries({ queryKey: ['storage', 'files-root', scope] });
     queryClient.invalidateQueries({ queryKey: ['storage', 'files-search'] });
     queryClient.invalidateQueries({ queryKey: ['storage', 'usage'] });
     queryClient.invalidateQueries({ queryKey: ['storage', 'shares', 'shared-with-me'] });
@@ -106,6 +108,37 @@ export default function FileBrowserPage() {
       return data;
     },
     enabled: isSearching,
+  });
+
+  const rootFilesQuery = useQuery({
+    queryKey: ['storage', 'files-root', scope],
+    queryFn: async () => {
+      try {
+        const { data } = await apiClient.get<PaginatedResponse<StorageFile>>(API.storage.files, {
+          params: {
+            folder_id: 'null',
+            scope,
+            page_size: 100,
+            ordering: '-created_at',
+          },
+        });
+        return data;
+      } catch {
+        // Fallback for backends that don't support folder_id=null yet.
+        const { data } = await apiClient.get<PaginatedResponse<StorageFile>>(API.storage.files, {
+          params: {
+            scope,
+            page_size: 100,
+            ordering: '-created_at',
+          },
+        });
+        return {
+          ...data,
+          results: (data.results ?? []).filter((file) => file.folder === null),
+        };
+      }
+    },
+    enabled: currentFolder === null && !isSearching,
   });
 
   const storageUsageQuery = useQuery({
@@ -196,17 +229,48 @@ export default function FileBrowserPage() {
       form.append('file', file);
       if (currentFolder) {
         form.append('folder_id', String(currentFolder.id));
+      } else {
+        form.append('is_company_shared', scope === 'company' ? 'true' : 'false');
       }
-      await apiClient.post(API.storage.files, form, {
+      const { data } = await apiClient.post<StorageFile>(API.storage.files, form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (createdFile) => {
       setUploadFile(null);
       setUploadError(null);
+      setUploadSuccess(`Файл "${createdFile.name}" успешно загружен.`);
+
+      if (currentFolder === null && createdFile.folder === null) {
+        queryClient.setQueryData<PaginatedResponse<StorageFile>>(
+          ['storage', 'files-root', scope],
+          (prev) => {
+            if (!prev) {
+              return {
+                count: 1,
+                next: null,
+                previous: null,
+                results: [createdFile],
+              };
+            }
+
+            const alreadyExists = prev.results.some((item) => item.id === createdFile.id);
+            if (alreadyExists) return prev;
+
+            return {
+              ...prev,
+              count: prev.count + 1,
+              results: [createdFile, ...prev.results],
+            };
+          },
+        );
+      }
+
       refreshStorageData();
     },
     onError: (error) => {
+      setUploadSuccess(null);
       setUploadError(getApiErrorMessage(error, 'Не удалось загрузить файл'));
     },
   });
@@ -303,9 +367,9 @@ export default function FileBrowserPage() {
 
   const files = useMemo<StorageFile[]>(() => {
     if (isSearching) return searchedFilesQuery.data?.results ?? [];
-    if (!currentFolder) return [];
+    if (!currentFolder) return rootFilesQuery.data?.results ?? [];
     return folderDetailQuery.data?.files ?? [];
-  }, [currentFolder, folderDetailQuery.data?.files, isSearching, searchedFilesQuery.data?.results]);
+  }, [currentFolder, folderDetailQuery.data?.files, isSearching, rootFilesQuery.data?.results, searchedFilesQuery.data?.results]);
 
   const companyMembers = companyMembersQuery.data?.results ?? [];
   const recipientOptions = companyMembers.filter((member) => member.id !== user?.id);
@@ -313,8 +377,9 @@ export default function FileBrowserPage() {
   const sharedWithMe = sharedWithMeQuery.data?.results ?? [];
   const selectedShareFile = files.find((file) => file.id === selectedShareFileId) ?? null;
 
-  const isLoading = rootFoldersQuery.isLoading || folderDetailQuery.isLoading || searchedFilesQuery.isLoading;
-  const isError = rootFoldersQuery.isError || folderDetailQuery.isError || searchedFilesQuery.isError;
+  const isLoading =
+    rootFoldersQuery.isLoading || folderDetailQuery.isLoading || searchedFilesQuery.isLoading || rootFilesQuery.isLoading;
+  const isError = rootFoldersQuery.isError || folderDetailQuery.isError || searchedFilesQuery.isError || rootFilesQuery.isError;
 
   const openFolder = (folder: StorageFolder) => {
     setTrail((prev) => [...prev, folder]);
@@ -373,6 +438,7 @@ export default function FileBrowserPage() {
   const handleFileUpload = () => {
     if (!uploadFile) return;
     setUploadError(null);
+    setUploadSuccess(null);
     uploadFileMutation.mutate(uploadFile);
   };
 
@@ -380,10 +446,12 @@ export default function FileBrowserPage() {
     if (!file) {
       setUploadFile(null);
       setUploadError(null);
+      setUploadSuccess(null);
       return;
     }
     if (file.size > MAX_UPLOAD_BYTES) {
       setUploadFile(null);
+      setUploadSuccess(null);
       setUploadError('Файл превышает лимит 100 MB. Выберите файл меньшего размера.');
       return;
     }
@@ -511,6 +579,7 @@ export default function FileBrowserPage() {
           Загрузить файл
         </button>
         <p className="text-xs text-slate-400">Максимальный размер файла: 100 MB</p>
+        {uploadSuccess ? <p className="w-full text-xs text-emerald-300">{uploadSuccess}</p> : null}
         {uploadError ? <p className="w-full text-xs text-rose-300">{uploadError}</p> : null}
       </div>
 
@@ -566,8 +635,8 @@ export default function FileBrowserPage() {
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">Файлы</h2>
               {isSearching && files.length === 0 ? (
                 <p className="text-sm text-slate-400">По вашему запросу ничего не найдено.</p>
-              ) : currentFolder === null && !isSearching ? (
-                <p className="text-sm text-slate-400">Откройте папку, чтобы увидеть файлы.</p>
+              ) : currentFolder === null && !isSearching && files.length === 0 ? (
+                <p className="text-sm text-slate-400">В корне пока нет файлов.</p>
               ) : files.length === 0 ? (
                 <p className="text-sm text-slate-400">В этой папке пока нет файлов.</p>
               ) : (
