@@ -617,6 +617,12 @@ export interface CrmTaskHistory {
   created_at: string;
 }
 
+export interface CrmLabel {
+  id: number;
+  name: string;
+  color: string; // hex, e.g. "#ef4444"
+}
+
 export interface CrmTask {
   id: number;
   board_id: number;
@@ -627,6 +633,7 @@ export interface CrmTask {
   deadline: string | null; // ISO date
   assignee: { id: number; first_name: string; last_name: string; avatar?: string } | null;
   label_ids: number[];
+  labels: CrmLabel[];
   comments_count: number;
   attachments_count: number;
   position: number;

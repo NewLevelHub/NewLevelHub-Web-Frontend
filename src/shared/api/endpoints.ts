@@ -104,6 +104,8 @@ export const API = {
     taskComments: (taskId: number) => `/crm/tasks/${taskId}/comments/`,
     taskCommentDetail: (taskId: number, commentId: number) => `/crm/tasks/${taskId}/comments/${commentId}/`,
     taskHistory: (taskId: number) => `/crm/tasks/${taskId}/history/`,
+    labels: '/crm/labels/',
+    labelDetail: (id: number) => `/crm/labels/${id}/`,
   },
   team: {
     directory: '/team/',
