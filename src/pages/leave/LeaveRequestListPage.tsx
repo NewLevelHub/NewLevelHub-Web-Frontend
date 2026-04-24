@@ -39,6 +39,11 @@ const STATUS_BADGE_CLASS: Record<LeaveStatus, string> = {
   [LEAVE_STATUSES.REJECTED]: 'bg-rose-900/60 text-rose-300',
 };
 const LIVE_REFETCH_MS = 15000;
+type ReviewStatus = Extract<LeaveStatus, 'approved' | 'rejected'>;
+type ReviewDialogState = {
+  leaveId: number;
+  status: ReviewStatus;
+};
 
 export default function LeaveRequestListPage() {
   const { user } = useAuth();
@@ -48,6 +53,8 @@ export default function LeaveRequestListPage() {
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [teamTotals, setTeamTotals] = useState<Record<number, string>>({});
   const [mutationError, setMutationError] = useState<string | null>(null);
+  const [reviewDialog, setReviewDialog] = useState<ReviewDialogState | null>(null);
+  const [reviewCommentInput, setReviewCommentInput] = useState('');
 
   const queryParams = useMemo(() => {
     const params: Record<string, string> = {};
@@ -91,10 +98,12 @@ export default function LeaveRequestListPage() {
   }, [teamBalances]);
 
   const reviewMutation = useMutation({
-    mutationFn: ({ id, status }: { id: number; status: LeaveStatus }) =>
-      apiClient.post(API.leave.review(String(id)), { status }),
+    mutationFn: ({ id, status, reviewComment }: { id: number; status: ReviewStatus; reviewComment: string }) =>
+      apiClient.post(API.leave.review(String(id)), { status, review_comment: reviewComment }),
     onSuccess: async () => {
       setMutationError(null);
+      setReviewDialog(null);
+      setReviewCommentInput('');
       await queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
       await queryClient.invalidateQueries({ queryKey: ['leave-balance'] });
       await queryClient.invalidateQueries({ queryKey: ['leave-team-balance'] });
@@ -119,6 +128,26 @@ export default function LeaveRequestListPage() {
 
   const rows = data?.results ?? [];
   const showUserColumn = isAdmin;
+
+  const openReviewDialog = (leaveId: number, status: ReviewStatus, currentComment = '') => {
+    setReviewDialog({ leaveId, status });
+    setReviewCommentInput(currentComment);
+  };
+
+  const closeReviewDialog = () => {
+    if (reviewMutation.isPending) return;
+    setReviewDialog(null);
+    setReviewCommentInput('');
+  };
+
+  const submitReview = () => {
+    if (!reviewDialog || reviewMutation.isPending) return;
+    reviewMutation.mutate({
+      id: reviewDialog.leaveId,
+      status: reviewDialog.status,
+      reviewComment: reviewCommentInput.trim(),
+    });
+  };
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 p-6">
@@ -248,7 +277,7 @@ export default function LeaveRequestListPage() {
                             type="button"
                             className="rounded-md border border-emerald-700 bg-emerald-900/30 px-2 py-1 text-xs text-emerald-300 hover:bg-emerald-900/50"
                             disabled={reviewMutation.isPending}
-                            onClick={() => reviewMutation.mutate({ id: leave.id, status: LEAVE_STATUSES.APPROVED })}
+                            onClick={() => openReviewDialog(leave.id, LEAVE_STATUSES.APPROVED, leave.review_comment)}
                           >
                             Одобрить
                           </button>
@@ -256,7 +285,7 @@ export default function LeaveRequestListPage() {
                             type="button"
                             className="rounded-md border border-rose-800 bg-rose-900/30 px-2 py-1 text-xs text-rose-300 hover:bg-rose-900/50"
                             disabled={reviewMutation.isPending}
-                            onClick={() => reviewMutation.mutate({ id: leave.id, status: LEAVE_STATUSES.REJECTED })}
+                            onClick={() => openReviewDialog(leave.id, LEAVE_STATUSES.REJECTED, leave.review_comment)}
                           >
                             Отклонить
                           </button>
@@ -266,7 +295,7 @@ export default function LeaveRequestListPage() {
                           type="button"
                           className="rounded-md border border-amber-800 bg-amber-900/30 px-2 py-1 text-xs text-amber-300 hover:bg-amber-900/50"
                           disabled={reviewMutation.isPending}
-                          onClick={() => reviewMutation.mutate({ id: leave.id, status: LEAVE_STATUSES.REJECTED })}
+                          onClick={() => openReviewDialog(leave.id, LEAVE_STATUSES.REJECTED, leave.review_comment)}
                         >
                           Отменить одобрение
                         </button>
@@ -304,45 +333,118 @@ export default function LeaveRequestListPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700/60">
-                  {teamBalances.map((row) => (
-                    <tr key={row.user_id} className="text-sm text-gray-200">
-                      <td className="px-4 py-3">{row.user_name}</td>
-                      <td className="px-4 py-3">{row.total_days}</td>
-                      <td className="px-4 py-3">{row.used_days}</td>
-                      <td className="px-4 py-3">{row.remaining_days}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            min={0}
-                            value={teamTotals[row.user_id] ?? String(row.total_days)}
-                            onChange={(event) =>
-                              setTeamTotals((prev) => ({ ...prev, [row.user_id]: event.target.value }))
-                            }
-                            className="w-20 rounded-md border border-gray-700 bg-gray-900 px-2 py-1 text-xs text-white"
-                          />
-                          <button
-                            type="button"
-                            className="rounded-md bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-500"
-                            disabled={setBalanceMutation.isPending}
-                            onClick={() =>
-                              setBalanceMutation.mutate({
-                                userId: row.user_id,
-                                totalDays: Number(teamTotals[row.user_id] ?? row.total_days),
-                              })
-                            }
-                          >
-                            Сохранить
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {teamBalances.map((row) => {
+                    const isBalanceLocked = row.total_days > 0 && row.used_days >= row.total_days;
+
+                    return (
+                      <tr key={row.user_id} className="text-sm text-gray-200">
+                        <td className="px-4 py-3">{row.user_name}</td>
+                        <td className="px-4 py-3">{row.total_days}</td>
+                        <td className="px-4 py-3">{row.used_days}</td>
+                        <td className="px-4 py-3">{row.remaining_days}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={0}
+                              value={teamTotals[row.user_id] ?? String(row.total_days)}
+                              onChange={(event) =>
+                                setTeamTotals((prev) => ({ ...prev, [row.user_id]: event.target.value }))
+                              }
+                              className={cn(
+                                'w-20 rounded-md border border-gray-700 bg-gray-900 px-2 py-1 text-xs text-white',
+                                isBalanceLocked && 'cursor-not-allowed opacity-60',
+                              )}
+                              disabled={isBalanceLocked || setBalanceMutation.isPending}
+                            />
+                            <button
+                              type="button"
+                              className={cn(
+                                'rounded-md bg-indigo-600 px-2 py-1 text-xs text-white',
+                                !isBalanceLocked && 'hover:bg-indigo-500',
+                                isBalanceLocked && 'cursor-not-allowed opacity-60',
+                              )}
+                              disabled={isBalanceLocked || setBalanceMutation.isPending}
+                              onClick={() =>
+                                !isBalanceLocked &&
+                                setBalanceMutation.mutate({
+                                  userId: row.user_id,
+                                  totalDays: Number(teamTotals[row.user_id] ?? row.total_days),
+                                })
+                              }
+                            >
+                              Сохранить
+                            </button>
+                            {isBalanceLocked ? (
+                              <span className="text-xs text-amber-300">Лимит уже израсходован</span>
+                            ) : null}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           )}
         </section>
+      ) : null}
+
+      {reviewDialog ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeReviewDialog}
+        >
+          <div
+            className="w-full max-w-lg rounded-xl border border-gray-700 bg-gray-800 p-5"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 className="text-lg font-semibold text-white">
+              {reviewDialog.status === LEAVE_STATUSES.APPROVED ? 'Одобрить заявку' : 'Отклонить заявку'}
+            </h2>
+            <p className="mt-2 text-sm text-gray-300">
+              {reviewDialog.status === LEAVE_STATUSES.APPROVED
+                ? 'Комментарий к одобрению (необязательно)'
+                : 'Комментарий к отклонению (необязательно)'}
+            </p>
+            <textarea
+              value={reviewCommentInput}
+              onChange={(event) => setReviewCommentInput(event.target.value)}
+              rows={4}
+              placeholder="Оставьте комментарий при необходимости"
+              className="mt-3 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder:text-gray-500"
+            />
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                onClick={closeReviewDialog}
+                disabled={reviewMutation.isPending}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  'rounded-lg px-3 py-2 text-sm font-medium text-white',
+                  reviewDialog.status === LEAVE_STATUSES.APPROVED
+                    ? 'bg-emerald-600 hover:bg-emerald-500'
+                    : 'bg-rose-600 hover:bg-rose-500',
+                )}
+                onClick={submitReview}
+                disabled={reviewMutation.isPending}
+              >
+                {reviewMutation.isPending
+                  ? 'Сохраняем...'
+                  : reviewDialog.status === LEAVE_STATUSES.APPROVED
+                    ? 'Подтвердить одобрение'
+                    : 'Подтвердить отклонение'}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </main>
   );

@@ -41,6 +41,9 @@ import {
   Calendar,
   User,
   Archive,
+  Search,
+  List,
+  LayoutDashboard,
   ChevronDown,
   ChevronRight,
   ListChecks,
@@ -2583,6 +2586,275 @@ function InlineAddColumn({ boardId, onDone }: InlineAddColumnProps) {
   );
 }
 
+// ─── Board Filters ────────────────────────────────────────────────────────────
+
+interface BoardFilters {
+  search: string;
+  priority: string;
+  deadline: string;
+  ordering: string;
+  view: 'kanban' | 'list';
+}
+
+const DEFAULT_FILTERS: BoardFilters = {
+  search: '',
+  priority: '',
+  deadline: '',
+  ordering: '',
+  view: 'kanban',
+};
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
+interface FilterBarProps {
+  filters: BoardFilters;
+  onChange: (filters: BoardFilters) => void;
+}
+
+function FilterBar({ filters, onChange }: FilterBarProps) {
+  const hasActive =
+    filters.search !== '' ||
+    filters.priority !== '' ||
+    filters.deadline !== '' ||
+    filters.ordering !== '';
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      {/* Search */}
+      <div className="relative flex-1 min-w-48">
+        <Search
+          size={14}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+        />
+        <input
+          type="text"
+          value={filters.search}
+          onChange={(e) => onChange({ ...filters, search: e.target.value })}
+          placeholder="Поиск по задачам..."
+          className={cn(
+            'w-full rounded-lg border border-gray-700 bg-gray-800 pl-8 pr-3 py-2 text-sm text-white placeholder-gray-500',
+            'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
+          )}
+          aria-label="Поиск задач"
+        />
+      </div>
+
+      {/* Priority */}
+      <select
+        value={filters.priority}
+        onChange={(e) => onChange({ ...filters, priority: e.target.value })}
+        className={cn(
+          'rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white',
+          'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
+        )}
+        aria-label="Фильтр по приоритету"
+      >
+        <option value="">Все приоритеты</option>
+        <option value="low">Низкий</option>
+        <option value="medium">Средний</option>
+        <option value="high">Высокий</option>
+        <option value="critical">Критический</option>
+      </select>
+
+      {/* Deadline */}
+      <select
+        value={filters.deadline}
+        onChange={(e) => onChange({ ...filters, deadline: e.target.value })}
+        className={cn(
+          'rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white',
+          'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
+        )}
+        aria-label="Фильтр по дедлайну"
+      >
+        <option value="">Все дедлайны</option>
+        <option value="overdue">Просрочено</option>
+        <option value="today">Сегодня</option>
+        <option value="this_week">На этой неделе</option>
+      </select>
+
+      {/* Reset */}
+      {hasActive && (
+        <button
+          type="button"
+          onClick={() => onChange({ ...DEFAULT_FILTERS, view: filters.view })}
+          className={cn(
+            'rounded-lg border border-gray-700 px-3 py-2 text-sm font-medium',
+            'text-gray-400 hover:text-white hover:border-gray-500 transition-colors',
+          )}
+        >
+          Сбросить
+        </button>
+      )}
+
+      {/* View toggle — pushed to the right */}
+      <div className="ml-auto flex items-center rounded-lg border border-gray-700 bg-gray-800 p-0.5 gap-0.5">
+        <button
+          type="button"
+          onClick={() => onChange({ ...filters, view: 'kanban' })}
+          className={cn(
+            'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+            filters.view === 'kanban'
+              ? 'bg-gray-700 text-white'
+              : 'text-gray-500 hover:text-gray-300',
+          )}
+          aria-label="Вид канбан"
+          aria-pressed={filters.view === 'kanban'}
+        >
+          <LayoutDashboard size={13} />
+          Канбан
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange({ ...filters, view: 'list' })}
+          className={cn(
+            'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+            filters.view === 'list'
+              ? 'bg-gray-700 text-white'
+              : 'text-gray-500 hover:text-gray-300',
+          )}
+          aria-label="Вид список"
+          aria-pressed={filters.view === 'list'}
+        >
+          <List size={13} />
+          Список
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── List View ────────────────────────────────────────────────────────────────
+
+interface ListViewProps {
+  tasks: CrmTask[];
+  columns: CrmColumn[];
+  isLoading: boolean;
+  onTaskClick: (taskId: number) => void;
+}
+
+function ListView({ tasks, columns, isLoading, onTaskClick }: ListViewProps) {
+  const columnMap = new Map(columns.map((c) => [c.id, c.name]));
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2 animate-pulse">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="h-12 rounded-lg bg-gray-800" />
+        ))}
+      </div>
+    );
+  }
+
+  if (tasks.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-3">
+        <Inbox size={32} className="text-gray-600" />
+        <p className="text-gray-500 text-sm">Задачи не найдены</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-xl border border-gray-800">
+      <table className="w-full text-sm" role="table" aria-label="Задачи доски">
+        <thead>
+          <tr className="border-b border-gray-800 bg-gray-900/60">
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Название
+            </th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Приоритет
+            </th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Дедлайн
+            </th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Исполнитель
+            </th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Колонка
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-800">
+          {tasks.map((task) => {
+            const overdue = task.deadline ? isOverdue(task.deadline) : false;
+            return (
+              <tr
+                key={task.id}
+                className="bg-gray-900 hover:bg-gray-800/60 transition-colors cursor-pointer"
+                onClick={() => onTaskClick(task.id)}
+                role="row"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onTaskClick(task.id);
+                  }
+                }}
+                aria-label={`Задача: ${task.title}`}
+              >
+                <td className="px-4 py-3">
+                  <span className="font-medium text-white line-clamp-1">{task.title}</span>
+                </td>
+                <td className="px-4 py-3">
+                  <span
+                    className={cn(
+                      'inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-medium',
+                      PRIORITY_BADGE_CLASS[task.priority],
+                    )}
+                  >
+                    {PRIORITY_LABELS[task.priority]}
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  {task.deadline ? (
+                    <span
+                      className={cn(
+                        'flex items-center gap-1 text-xs',
+                        overdue ? 'text-red-400' : 'text-gray-400',
+                      )}
+                    >
+                      <Calendar size={11} className="shrink-0" />
+                      {formatDeadline(task.deadline)}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-600">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  {task.assignee ? (
+                    <div className="flex items-center gap-2">
+                      <AssigneeAvatar assignee={task.assignee} size="sm" />
+                      <span className="text-xs text-gray-400">
+                        {task.assignee.first_name} {task.assignee.last_name}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-gray-600">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  <span className="text-xs text-gray-400">
+                    {columnMap.get(task.column_id) ?? '—'}
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function BoardDetailSkeleton() {
@@ -2611,6 +2883,8 @@ export default function BoardDetailPage() {
   const { user } = useAuth();
 
   const queryClient = useQueryClient();
+  const [filters, setFilters] = useState<BoardFilters>(DEFAULT_FILTERS);
+  const debouncedSearch = useDebounce(filters.search, 300);
   const [localColumns, setLocalColumns] = useState<CrmColumn[]>([]);
   const [localTasksByColumn, setLocalTasksByColumn] = useState<Record<number, CrmTask[]>>({});
   const [activeColumn, setActiveColumn] = useState<CrmColumn | null>(null);
@@ -2662,16 +2936,23 @@ export default function BoardDetailPage() {
     enabled: Boolean(boardId),
   });
 
+  // Build params for the tasks query
+  const taskQueryParams: Record<string, string | number> = { board_id: boardId };
+  if (debouncedSearch) taskQueryParams.search = debouncedSearch;
+  if (filters.priority) taskQueryParams.priority = filters.priority;
+  if (filters.deadline) taskQueryParams.deadline = filters.deadline;
+  if (filters.ordering) taskQueryParams.ordering = filters.ordering;
+  if (filters.view === 'list') taskQueryParams.view = 'list';
+
   const {
     data: tasksData,
     isLoading: isTasksLoading,
   } = useQuery({
-    queryKey: ['crm', 'tasks', boardId],
+    queryKey: ['crm', 'tasks', boardId, taskQueryParams],
     queryFn: async () => {
-      const { data } = await apiClient.get<CrmTask[] | { results: CrmTask[] }>(
-        API.crm.tasksList,
-        { params: { board_id: boardId } },
-      );
+      const { data } = await apiClient.get<
+        CrmTask[] | { results: CrmTask[]; count?: number }
+      >(API.crm.tasksList, { params: taskQueryParams });
       return Array.isArray(data) ? data : data.results;
     },
     enabled: Boolean(boardId),
@@ -3044,6 +3325,19 @@ export default function BoardDetailPage() {
         </div>
       )}
 
+      {/* Filter bar */}
+      <FilterBar filters={filters} onChange={setFilters} />
+
+      {/* List view */}
+      {filters.view === 'list' ? (
+        <ListView
+          tasks={tasks}
+          columns={localColumns}
+          isLoading={isTasksLoading}
+          onTaskClick={(taskId) => setSelectedTaskId(taskId)}
+        />
+      ) : (
+      <>
       {/* Kanban board */}
       {localColumns.length === 0 && !showAddColumn ? (
         <div className="flex flex-col items-center justify-center py-24 gap-3">
@@ -3118,6 +3412,8 @@ export default function BoardDetailPage() {
             ) : null}
           </DragOverlay>
         </DndContext>
+      )}
+      </>
       )}
 
       {/* Task detail modal */}
