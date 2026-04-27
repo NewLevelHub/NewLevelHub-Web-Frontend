@@ -1214,9 +1214,10 @@ function extractUploadError(error: unknown): string {
 
 interface AttachmentsSectionProps {
   taskId: number;
+  boardId: string;
 }
 
-function AttachmentsSection({ taskId }: AttachmentsSectionProps) {
+function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1250,6 +1251,7 @@ function AttachmentsSection({ taskId }: AttachmentsSectionProps) {
       setUploadError(null);
       void queryClient.invalidateQueries({ queryKey: attachmentsQueryKey });
       void queryClient.invalidateQueries({ queryKey: taskQueryKey });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
     },
     onError: (error: unknown) => {
       setUploadError(extractUploadError(error));
@@ -1262,6 +1264,7 @@ function AttachmentsSection({ taskId }: AttachmentsSectionProps) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: attachmentsQueryKey });
       void queryClient.invalidateQueries({ queryKey: taskQueryKey });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
     },
   });
 
@@ -2674,7 +2677,7 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
               <ChecklistSection taskId={taskId} boardId={boardId} checklists={task.checklists ?? []} />
 
               {/* Attachments */}
-              <AttachmentsSection taskId={taskId} />
+              <AttachmentsSection taskId={taskId} boardId={boardId} />
 
               {patchMutation.isError && (
                 <p className="text-xs text-red-400">Не удалось сохранить изменения.</p>
