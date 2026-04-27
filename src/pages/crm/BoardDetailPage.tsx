@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, Link } from 'react-router';
+import { useParams, Link, useSearchParams } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   DndContext,
@@ -3557,6 +3557,7 @@ function BoardDetailSkeleton() {
 export default function BoardDetailPage() {
   const { id } = useParams<{ id: string }>();
   const boardId = id ?? '';
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { user } = useAuth();
 
@@ -3571,7 +3572,10 @@ export default function BoardDetailPage() {
   const [showAddColumn, setShowAddColumn] = useState(false);
   const [reorderError, setReorderError] = useState(false);
   const [taskMoveError, setTaskMoveError] = useState<string | null>(null);
-  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(() => {
+    const taskParam = searchParams.get('task');
+    return taskParam ? Number(taskParam) : null;
+  });
   const reorderErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const taskMoveErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const snapshotRef = useRef<CrmColumn[]>([]);
@@ -4099,7 +4103,13 @@ export default function BoardDetailPage() {
         <TaskDetailModal
           taskId={selectedTaskId}
           boardId={boardId}
-          onClose={() => setSelectedTaskId(null)}
+          onClose={() => {
+            setSelectedTaskId(null);
+            if (searchParams.has('task')) {
+              searchParams.delete('task');
+              setSearchParams(searchParams, { replace: true });
+            }
+          }}
         />
       )}
     </div>

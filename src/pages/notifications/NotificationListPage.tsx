@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Bell } from 'lucide-react';
+import { Bell, Trash2 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
@@ -7,14 +8,42 @@ import { API } from '@/shared/api/endpoints';
 import { cn } from '@/shared/lib/cn';
 import type { Notification, PaginatedResponse } from '@/shared/types';
 
+const NOTIFICATION_TYPE_LABELS: Record<string, string> = {
+  booking_confirmed: 'Бронь подтверждена',
+  booking_reminder: 'Напоминание о брони',
+  booking_cancelled: 'Бронь отменена',
+  task_assigned: 'Задача назначена',
+  task_moved: 'Задача перемещена',
+  task_comment: 'Комментарий к задаче',
+  task_deadline: 'Дедлайн задачи',
+  guest_validated: 'Гость подтверждён',
+  guest_pass_expiring: 'Пропуск истекает',
+  service_request_update: 'Обновление заявки',
+  announcement: 'Объявление',
+  invitation: 'Приглашение',
+  leave_review: 'Проверка отпуска',
+  system: 'Системное',
+};
+
+type UnreadFilter = 'all' | 'unread';
+
 export default function NotificationListPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
+  const [unreadFilter, setUnreadFilter] = useState<UnreadFilter>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('');
+
+  const queryParams: Record<string, string> = {};
+  if (unreadFilter === 'unread') queryParams['is_read'] = 'false';
+  if (typeFilter) queryParams['notification_type'] = typeFilter;
+
   const { data, isLoading } = useQuery({
-    queryKey: ['notifications'],
+    queryKey: ['notifications', unreadFilter, typeFilter],
     queryFn: () =>
-      apiClient.get<PaginatedResponse<Notification>>(API.notifications.list).then(r => r.data),
+      apiClient
+        .get<PaginatedResponse<Notification>>(API.notifications.list, { params: queryParams })
+        .then(r => r.data),
   });
 
   const markReadMutation = useMutation({
@@ -33,6 +62,14 @@ export default function NotificationListPage() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiClient.delete(API.notifications.delete(String(id))),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      await queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+    },
+  });
+
   const rows = data?.results ?? [];
   const hasUnread = rows.some(n => !n.is_read);
 
@@ -43,6 +80,11 @@ export default function NotificationListPage() {
     if (n.url) {
       navigate(n.url);
     }
+  }
+
+  function handleDelete(e: React.MouseEvent, id: number) {
+    e.stopPropagation();
+    deleteMutation.mutate(id);
   }
 
   return (
@@ -61,6 +103,50 @@ export default function NotificationListPage() {
         )}
       </div>
 
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm">
+          <button
+            type="button"
+            onClick={() => setUnreadFilter('all')}
+            className={cn(
+              'px-3 py-1.5 transition-colors',
+              unreadFilter === 'all'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-50',
+            )}
+          >
+            Все
+          </button>
+          <button
+            type="button"
+            onClick={() => setUnreadFilter('unread')}
+            className={cn(
+              'px-3 py-1.5 border-l border-gray-200 transition-colors',
+              unreadFilter === 'unread'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-50',
+            )}
+          >
+            Непрочитанные
+          </button>
+        </div>
+
+        <select
+          value={typeFilter}
+          onChange={e => setTypeFilter(e.target.value)}
+          className="text-sm rounded-lg border border-gray-200 px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-label="Фильтр по типу"
+        >
+          <option value="">Все типы</option>
+          {Object.entries(NOTIFICATION_TYPE_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {isLoading ? (
         <p className="text-sm text-gray-500">Загрузка…</p>
       ) : rows.length === 0 ? (
@@ -73,7 +159,9 @@ export default function NotificationListPage() {
               onClick={() => handleNotificationClick(n)}
               role="button"
               tabIndex={0}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleNotificationClick(n); }}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') handleNotificationClick(n);
+              }}
               className={cn(
                 'flex items-start gap-3 rounded-xl border px-4 py-3 cursor-pointer transition-colors',
                 n.is_read
@@ -97,6 +185,15 @@ export default function NotificationListPage() {
                   aria-label="Непрочитанное"
                 />
               )}
+              <button
+                type="button"
+                onClick={e => handleDelete(e, n.id)}
+                disabled={deleteMutation.isPending}
+                className="shrink-0 mt-0.5 p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+                aria-label="Удалить уведомление"
+              >
+                <Trash2 size={15} aria-hidden="true" />
+              </button>
             </li>
           ))}
         </ul>
