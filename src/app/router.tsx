@@ -35,6 +35,7 @@ import TeamManagePage from '@/pages/team/TeamManagePage';
 // CRM
 import BoardListPage from '@/pages/crm/BoardListPage';
 import BoardDetailPage from '@/pages/crm/BoardDetailPage';
+import TaskDetailPage from '@/pages/crm/TaskDetailPage';
 import MyTasksPage from '@/pages/crm/MyTasksPage';
 import AdminBoardsPage from '@/pages/crm/AdminBoardsPage';
 
@@ -172,6 +173,7 @@ export const router = createBrowserRouter([
               { path: '/storage', element: <FileBrowserPage /> },
               { path: '/crm', element: <BoardListPage /> },
               { path: '/crm/boards/:id', element: <BoardDetailPage /> },
+              { path: '/crm/tasks/:id', element: <TaskDetailPage /> },
               { path: '/crm/my-tasks', element: <MyTasksPage /> },
               { path: '/team', element: <TeamDirectoryPage /> },
               { path: '/company/team', element: <TeamDirectoryPage /> },

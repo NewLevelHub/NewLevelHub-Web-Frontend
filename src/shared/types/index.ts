@@ -667,7 +667,7 @@ export interface CrmLabel {
 
 export interface CrmTask {
   id: number;
-  board_id: number;
+  board: CrmBoard;
   column_id: number;
   title: string;
   description: string | null;

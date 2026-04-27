@@ -84,9 +84,11 @@ export function Header() {
     if (!n.is_read) {
       markReadMutation.mutate(n.id);
     }
+    console.log('Navigating to', n);
     setOpen(false);
-    if (n.url) {
-      navigate(n.url);
+    if (n.link) {
+      console.log('Navigating to', n.link);
+      navigate(n.link);
     }
   }
 

@@ -77,8 +77,8 @@ export default function NotificationListPage() {
     if (!n.is_read) {
       markReadMutation.mutate(n.id);
     }
-    if (n.url) {
-      navigate(n.url);
+    if (n.link) {
+      navigate(n.link);
     }
   }
 
@@ -174,7 +174,7 @@ export default function NotificationListPage() {
               )}
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm text-gray-900">{n.title}</p>
-                <p className="text-sm text-gray-600 mt-0.5">{n.body}</p>
+                <p className="text-sm text-gray-600 mt-0.5">{n.message ?? n.body}</p>
                 <p className="text-xs text-gray-400 mt-1">
                   {new Date(n.created_at).toLocaleString()}
                 </p>
