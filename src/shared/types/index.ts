@@ -70,6 +70,7 @@ export interface CompanyLimits {
   };
   storage: {
     used_gb: number;
+    used_bytes: number;
     limit_gb: number;
   };
 }
@@ -591,6 +592,22 @@ export interface OnboardingTemplate {
   name: string;
   is_active: boolean;
   steps: Array<OnboardingTemplateStepInput & { id: number }>;
+  created_at: string;
+}
+
+export interface CrmAttachmentUploader {
+  id: number;
+  full_name: string;
+  avatar: string | null;
+}
+
+export interface CrmAttachment {
+  id: number;
+  filename: string;
+  size: number;
+  mime_type: string;
+  url: string;
+  uploaded_by: CrmAttachmentUploader;
   created_at: string;
 }
 

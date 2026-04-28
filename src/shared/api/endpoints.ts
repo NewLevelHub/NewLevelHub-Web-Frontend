@@ -106,6 +106,8 @@ export const API = {
     taskComments: (taskId: number) => `/crm/tasks/${taskId}/comments/`,
     taskCommentDetail: (taskId: number, commentId: number) => `/crm/tasks/${taskId}/comments/${commentId}/`,
     taskHistory: (taskId: number) => `/crm/tasks/${taskId}/history/`,
+    taskAttachments: (taskId: number) => `/crm/tasks/${taskId}/attachments/`,
+    taskAttachmentDetail: (taskId: number, attachmentId: number) => `/crm/tasks/${taskId}/attachments/${attachmentId}/`,
     labels: '/crm/labels/',
     labelDetail: (id: number) => `/crm/labels/${id}/`,
   },
