@@ -117,7 +117,8 @@ export default function TaskDetailPage() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
-      navigate(-1);
+      queryClient.removeQueries({ queryKey: ['crm', 'task', taskId] });
+      navigate(boardId ? `/crm/boards/${boardId}` : '/crm', { replace: true });
     },
   });
 
@@ -185,9 +186,9 @@ export default function TaskDetailPage() {
   if (isError || !task) {
     return (
       <main className="px-4 py-8 max-w-4xl mx-auto space-y-4">
-        <div className="flex items-center gap-2 rounded-lg border border-red-800 bg-red-900/30 px-4 py-3 text-sm text-red-300">
+        <div className="flex items-center gap-2 rounded-lg border border-amber-800 bg-amber-900/30 px-4 py-3 text-sm text-amber-300">
           <AlertCircle size={16} className="shrink-0" />
-          <span>Не удалось загрузить задачу.</span>
+          <span>Задача не найдена или была архивирована.</span>
         </div>
         <Link
           to="/crm"
