@@ -183,7 +183,8 @@ export const API = {
     markRead: (id: string) => `/notifications/${id}/read/`,
     markAllRead: '/notifications/read-all/',
     delete: (id: string) => `/notifications/${id}/`,
-    settings: '/notifications/settings/',
+    preferences: '/notifications/preferences/',
+    doNotDisturb: '/notifications/do-not-disturb/',
   },
   analytics: {
     overview: '/analytics/overview/',

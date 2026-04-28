@@ -520,6 +520,29 @@ export interface Notification {
   created_at: string;
 }
 
+export type NotificationType =
+  | 'booking_confirmed'
+  | 'booking_reminder'
+  | 'booking_cancelled'
+  | 'task_assigned'
+  | 'task_moved'
+  | 'task_comment'
+  | 'task_deadline'
+  | 'guest_validated'
+  | 'guest_pass_expiring'
+  | 'service_request_update'
+  | 'announcement'
+  | 'invitation'
+  | 'leave_review'
+  | 'system';
+
+export interface NotificationPreferenceEntry {
+  in_app: boolean;
+  email: boolean;
+}
+
+export type NotificationPreferences = Record<NotificationType, NotificationPreferenceEntry>;
+
 export interface FloorPlan {
   id: number;
   floor_number: number;
