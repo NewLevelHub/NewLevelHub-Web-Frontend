@@ -64,6 +64,23 @@ function usageTone(percent: number): 'normal' | 'warning' | 'danger' {
   return 'normal';
 }
 
+/** limit_gb >= 1_000_000 (or INT_MAX) is treated as "unlimited" */
+function isUnlimitedStorage(limitGb: number): boolean {
+  return limitGb >= 1_000_000;
+}
+
+function formatStorageSize(gb: number): string {
+  if (gb < 0.001) {
+    const kb = gb * 1024 * 1024;
+    return `${kb.toFixed(1).replace(/\.0$/, '')} КБ`;
+  }
+  if (gb < 1) {
+    const mb = gb * 1024;
+    return `${mb.toFixed(1).replace(/\.0$/, '')} МБ`;
+  }
+  return `${gb.toFixed(1).replace(/\.0$/, '')} ГБ`;
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 interface InfoRowProps {
@@ -109,18 +126,39 @@ interface LimitBarProps {
   current: number;
   max: number;
   unit?: string;
+  unlimited?: boolean;
+  currentFormatted?: string;
+  maxFormatted?: string;
 }
 
-function LimitBar({ label, current, max, unit = '' }: LimitBarProps) {
-  const percent = getUsagePercent(current, max);
+function LimitBar({ label, current, max, unit = '', unlimited, currentFormatted, maxFormatted }: LimitBarProps) {
+  const percent = unlimited ? (max > 0 ? Math.min(100, Math.round((current / max) * 100)) : 0) : getUsagePercent(current, max);
+
+  if (unlimited) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-gray-300">{label}</p>
+          <p className="text-sm font-semibold text-gray-100">{percent}%</p>
+        </div>
+        <div className="w-full h-2.5 bg-gray-700 rounded-full overflow-hidden">
+          <div className="h-full rounded-full bg-indigo-500 transition-all duration-500" style={{ width: '0%' }} />
+        </div>
+        <p className="text-xs text-gray-400">
+          {currentFormatted ?? `${current}${unit}`} — без ограничений
+        </p>
+      </div>
+    );
+  }
+
   const tone = usageTone(percent);
   const barColor =
     tone === 'danger' ? 'bg-red-500' : tone === 'warning' ? 'bg-amber-500' : 'bg-indigo-500';
   const textColor =
     tone === 'danger' ? 'text-red-300' : tone === 'warning' ? 'text-amber-300' : 'text-gray-100';
 
-  const valueLabel = `${current.toFixed(1).replace('.0', '')}${unit}`;
-  const maxLabel = `${max.toFixed(1).replace('.0', '')}${unit}`;
+  const valueLabel = currentFormatted ?? `${current.toFixed(1).replace('.0', '')}${unit}`;
+  const maxLabel = maxFormatted ?? `${max.toFixed(1).replace('.0', '')}${unit}`;
 
   return (
     <div className="space-y-2">
@@ -629,6 +667,9 @@ export default function CompanyDetailPage() {
   const limitBoardsMax = limits?.boards.max ?? 0;
   const limitStorageUsedGb = limits?.storage.used_gb ?? fallbackStorageUsedGb;
   const limitStorageMaxGb = limits?.storage.limit_gb ?? company.storage_limit_gb;
+  const storageUnlimited = isUnlimitedStorage(limitStorageMaxGb);
+  const storageUsedFormatted = formatStorageSize(limitStorageUsedGb);
+  const storageMaxFormatted = storageUnlimited ? '∞' : formatStorageSize(limitStorageMaxGb);
 
   return (
     <main className="px-4 py-8 max-w-4xl mx-auto space-y-6">
@@ -792,11 +833,13 @@ export default function CompanyDetailPage() {
 
         <StatCard
           icon={<HardDrive size={22} aria-hidden="true" />}
-          label={`Хранилище (всего ${limitStorageMaxGb} ГБ)`}
+          label={storageUnlimited ? 'Хранилище (без ограничений)' : `Хранилище (всего ${storageMaxFormatted})`}
           value={
             <span>
-              {limitStorageUsedGb.toFixed(1)}{' '}
-              <span className="text-base font-semibold text-gray-400">/ {limitStorageMaxGb} ГБ</span>
+              {storageUsedFormatted}{' '}
+              {!storageUnlimited && (
+                <span className="text-base font-semibold text-gray-400">/ {storageMaxFormatted}</span>
+              )}
             </span>
           }
         />
@@ -814,7 +857,14 @@ export default function CompanyDetailPage() {
         <div className="space-y-5">
           <LimitBar label="Сотрудники" current={limitEmployeesCurrent} max={limitEmployeesMax} />
           <LimitBar label="Доски" current={limitBoardsCurrent} max={limitBoardsMax} />
-          <LimitBar label="Хранилище" current={limitStorageUsedGb} max={limitStorageMaxGb} unit=" ГБ" />
+          <LimitBar
+            label="Хранилище"
+            current={limitStorageUsedGb}
+            max={limitStorageMaxGb}
+            unlimited={storageUnlimited}
+            currentFormatted={storageUsedFormatted}
+            maxFormatted={storageMaxFormatted}
+          />
         </div>
       </section>
     </main>
