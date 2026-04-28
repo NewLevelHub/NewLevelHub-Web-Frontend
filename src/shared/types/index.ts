@@ -481,9 +481,15 @@ export interface StorageFolderDetail extends StorageFolder {
 }
 
 export interface StorageUsage {
-  used_bytes: number;
-  limit_bytes: number;
-  used_percent: number;
+  personal: {
+    used_bytes: number;
+    file_count: number;
+  };
+  company: {
+    used_bytes: number;
+    limit_bytes: number;
+    file_count: number;
+  };
 }
 
 export type StorageSharePermission = 'view' | 'download' | 'full';
