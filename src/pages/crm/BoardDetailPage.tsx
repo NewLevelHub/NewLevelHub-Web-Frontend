@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, Link } from 'react-router';
+import { useParams, Link, useSearchParams } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   DndContext,
@@ -56,6 +56,7 @@ import {
   Image,
   File,
   Loader2,
+  ExternalLink,
 } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
@@ -137,6 +138,19 @@ interface TaskCardProps {
 
 function TaskCard({ task, onClick }: TaskCardProps) {
   const overdue = task.deadline ? isOverdue(task.deadline) : false;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
 
   return (
     <div
@@ -147,24 +161,58 @@ function TaskCard({ task, onClick }: TaskCardProps) {
         'space-y-2',
       )}
     >
-      {/* Edit button — visible on hover */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onClick();
-        }}
-        onPointerDown={(e) => e.stopPropagation()}
-        className={cn(
-          'absolute top-2 right-2 z-10',
-          'p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity',
-          'text-gray-500 hover:text-gray-200 hover:bg-gray-700',
-          'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:opacity-100',
+      {/* Actions dropdown — visible on hover */}
+      <div ref={menuRef} className="absolute top-2 right-2 z-10">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setMenuOpen((v) => !v);
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className={cn(
+            'p-1 rounded transition-opacity',
+            menuOpen ? 'opacity-100 text-gray-200 bg-gray-700' : 'opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-200 hover:bg-gray-700',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:opacity-100',
+          )}
+          aria-label={`Действия для задачи: ${task.title}`}
+          aria-haspopup="true"
+          aria-expanded={menuOpen}
+        >
+          <MoreHorizontal size={14} />
+        </button>
+
+        {menuOpen && (
+          <div
+            className="absolute right-0 top-full mt-1 w-44 rounded-lg border border-gray-700 bg-gray-900 shadow-xl py-1"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <Link
+              to={`/crm/tasks/${task.id}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen(false);
+              }}
+              className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+            >
+              <ExternalLink size={13} />
+              Открыть задачу
+            </Link>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen(false);
+                onClick();
+              }}
+              className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+            >
+              <Pencil size={13} />
+              Редактировать
+            </button>
+          </div>
         )}
-        aria-label={`Редактировать задачу: ${task.title}`}
-      >
-        <Pencil size={12} />
-      </button>
+      </div>
 
       {/* Label strips */}
       {task.labels && task.labels.length > 0 && (
@@ -893,7 +941,7 @@ interface ChecklistSectionProps {
   checklists: CrmChecklist[];
 }
 
-function ChecklistSection({ taskId, boardId, checklists }: ChecklistSectionProps) {
+export function ChecklistSection({ taskId, boardId, checklists }: ChecklistSectionProps) {
   const queryClient = useQueryClient();
   const [addingChecklist, setAddingChecklist] = useState(false);
   const [newChecklistTitle, setNewChecklistTitle] = useState('');
@@ -1411,7 +1459,7 @@ interface CommentSectionProps {
   taskId: number;
 }
 
-function CommentSection({ taskId }: CommentSectionProps) {
+export function CommentSection({ taskId }: CommentSectionProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [newText, setNewText] = useState('');
@@ -1779,7 +1827,7 @@ interface HistorySectionProps {
   taskId: number;
 }
 
-function HistorySection({ taskId }: HistorySectionProps) {
+export function HistorySection({ taskId }: HistorySectionProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const { data: history, isLoading, isError } = useQuery({
@@ -2162,7 +2210,7 @@ interface TaskLabelsSectionProps {
   taskLabels: CrmLabel[];
 }
 
-function TaskLabelsSection({ taskId, boardId, taskLabels }: TaskLabelsSectionProps) {
+export function TaskLabelsSection({ taskId, boardId, taskLabels }: TaskLabelsSectionProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -3784,6 +3832,7 @@ function BoardDetailSkeleton() {
 export default function BoardDetailPage() {
   const { id } = useParams<{ id: string }>();
   const boardId = id ?? '';
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { user } = useAuth();
 
@@ -3798,7 +3847,10 @@ export default function BoardDetailPage() {
   const [showAddColumn, setShowAddColumn] = useState(false);
   const [reorderError, setReorderError] = useState(false);
   const [taskMoveError, setTaskMoveError] = useState<string | null>(null);
-  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(() => {
+    const taskParam = searchParams.get('task');
+    return taskParam ? Number(taskParam) : null;
+  });
   const reorderErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const taskMoveErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const snapshotRef = useRef<CrmColumn[]>([]);
@@ -4326,7 +4378,13 @@ export default function BoardDetailPage() {
         <TaskDetailModal
           taskId={selectedTaskId}
           boardId={boardId}
-          onClose={() => setSelectedTaskId(null)}
+          onClose={() => {
+            setSelectedTaskId(null);
+            if (searchParams.has('task')) {
+              searchParams.delete('task');
+              setSearchParams(searchParams, { replace: true });
+            }
+          }}
         />
       )}
     </div>

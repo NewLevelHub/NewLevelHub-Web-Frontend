@@ -507,9 +507,15 @@ export interface StorageFileShare {
 export interface Notification {
   id: number;
   notification_type: string;
+  /** @deprecated backend now sends `type` */
+  type?: string;
   title: string;
   body: string;
+  /** @deprecated backend now sends `message` */
+  message?: string;
   url: string | null;
+  /** @deprecated backend now sends `link` */
+  link?: string | null;
   is_read: boolean;
   created_at: string;
 }
@@ -678,7 +684,7 @@ export interface CrmLabel {
 
 export interface CrmTask {
   id: number;
-  board_id: number;
+  board: CrmBoard;
   column_id: number;
   title: string;
   description: string | null;

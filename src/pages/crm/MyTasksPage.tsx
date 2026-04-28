@@ -296,7 +296,7 @@ export default function MyTasksPage() {
                       {/* Title */}
                       <td className="px-4 py-3">
                         <Link
-                          to={`/crm/boards/${task.board_id}`}
+                          to={`/crm/boards/${task.board.id}`}
                           className="group inline-flex items-center gap-1.5 text-white hover:text-blue-400 transition-colors font-medium"
                           title={`Открыть доску: ${task.board_title}`}
                         >
@@ -311,7 +311,7 @@ export default function MyTasksPage() {
                       {/* Board */}
                       <td className="px-4 py-3">
                         <Link
-                          to={`/crm/boards/${task.board_id}`}
+                          to={`/crm/boards/${task.board.id}`}
                           className="text-gray-400 hover:text-gray-200 transition-colors text-xs"
                         >
                           {task.board_title}
