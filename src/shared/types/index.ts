@@ -338,17 +338,21 @@ export interface ChecklistItem {
 
 export interface GuestPass {
   id: number;
+  created_by: number;
+  created_by_name: string;
+  company: number | null;
   guest_name: string;
   guest_email: string;
-  guest_phone: string | null;
+  guest_phone: string;
   purpose: string;
   valid_from: string;
   valid_until: string;
   qr_code: string;
-  max_uses: number;
+  qr_image: string;
+  usage_type: 'single' | 'multi';
+  is_single_use: boolean;
   times_used: number;
   status: PassStatus;
-  created_by: User;
   created_at: string;
 }
 

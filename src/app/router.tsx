@@ -59,6 +59,7 @@ import ResourceDetailPage from '@/pages/resources/ResourceDetailPage';
 // Passes
 import PassListPage from '@/pages/passes/PassListPage';
 import PassCreatePage from '@/pages/passes/PassCreatePage';
+import PassDetailPage from '@/pages/passes/PassDetailPage';
 import PassValidatePage from '@/pages/passes/PassValidatePage';
 
 // Access log
@@ -153,6 +154,7 @@ export const router = createBrowserRouter([
           { path: '/announcements', element: <AnnouncementListPage /> },
           { path: '/passes', element: <PassListPage /> },
           { path: '/passes/new', element: <PassCreatePage /> },
+          { path: '/passes/:id', element: <PassDetailPage /> },
           { path: '/service-requests', element: <ServiceRequestListPage /> },
           { path: '/service-requests/new', element: <ServiceRequestCreatePage /> },
 
