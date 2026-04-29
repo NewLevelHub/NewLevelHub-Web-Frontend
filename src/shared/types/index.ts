@@ -541,7 +541,24 @@ export interface NotificationPreferenceEntry {
   email: boolean;
 }
 
-export type NotificationPreferences = Record<NotificationType, NotificationPreferenceEntry>;
+export interface NotificationPreferences {
+  dnd_enabled: boolean;
+  dnd_until: string | null;
+  booking_confirmed: NotificationPreferenceEntry;
+  booking_reminder: NotificationPreferenceEntry;
+  booking_cancelled: NotificationPreferenceEntry;
+  task_assigned: NotificationPreferenceEntry;
+  task_moved: NotificationPreferenceEntry;
+  task_comment: NotificationPreferenceEntry;
+  task_deadline: NotificationPreferenceEntry;
+  guest_validated: NotificationPreferenceEntry;
+  guest_pass_expiring: NotificationPreferenceEntry;
+  service_request_update: NotificationPreferenceEntry;
+  announcement: NotificationPreferenceEntry;
+  invitation: NotificationPreferenceEntry;
+  leave_review: NotificationPreferenceEntry;
+  system: NotificationPreferenceEntry;
+}
 
 export interface FloorPlan {
   id: number;

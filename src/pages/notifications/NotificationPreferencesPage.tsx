@@ -67,15 +67,29 @@ interface DndPayload {
   until?: string;
 }
 
-function DoNotDisturbCard() {
-  const [enabled, setEnabled] = useState(false);
-  const [until, setUntil] = useState('');
+interface DoNotDisturbCardProps {
+  initialEnabled: boolean;
+  initialUntil: string | null;
+  onSaved: () => void;
+}
+
+function DoNotDisturbCard({ initialEnabled, initialUntil, onSaved }: DoNotDisturbCardProps) {
+  const [enabled, setEnabled] = useState(initialEnabled);
+  const [until, setUntil] = useState(() => {
+    if (initialUntil) {
+      return new Date(initialUntil).toLocaleString('sv').slice(0, 16);
+    }
+    return '';
+  });
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   const mutation = useMutation({
     mutationFn: (payload: DndPayload) =>
       apiClient.post(API.notifications.doNotDisturb, payload).then((r) => r.data),
-    onSuccess: () => setStatus('success'),
+    onSuccess: () => {
+      setStatus('success');
+      onSaved();
+    },
     onError: () => setStatus('error'),
   });
 
@@ -117,6 +131,14 @@ function DoNotDisturbCard() {
           {enabled ? 'Включён' : 'Выключен'}
         </span>
       </div>
+
+      {initialEnabled && (
+        <p className="text-sm text-amber-400 mb-4">
+          {initialUntil
+            ? `Активен до: ${new Date(initialUntil).toLocaleString('ru')}`
+            : 'Активен без ограничения по времени'}
+        </p>
+      )}
 
       {enabled && (
         <div className="mb-4">
@@ -185,11 +207,11 @@ function PreferencesSkeleton() {
 
 interface PreferencesTableProps {
   preferences: NotificationPreferences;
-  pendingKey: string | null;
+  pendingKeys: Set<string>;
   onToggle: (type: NotificationType, field: 'in_app' | 'email', value: boolean) => void;
 }
 
-function PreferencesTable({ preferences, pendingKey, onToggle }: PreferencesTableProps) {
+function PreferencesTable({ preferences, pendingKeys, onToggle }: PreferencesTableProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm" role="table" aria-label="Настройки уведомлений">
@@ -230,7 +252,7 @@ function PreferencesTable({ preferences, pendingKey, onToggle }: PreferencesTabl
                     <Toggle
                       checked={entry?.in_app ?? false}
                       onChange={(v) => onToggle(type, 'in_app', v)}
-                      disabled={pendingKey === inAppKey}
+                      disabled={pendingKeys.has(inAppKey)}
                     />
                   </div>
                 </td>
@@ -239,7 +261,7 @@ function PreferencesTable({ preferences, pendingKey, onToggle }: PreferencesTabl
                     <Toggle
                       checked={entry?.email ?? false}
                       onChange={(v) => onToggle(type, 'email', v)}
-                      disabled={pendingKey === emailKey}
+                      disabled={pendingKeys.has(emailKey)}
                     />
                   </div>
                 </td>
@@ -256,7 +278,19 @@ function PreferencesTable({ preferences, pendingKey, onToggle }: PreferencesTabl
 
 export default function NotificationPreferencesPage() {
   const queryClient = useQueryClient();
-  const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const [pendingKeys, setPendingKeys] = useState<Set<string>>(new Set());
+
+  function addPending(key: string) {
+    setPendingKeys((prev) => new Set(prev).add(key));
+  }
+
+  function removePending(key: string) {
+    setPendingKeys((prev) => {
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+  }
 
   const { data: preferences, isLoading, isError } = useQuery({
     queryKey: ['notification-preferences'],
@@ -282,13 +316,16 @@ export default function NotificationPreferencesPage() {
       );
       return { previous };
     },
+    onSuccess: (serverData) => {
+      queryClient.setQueryData<NotificationPreferences>(
+        ['notification-preferences'],
+        (old) => (old ? { ...old, ...serverData } : serverData),
+      );
+    },
     onError: (_err, _vars, context) => {
       if (context?.previous) {
         queryClient.setQueryData(['notification-preferences'], context.previous);
       }
-    },
-    onSettled: () => {
-      setPendingKey(null);
       void queryClient.invalidateQueries({ queryKey: ['notification-preferences'] });
     },
   });
@@ -299,11 +336,15 @@ export default function NotificationPreferencesPage() {
     value: boolean,
   ) {
     const key = `${type}:${field}`;
-    setPendingKey(key);
-    const currentEntry = preferences?.[type] ?? { in_app: false, email: false };
-    mutation.mutate({
-      [type]: { ...currentEntry, [field]: value },
-    } as Partial<NotificationPreferences>);
+    console.log('Toggling', key, 'to', value);
+    addPending(key);
+    const currentEntry =
+      queryClient.getQueryData<NotificationPreferences>(['notification-preferences'])?.[type] ??
+      { in_app: false, email: false };
+    mutation.mutate(
+      { [type]: { ...currentEntry, [field]: value } } as Partial<NotificationPreferences>,
+      { onSettled: () => removePending(key) },
+    );
   }
 
   return (
@@ -318,7 +359,16 @@ export default function NotificationPreferencesPage() {
         </div>
 
         {/* Do Not Disturb */}
-        <DoNotDisturbCard />
+        {isLoading && (
+          <div className="h-24 rounded-xl bg-gray-800 animate-pulse" aria-busy="true" aria-label="Загрузка настроек режима «Не беспокоить»" />
+        )}
+        {preferences && (
+          <DoNotDisturbCard
+            initialEnabled={preferences.dnd_enabled}
+            initialUntil={preferences.dnd_until}
+            onSaved={() => queryClient.invalidateQueries({ queryKey: ['notification-preferences'] })}
+          />
+        )}
 
         {/* Preferences table */}
         <section
@@ -340,7 +390,7 @@ export default function NotificationPreferencesPage() {
           {preferences && (
             <PreferencesTable
               preferences={preferences}
-              pendingKey={pendingKey}
+              pendingKeys={pendingKeys}
               onToggle={handleToggle}
             />
           )}
