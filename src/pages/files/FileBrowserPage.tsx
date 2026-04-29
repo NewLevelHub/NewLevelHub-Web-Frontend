@@ -4,6 +4,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { cn } from '@/shared/lib/cn';
 import type {
   CompanyDirectoryMember,
   PaginatedResponse,
@@ -459,9 +460,11 @@ export default function FileBrowserPage() {
     setUploadFile(file);
   };
 
-  const usedBytes = storageUsageQuery.data?.used_bytes ?? 0;
-  const limitBytes = storageUsageQuery.data?.limit_bytes ?? 0;
-  const usedPercent = storageUsageQuery.data?.used_percent ?? 0;
+  const usageData = storageUsageQuery.data;
+  const usedBytes = usageData?.[scope]?.used_bytes ?? 0;
+  const limitBytes = scope === 'company' ? (usageData?.company?.limit_bytes ?? 0) : 0;
+  const fileCount = usageData?.[scope]?.file_count ?? 0;
+  const usedPercent = limitBytes > 0 ? (usedBytes / limitBytes) * 100 : 0;
 
   return (
     <div className="space-y-6">
@@ -550,18 +553,30 @@ export default function FileBrowserPage() {
         <div className="mb-2 flex items-center justify-between text-sm">
           <p className="font-medium text-slate-200">Использование хранилища</p>
           <p className="text-slate-300">
-            {formatFileSize(usedBytes)} / {formatFileSize(limitBytes)}
+            {scope === 'company'
+              ? `${formatFileSize(usedBytes)} / ${formatFileSize(limitBytes)}`
+              : formatFileSize(usedBytes)}
           </p>
         </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-700">
-          <div
-            className="h-full rounded-full bg-indigo-500 transition-all"
-            style={{ width: `${Math.max(0, Math.min(100, usedPercent))}%` }}
-          />
-        </div>
-        <p className="mt-2 text-xs text-slate-400">
-          {storageUsageQuery.isError ? 'Не удалось обновить лимиты хранилища' : `${usedPercent.toFixed(1)}% использовано`}
-        </p>
+        {scope === 'company' && limitBytes > 0 && (
+          <>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-700">
+              <div
+                className={cn(
+                  'h-full rounded-full transition-all',
+                  usedPercent >= 95 ? 'bg-red-500' : usedPercent >= 80 ? 'bg-amber-500' : 'bg-indigo-500',
+                )}
+                style={{ width: `${Math.max(0, Math.min(100, usedPercent))}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-slate-400">
+              {storageUsageQuery.isError
+                ? 'Не удалось обновить лимиты хранилища'
+                : `${usedPercent.toFixed(1)}% использовано`}
+            </p>
+          </>
+        )}
+        <p className="mt-1 text-xs text-slate-500">{fileCount} файлов</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

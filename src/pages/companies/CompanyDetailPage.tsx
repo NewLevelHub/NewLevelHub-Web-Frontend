@@ -54,8 +54,10 @@ function formatDate(iso: string | null | undefined): string {
 }
 
 function getUsagePercent(current: number, max: number): number {
-  if (max <= 0) return 0;
-  return Math.min(100, Math.round((current / max) * 100));
+  const c = Number(current ?? 0) || 0;
+  const m = Number(max ?? 0) || 0;
+  if (m <= 0) return 0;
+  return Math.min(100, Math.round((c / m) * 100));
 }
 
 function usageTone(percent: number): 'normal' | 'warning' | 'danger' {
@@ -70,15 +72,16 @@ function isUnlimitedStorage(limitGb: number): boolean {
 }
 
 function formatStorageSize(gb: number): string {
-  if (gb < 0.001) {
-    const kb = gb * 1024 * 1024;
+  const v = Number(gb ?? 0) || 0;
+  if (v < 0.001) {
+    const kb = v * 1024 * 1024;
     return `${kb.toFixed(1).replace(/\.0$/, '')} КБ`;
   }
-  if (gb < 1) {
-    const mb = gb * 1024;
+  if (v < 1) {
+    const mb = v * 1024;
     return `${mb.toFixed(1).replace(/\.0$/, '')} МБ`;
   }
-  return `${gb.toFixed(1).replace(/\.0$/, '')} ГБ`;
+  return `${v.toFixed(1).replace(/\.0$/, '')} ГБ`;
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -132,7 +135,9 @@ interface LimitBarProps {
 }
 
 function LimitBar({ label, current, max, unit = '', unlimited, currentFormatted, maxFormatted }: LimitBarProps) {
-  const percent = unlimited ? (max > 0 ? Math.min(100, Math.round((current / max) * 100)) : 0) : getUsagePercent(current, max);
+  const safeCurrent = Number(current ?? 0) || 0;
+  const safeMax = Number(max ?? 0) || 0;
+  const percent = unlimited ? (safeMax > 0 ? Math.min(100, Math.round((safeCurrent / safeMax) * 100)) : 0) : getUsagePercent(safeCurrent, safeMax);
 
   if (unlimited) {
     return (
@@ -145,7 +150,7 @@ function LimitBar({ label, current, max, unit = '', unlimited, currentFormatted,
           <div className="h-full rounded-full bg-indigo-500 transition-all duration-500" style={{ width: '0%' }} />
         </div>
         <p className="text-xs text-gray-400">
-          {currentFormatted ?? `${current}${unit}`} — без ограничений
+          {currentFormatted ?? `${safeCurrent}${unit}`} — без ограничений
         </p>
       </div>
     );
@@ -157,8 +162,8 @@ function LimitBar({ label, current, max, unit = '', unlimited, currentFormatted,
   const textColor =
     tone === 'danger' ? 'text-red-300' : tone === 'warning' ? 'text-amber-300' : 'text-gray-100';
 
-  const valueLabel = currentFormatted ?? `${current.toFixed(1).replace('.0', '')}${unit}`;
-  const maxLabel = maxFormatted ?? `${max.toFixed(1).replace('.0', '')}${unit}`;
+  const valueLabel = currentFormatted ?? `${safeCurrent.toFixed(1).replace('.0', '')}${unit}`;
+  const maxLabel = maxFormatted ?? (safeMax <= 0 ? '—' : `${safeMax.toFixed(1).replace('.0', '')}${unit}`);
 
   return (
     <div className="space-y-2">
@@ -660,13 +665,13 @@ export default function CompanyDetailPage() {
   const planLabel = PLAN_LABELS[company.plan] ?? company.plan;
   const planBadgeColor = PLAN_BADGE_COLORS[company.plan] ?? 'bg-gray-100 text-gray-700';
 
-  const fallbackStorageUsedGb = company.storage_used / (1024 * 1024 * 1024);
-  const limitEmployeesCurrent = limits?.employees.current ?? company.employee_count;
-  const limitEmployeesMax = limits?.employees.max ?? company.max_employees;
-  const limitBoardsCurrent = limits?.boards.current ?? 0;
-  const limitBoardsMax = limits?.boards.max ?? 0;
-  const limitStorageUsedGb = limits?.storage.used_gb ?? fallbackStorageUsedGb;
-  const limitStorageMaxGb = limits?.storage.limit_gb ?? company.storage_limit_gb;
+  const fallbackStorageUsedGb = Number(company.storage_used ?? 0) / (1024 * 1024 * 1024);
+  const limitEmployeesCurrent = Number(limits?.employees?.current ?? company.employee_count ?? 0) || 0;
+  const limitEmployeesMax = Number(limits?.employees?.max ?? company.max_employees ?? 0) || 0;
+  const limitBoardsCurrent = Number(limits?.boards?.current ?? 0) || 0;
+  const limitBoardsMax = Number(limits?.boards?.max ?? 0) || 0;
+  const limitStorageUsedGb = Number(limits?.storage?.used_gb ?? fallbackStorageUsedGb ?? 0) || 0;
+  const limitStorageMaxGb = Number(limits?.storage?.limit_gb ?? company.storage_limit_gb ?? 0) || 0;
   const storageUnlimited = isUnlimitedStorage(limitStorageMaxGb);
   const storageUsedFormatted = formatStorageSize(limitStorageUsedGb);
   const storageMaxFormatted = storageUnlimited ? '∞' : formatStorageSize(limitStorageMaxGb);
