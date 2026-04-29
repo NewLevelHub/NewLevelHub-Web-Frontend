@@ -81,20 +81,37 @@ function DoNotDisturbCard({ initialEnabled, initialUntil, onSaved }: DoNotDistur
     }
     return '';
   });
-  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [success, setSuccess] = useState(false);
+  const [fieldError, setFieldError] = useState<string | null>(null);
+  const [generalError, setGeneralError] = useState<string | null>(null);
 
   const mutation = useMutation({
     mutationFn: (payload: DndPayload) =>
       apiClient.post(API.notifications.doNotDisturb, payload).then((r) => r.data),
     onSuccess: () => {
-      setStatus('success');
+      setSuccess(true);
+      setFieldError(null);
+      setGeneralError(null);
       onSaved();
     },
-    onError: () => setStatus('error'),
+    onError: (error: unknown) => {
+      setSuccess(false);
+      const detail = (error as { response?: { data?: { detail?: Record<string, string[]> } } })
+        ?.response?.data?.detail;
+      if (detail?.dnd_until?.length) {
+        setFieldError('Укажите дату и время в будущем.');
+        setGeneralError(null);
+      } else {
+        setFieldError(null);
+        setGeneralError('Не удалось сохранить настройки. Попробуйте снова.');
+      }
+    },
   });
 
   function handleSave() {
-    setStatus('idle');
+    setSuccess(false);
+    setFieldError(null);
+    setGeneralError(null);
     const payload: DndPayload = { enabled };
     if (enabled && until) {
       payload.until = new Date(until).toISOString();
@@ -123,7 +140,9 @@ function DoNotDisturbCard({ initialEnabled, initialUntil, onSaved }: DoNotDistur
           checked={enabled}
           onChange={(v) => {
             setEnabled(v);
-            setStatus('idle');
+            setFieldError(null);
+            setGeneralError(null);
+            setSuccess(false);
           }}
           disabled={mutation.isPending}
         />
@@ -148,18 +167,29 @@ function DoNotDisturbCard({ initialEnabled, initialUntil, onSaved }: DoNotDistur
           >
             До (необязательно)
           </label>
-          <input
-            id="dnd-until"
-            type="datetime-local"
-            value={until}
-            onChange={(e) => setUntil(e.target.value)}
-            className={cn(
-              'rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white',
-              'focus:outline-none focus:ring-2 focus:ring-blue-500',
-              'disabled:opacity-50',
-            )}
-            disabled={mutation.isPending}
-          />
+          {(() => {
+            const nowLocal = new Date(Date.now() + 60_000).toLocaleString('sv').slice(0, 16);
+            return (
+              <>
+                <input
+                  id="dnd-until"
+                  type="datetime-local"
+                  value={until}
+                  min={nowLocal}
+                  onChange={(e) => { setUntil(e.target.value); setFieldError(null); }}
+                  className={cn(
+                    'rounded-lg border bg-gray-700 px-3 py-2 text-sm text-white [color-scheme:dark]',
+                    'focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50',
+                    fieldError ? 'border-red-500' : 'border-gray-600',
+                  )}
+                  disabled={mutation.isPending}
+                />
+                {fieldError && (
+                  <p className="mt-1 text-xs text-red-400" role="alert">{fieldError}</p>
+                )}
+              </>
+            );
+          })()}
         </div>
       )}
 
@@ -178,15 +208,11 @@ function DoNotDisturbCard({ initialEnabled, initialUntil, onSaved }: DoNotDistur
           {mutation.isPending ? 'Сохранение…' : 'Сохранить'}
         </button>
 
-        {status === 'success' && (
-          <span className="text-sm text-green-400" role="status">
-            Настройки сохранены
-          </span>
+        {success && (
+          <span className="text-sm text-green-400" role="status">Настройки сохранены</span>
         )}
-        {status === 'error' && (
-          <span className="text-sm text-red-400" role="alert">
-            Ошибка при сохранении
-          </span>
+        {generalError && (
+          <span className="text-sm text-red-400" role="alert">{generalError}</span>
         )}
       </div>
     </section>
