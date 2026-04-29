@@ -68,7 +68,7 @@ export default function PassCreatePage() {
     <main className="mx-auto max-w-2xl space-y-6 p-6">
       <div className="space-y-1">
         <h1 className="text-2xl font-bold text-white">Создание гостевого пропуска</h1>
-        <p className="text-sm text-gray-400">После создания QR-код будет отправлен на email гостя.</p>
+        <p className="text-sm text-gray-400">Можно отправить инвайт на любой email гостя.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-gray-700 bg-gray-800 p-5">

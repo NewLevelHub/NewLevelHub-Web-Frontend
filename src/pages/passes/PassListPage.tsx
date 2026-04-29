@@ -68,6 +68,7 @@ export default function PassListPage() {
             <thead className="bg-gray-900 text-left text-gray-300">
               <tr>
                 <th className="px-4 py-3">Гость</th>
+                <th className="px-4 py-3">Владелец</th>
                 <th className="px-4 py-3">Цель</th>
                 <th className="px-4 py-3">Период</th>
                 <th className="px-4 py-3">Статус</th>
@@ -81,6 +82,7 @@ export default function PassListPage() {
                     <div className="font-medium text-white">{pass.guest_name}</div>
                     <div className="text-xs text-gray-400">{pass.guest_email}</div>
                   </td>
+                  <td className="px-4 py-3 text-gray-300">{pass.created_by_name || '—'}</td>
                   <td className="px-4 py-3">{pass.purpose || '—'}</td>
                   <td className="px-4 py-3 text-xs text-gray-300">
                     {new Date(pass.valid_from).toLocaleString()}
