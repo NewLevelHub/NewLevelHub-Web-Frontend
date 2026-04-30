@@ -1,12 +1,19 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
+import { PASS_STATUSES, USER_ROLES } from '@/shared/config/constants';
+import { useUser } from '@/shared/hooks/useAuth';
+import { getApiErrorMessage } from '@/shared/lib/apiError';
 import type { GuestPass } from '@/shared/types';
 
 export default function PassDetailPage() {
   const { id } = useParams();
+  const user = useUser();
+  const queryClient = useQueryClient();
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['guest-pass-detail', id],
@@ -17,6 +24,29 @@ export default function PassDetailPage() {
     },
   });
 
+  const resendMutation = useMutation({
+    mutationFn: async () => {
+      await apiClient.post(API.passes.resend(String(id)));
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['guest-pass-detail', id] });
+      setSuccessMessage('QR-код успешно отправлен повторно.');
+    },
+    onError: () => setSuccessMessage(null),
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: async () => {
+      await apiClient.post(API.passes.revoke(String(id)));
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['guest-pass-detail', id] });
+      await queryClient.invalidateQueries({ queryKey: ['guest-passes'] });
+      setSuccessMessage('Пропуск успешно отозван.');
+    },
+    onError: () => setSuccessMessage(null),
+  });
+
   if (isLoading) {
     return <main className="p-6 text-sm text-gray-400">Загрузка пропуска...</main>;
   }
@@ -24,6 +54,14 @@ export default function PassDetailPage() {
   if (isError || !data) {
     return <main className="p-6 text-sm text-rose-400">Не удалось загрузить детали пропуска.</main>;
   }
+
+  const canManagePass =
+    user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN;
+  const canRevoke =
+    canManagePass &&
+    data.status !== PASS_STATUSES.USED &&
+    data.status !== PASS_STATUSES.EXPIRED &&
+    data.status !== PASS_STATUSES.REVOKED;
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 p-6">
@@ -33,6 +71,50 @@ export default function PassDetailPage() {
           Назад к списку
         </Link>
       </div>
+
+      {canManagePass ? (
+        <section className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+          <h2 className="mb-3 text-lg font-semibold text-white">Действия</h2>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setSuccessMessage(null);
+                resendMutation.mutate();
+              }}
+              disabled={resendMutation.isPending}
+              className="inline-flex items-center rounded-lg border border-indigo-600 px-4 py-2 text-sm font-medium text-indigo-300 hover:bg-indigo-600/10 disabled:opacity-50"
+            >
+              {resendMutation.isPending ? 'Отправка...' : 'Повторно отправить QR'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSuccessMessage(null);
+                revokeMutation.mutate();
+              }}
+              disabled={!canRevoke || revokeMutation.isPending}
+              className="inline-flex items-center rounded-lg border border-rose-700 px-4 py-2 text-sm font-medium text-rose-300 hover:bg-rose-700/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {revokeMutation.isPending ? 'Отзыв...' : 'Отозвать пропуск'}
+            </button>
+          </div>
+          {resendMutation.isError ? (
+            <div className="mt-3 text-sm text-rose-300">
+              {getApiErrorMessage(resendMutation.error, 'Не удалось повторно отправить QR.')}
+            </div>
+          ) : null}
+          {revokeMutation.isError ? (
+            <div className="mt-3 text-sm text-rose-300">
+              {getApiErrorMessage(revokeMutation.error, 'Не удалось отозвать пропуск.')}
+            </div>
+          ) : null}
+          {successMessage ? <div className="mt-3 text-sm text-emerald-300">{successMessage}</div> : null}
+          {!canRevoke ? (
+            <div className="mt-3 text-xs text-gray-400">Нельзя отозвать использованный, истекший или уже отозванный пропуск.</div>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="grid gap-4 rounded-xl border border-gray-700 bg-gray-800 p-5 text-sm text-gray-200 sm:grid-cols-2">
         <div>

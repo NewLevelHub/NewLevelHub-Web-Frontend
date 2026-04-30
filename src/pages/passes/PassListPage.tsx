@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { PASS_STATUSES, type PassStatus } from '@/shared/config/constants';
+import { PASS_STATUSES, USER_ROLES, type PassStatus } from '@/shared/config/constants';
+import { useUser } from '@/shared/hooks/useAuth';
 import type { GuestPass, PaginatedResponse } from '@/shared/types';
 
 const STATUS_OPTIONS: Array<{ label: string; value: PassStatus | '' }> = [
-  { label: 'Все статусы', value: '' },
+  { label: 'Все', value: '' },
   { label: 'Активные', value: PASS_STATUSES.ACTIVE },
   { label: 'Использованные', value: PASS_STATUSES.USED },
   { label: 'Истекшие', value: PASS_STATUSES.EXPIRED },
@@ -16,13 +17,30 @@ const STATUS_OPTIONS: Array<{ label: string; value: PassStatus | '' }> = [
 ];
 
 export default function PassListPage() {
+  const user = useUser();
   const [statusFilter, setStatusFilter] = useState<PassStatus | ''>('');
+  const [companyNameFilter, setCompanyNameFilter] = useState('');
+  const [createdByEmailFilter, setCreatedByEmailFilter] = useState('');
+  const [dateFromFilter, setDateFromFilter] = useState('');
+  const [dateToFilter, setDateToFilter] = useState('');
+  const isAdminView = user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN;
+
+  const queryParams = useMemo(() => {
+    const params: Record<string, string> = {};
+    if (isAdminView) {
+      if (statusFilter) params.status = statusFilter;
+      if (companyNameFilter.trim()) params.company_name = companyNameFilter.trim();
+      if (createdByEmailFilter.trim()) params.created_by_email = createdByEmailFilter.trim();
+      if (dateFromFilter) params.date_from = dateFromFilter;
+      if (dateToFilter) params.date_to = dateToFilter;
+    }
+    return params;
+  }, [statusFilter, isAdminView, companyNameFilter, createdByEmailFilter, dateFromFilter, dateToFilter]);
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['guest-passes', statusFilter],
+    queryKey: ['guest-passes', queryParams],
     queryFn: async () => {
-      const params = statusFilter ? { status: statusFilter } : undefined;
-      const response = await apiClient.get<PaginatedResponse<GuestPass>>(API.passes.list, { params });
+      const response = await apiClient.get<PaginatedResponse<GuestPass>>(API.passes.list, { params: queryParams });
       return response.data;
     },
   });
@@ -43,20 +61,90 @@ export default function PassListPage() {
       </div>
 
       <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
-        <label className="text-sm text-gray-300">
-          Фильтр по статусу
-          <select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value as PassStatus | '')}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white sm:w-64"
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {isAdminView ? (
+            <label className="text-sm text-gray-300">
+              Статус
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value as PassStatus | '')}
+                className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              >
+                {STATUS_OPTIONS.map(option => (
+                  <option key={option.label} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          {isAdminView ? (
+            <label className="text-sm text-gray-300">
+              Email создателя
+              <input
+                type="email"
+                value={createdByEmailFilter}
+                onChange={(event) => setCreatedByEmailFilter(event.target.value)}
+                className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                placeholder="creator@company.com"
+              />
+            </label>
+          ) : null}
+
+          {user?.role === 'superadmin' ? (
+            <label className="text-sm text-gray-300">
+              Компания
+              <input
+                type="text"
+                value={companyNameFilter}
+                onChange={(event) => setCompanyNameFilter(event.target.value)}
+                className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                placeholder="Название компании"
+              />
+            </label>
+          ) : null}
+
+          {isAdminView ? (
+            <label className="text-sm text-gray-300">
+              Дата от
+              <input
+                type="date"
+                value={dateFromFilter}
+                onChange={(event) => setDateFromFilter(event.target.value)}
+                className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              />
+            </label>
+          ) : null}
+
+          {isAdminView ? (
+            <label className="text-sm text-gray-300">
+              Дата до
+              <input
+                type="date"
+                value={dateToFilter}
+                onChange={(event) => setDateToFilter(event.target.value)}
+                className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              />
+            </label>
+          ) : null}
+        </div>
+
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => {
+              setStatusFilter('');
+              setCompanyNameFilter('');
+              setCreatedByEmailFilter('');
+              setDateFromFilter('');
+              setDateToFilter('');
+            }}
+            className="rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700"
           >
-            {STATUS_OPTIONS.map(option => (
-              <option key={option.label} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+            Сбросить фильтры
+          </button>
+        </div>
       </div>
 
       {isLoading ? <div className="text-sm text-gray-400">Загрузка пропусков...</div> : null}
