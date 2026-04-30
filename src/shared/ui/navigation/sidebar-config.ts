@@ -46,6 +46,7 @@ const superadminNav: NavSection[] = [
       { label: 'Ресурсы', path: '/resources', icon: Bookmark },
       { label: 'Бронирования', path: '/admin/bookings', icon: CalendarDays },
       { label: 'Пропуска', path: '/passes', icon: ShieldCheck },
+      { label: 'Проверка QR', path: '/access/validate', icon: ShieldCheck },
       { label: 'Лог доступа', path: '/access-log', icon: Clock },
     ],
   },
@@ -165,8 +166,21 @@ const guestNav: NavSection[] = [
   },
 ];
 
+const receptionNav: NavSection[] = [
+  {
+    items: [{ label: 'Дашборд', path: '/', icon: LayoutDashboard }],
+  },
+  {
+    title: 'Доступ',
+    items: [
+      { label: 'Проверка QR', path: '/access/validate', icon: ShieldCheck },
+    ],
+  },
+];
+
 export const sidebarConfig: Record<UserRole, NavSection[]> = {
   [USER_ROLES.SUPERADMIN]: superadminNav,
+  [USER_ROLES.RECEPTION]: receptionNav,
   [USER_ROLES.COMPANY_ADMIN]: companyAdminNav,
   [USER_ROLES.EMPLOYEE]: employeeNav,
   [USER_ROLES.GUEST]: guestNav,
