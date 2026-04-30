@@ -98,7 +98,7 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
   }
 
   return (
-    <header className="h-14 border-b border-gray-800 bg-gray-950/80 backdrop-blur-sm flex items-center justify-between gap-3 px-3 sm:px-4 md:px-6">
+    <header className="h-14 border-b border-gray-800 bg-gray-950/80 backdrop-blur-sm flex items-center justify-between md:justify-end gap-3 px-3 sm:px-4 md:px-6">
       <button
         type="button"
         onClick={onOpenMobileNav}
@@ -109,7 +109,6 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
       >
         <Menu size={18} />
       </button>
-      <div className="md:hidden" />
       <div className="flex items-center gap-3 sm:gap-4">
       <div className="relative" ref={dropdownRef}>
         <button

@@ -65,7 +65,7 @@ export default function PassListPage() {
       {!isLoading && !isError ? (
         <div className="overflow-hidden rounded-xl border border-gray-700 bg-gray-800">
           <div className="overflow-x-auto">
-            <table className="min-w-[760px] divide-y divide-gray-700 text-sm">
+            <table className="w-full min-w-[760px] divide-y divide-gray-700 text-sm">
             <thead className="bg-gray-900 text-left text-gray-300">
               <tr>
                 <th className="px-4 py-3">Гость</th>
