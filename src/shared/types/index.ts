@@ -385,12 +385,19 @@ export interface ServiceRequest {
 export interface Announcement {
   id: number;
   title: string;
-  content: string;
+  /** Backend AC vocabulary (DEV-100). Maps to model field ``body``. */
+  text: string;
   category: AnnouncementCategory;
   image: string | null;
   is_pinned: boolean;
+  /** ``null`` means a building-wide (БЦ) announcement. */
   company_id: number | null;
-  created_by: User;
+  author: number | null;
+  author_name: string;
+  is_read: boolean;
+  notify_email: boolean;
+  /** Derived on the backend from ``company_id``. */
+  scope: 'building' | 'company';
   created_at: string;
 }
 
@@ -599,6 +606,17 @@ export interface PaginatedResponse<T> {
    * переговорки в выборке с теми же фильтрами, но без фильтра по equipment.
    */
   meeting_room_equipment_keys?: ResourceEquipmentKey[];
+}
+
+/**
+ * Cursor-based paginated response (used by the announcements feed for infinite
+ * scroll). Differs from {@link PaginatedResponse} in that it has no ``count``:
+ * cursor pagination treats the dataset as a stream.
+ */
+export interface CursorPaginatedResponse<T> {
+  next: string | null;
+  previous: string | null;
+  results: T[];
 }
 
 export interface UserListItem {

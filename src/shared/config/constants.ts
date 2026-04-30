@@ -182,6 +182,12 @@ export const ANNOUNCEMENT_CATEGORIES = {
 export type AnnouncementCategory =
   (typeof ANNOUNCEMENT_CATEGORIES)[keyof typeof ANNOUNCEMENT_CATEGORIES];
 
+export const ANNOUNCEMENT_CATEGORY_LABELS: Record<AnnouncementCategory, string> = {
+  [ANNOUNCEMENT_CATEGORIES.INFO]: 'Информация',
+  [ANNOUNCEMENT_CATEGORIES.IMPORTANT]: 'Важное',
+  [ANNOUNCEMENT_CATEGORIES.EVENT]: 'Мероприятие',
+};
+
 export const CALENDAR_EVENT_TYPES = {
   BOOKING: 'booking',
   TASK_DEADLINE: 'task_deadline',

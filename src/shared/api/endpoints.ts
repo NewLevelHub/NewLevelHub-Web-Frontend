@@ -140,9 +140,9 @@ export const API = {
     detail: (id: string) => `/service-requests/${id}/`,
   },
   announcements: {
-    list: '/announcements/',
-    create: '/announcements/',
-    detail: (id: string) => `/announcements/${id}/`,
+    list: '/services/announcements/',
+    create: '/services/announcements/',
+    detail: (id: string) => `/services/announcements/${id}/`,
   },
   leave: {
     requests: '/hr/leaves/',

@@ -8,6 +8,7 @@ import { USER_ROLES } from '@/shared/config/constants';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { authPrimaryBtn } from '@/shared/ui/authFormStyles';
 import { cn } from '@/shared/lib/cn';
+import { AnnouncementsWidget } from '@/pages/announcements/AnnouncementsWidget';
 import type { OnboardingStatus } from '@/shared/types';
 
 export default function DashboardPage() {
@@ -68,11 +69,15 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="text-2xl font-bold text-white">Дашборд (тест API)</h1>
-      <p className="mt-1 text-sm text-gray-500">Данные из Zustand после login/register или GET /auth/me/</p>
+    <div className="max-w-2xl space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold text-white">Дашборд (тест API)</h1>
+        <p className="mt-1 text-sm text-gray-500">Данные из Zustand после login/register или GET /auth/me/</p>
+      </div>
 
-      <div className="mt-8 rounded-xl border border-gray-800 bg-gray-900/80 p-6">
+      <AnnouncementsWidget />
+
+      <div className="rounded-xl border border-gray-800 bg-gray-900/80 p-6">
         <dl className="grid gap-3 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-gray-500">Имя</dt>
