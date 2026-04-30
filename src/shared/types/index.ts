@@ -340,6 +340,8 @@ export interface GuestPass {
   id: number;
   created_by: number;
   created_by_name: string;
+  created_by_email?: string;
+  created_by_company_name?: string | null;
   company: number | null;
   guest_name: string;
   guest_email: string;
