@@ -219,6 +219,6 @@ export default function PassListPage() {
           ) : null}
         </div>
       ) : null}
-    </section>
+    </main>
   );
 }
