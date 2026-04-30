@@ -86,6 +86,7 @@ import FileBrowserPage from '@/pages/files/FileBrowserPage';
 
 // Notifications
 import NotificationListPage from '@/pages/notifications/NotificationListPage';
+import NotificationPreferencesPage from '@/pages/notifications/NotificationPreferencesPage';
 
 // Analytics
 import AnalyticsDashboardPage from '@/pages/analytics/AnalyticsDashboardPage';
@@ -144,6 +145,7 @@ export const router = createBrowserRouter([
           { path: '/profile', element: <ProfilePage /> },
           { path: '/profile/settings', element: <ProfileSettingsPage /> },
           { path: '/notifications', element: <NotificationListPage /> },
+          { path: '/settings/notifications', element: <NotificationPreferencesPage /> },
           { path: '/bookings', element: <Navigate to="/bookings/catalog" replace /> },
           { path: '/bookings/catalog', element: <BookingCatalogPage /> },
           { path: '/bookings/resources/:id', element: <BookingResourceSchedulePage /> },

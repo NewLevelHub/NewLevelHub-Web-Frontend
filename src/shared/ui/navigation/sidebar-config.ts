@@ -16,6 +16,7 @@ import {
   ListTodo,
   Repeat,
   MailPlus,
+  Bell,
   type LucideIcon,
 } from 'lucide-react';
 import { USER_ROLES, type UserRole } from '@/shared/config/constants';
@@ -68,6 +69,10 @@ const superadminNav: NavSection[] = [
     title: 'Аналитика',
     items: [{ label: 'Аналитика', path: '/analytics', icon: BarChart3 }],
   },
+  {
+    title: 'Настройки',
+    items: [{ label: 'Уведомления', path: '/settings/notifications', icon: Bell }],
+  },
 ];
 
 const companyAdminNav: NavSection[] = [
@@ -109,6 +114,10 @@ const companyAdminNav: NavSection[] = [
     title: 'Аналитика',
     items: [{ label: 'Аналитика', path: '/analytics', icon: BarChart3 }],
   },
+  {
+    title: 'Настройки',
+    items: [{ label: 'Уведомления', path: '/settings/notifications', icon: Bell }],
+  },
 ];
 
 const employeeNav: NavSection[] = [
@@ -148,6 +157,10 @@ const employeeNav: NavSection[] = [
       { label: 'Сервисная заявка', path: '/service-requests', icon: Wrench },
     ],
   },
+  {
+    title: 'Настройки',
+    items: [{ label: 'Уведомления', path: '/settings/notifications', icon: Bell }],
+  },
 ];
 
 const guestNav: NavSection[] = [
@@ -163,6 +176,10 @@ const guestNav: NavSection[] = [
       { label: 'Гостевые пропуска', path: '/passes', icon: ShieldCheck },
       { label: 'Сервисная заявка', path: '/service-requests', icon: Wrench },
     ],
+  },
+  {
+    title: 'Настройки',
+    items: [{ label: 'Уведомления', path: '/settings/notifications', icon: Bell }],
   },
 ];
 

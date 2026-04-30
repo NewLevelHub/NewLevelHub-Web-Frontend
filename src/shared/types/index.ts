@@ -340,6 +340,8 @@ export interface GuestPass {
   id: number;
   created_by: number;
   created_by_name: string;
+  created_by_email?: string;
+  created_by_company_name?: string | null;
   company: number | null;
   guest_name: string;
   guest_email: string;
@@ -544,6 +546,46 @@ export interface Notification {
   link?: string | null;
   is_read: boolean;
   created_at: string;
+}
+
+export type NotificationType =
+  | 'booking_confirmed'
+  | 'booking_reminder'
+  | 'booking_cancelled'
+  | 'task_assigned'
+  | 'task_moved'
+  | 'task_comment'
+  | 'task_deadline'
+  | 'guest_validated'
+  | 'guest_pass_expiring'
+  | 'service_request_update'
+  | 'announcement'
+  | 'invitation'
+  | 'leave_review'
+  | 'system';
+
+export interface NotificationPreferenceEntry {
+  in_app: boolean;
+  email: boolean;
+}
+
+export interface NotificationPreferences {
+  dnd_enabled: boolean;
+  dnd_until: string | null;
+  booking_confirmed: NotificationPreferenceEntry;
+  booking_reminder: NotificationPreferenceEntry;
+  booking_cancelled: NotificationPreferenceEntry;
+  task_assigned: NotificationPreferenceEntry;
+  task_moved: NotificationPreferenceEntry;
+  task_comment: NotificationPreferenceEntry;
+  task_deadline: NotificationPreferenceEntry;
+  guest_validated: NotificationPreferenceEntry;
+  guest_pass_expiring: NotificationPreferenceEntry;
+  service_request_update: NotificationPreferenceEntry;
+  announcement: NotificationPreferenceEntry;
+  invitation: NotificationPreferenceEntry;
+  leave_review: NotificationPreferenceEntry;
+  system: NotificationPreferenceEntry;
 }
 
 export interface FloorPlan {

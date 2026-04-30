@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MailPlus, RefreshCw, Ban } from 'lucide-react';
 
@@ -9,7 +9,7 @@ import { USER_ROLES, type UserRole } from '@/shared/config/constants';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { cn } from '@/shared/lib/cn';
 import { useAuth } from '@/shared/hooks/useAuth';
-import type { CompanyInvitation, CompanyMember, PaginatedResponse } from '@/shared/types';
+import type { Company, CompanyInvitation, CompanyMember, PaginatedResponse } from '@/shared/types';
 
 const inputClass =
   'mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500';
@@ -26,8 +26,16 @@ const INVITE_ROLES: { value: UserRole; label: string }[] = [
 
 export default function CompanyMembersPage() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
-  const companyId = user?.company_id != null ? String(user.company_id) : null;
+  const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
+  const initialCompanyId = searchParams.get('company') ?? '';
+  const [selectedCompanyId, setSelectedCompanyId] = useState(initialCompanyId);
+  const companyId = isSuperadmin
+    ? selectedCompanyId || null
+    : user?.company_id != null
+      ? String(user.company_id)
+      : null;
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [email, setEmail] = useState('');
@@ -35,6 +43,17 @@ export default function CompanyMembersPage() {
   const [formError, setFormError] = useState('');
   const [filterUsed, setFilterUsed] = useState<boolean | undefined>(undefined);
   const [filterExpired, setFilterExpired] = useState<boolean | undefined>(undefined);
+
+  const { data: companiesData } = useQuery({
+    queryKey: ['companies', 'list'],
+    enabled: isSuperadmin,
+    queryFn: () =>
+      apiClient
+        .get<PaginatedResponse<Company>>(API.companies.list)
+        .then((r) => r.data),
+  });
+  const selectedCompanyName =
+    companiesData?.results.find((company) => String(company.id) === companyId)?.name ?? null;
 
   const { data: membersData, isLoading: membersLoading } = useQuery({
     queryKey: ['company-members', companyId],
@@ -138,7 +157,38 @@ export default function CompanyMembersPage() {
         </button>
       </div>
 
-      {inviteOpen ? (
+      {isSuperadmin ? (
+        <section className="rounded-xl border border-gray-800 bg-gray-900/50 p-4">
+          <label className={labelClass} htmlFor="company-select">
+            Компания
+          </label>
+          <select
+            id="company-select"
+            value={selectedCompanyId}
+            onChange={(e) => {
+              setSelectedCompanyId(e.target.value);
+              setFilterUsed(undefined);
+              setFilterExpired(undefined);
+            }}
+            className={inputClass}
+          >
+            <option value="">Выберите компанию</option>
+            {(companiesData?.results ?? []).map((company) => (
+              <option key={company.id} value={String(company.id)}>
+                {company.name}
+              </option>
+            ))}
+          </select>
+        </section>
+      ) : null}
+
+      {!companyId ? (
+        <section className="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
+          <p className="text-sm text-gray-400">Выберите компанию, чтобы просмотреть участников и инвайты.</p>
+        </section>
+      ) : null}
+
+      {inviteOpen && companyId ? (
         <section
           className={cn(
             'rounded-xl border border-gray-800 bg-gray-900/50 p-6',
@@ -200,6 +250,7 @@ export default function CompanyMembersPage() {
         </section>
       ) : null}
 
+      {companyId ? (
       <section>
         <h2 className="text-lg font-medium text-white">Сотрудники</h2>
         {membersLoading ? (
@@ -223,7 +274,9 @@ export default function CompanyMembersPage() {
           </ul>
         )}
       </section>
+      ) : null}
 
+      {companyId ? (
       <section>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-lg font-medium text-white">Приглашения</h2>
@@ -258,6 +311,18 @@ export default function CompanyMembersPage() {
                 <option value="false">Нет</option>
               </select>
             </label>
+            {(filterUsed !== undefined || filterExpired !== undefined) ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterUsed(undefined);
+                  setFilterExpired(undefined);
+                }}
+                className="rounded-md border border-gray-700 px-3 py-1 text-gray-300 hover:bg-gray-800"
+              >
+                Сбросить фильтры
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -275,6 +340,9 @@ export default function CompanyMembersPage() {
                       {inv.is_used ? ' · использовано' : ''}
                       {inv.is_expired && !inv.is_used ? ' · просрочено' : ''}
                     </p>
+                    {isSuperadmin && selectedCompanyName ? (
+                      <p className="text-xs text-gray-500">Компания: {selectedCompanyName}</p>
+                    ) : null}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button
@@ -306,6 +374,7 @@ export default function CompanyMembersPage() {
           </ul>
         )}
       </section>
+      ) : null}
     </div>
   );
 }
