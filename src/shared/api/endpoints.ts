@@ -157,6 +157,7 @@ export const API = {
     list: '/services/announcements/',
     create: '/services/announcements/',
     detail: (id: string) => `/services/announcements/${id}/`,
+    markRead: (id: string) => `/services/announcements/${id}/read/`,
   },
   leave: {
     requests: '/hr/leaves/',

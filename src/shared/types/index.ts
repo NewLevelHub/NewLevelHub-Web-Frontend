@@ -440,7 +440,10 @@ export interface Announcement {
   company_id: number | null;
   author: number | null;
   author_name: string;
+  /** Whether the current user has read this announcement (DEV-110). */
   is_read: boolean;
+  /** Total number of users who have read this announcement (DEV-110). */
+  read_count: number;
   notify_email: boolean;
   /** Derived on the backend from ``company_id``. */
   scope: 'building' | 'company';
