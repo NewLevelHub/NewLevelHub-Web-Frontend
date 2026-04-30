@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Bell, User } from 'lucide-react';
+import { Bell, User, Menu } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/shared/store/auth';
 import { apiClient } from '@/shared/api/client';
@@ -20,7 +20,12 @@ function formatRelativeTime(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('ru-RU');
 }
 
-export function Header() {
+interface HeaderProps {
+  onOpenMobileNav: () => void;
+  isMobileNavOpen: boolean;
+}
+
+export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -93,7 +98,19 @@ export function Header() {
   }
 
   return (
-    <header className="h-14 border-b border-gray-800 bg-gray-950/80 backdrop-blur-sm flex items-center justify-end gap-4 px-6">
+    <header className="h-14 border-b border-gray-800 bg-gray-950/80 backdrop-blur-sm flex items-center justify-between gap-3 px-3 sm:px-4 md:px-6">
+      <button
+        type="button"
+        onClick={onOpenMobileNav}
+        className="inline-flex items-center justify-center rounded-md p-2 text-gray-300 hover:bg-gray-800 md:hidden"
+        aria-label="Открыть боковое меню"
+        aria-controls="app-sidebar"
+        aria-expanded={isMobileNavOpen}
+      >
+        <Menu size={18} />
+      </button>
+      <div className="md:hidden" />
+      <div className="flex items-center gap-3 sm:gap-4">
       <div className="relative" ref={dropdownRef}>
         <button
           type="button"
@@ -117,7 +134,7 @@ export function Header() {
 
         {open && (
           <div
-            className="absolute right-0 top-full mt-2 w-80 max-h-[28rem] overflow-y-auto rounded-xl border border-gray-700 bg-gray-900 shadow-xl z-50"
+            className="absolute right-0 top-full mt-2 w-[calc(100vw-1rem)] max-w-sm max-h-[28rem] overflow-y-auto rounded-xl border border-gray-700 bg-gray-900 shadow-xl z-50"
             role="dialog"
             aria-label="Уведомления"
           >
@@ -199,6 +216,7 @@ export function Header() {
         <User size={20} />
         <span className="hidden sm:inline">{user?.first_name || 'Профиль'}</span>
       </Link>
+      </div>
     </header>
   );
 }

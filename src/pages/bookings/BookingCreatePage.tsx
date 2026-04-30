@@ -203,7 +203,7 @@ export default function BookingCreatePage() {
 
   if (validResourceId === null) {
     return (
-      <main className="px-4 py-8 max-w-lg mx-auto space-y-4 text-zinc-100">
+      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto space-y-4 text-zinc-100">
         <h1 className="text-xl font-bold text-white">Новое бронирование</h1>
         <p className="text-sm text-zinc-400">
           Сначала выберите ресурс в{' '}
@@ -218,7 +218,7 @@ export default function BookingCreatePage() {
 
   if (loadingResource) {
     return (
-      <main className="px-4 py-8 max-w-lg mx-auto text-zinc-300">
+      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto text-zinc-300">
         <p className="text-sm">Загрузка ресурса…</p>
       </main>
     );
@@ -226,7 +226,7 @@ export default function BookingCreatePage() {
 
   if (!resource) {
     return (
-      <main className="px-4 py-8 max-w-lg mx-auto space-y-4 text-zinc-100">
+      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto space-y-4 text-zinc-100">
         <p className="text-sm text-red-400">Ресурс не найден или недоступен.</p>
         <Link
           to="/bookings/catalog"
@@ -239,7 +239,7 @@ export default function BookingCreatePage() {
   }
 
   return (
-    <main className="px-4 py-8 max-w-lg mx-auto space-y-6 text-zinc-100">
+    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto space-y-6 text-zinc-100">
       <Link
         to="/bookings/catalog"
         className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-white"

@@ -432,7 +432,7 @@ export default function ResourceCreatePage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl space-y-6 px-4 py-8">
+    <main className="mx-auto max-w-3xl space-y-6 px-3 py-4 sm:px-4 sm:py-6 md:py-8">
       <div className="space-y-1">
         <button
           type="button"

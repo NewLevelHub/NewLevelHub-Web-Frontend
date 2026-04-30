@@ -165,7 +165,7 @@ export default function TaskDetailPage() {
   // ─── Loading / Error states ───────────────────────────────────────
   if (isLoading) {
     return (
-      <main className="px-4 py-8 max-w-4xl mx-auto space-y-6">
+      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-4xl mx-auto space-y-6">
         <div className="h-4 w-28 rounded bg-gray-700 animate-pulse" />
         <div className="animate-pulse space-y-5">
           <div className="h-8 w-2/3 rounded bg-gray-700" />
@@ -185,7 +185,7 @@ export default function TaskDetailPage() {
 
   if (isError || !task) {
     return (
-      <main className="px-4 py-8 max-w-4xl mx-auto space-y-4">
+      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-4xl mx-auto space-y-4">
         <div className="flex items-center gap-2 rounded-lg border border-amber-800 bg-amber-900/30 px-4 py-3 text-sm text-amber-300">
           <AlertCircle size={16} className="shrink-0" />
           <span>Задача не найдена или была архивирована.</span>
@@ -209,7 +209,7 @@ export default function TaskDetailPage() {
 
   // ─── Main render ──────────────────────────────────────────────────
   return (
-    <main className="px-4 py-8 max-w-4xl mx-auto space-y-6">
+    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-4xl mx-auto space-y-6">
       {/* Breadcrumb */}
       <Link
         to={boardId ? `/crm/boards/${boardId}` : '/crm'}

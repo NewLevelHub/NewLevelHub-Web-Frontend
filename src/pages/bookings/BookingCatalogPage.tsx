@@ -192,7 +192,7 @@ export default function BookingCatalogPage() {
   };
 
   return (
-    <main className="px-4 py-8 max-w-7xl mx-auto space-y-6">
+    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Каталог ресурсов</h1>
@@ -200,7 +200,7 @@ export default function BookingCatalogPage() {
             Подбор площадок и мест для бронирования. Фильтры слева, карточки справа.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           {(user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN) && (
             <Link
               to="/admin/bookings"
@@ -412,7 +412,7 @@ export default function BookingCatalogPage() {
           ) : results.length === 0 ? (
             <div className="py-20 text-center text-sm text-gray-400">Нет ресурсов по заданным условиям.</div>
           ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <ul className="grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {results.map((r) => {
                 const imgSrc = resolveMediaUrl(r.photo_url ?? r.photo ?? '') ?? r.photo_url ?? r.photo ?? '';
                 const statusLabel = STATUS_LABELS[r.status] ?? r.status;
@@ -515,7 +515,7 @@ export default function BookingCatalogPage() {
           )}
 
           {totalPages > 1 && (
-            <div className="flex justify-center gap-2 pt-2">
+            <div className="flex flex-wrap justify-center gap-2 pt-2">
               <button
                 type="button"
                 disabled={page <= 1}

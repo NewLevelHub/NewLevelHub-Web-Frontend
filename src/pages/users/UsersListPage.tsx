@@ -191,7 +191,7 @@ export default function UsersListPage() {
   }
 
   return (
-    <main className="px-4 py-8 max-w-7xl mx-auto space-y-6">
+    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Пользователи</h1>
 
       {/* ---- Filters ---- */}
@@ -199,9 +199,9 @@ export default function UsersListPage() {
         className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4"
         aria-label="Фильтры пользователей"
       >
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           {/* Search */}
-          <div className="relative flex-1 min-w-52">
+          <div className="relative w-full sm:flex-1 sm:min-w-52">
             <Search
               size={16}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
@@ -222,7 +222,7 @@ export default function UsersListPage() {
             value={role}
             onChange={(e) => setRole(e.target.value)}
             aria-label="Фильтр по роли"
-            className="px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full sm:w-auto px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             {ROLE_FILTER_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -239,7 +239,7 @@ export default function UsersListPage() {
             onChange={(e) => setCompanyId(e.target.value)}
             placeholder="ID компании"
             aria-label="Фильтр по ID компании"
-            className="px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-36"
+            className="w-full sm:w-36 px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
 
           {/* Active status filter */}
@@ -247,7 +247,7 @@ export default function UsersListPage() {
             value={isActive}
             onChange={(e) => setIsActive(e.target.value)}
             aria-label="Фильтр по статусу"
-            className="px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full sm:w-auto px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             {ACTIVE_FILTER_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -261,7 +261,7 @@ export default function UsersListPage() {
             value={ordering}
             onChange={(e) => setOrdering(e.target.value)}
             aria-label="Сортировка"
-            className="px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full sm:w-auto px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             {ORDERING_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -282,7 +282,7 @@ export default function UsersListPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm" role="table" aria-label="Список пользователей">
+            <table className="w-full min-w-[900px] text-sm" role="table" aria-label="Список пользователей">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
                   <th
@@ -436,7 +436,7 @@ export default function UsersListPage() {
 
       {/* ---- Pagination ---- */}
       {!isLoading && !isError && totalCount > 0 && (
-        <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-gray-500">
             Показано{' '}
             <span className="font-medium text-gray-900">
@@ -446,7 +446,7 @@ export default function UsersListPage() {
             <span className="font-medium text-gray-900">{totalCount}</span> пользователей
           </p>
 
-          <nav aria-label="Пагинация" className="flex items-center gap-1">
+          <nav aria-label="Пагинация" className="flex flex-wrap items-center gap-1">
             <button
               type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}

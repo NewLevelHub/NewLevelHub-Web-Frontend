@@ -365,7 +365,7 @@ export default function ManageBookingsPage() {
   const queryErrorText = isError ? getApiErrorMessage(error, 'Не удалось загрузить бронирования.') : null;
 
   return (
-    <main className="mx-auto max-w-7xl space-y-6 px-4 py-8">
+    <main className="mx-auto max-w-7xl space-y-4 sm:space-y-6 px-3 py-4 sm:px-4 sm:py-6 md:py-8">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Управление бронированиями</h1>
@@ -373,7 +373,7 @@ export default function ManageBookingsPage() {
             Фильтрация всех бронирований и административная отмена с обязательной причиной.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <Link
             to="/bookings/catalog"
             className="inline-flex items-center rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-200 hover:bg-gray-700"
@@ -389,7 +389,7 @@ export default function ManageBookingsPage() {
         </div>
       </div>
 
-      <section className="grid gap-3 rounded-2xl border border-gray-700 bg-gray-800 p-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-3 rounded-2xl border border-gray-700 bg-gray-800 p-3 sm:p-4 sm:grid-cols-2 lg:grid-cols-4">
         {isSuperadmin && (
           <label className="text-sm text-gray-300">
             Компания
@@ -575,8 +575,8 @@ export default function ManageBookingsPage() {
                       <p className="mt-1 text-xs text-rose-300">Причина отмены: {booking.cancel_reason}</p>
                     ) : null}
                   </div>
-                  <div className="shrink-0">
-                    <div className="flex items-center gap-2">
+                  <div className="shrink-0 w-full lg:w-auto">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                       {canEdit ? (
                         <button
                           type="button"
@@ -607,7 +607,7 @@ export default function ManageBookingsPage() {
       </section>
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex flex-wrap items-center justify-center gap-2">
           <button
             type="button"
             disabled={page <= 1}
@@ -632,14 +632,14 @@ export default function ManageBookingsPage() {
 
       {cancelTarget && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4"
           role="dialog"
           aria-modal="true"
           aria-label="Административная отмена бронирования"
           onClick={closeCancelModal}
         >
           <div
-            className="w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-5 shadow-xl"
+            className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
             <h2 className="text-lg font-semibold text-gray-900">Административная отмена</h2>
@@ -667,7 +667,7 @@ export default function ManageBookingsPage() {
               </p>
             )}
 
-            <div className="mt-4 flex justify-end gap-2">
+            <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={closeCancelModal}
@@ -690,14 +690,14 @@ export default function ManageBookingsPage() {
       )}
       {editTarget && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4"
           role="dialog"
           aria-modal="true"
           aria-label="Изменение бронирования"
           onClick={closeEditModal}
         >
           <div
-            className="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-5 shadow-xl"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
             <h2 className="text-lg font-semibold text-gray-900">Изменение бронирования #{modalBooking?.id ?? editTarget.id}</h2>
@@ -803,7 +803,7 @@ export default function ManageBookingsPage() {
               </p>
             )}
 
-            <div className="mt-4 flex justify-end gap-2">
+            <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={closeEditModal}

@@ -194,7 +194,7 @@ export default function BookingDetailPage() {
 
   if (!bookingId) {
     return (
-      <main className="px-4 py-8 max-w-lg mx-auto">
+      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto">
         <p className="text-sm text-red-600">Некорректная ссылка.</p>
       </main>
     );
@@ -202,7 +202,7 @@ export default function BookingDetailPage() {
 
   if (isLoading) {
     return (
-      <main className="px-4 py-8 max-w-lg mx-auto">
+      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto">
         <p className="text-sm text-gray-500">Загрузка...</p>
       </main>
     );
@@ -210,7 +210,7 @@ export default function BookingDetailPage() {
 
   if (isError || !data) {
     return (
-      <main className="px-4 py-8 max-w-lg mx-auto space-y-3">
+      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto space-y-3">
         <p className="text-sm text-red-600">Бронирование не найдено.</p>
         <Link to="/bookings/my" className="text-sm text-blue-600 hover:underline">
           Мои бронирования
@@ -242,7 +242,7 @@ export default function BookingDetailPage() {
   const selectedParticipantUserId = Number(selectedUserId);
 
   return (
-    <main className="px-4 py-8 max-w-lg mx-auto space-y-6">
+    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto space-y-6">
       <Link to="/bookings/my" className="text-sm text-blue-600 hover:underline">
         ← Мои бронирования
       </Link>

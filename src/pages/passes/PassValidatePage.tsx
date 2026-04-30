@@ -232,13 +232,13 @@ export default function PassValidatePage() {
   useEffect(() => () => stopCamera(), [stopCamera]);
 
   return (
-    <main className="mx-auto max-w-3xl space-y-6 p-6">
+    <main className="mx-auto max-w-3xl space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Проверка QR-пропуска</h1>
         <p className="mt-1 text-sm text-gray-400">Введите QR-код вручную или отсканируйте его камерой.</p>
       </div>
 
-      <section className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+      <section className="rounded-xl border border-gray-700 bg-gray-800 p-4 sm:p-5">
         <form onSubmit={(event) => void handleSubmit(event)} className="space-y-3">
           <label className="block text-sm text-gray-300">
             QR-код (UUID)
@@ -282,7 +282,7 @@ export default function PassValidatePage() {
       </section>
 
       {isCameraActive ? (
-        <section className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+        <section className="rounded-xl border border-gray-700 bg-gray-800 p-4 sm:p-5">
           <p className="mb-3 text-sm text-gray-300">Наведите камеру на QR-код пропуска.</p>
           <video
             ref={videoRef}
@@ -296,7 +296,7 @@ export default function PassValidatePage() {
       ) : null}
 
       {result ? (
-        <section className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+        <section className="rounded-xl border border-gray-700 bg-gray-800 p-4 sm:p-5">
           {result.valid ? (
             <div className="space-y-2 text-sm text-gray-200">
               <p className="font-semibold text-emerald-300">Пропуск валиден</p>

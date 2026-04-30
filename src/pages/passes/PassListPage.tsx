@@ -28,8 +28,8 @@ export default function PassListPage() {
   });
 
   return (
-    <main className="mx-auto max-w-5xl space-y-6 p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <main className="mx-auto max-w-5xl space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Гостевые пропуска</h1>
           <p className="text-sm text-gray-400">Ваши цифровые пропуска с QR-кодом.</p>
@@ -64,7 +64,8 @@ export default function PassListPage() {
 
       {!isLoading && !isError ? (
         <div className="overflow-hidden rounded-xl border border-gray-700 bg-gray-800">
-          <table className="min-w-full divide-y divide-gray-700 text-sm">
+          <div className="overflow-x-auto">
+            <table className="min-w-[760px] divide-y divide-gray-700 text-sm">
             <thead className="bg-gray-900 text-left text-gray-300">
               <tr>
                 <th className="px-4 py-3">Гость</th>
@@ -98,7 +99,8 @@ export default function PassListPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
           {data?.results?.length === 0 ? (
             <div className="px-4 py-8 text-center text-sm text-gray-400">Пропусков пока нет.</div>
           ) : null}
