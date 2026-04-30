@@ -9,6 +9,7 @@ type BarcodeDetectorLike = {
   detect: (image: ImageBitmapSource | ImageData) => Promise<DetectedBarcode[]>;
 };
 type BarcodeDetectorCtor = new (options?: { formats?: string[] }) => BarcodeDetectorLike;
+type CameraConstraints = MediaStreamConstraints;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -54,7 +55,7 @@ export default function PassValidatePage() {
     setIsCameraActive(false);
   }, []);
 
-  const submitValidation = useCallback(async (code: string) => {
+  async function submitValidation(code: string) {
     setIsSubmitting(true);
     setError('');
 
@@ -69,7 +70,81 @@ export default function PassValidatePage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, []);
+  }
+
+  const startScanLoop = useCallback(() => {
+    if (scanTimerRef.current) {
+      window.clearInterval(scanTimerRef.current);
+    }
+    scanTimerRef.current = window.setInterval(async () => {
+      if (!videoRef.current || !canvasRef.current || !detectorRef.current || scanInProgressRef.current) {
+        return;
+      }
+      scanInProgressRef.current = true;
+
+      try {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        const context = canvas.getContext('2d');
+        if (!context || video.videoWidth === 0 || video.videoHeight === 0) {
+          return;
+        }
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const image = context.getImageData(0, 0, canvas.width, canvas.height);
+        const barcodes = await detectorRef.current.detect(image);
+        const value = barcodes[0]?.rawValue?.trim();
+
+        if (value && UUID_RE.test(value)) {
+          setQrCode(value);
+          stopCamera();
+          await submitValidation(value);
+        }
+      } catch {
+        // Ignore frame-level scanning errors and continue scanning.
+      } finally {
+        scanInProgressRef.current = false;
+      }
+    }, 700);
+  }, [stopCamera]);
+
+  const attachStreamToVideo = useCallback(async () => {
+    if (!videoRef.current || !streamRef.current) {
+      return;
+    }
+    const video = videoRef.current;
+    video.autoplay = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.srcObject = streamRef.current;
+
+    await new Promise<void>((resolve, reject) => {
+      const onLoaded = () => {
+        cleanup();
+        resolve();
+      };
+      const onError = () => {
+        cleanup();
+        reject(new Error('Failed to load camera stream into video'));
+      };
+      const timer = window.setTimeout(() => {
+        cleanup();
+        reject(new Error('Camera stream metadata loading timeout'));
+      }, 3000);
+      const cleanup = () => {
+        window.clearTimeout(timer);
+        video.removeEventListener('loadedmetadata', onLoaded);
+        video.removeEventListener('error', onError);
+      };
+      video.addEventListener('loadedmetadata', onLoaded);
+      video.addEventListener('error', onError);
+    });
+
+    await video.play();
+    startScanLoop();
+  }, [startScanLoop]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -82,6 +157,38 @@ export default function PassValidatePage() {
     await submitValidation(normalizedCode);
   };
 
+  const getCameraStream = useCallback(async () => {
+    const constraintsChain: CameraConstraints[] = [
+      {
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      },
+      {
+        video: {
+          facingMode: { ideal: 'user' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      },
+      { video: true, audio: false },
+    ];
+
+    let lastError: unknown = null;
+    for (const constraints of constraintsChain) {
+      try {
+        return await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    throw lastError ?? new Error('No camera stream available');
+  }, []);
+
   const startCamera = useCallback(async () => {
     if (!hasBarcodeDetector) {
       setCameraError('Ваш браузер не поддерживает сканирование QR. Используйте ручной ввод.');
@@ -91,6 +198,7 @@ export default function PassValidatePage() {
     setCameraError('');
     setError('');
     setResult(null);
+    stopCamera();
 
     try {
       if (!detectorRef.current) {
@@ -102,55 +210,24 @@ export default function PassValidatePage() {
         detectorRef.current = new BarcodeDetectorImpl({ formats: ['qr_code'] });
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-        audio: false,
-      });
+      const stream = await getCameraStream();
       streamRef.current = stream;
       setIsCameraActive(true);
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-
-      scanTimerRef.current = window.setInterval(async () => {
-        if (!videoRef.current || !canvasRef.current || !detectorRef.current || scanInProgressRef.current) {
-          return;
-        }
-        scanInProgressRef.current = true;
-
-        try {
-          const video = videoRef.current;
-          const canvas = canvasRef.current;
-          const context = canvas.getContext('2d');
-          if (!context || video.videoWidth === 0 || video.videoHeight === 0) {
-            return;
-          }
-
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          context.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const image = context.getImageData(0, 0, canvas.width, canvas.height);
-          const barcodes = await detectorRef.current.detect(image);
-          const value = barcodes[0]?.rawValue?.trim();
-
-          if (value && UUID_RE.test(value)) {
-            setQrCode(value);
-            stopCamera();
-            await submitValidation(value);
-          }
-        } catch {
-          // Ignore frame-level scanning errors and continue scanning.
-        } finally {
-          scanInProgressRef.current = false;
-        }
-      }, 700);
     } catch {
       stopCamera();
       setCameraError('Не удалось получить доступ к камере. Проверьте разрешения браузера.');
     }
-  }, [hasBarcodeDetector, stopCamera, submitValidation]);
+  }, [getCameraStream, hasBarcodeDetector, stopCamera]);
+
+  useEffect(() => {
+    if (!isCameraActive || !streamRef.current || !videoRef.current) {
+      return;
+    }
+    void attachStreamToVideo().catch(() => {
+      stopCamera();
+      setCameraError('Не удалось отобразить видео с камеры.');
+    });
+  }, [attachStreamToVideo, isCameraActive, stopCamera]);
 
   useEffect(() => () => stopCamera(), [stopCamera]);
 
@@ -207,7 +284,13 @@ export default function PassValidatePage() {
       {isCameraActive ? (
         <section className="rounded-xl border border-gray-700 bg-gray-800 p-5">
           <p className="mb-3 text-sm text-gray-300">Наведите камеру на QR-код пропуска.</p>
-          <video ref={videoRef} className="w-full rounded-lg border border-gray-700 bg-black" autoPlay playsInline muted />
+          <video
+            ref={videoRef}
+            className="aspect-video w-full rounded-lg border border-gray-700 bg-black object-cover"
+            autoPlay
+            playsInline
+            muted
+          />
           <canvas ref={canvasRef} className="hidden" />
         </section>
       ) : null}
