@@ -106,7 +106,7 @@ import OnboardingWizardPage from '@/pages/onboarding/OnboardingWizardPage';
 import NotFoundPage from '@/pages/errors/NotFoundPage';
 import ForbiddenPage from '@/pages/errors/ForbiddenPage';
 
-const { SUPERADMIN, COMPANY_ADMIN, EMPLOYEE } = USER_ROLES;
+const { SUPERADMIN, RECEPTION, COMPANY_ADMIN, EMPLOYEE } = USER_ROLES;
 
 export const router = createBrowserRouter([
   // ── Public routes (only for non-authenticated) ──
@@ -244,6 +244,15 @@ export const router = createBrowserRouter([
             ],
           },
 
+          // Superadmin + reception
+          {
+            element: <RequireRole allowed={[SUPERADMIN, RECEPTION]} />,
+            children: [
+              { path: '/access/validate', element: <PassValidatePage /> },
+              { path: '/passes/validate', element: <Navigate to="/access/validate" replace /> },
+            ],
+          },
+
           // Superadmin only
           {
             element: <RequireRole allowed={[SUPERADMIN]} />,
@@ -254,7 +263,6 @@ export const router = createBrowserRouter([
               { path: '/resources/:id', element: <ResourceDetailPage /> },
               { path: '/access-log', element: <AccessLogPage /> },
               { path: '/building/map/manage', element: <MapManagePage /> },
-              { path: '/passes/validate', element: <PassValidatePage /> },
               { path: '/users', element: <UsersListPage /> },
               { path: '/users/:id', element: <UserDetailPage /> },
               { path: '/admin/users', element: <UsersListPage /> },

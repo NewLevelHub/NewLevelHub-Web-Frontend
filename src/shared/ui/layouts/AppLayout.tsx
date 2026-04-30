@@ -1,4 +1,5 @@
 import { Outlet, useNavigate } from 'react-router';
+import { useState } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 import { Sidebar } from '@/shared/ui/navigation/Sidebar';
 import { Header } from '@/shared/ui/navigation/Header';
@@ -65,13 +66,15 @@ function ImpersonationBanner() {
 }
 
 export function AppLayout() {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      <Sidebar />
-      <div className="ml-60">
+      <Sidebar mobileOpen={mobileNavOpen} onCloseMobile={() => setMobileNavOpen(false)} />
+      <div className="ml-0 md:ml-60">
         <ImpersonationBanner />
-        <Header />
-        <main className="p-6">
+        <Header onOpenMobileNav={() => setMobileNavOpen(true)} isMobileNavOpen={mobileNavOpen} />
+        <main className="p-3 sm:p-4 md:p-6">
           <Outlet />
         </main>
       </div>

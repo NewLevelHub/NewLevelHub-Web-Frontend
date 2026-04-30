@@ -248,7 +248,7 @@ export default function MyBookingsPage() {
   };
 
   return (
-    <main className="px-4 py-8 max-w-3xl mx-auto space-y-6">
+    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-3xl mx-auto space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Мои бронирования</h1>
         <div className="flex flex-wrap items-center gap-3">

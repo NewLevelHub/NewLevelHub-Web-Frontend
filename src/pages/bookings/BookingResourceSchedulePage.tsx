@@ -67,7 +67,7 @@ export default function BookingResourceSchedulePage() {
 
   if (!Number.isFinite(resourceId)) {
     return (
-      <main className="px-4 py-8 max-w-3xl mx-auto">
+      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-3xl mx-auto">
         <p className="text-sm text-red-600">Некорректный идентификатор ресурса.</p>
       </main>
     );
@@ -75,7 +75,7 @@ export default function BookingResourceSchedulePage() {
 
   if (detailLoading) {
     return (
-      <main className="px-4 py-8 max-w-3xl mx-auto">
+      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-3xl mx-auto">
         <p className="text-sm text-gray-500">Загрузка…</p>
       </main>
     );
@@ -83,7 +83,7 @@ export default function BookingResourceSchedulePage() {
 
   if (detailError || !detail) {
     return (
-      <main className="px-4 py-8 max-w-3xl mx-auto space-y-3">
+      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-3xl mx-auto space-y-3">
         <p className="text-sm text-red-600">Ресурс не найден или нет доступа.</p>
         <Link to="/bookings/catalog" className="text-sm text-blue-600 hover:underline">
           В каталог
@@ -95,7 +95,7 @@ export default function BookingResourceSchedulePage() {
   const imgSrc = resolveMediaUrl(detail.photo ?? '') ?? detail.photo ?? '';
 
   return (
-    <main className="px-4 py-8 max-w-3xl mx-auto space-y-6">
+    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-3xl mx-auto space-y-6">
       <Link
         to="/bookings/catalog"
         className="inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900"

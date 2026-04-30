@@ -243,7 +243,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <main className="mx-auto max-w-7xl space-y-6 px-4 py-8">
+    <main className="mx-auto max-w-7xl space-y-6 px-3 py-4 sm:px-4 sm:py-6 md:py-8">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Календарь компании</h1>
