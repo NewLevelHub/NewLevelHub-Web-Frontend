@@ -58,6 +58,15 @@ function SidebarSection({
   section: NavSection;
   currentPath: string;
 }) {
+  const matchedPaths = section.items
+    .map((item) => item.path)
+    .filter((path) => {
+      if (path === '/') return currentPath === '/';
+      return currentPath === path || currentPath.startsWith(`${path}/`);
+    });
+
+  const activePath = matchedPaths.sort((a, b) => b.length - a.length)[0];
+
   return (
     <div className="mb-2">
       {section.title && (
@@ -66,9 +75,7 @@ function SidebarSection({
         </p>
       )}
       {section.items.map((item) => {
-        const isActive =
-          currentPath === item.path ||
-          (item.path !== '/' && currentPath.startsWith(item.path));
+        const isActive = activePath === item.path;
         return (
           <Link
             key={item.path}

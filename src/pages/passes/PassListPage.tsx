@@ -25,13 +25,7 @@ export default function PassListPage() {
   const [dateToFilter, setDateToFilter] = useState('');
   const isAdminView = user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN;
 
-  const queryParams = useMemo(() => {
-    const params: Record<string, string> = {};
-    if (isAdminView) {
-      if (statusFilter) params.status = statusFilter;
-    }
-    return params;
-  }, [statusFilter, isAdminView]);
+  const queryParams = useMemo(() => ({}), []);
   const hasActiveAdminFilters = Boolean(
     statusFilter || companyNameFilter.trim() || createdByEmailFilter.trim() || dateFromFilter || dateToFilter,
   );
@@ -54,6 +48,7 @@ export default function PassListPage() {
       return `${year}-${month}-${day}`;
     };
     return (data?.results ?? []).filter((pass) => {
+      const statusMatches = statusFilter ? pass.status === statusFilter : true;
       const companyMatches = companyNeedle
         ? (pass.created_by_company_name ?? '').toLowerCase().includes(companyNeedle)
         : true;
@@ -63,12 +58,12 @@ export default function PassListPage() {
       const validFromDate = toLocalDateKey(pass.valid_from);
       const fromMatches = dateFromFilter ? validFromDate >= dateFromFilter : true;
       const toMatches = dateToFilter ? validFromDate <= dateToFilter : true;
-      return companyMatches && emailMatches && fromMatches && toMatches;
+      return statusMatches && companyMatches && emailMatches && fromMatches && toMatches;
     });
-  }, [data?.results, companyNameFilter, createdByEmailFilter, dateFromFilter, dateToFilter]);
+  }, [data?.results, statusFilter, companyNameFilter, createdByEmailFilter, dateFromFilter, dateToFilter]);
 
   return (
-    <main className="mx-auto max-w-5xl space-y-6 p-6">
+    <section className="w-full space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white">Гостевые пропуска</h1>
@@ -176,8 +171,8 @@ export default function PassListPage() {
       {isError ? <div className="text-sm text-rose-400">Не удалось загрузить список пропусков.</div> : null}
 
       {!isLoading && !isError ? (
-        <div className="overflow-hidden rounded-xl border border-gray-700 bg-gray-800">
-          <table className="min-w-full divide-y divide-gray-700 text-sm">
+        <div className="overflow-x-auto rounded-xl border border-gray-700 bg-gray-800">
+          <table className="min-w-[980px] w-full divide-y divide-gray-700 text-sm">
             <thead className="bg-gray-900 text-left text-gray-300">
               <tr>
                 <th className="px-4 py-3">Гость</th>
@@ -191,24 +186,24 @@ export default function PassListPage() {
             <tbody className="divide-y divide-gray-700">
               {filteredPasses.map(pass => (
                 <tr key={pass.id} className="text-gray-200">
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 align-top">
                     <div className="font-medium text-white">{pass.guest_name}</div>
-                    <div className="text-xs text-gray-400">{pass.guest_email}</div>
+                    <div className="text-xs text-gray-400 break-all">{pass.guest_email}</div>
                   </td>
-                  <td className="px-4 py-3 text-gray-300">
+                  <td className="px-4 py-3 text-gray-300 align-top">
                     <div>{pass.created_by_name || '—'}</div>
                     {user?.role === USER_ROLES.SUPERADMIN ? (
-                      <div className="text-xs text-gray-500">{pass.created_by_company_name || 'Без компании'}</div>
+                      <div className="text-xs text-gray-500 break-words">{pass.created_by_company_name || 'Без компании'}</div>
                     ) : null}
                   </td>
-                  <td className="px-4 py-3">{pass.purpose || '—'}</td>
-                  <td className="px-4 py-3 text-xs text-gray-300">
+                  <td className="px-4 py-3 align-top">{pass.purpose || '—'}</td>
+                  <td className="px-4 py-3 text-xs text-gray-300 align-top whitespace-nowrap">
                     {new Date(pass.valid_from).toLocaleString()}
                     <br />
                     {new Date(pass.valid_until).toLocaleString()}
                   </td>
-                  <td className="px-4 py-3">{pass.status}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 align-top whitespace-nowrap">{pass.status}</td>
+                  <td className="px-4 py-3 text-right align-top whitespace-nowrap">
                     <Link to={`/passes/${pass.id}`} className="text-indigo-300 hover:text-indigo-200">
                       Открыть
                     </Link>
@@ -222,6 +217,6 @@ export default function PassListPage() {
           ) : null}
         </div>
       ) : null}
-    </main>
+    </section>
   );
 }
