@@ -99,6 +99,9 @@ import ProfileSettingsPage from '@/pages/profile/ProfileSettingsPage';
 import UsersListPage from '@/pages/users/UsersListPage';
 import UserDetailPage from '@/pages/users/UserDetailPage';
 
+// Map
+import MapPage from '@/pages/map/MapPage';
+
 // Onboarding
 import OnboardingWizardPage from '@/pages/onboarding/OnboardingWizardPage';
 
@@ -152,7 +155,8 @@ export const router = createBrowserRouter([
           { path: '/bookings/new', element: <BookingCreatePage /> },
           { path: '/bookings/my', element: <MyBookingsPage /> },
           { path: '/bookings/:id', element: <BookingDetailPage /> },
-          { path: '/building/map', element: <BuildingMapPage /> },
+          // { path: '/building/map', element: <BuildingMapPage /> },
+          { path: 'building/map', element: <MapPage /> },
           { path: '/announcements', element: <AnnouncementListPage /> },
           { path: '/passes', element: <PassListPage /> },
           { path: '/passes/new', element: <PassCreatePage /> },

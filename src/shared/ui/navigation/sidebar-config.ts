@@ -103,6 +103,7 @@ const companyAdminNav: NavSection[] = [
       { label: 'Бронирование', path: '/bookings/catalog', icon: Bookmark },
       { label: 'Рекуррентные брони', path: '/bookings/recurring', icon: Repeat },
       { label: 'Бронирования (админ)', path: '/admin/bookings', icon: CalendarDays },
+      { label: 'Карта здания', path: '/map', icon: Map },
       { label: 'Гостевые пропуска', path: '/passes', icon: ShieldCheck },
       { label: 'Файлы', path: '/storage', icon: FileText },
       { label: 'Объявления', path: '/announcements', icon: Megaphone },
@@ -152,7 +153,7 @@ const employeeNav: NavSection[] = [
   {
     title: 'Здание',
     items: [
-      { label: 'Карта здания', path: '/building/map', icon: Map },
+      { label: 'Карта здания', path: '/map', icon: Map },
       { label: 'Сервисная заявка', path: '/service-requests', icon: Wrench },
     ],
   },
