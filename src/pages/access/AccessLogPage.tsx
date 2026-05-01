@@ -100,6 +100,9 @@ export default function AccessLogPage() {
       const response = await apiClient.get<Blob>(API.accessLog.export, {
         params: exportParams,
         responseType: 'blob',
+        headers: {
+          Accept: 'text/csv, */*;q=0.9',
+        },
       });
       const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
       const url = window.URL.createObjectURL(blob);
