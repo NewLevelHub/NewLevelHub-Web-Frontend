@@ -34,23 +34,77 @@ const POINT_TYPE_LABELS: Record<string, string> = {
 
 const POINT_TYPES: MapPointType[] = ['desk', 'meeting_room', 'parking', 'capsule', 'office'];
 
-const STATUS_COLOR: Record<string, string> = {
-  available: 'bg-emerald-500 border-emerald-600 hover:bg-emerald-400',
-  booked: 'bg-rose-500 border-rose-600 hover:bg-rose-400',
-  unavailable: 'bg-slate-400 border-slate-500 hover:bg-slate-300',
+type PointUiStatus =
+  | 'free'
+  | 'occupied'
+  | 'soon_available'
+  | 'blocked'
+  | 'none'
+  | 'disabled';
+
+const POINT_STATUS_CLASS: Record<PointUiStatus, string> = {
+  free: 'bg-emerald-500 border-emerald-600 hover:bg-emerald-400',
+  occupied: 'bg-rose-500 border-rose-600 hover:bg-rose-400',
+  soon_available: 'bg-amber-500 border-amber-600 hover:bg-amber-400',
+  blocked: 'bg-violet-600 border-violet-700 hover:bg-violet-500',
+  /** Точка без привязки к ресурсу или тип без статуса бронирования (null с бэка) */
+  none: 'bg-stone-500 border-stone-600 hover:bg-stone-400',
+  disabled: 'bg-slate-400 border-slate-500 hover:bg-slate-300',
 };
 
-const STATUS_LABEL: Record<string, string> = {
-  available: 'Свободно',
-  booked: 'Занято',
-  unavailable: 'Недоступно',
+const POINT_STATUS_LABEL: Record<PointUiStatus, string> = {
+  free: 'Свободно',
+  occupied: 'Занято',
+  soon_available: 'Скоро освободится',
+  blocked: 'Заблокировано',
+  none: 'Статус не применим',
+  disabled: 'Недоступно',
+};
+
+const STATUS_LABEL_CLASS: Record<PointUiStatus, string> = {
+  free: 'text-emerald-400',
+  occupied: 'text-rose-400',
+  soon_available: 'text-amber-400',
+  blocked: 'text-violet-400',
+  none: 'text-stone-400',
+  disabled: 'text-slate-400',
 };
 
 const LEGEND_ITEMS = [
-  { label: 'Свободно', color: 'bg-emerald-500' },
-  { label: 'Занято', color: 'bg-rose-500' },
-  { label: 'Недоступно', color: 'bg-slate-400' },
+  { status: 'free' as const, label: 'Свободно', color: 'bg-emerald-500' },
+  { status: 'occupied' as const, label: 'Занято', color: 'bg-rose-500' },
+  { status: 'soon_available' as const, label: 'Скоро освободится', color: 'bg-amber-500' },
+  { status: 'blocked' as const, label: 'Заблокировано', color: 'bg-violet-600' },
+  { status: 'none' as const, label: 'Статус не применим', color: 'bg-stone-500' },
+  { status: 'disabled' as const, label: 'Недоступно', color: 'bg-slate-400' },
 ];
+
+function normalizePointStatus(status: string | null | undefined): PointUiStatus {
+  switch (status) {
+    case 'free':
+    case 'available':
+      return 'free';
+    case 'occupied':
+    case 'booked':
+      return 'occupied';
+    case 'soon_available':
+      return 'soon_available';
+    case 'blocked':
+      return 'blocked';
+    case 'disabled':
+    case 'unavailable':
+      return 'disabled';
+    case null:
+    case undefined:
+      return 'none';
+    default:
+      return 'disabled';
+  }
+}
+
+function isBookablePoint(point: MapPoint): boolean {
+  return normalizePointStatus(point.resource_status) === 'free' && Boolean(point.resource_id);
+}
 
 // ─── MapPoint form state ──────────────────────────────────────────────────────
 
@@ -79,7 +133,7 @@ interface MapPointTooltipProps {
 }
 
 const MapPointTooltip = memo<MapPointTooltipProps>(({ point }) => {
-  const status = point.resource_status ?? 'unavailable';
+  const status = normalizePointStatus(point.resource_status);
   return (
     <div
       className="pointer-events-none absolute z-20 bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-48 rounded-lg bg-gray-900 px-3 py-2 text-center shadow-xl"
@@ -90,18 +144,20 @@ const MapPointTooltip = memo<MapPointTooltipProps>(({ point }) => {
         <p className="mt-0.5 text-xs text-gray-300">{point.resource_name}</p>
       )}
       <p className="mt-0.5 text-xs text-gray-400">{POINT_TYPE_LABELS[point.point_type] ?? point.point_type}</p>
-      {point.resource_status && (
+      {status === 'none' ? (
+        <p className={cn('mt-1 text-xs font-medium', STATUS_LABEL_CLASS.none)}>
+          {POINT_STATUS_LABEL.none}
+        </p>
+      ) : point.resource_status ? (
         <p
           className={cn(
             'mt-1 text-xs font-medium',
-            status === 'available' && 'text-emerald-400',
-            status === 'booked' && 'text-rose-400',
-            status === 'unavailable' && 'text-slate-400',
+            STATUS_LABEL_CLASS[status],
           )}
         >
-          {STATUS_LABEL[status]}
+          {POINT_STATUS_LABEL[status]}
         </p>
-      )}
+      ) : null}
       {/* caret */}
       <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
     </div>
@@ -120,9 +176,9 @@ interface MapPinProps {
 
 const MapPinDot = memo<MapPinProps>(({ point, isHighlighted, onClick }) => {
   const [showTooltip, setShowTooltip] = useState(false);
-  const status = point.resource_status ?? 'unavailable';
-  const colorClass = STATUS_COLOR[status] ?? STATUS_COLOR.unavailable;
-  const isClickable = !!point.resource_id;
+  const status = normalizePointStatus(point.resource_status);
+  const colorClass = POINT_STATUS_CLASS[status];
+  const isClickable = isBookablePoint(point);
 
   const handleClick = useCallback(() => {
     if (isClickable) onClick(point);
@@ -170,8 +226,8 @@ interface EditableMapPinProps {
 }
 
 const EditableMapPinDot = memo<EditableMapPinProps>(({ point, isHighlighted, isMoving, onEdit, onDelete, onMove }) => {
-  const status = point.resource_status ?? 'unavailable';
-  const colorClass = STATUS_COLOR[status] ?? STATUS_COLOR.unavailable;
+  const status = normalizePointStatus(point.resource_status);
+  const colorClass = POINT_STATUS_CLASS[status];
 
   return (
     <div
@@ -767,7 +823,7 @@ const MapPointAddPanel = memo<MapPointAddPanelProps>(({
             />
           </div>
 
-          {/* Point type */}
+          {/* Point type — только отображение: задаётся типом выбранного ресурса */}
           <div className="flex flex-col gap-1">
             <label htmlFor="ap-point_type" className="text-xs font-medium text-gray-400">
               Тип точки
@@ -776,8 +832,10 @@ const MapPointAddPanel = memo<MapPointAddPanelProps>(({
               id="ap-point_type"
               name="point_type"
               value={form.point_type}
-              onChange={handleInputChange}
-              className="rounded-md border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-white outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/40 transition"
+              disabled
+              aria-disabled="true"
+              title="Выберите ресурс — тип точки возьмётся из ресурса"
+              className="cursor-not-allowed rounded-md border border-gray-600 bg-gray-600/40 px-2 py-1.5 text-sm text-gray-400 outline-none"
             >
               {POINT_TYPES.map((t) => (
                 <option key={t} value={t}>
@@ -785,6 +843,9 @@ const MapPointAddPanel = memo<MapPointAddPanelProps>(({
                 </option>
               ))}
             </select>
+            <p className="text-[11px] leading-snug text-gray-500">
+              Меняется при выборе ресурса (тип берётся из ресурса).
+            </p>
           </div>
 
           {/* Company ID — only for office type */}
@@ -998,18 +1059,19 @@ const MapPointEditModal = memo<MapPointEditModalProps>(({
               </div>
             )}
 
-            {/* Point type */}
+            {/* Point type — только отображение: совпадает с типом ресурса (или задан при создании точки) */}
             <div className="flex flex-col gap-1">
               <label htmlFor="ep-point_type" className="text-sm font-medium text-gray-700">
-                Тип точки <span className="text-rose-500">*</span>
+                Тип точки
               </label>
               <select
                 id="ep-point_type"
                 name="point_type"
                 value={form.point_type}
-                onChange={handleChange}
-                required
-                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition"
+                disabled
+                aria-disabled="true"
+                title="Тип точки определяется типом выбранного ресурса"
+                className="cursor-not-allowed rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-600 outline-none"
               >
                 {POINT_TYPES.map((t) => (
                   <option key={t} value={t}>
@@ -1017,6 +1079,9 @@ const MapPointEditModal = memo<MapPointEditModalProps>(({
                   </option>
                 ))}
               </select>
+              <p className="text-xs text-gray-500">
+                Меняется при смене ресурса: тип берётся из ресурса.
+              </p>
             </div>
 
             {/* Label */}
@@ -1403,7 +1468,7 @@ export default function MapPage() {
   // Fetch resource detail when a point is clicked (read-only mode)
   const handlePointClick = useCallback(
     async (point: MapPoint) => {
-      if (!point.resource_id) return;
+      if (!isBookablePoint(point)) return;
       try {
         const { data } = await apiClient.get<BookingResourceListItem>(
           API.bookings.resources.detail(String(point.resource_id)),
