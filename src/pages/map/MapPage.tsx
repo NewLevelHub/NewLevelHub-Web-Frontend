@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, X, MapPin, Loader2, Pencil, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Search, X, MapPin, Loader2, Pencil, Trash2, ToggleLeft, ToggleRight, Move } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -163,12 +163,13 @@ MapPinDot.displayName = 'MapPinDot';
 interface EditableMapPinProps {
   point: MapPoint;
   isHighlighted: boolean;
+  isMoving: boolean;
   onEdit: (point: MapPoint) => void;
   onDelete: (point: MapPoint) => void;
+  onMove: (point: MapPoint) => void;
 }
 
-const EditableMapPinDot = memo<EditableMapPinProps>(({ point, isHighlighted, onEdit, onDelete }) => {
-  const [showTooltip, setShowTooltip] = useState(false);
+const EditableMapPinDot = memo<EditableMapPinProps>(({ point, isHighlighted, isMoving, onEdit, onDelete, onMove }) => {
   const status = point.resource_status ?? 'unavailable';
   const colorClass = STATUS_COLOR[status] ?? STATUS_COLOR.unavailable;
 
@@ -177,40 +178,70 @@ const EditableMapPinDot = memo<EditableMapPinProps>(({ point, isHighlighted, onE
       className="absolute -translate-x-1/2 -translate-y-1/2 group"
       style={{ left: `${point.x}%`, top: `${point.y}%` }}
     >
-      <div className="relative">
-        {showTooltip && <MapPointTooltip point={point} />}
+      {/*
+        Single hover zone that covers the dot, the bridging padding, and the
+        popup/toolbar below. CSS group-hover drives all visibility — no JS
+        onMouseEnter/onMouseLeave needed, so there is no gap that can break hover.
+      */}
+      <div className="relative flex flex-col items-center">
+        {/* Pulsing ring shown when this point is being repositioned */}
+        {isMoving && (
+          <span
+            className="absolute inline-flex h-7 w-7 rounded-full bg-amber-400 opacity-50 animate-ping pointer-events-none"
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Tooltip above the dot — visible on group-hover when not moving */}
+        {!isMoving && (
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 pb-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-20">
+            <MapPointTooltip point={point} />
+          </div>
+        )}
+
         {/* The dot */}
         <div
           className={cn(
-            'block h-4 w-4 rounded-full border-2 cursor-pointer shadow-md transition-all duration-150',
-            colorClass,
-            isHighlighted && 'ring-2 ring-white ring-offset-1 ring-offset-transparent scale-150',
+            'relative block h-4 w-4 rounded-full border-2 cursor-pointer shadow-md transition-all duration-150',
+            isMoving ? 'border-amber-500 bg-amber-400 scale-125' : colorClass,
+            isHighlighted && !isMoving && 'ring-2 ring-white ring-offset-1 ring-offset-transparent scale-150',
           )}
-          onMouseEnter={() => setShowTooltip(true)}
-          onMouseLeave={() => setShowTooltip(false)}
         />
-        {/* Edit/delete controls on hover */}
-        <div
-          className="absolute top-full left-1/2 -translate-x-1/2 mt-1 hidden group-hover:flex items-center gap-0.5 rounded-md bg-white border border-gray-200 shadow-lg p-0.5 z-30"
-          onMouseEnter={() => setShowTooltip(false)}
-        >
-          <button
-            type="button"
-            aria-label={`Редактировать точку ${point.label}`}
-            className="rounded p-1 text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 focus:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500 transition-colors"
-            onClick={(e) => { e.stopPropagation(); onEdit(point); }}
-          >
-            <Pencil className="h-3 w-3" aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            aria-label={`Удалить точку ${point.label}`}
-            className="rounded p-1 text-gray-500 hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus-visible:ring-1 focus-visible:ring-rose-500 transition-colors"
-            onClick={(e) => { e.stopPropagation(); onDelete(point); }}
-          >
-            <Trash2 className="h-3 w-3" aria-hidden="true" />
-          </button>
-        </div>
+
+        {/* Edit/move/delete toolbar below the dot — no margin gap, uses padding bridge */}
+        {!isMoving && (
+          <div className="pt-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-30">
+            <div
+              className="flex items-center gap-0.5 rounded-md bg-white border border-gray-200 shadow-lg p-0.5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                aria-label={`Редактировать точку ${point.label}`}
+                className="rounded p-1 text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 focus:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500 transition-colors"
+                onClick={(e) => { e.stopPropagation(); onEdit(point); }}
+              >
+                <Pencil className="h-3 w-3" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                aria-label={`Переместить точку ${point.label}`}
+                className="rounded p-1 text-gray-500 hover:bg-amber-50 hover:text-amber-600 focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-500 transition-colors"
+                onClick={(e) => { e.stopPropagation(); onMove(point); }}
+              >
+                <Move className="h-3 w-3" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                aria-label={`Удалить точку ${point.label}`}
+                className="rounded p-1 text-gray-500 hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus-visible:ring-1 focus-visible:ring-rose-500 transition-colors"
+                onClick={(e) => { e.stopPropagation(); onDelete(point); }}
+              >
+                <Trash2 className="h-3 w-3" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -290,18 +321,22 @@ FloorMapView.displayName = 'FloorMapView';
 interface EditableFloorMapViewProps {
   floorMap: FloorMap;
   highlightedPointId: number | null;
+  movingPointId: number | null;
   ghostPin: { x: number; y: number } | null;
   onEditPoint: (point: MapPoint) => void;
   onDeletePoint: (point: MapPoint) => void;
+  onMovePoint: (point: MapPoint) => void;
   onMapClick: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
 const EditableFloorMapView = memo<EditableFloorMapViewProps>(({
   floorMap,
   highlightedPointId,
+  movingPointId,
   ghostPin,
   onEditPoint,
   onDeletePoint,
+  onMovePoint,
   onMapClick,
 }) => {
   return (
@@ -326,8 +361,10 @@ const EditableFloorMapView = memo<EditableFloorMapViewProps>(({
               key={point.id}
               point={point}
               isHighlighted={point.id === highlightedPointId}
+              isMoving={point.id === movingPointId}
               onEdit={onEditPoint}
               onDelete={onDeletePoint}
+              onMove={onMovePoint}
             />
           ))}
           {ghostPin && <GhostPin x={ghostPin.x} y={ghostPin.y} />}
@@ -388,9 +425,11 @@ interface EditableFloorMapWithImageProps {
   imageUrl: string;
   floorMap: FloorMap;
   highlightedPointId: number | null;
+  movingPointId: number | null;
   ghostPin: { x: number; y: number } | null;
   onEditPoint: (point: MapPoint) => void;
   onDeletePoint: (point: MapPoint) => void;
+  onMovePoint: (point: MapPoint) => void;
   onMapClick: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
@@ -398,9 +437,11 @@ const EditableFloorMapWithImage = memo<EditableFloorMapWithImageProps>(({
   imageUrl,
   floorMap,
   highlightedPointId,
+  movingPointId,
   ghostPin,
   onEditPoint,
   onDeletePoint,
+  onMovePoint,
   onMapClick,
 }) => {
   return (
@@ -424,8 +465,10 @@ const EditableFloorMapWithImage = memo<EditableFloorMapWithImageProps>(({
             key={point.id}
             point={point}
             isHighlighted={point.id === highlightedPointId}
+            isMoving={point.id === movingPointId}
             onEdit={onEditPoint}
             onDelete={onDeletePoint}
+            onMove={onMovePoint}
           />
         ))}
         {ghostPin && <GhostPin x={ghostPin.x} y={ghostPin.y} />}
@@ -1214,6 +1257,7 @@ DeleteConfirmDialog.displayName = 'DeleteConfirmDialog';
 
 export default function MapPage() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
 
   const [selectedFloorId, setSelectedFloorId] = useState<number | null>(null);
@@ -1226,6 +1270,9 @@ export default function MapPage() {
 
   // Edit mode state (superadmin only)
   const [editMode, setEditMode] = useState(false);
+
+  // Move mode: id of the point currently being repositioned
+  const [movingPointId, setMovingPointId] = useState<number | null>(null);
 
   // Click-to-place state: ghost pin position + pending add form
   const [ghostPin, setGhostPin] = useState<{ x: number; y: number } | null>(null);
@@ -1243,6 +1290,17 @@ export default function MapPage() {
 
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Page-level mutation used for repositioning an existing point
+  const repositionMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: MapPointUpdatePayload }) =>
+      apiClient.patch(API.map.mapPoints.detail(id), payload).then((r) => r.data),
+    onSuccess: () => {
+      if (selectedFloorId !== null) {
+        void queryClient.invalidateQueries({ queryKey: ['floor-map', selectedFloorId] });
+      }
+    },
+  });
 
   // Debounce search input
   useEffect(() => {
@@ -1266,14 +1324,31 @@ export default function MapPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Reset add panel when edit mode is turned off
+  // Reset add panel and move mode when edit mode is turned off
   useEffect(() => {
     if (!editMode) {
       setAddPanelOpen(false);
       setGhostPin(null);
       setAddPanelForm(EMPTY_FORM);
+      setMovingPointId(null);
     }
   }, [editMode]);
+
+  // Escape key: cancel move mode (or close add panel if move mode is not active)
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'Escape') return;
+      if (movingPointId !== null) {
+        setMovingPointId(null);
+      } else if (addPanelOpen) {
+        setAddPanelOpen(false);
+        setGhostPin(null);
+        setAddPanelForm(EMPTY_FORM);
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [movingPointId, addPanelOpen]);
 
   // Fetch floor list
   const {
@@ -1379,12 +1454,28 @@ export default function MapPage() {
       const clampedX = Math.min(100, Math.max(0, x));
       const clampedY = Math.min(100, Math.max(0, y));
 
+      // Move mode: reposition the selected point instead of placing a new one
+      if (movingPointId !== null) {
+        repositionMutation.mutate({ id: movingPointId, payload: { x: clampedX, y: clampedY } });
+        setMovingPointId(null);
+        return;
+      }
+
       setGhostPin({ x: clampedX, y: clampedY });
       setAddPanelForm({ ...EMPTY_FORM, x: String(clampedX), y: String(clampedY) });
       setAddPanelOpen(true);
     },
-    [isSuperadmin, editMode, editModalOpen],
+    [isSuperadmin, editMode, editModalOpen, movingPointId, repositionMutation],
   );
+
+  // Handler to enter move mode for a specific point
+  const handleMovePoint = useCallback((point: MapPoint) => {
+    // Close add panel if open
+    setAddPanelOpen(false);
+    setGhostPin(null);
+    setAddPanelForm(EMPTY_FORM);
+    setMovingPointId(point.id);
+  }, []);
 
   const handleAddPanelFormChange = useCallback((updates: Partial<MapPointFormState>) => {
     setAddPanelForm((prev) => {
@@ -1664,12 +1755,26 @@ export default function MapPage() {
             {/* Edit mode badge */}
             {isSuperadmin && editMode && (
               <div
-                className="flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm text-indigo-700"
+                className={cn(
+                  'flex items-center gap-2 rounded-lg border px-4 py-2 text-sm',
+                  movingPointId !== null
+                    ? 'border-amber-200 bg-amber-50 text-amber-700'
+                    : 'border-indigo-200 bg-indigo-50 text-indigo-700',
+                )}
                 role="status"
                 aria-live="polite"
               >
-                <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                Режим редактирования активен. Нажмите на карту, чтобы разместить новую точку. Наведите на точку для редактирования или удаления.
+                {movingPointId !== null ? (
+                  <>
+                    <Move className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    Режим перемещения. Нажмите на карту, чтобы поставить точку в новое место. Нажмите Escape для отмены.
+                  </>
+                ) : (
+                  <>
+                    <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    Режим редактирования активен. Нажмите на карту, чтобы разместить новую точку. Наведите на точку для редактирования, перемещения или удаления.
+                  </>
+                )}
               </div>
             )}
 
@@ -1681,18 +1786,22 @@ export default function MapPage() {
                     imageUrl={resolvedImageUrl}
                     floorMap={floorMap}
                     highlightedPointId={highlightedPointId}
+                    movingPointId={movingPointId}
                     ghostPin={ghostPin}
                     onEditPoint={handleEditPoint}
                     onDeletePoint={handleDeletePoint}
+                    onMovePoint={handleMovePoint}
                     onMapClick={handleMapClick}
                   />
                 ) : (
                   <EditableFloorMapView
                     floorMap={floorMap}
                     highlightedPointId={highlightedPointId}
+                    movingPointId={movingPointId}
                     ghostPin={ghostPin}
                     onEditPoint={handleEditPoint}
                     onDeletePoint={handleDeletePoint}
+                    onMovePoint={handleMovePoint}
                     onMapClick={handleMapClick}
                   />
                 )
