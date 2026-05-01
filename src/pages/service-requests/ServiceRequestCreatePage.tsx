@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -10,7 +10,7 @@ import {
   type ServiceRequestType,
 } from '@/shared/config/constants';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
-import type { ServiceRequest, ServiceRequestCreatePayload } from '@/shared/types';
+import type { PaginatedResponse, ServiceRequest } from '@/shared/types';
 
 const TYPE_OPTIONS: Array<{ value: ServiceRequestType; label: string }> = [
   { value: SERVICE_REQUEST_TYPES.GENERAL, label: SERVICE_REQUEST_TYPE_LABELS[SERVICE_REQUEST_TYPES.GENERAL] },
@@ -19,19 +19,37 @@ const TYPE_OPTIONS: Array<{ value: ServiceRequestType; label: string }> = [
   { value: SERVICE_REQUEST_TYPES.SUPPLIES, label: SERVICE_REQUEST_TYPE_LABELS[SERVICE_REQUEST_TYPES.SUPPLIES] },
 ];
 
+type ServiceFloorOption = {
+  id: number;
+  number?: number;
+  floor_number?: number;
+  name?: string | null;
+};
+
+function normalizeServiceFloors(payload: ServiceFloorOption[] | PaginatedResponse<ServiceFloorOption>) {
+  return Array.isArray(payload) ? payload : payload.results;
+}
+
+function formatFloorOptionLabel(floor: ServiceFloorOption): string {
+  const floorNumber = floor.number ?? floor.floor_number ?? floor.id;
+  const floorName = floor.name?.trim();
+  return floorName ? `Этаж ${floorNumber} — ${floorName}` : `Этаж ${floorNumber}`;
+}
+
 export default function ServiceRequestCreatePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [requestType, setRequestType] = useState<ServiceRequestType>(SERVICE_REQUEST_TYPES.GENERAL);
   const [description, setDescription] = useState('');
-  const [floor, setFloor] = useState('');
+  const [floorId, setFloorId] = useState('');
   const [location, setLocation] = useState('');
   const [urgency, setUrgency] = useState<'normal' | 'urgent'>('normal');
+  const [photo, setPhoto] = useState<File | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   const createMutation = useMutation({
-    mutationFn: (payload: ServiceRequestCreatePayload) =>
+    mutationFn: (payload: FormData) =>
       apiClient.post<ServiceRequest>(API.serviceRequests.create, payload).then((r) => r.data),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['service-requests'] });
@@ -42,22 +60,43 @@ export default function ServiceRequestCreatePage() {
     },
   });
 
+  const {
+    data: floors = [],
+    isLoading: isFloorsLoading,
+    error: floorsError,
+  } = useQuery({
+    queryKey: ['building-floors'],
+    queryFn: () =>
+      apiClient
+        .get<ServiceFloorOption[] | PaginatedResponse<ServiceFloorOption>>(API.serviceRequests.floors)
+        .then((r) => normalizeServiceFloors(r.data)),
+  });
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError(null);
 
+    if (!floorId) {
+      setFormError('Выберите этаж.');
+      return;
+    }
+    if (!location.trim()) {
+      setFormError('Укажите место.');
+      return;
+    }
     if (!description.trim()) {
       setFormError('Заполните описание заявки.');
       return;
     }
 
-    createMutation.mutate({
-      request_type: requestType,
-      description: description.trim(),
-      floor: floor ? Number(floor) : undefined,
-      location: location.trim() || undefined,
-      urgency,
-    });
+    const payload = new FormData();
+    payload.append('request_type', requestType);
+    payload.append('description', description.trim());
+    payload.append('urgency', urgency);
+    payload.append('floor', floorId);
+    payload.append('location', location.trim());
+    if (photo) payload.append('photo', photo);
+    createMutation.mutate(payload);
   }
 
   return (
@@ -90,23 +129,50 @@ export default function ServiceRequestCreatePage() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block text-sm text-gray-300">
-            Этаж (необязательно)
-            <input
-              type="number"
-              value={floor}
-              onChange={(e) => setFloor(e.target.value)}
-              min={1}
+            Выбор этажа
+            <p className="mt-1 text-xs text-gray-500">
+              Выберите существующий этаж из настроек здания.
+            </p>
+            <select
+              value={floorId}
+              onChange={(e) => setFloorId(e.target.value)}
+              disabled={isFloorsLoading}
+              required
               className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
-              placeholder="Например: 3"
-            />
+            >
+              {isFloorsLoading ? (
+                <option value="">Загрузка этажей...</option>
+              ) : (
+                <>
+                  <option value="">Выберите этаж</option>
+                  {floors.length === 0 ? (
+                    <option value="__no_floors" disabled>
+                      Этажи не настроены
+                    </option>
+                  ) : (
+                    floors.map((floor) => (
+                      <option key={floor.id} value={String(floor.id)}>
+                        {formatFloorOptionLabel(floor)}
+                      </option>
+                    ))
+                  )}
+                </>
+              )}
+            </select>
+            {floorsError ? (
+              <p className="mt-1 text-xs text-amber-300">
+                Не удалось загрузить этажи. Без этажа отправка невозможна.
+              </p>
+            ) : null}
           </label>
 
           <label className="block text-sm text-gray-300">
-            Место (необязательно)
+            Место
             <input
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
+              required
               className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
               placeholder="Переговорка A, кухня..."
             />
@@ -123,6 +189,17 @@ export default function ServiceRequestCreatePage() {
             className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder:text-gray-500"
             placeholder="Опишите проблему или запрос подробнее"
           />
+        </label>
+
+        <label className="block text-sm text-gray-300">
+          Фото (необязательно)
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
+            className="mt-1 block w-full cursor-pointer rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-200 file:mr-3 file:rounded-md file:border-0 file:bg-gray-700 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-gray-100 hover:file:bg-gray-600"
+          />
+          {photo ? <p className="mt-1 text-xs text-gray-400">Выбрано: {photo.name}</p> : null}
         </label>
 
         <label className="block text-sm text-gray-300">

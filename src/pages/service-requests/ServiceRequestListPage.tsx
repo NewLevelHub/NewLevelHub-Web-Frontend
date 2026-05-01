@@ -20,8 +20,6 @@ import { cn } from '@/shared/lib/cn';
 import type {
   PaginatedResponse,
   ServiceRequest,
-  ServiceRequestCleaningPayload,
-  ServiceRequestCreatePayload,
   ServiceRequestRatePayload,
   ServiceRequestUpdateStatusPayload,
 } from '@/shared/types';
@@ -49,9 +47,40 @@ const STATUS_OPTIONS: Array<{ value: ServiceRequestStatus | ''; label: string }>
   { value: SERVICE_REQUEST_STATUSES.COMPLETED, label: SERVICE_REQUEST_STATUS_LABELS[SERVICE_REQUEST_STATUSES.COMPLETED] },
 ];
 
+type ServiceFloorOption = {
+  id: number;
+  number?: number;
+  floor_number?: number;
+  name?: string | null;
+};
+
+function normalizeServiceFloors(payload: ServiceFloorOption[] | PaginatedResponse<ServiceFloorOption>) {
+  return Array.isArray(payload) ? payload : payload.results;
+}
+
+function formatFloorOptionLabel(floor: ServiceFloorOption): string {
+  const floorNumber = floor.number ?? floor.floor_number ?? floor.id;
+  const floorName = floor.name?.trim();
+  return floorName ? `Этаж ${floorNumber} — ${floorName}` : `Этаж ${floorNumber}`;
+}
+
 type CreateModalState =
   | { mode: 'general' }
   | { mode: 'cleaning' };
+
+function getRequestOwnerId(request: ServiceRequest): number | null {
+  const requestWithFallback = request as ServiceRequest & { user?: number; created_by?: number };
+  const ownerId = requestWithFallback.user ?? requestWithFallback.created_by;
+  return ownerId != null ? Number(ownerId) : null;
+}
+
+function getRequestOwnerName(request: ServiceRequest): string | null {
+  const requestWithFallback = request as ServiceRequest & {
+    user_name?: string | null;
+    created_by_name?: string | null;
+  };
+  return requestWithFallback.user_name ?? requestWithFallback.created_by_name ?? null;
+}
 
 export default function ServiceRequestListPage() {
   const { user } = useAuth();
@@ -65,9 +94,10 @@ export default function ServiceRequestListPage() {
   const [createModal, setCreateModal] = useState<CreateModalState | null>(null);
   const [createType, setCreateType] = useState<ServiceRequestType>(SERVICE_REQUEST_TYPES.GENERAL);
   const [createDescription, setCreateDescription] = useState('');
-  const [createFloor, setCreateFloor] = useState('');
+  const [createFloorId, setCreateFloorId] = useState('');
   const [createLocation, setCreateLocation] = useState('');
   const [createUrgency, setCreateUrgency] = useState<'normal' | 'urgent'>('normal');
+  const [createPhoto, setCreatePhoto] = useState<File | null>(null);
 
   // Rate modal state
   const [rateModal, setRateModal] = useState<{ requestId: number; autoOpened?: boolean } | null>(null);
@@ -89,8 +119,20 @@ export default function ServiceRequestListPage() {
         .then((r) => r.data),
   });
 
+  const {
+    data: floors = [],
+    isLoading: isFloorsLoading,
+    error: floorsError,
+  } = useQuery({
+    queryKey: ['building-floors'],
+    queryFn: () =>
+      apiClient
+        .get<ServiceFloorOption[] | PaginatedResponse<ServiceFloorOption>>(API.serviceRequests.floors)
+        .then((r) => normalizeServiceFloors(r.data)),
+  });
+
   const createMutation = useMutation({
-    mutationFn: (payload: ServiceRequestCreatePayload) =>
+    mutationFn: (payload: FormData) =>
       apiClient.post<ServiceRequest>(API.serviceRequests.create, payload).then((r) => r.data),
     onSuccess: async () => {
       setMutationError(null);
@@ -103,8 +145,8 @@ export default function ServiceRequestListPage() {
   });
 
   const cleaningMutation = useMutation({
-    mutationFn: (payload: ServiceRequestCleaningPayload) =>
-      apiClient.post<ServiceRequest>(API.serviceRequests.cleaning, payload).then((r) => r.data),
+    mutationFn: (payload: FormData) =>
+      apiClient.post<ServiceRequest>(API.serviceRequests.quickCleaning, payload).then((r) => r.data),
     onSuccess: async () => {
       setMutationError(null);
       closeCreateModal(true);
@@ -158,16 +200,18 @@ export default function ServiceRequestListPage() {
   function openGeneralModal() {
     setCreateType(SERVICE_REQUEST_TYPES.GENERAL);
     setCreateDescription('');
-    setCreateFloor('');
+    setCreateFloorId('');
     setCreateLocation('');
     setCreateUrgency('normal');
+    setCreatePhoto(null);
     setMutationError(null);
     setCreateModal({ mode: 'general' });
   }
 
   function openCleaningModal() {
     setCreateDescription('');
-    setCreateFloor('');
+    setCreateFloorId('');
+    setCreatePhoto(null);
     setMutationError(null);
     setCreateModal({ mode: 'cleaning' });
   }
@@ -183,27 +227,43 @@ export default function ServiceRequestListPage() {
     setMutationError(null);
 
     if (!createModal) return;
+    if (!createFloorId) {
+      setMutationError('Выберите этаж.');
+      return;
+    }
+    if (!createLocation.trim()) {
+      setMutationError('Укажите место.');
+      return;
+    }
+    if (!createDescription.trim()) {
+      setMutationError('Добавьте описание заявки.');
+      return;
+    }
+
+    const payload = new FormData();
 
     if (createModal.mode === 'cleaning') {
-      cleaningMutation.mutate({
-        description: createDescription.trim() || undefined,
-        floor: createFloor ? Number(createFloor) : undefined,
-      });
+      payload.append('description', createDescription.trim());
+      payload.append('floor', createFloorId);
+      payload.append('location', createLocation.trim());
+      if (createPhoto) payload.append('photo', createPhoto);
+      cleaningMutation.mutate(payload);
     } else {
-      createMutation.mutate({
-        request_type: createType,
-        description: createDescription.trim(),
-        floor: createFloor ? Number(createFloor) : undefined,
-        location: createLocation.trim() || undefined,
-        urgency: createUrgency,
-      });
+      payload.append('request_type', createType);
+      payload.append('description', createDescription.trim());
+      payload.append('urgency', createUrgency);
+      payload.append('floor', createFloorId);
+      payload.append('location', createLocation.trim());
+      if (createPhoto) payload.append('photo', createPhoto);
+      createMutation.mutate(payload);
     }
   }
 
   function handleUpdateStatus(request: ServiceRequest) {
     const next = SERVICE_REQUEST_STATUS_TRANSITIONS[request.status];
     if (!next) return;
-    const isOwner = user?.id === request.user;
+    const ownerId = getRequestOwnerId(request);
+    const isOwner = user?.id != null && ownerId != null && Number(user.id) === ownerId;
     updateStatusMutation.mutate({ id: request.id, status: next, isOwner });
   }
 
@@ -317,6 +377,7 @@ export default function ServiceRequestListPage() {
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Сотрудник</th>
                   )}
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Описание</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Фото</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Этаж</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Создана</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Оценка</th>
@@ -326,7 +387,8 @@ export default function ServiceRequestListPage() {
               <tbody className="divide-y divide-gray-700/60">
                 {rows.map((req) => {
                   const nextStatus = SERVICE_REQUEST_STATUS_TRANSITIONS[req.status];
-                  const isOwner = user?.id === req.user;
+                  const ownerId = getRequestOwnerId(req);
+                  const isOwner = user?.id != null && ownerId != null && Number(user.id) === ownerId;
                   const canRate =
                     isOwner &&
                     req.status === SERVICE_REQUEST_STATUSES.COMPLETED &&
@@ -349,11 +411,30 @@ export default function ServiceRequestListPage() {
                       </td>
                       {isAdmin && (
                         <td className="whitespace-nowrap px-4 py-3 text-gray-300">
-                          {req.user_name || '—'}
+                          {getRequestOwnerName(req) || '—'}
                         </td>
                       )}
                       <td className="max-w-xs px-4 py-3 text-gray-300">
                         <span className="line-clamp-2">{req.description || '—'}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {req.photo ? (
+                          <a
+                            href={req.photo}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-2 text-xs text-sky-300 hover:text-sky-200"
+                          >
+                            <img
+                              src={req.photo}
+                              alt="Фото заявки"
+                              className="h-8 w-8 rounded object-cover ring-1 ring-gray-600"
+                            />
+                            Открыть
+                          </a>
+                        ) : (
+                          <span className="text-gray-500">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">{req.floor ?? '—'}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-gray-400">
@@ -448,46 +529,79 @@ export default function ServiceRequestListPage() {
 
               {/* Floor */}
               <label className="block text-sm text-gray-300">
-                Этаж (необязательно)
-                <input
-                  type="number"
-                  value={createFloor}
-                  onChange={(e) => setCreateFloor(e.target.value)}
-                  min={1}
+                Выбор этажа
+                <p className="mt-1 text-xs text-gray-500">
+                  Выберите существующий этаж из настроек здания.
+                </p>
+                <select
+                  value={createFloorId}
+                  onChange={(e) => setCreateFloorId(e.target.value)}
+                  disabled={isFloorsLoading}
+                  required
                   className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
-                  placeholder="Например: 3"
+                >
+                  {isFloorsLoading ? (
+                    <option value="">Загрузка этажей...</option>
+                  ) : (
+                    <>
+                      <option value="">Выберите этаж</option>
+                      {floors.length === 0 ? (
+                        <option value="__no_floors" disabled>
+                          Этажи не настроены
+                        </option>
+                      ) : (
+                        floors.map((floor) => (
+                          <option key={floor.id} value={String(floor.id)}>
+                            {formatFloorOptionLabel(floor)}
+                          </option>
+                        ))
+                      )}
+                    </>
+                  )}
+                </select>
+                {floorsError ? (
+                  <p className="mt-1 text-xs text-amber-300">
+                    Не удалось загрузить этажи. Без этажа отправка невозможна.
+                  </p>
+                ) : null}
+              </label>
+
+              <label className="block text-sm text-gray-300">
+                Место
+                <input
+                  type="text"
+                  value={createLocation}
+                  onChange={(e) => setCreateLocation(e.target.value)}
+                  required
+                  className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                  placeholder="Переговорка A, туалет, кухня..."
                 />
               </label>
 
-              {/* Location — only for general mode */}
-              {createModal.mode === 'general' ? (
-                <label className="block text-sm text-gray-300">
-                  Место (необязательно)
-                  <input
-                    type="text"
-                    value={createLocation}
-                    onChange={(e) => setCreateLocation(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
-                    placeholder="Переговорка A, туалет, кухня..."
-                  />
-                </label>
-              ) : null}
-
               {/* Description */}
               <label className="block text-sm text-gray-300">
-                Описание{createModal.mode === 'general' ? '' : ' (необязательно)'}
+                Описание
                 <textarea
                   value={createDescription}
                   onChange={(e) => setCreateDescription(e.target.value)}
                   rows={3}
-                  required={createModal.mode === 'general'}
+                  required
                   className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder:text-gray-500"
-                  placeholder={
-                    createModal.mode === 'cleaning'
-                      ? 'Уточнения при необходимости'
-                      : 'Опишите проблему или запрос'
-                  }
+                  placeholder="Опишите проблему или запрос"
                 />
+              </label>
+
+              <label className="block text-sm text-gray-300">
+                Фото (необязательно)
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setCreatePhoto(e.target.files?.[0] ?? null)}
+                  className="mt-1 block w-full cursor-pointer rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-200 file:mr-3 file:rounded-md file:border-0 file:bg-gray-700 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-gray-100 hover:file:bg-gray-600"
+                />
+                {createPhoto ? (
+                  <p className="mt-1 text-xs text-gray-400">Выбрано: {createPhoto.name}</p>
+                ) : null}
               </label>
 
               {/* Urgency — only for general mode */}

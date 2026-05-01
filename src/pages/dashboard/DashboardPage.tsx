@@ -44,7 +44,7 @@ export default function DashboardPage() {
 
   const cleaningMutation = useMutation({
     mutationFn: (payload: ServiceRequestCleaningPayload) =>
-      apiClient.post<ServiceRequest>(API.serviceRequests.cleaning, payload).then((r) => r.data),
+      apiClient.post<ServiceRequest>(API.serviceRequests.quickCleaning, payload).then((r) => r.data),
     onSuccess: async () => {
       setCleaningSuccess(true);
       setCleaningError('');

@@ -135,9 +135,10 @@ export const API = {
   serviceRequests: {
     list: '/services/requests/',
     create: '/services/requests/',
-    cleaning: '/services/requests/cleaning/',
+    floors: '/services/floors/',
+    quickCleaning: '/services/requests/quick-cleaning/',
     detail: (id: string) => `/services/requests/${id}/`,
-    updateStatus: (id: string) => `/services/requests/${id}/update-status/`,
+    updateStatus: (id: string) => `/services/requests/${id}/status/`,
     rate: (id: string) => `/services/requests/${id}/rate/`,
   },
   announcements: {
