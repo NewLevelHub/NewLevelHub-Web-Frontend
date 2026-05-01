@@ -376,11 +376,16 @@ export type PassValidationResponse = PassValidationSuccess | PassValidationFailu
 
 export interface AccessLogEntry {
   id: number;
-  person_name: string;
-  company: string | null;
-  entry_type: 'guest' | 'employee';
+  guest_pass: number | null;
+  invited_by: string | null;
+  validated_at: string;
+  validated_by: string | null;
+  checked_by: number | null;
+  user: number | null;
+  entry_point: string;
   method: string;
-  timestamp: string;
+  is_entry: boolean;
+  created_at: string;
 }
 
 export interface ServiceRequest {

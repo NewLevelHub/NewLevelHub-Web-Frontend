@@ -1,16 +1,286 @@
-import { PageStub } from '@/shared/ui/PageStub';
+import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+
+import { apiClient } from '@/shared/api/client';
+import { API } from '@/shared/api/endpoints';
+import { USER_ROLES } from '@/shared/config/constants';
+import { useUser } from '@/shared/hooks/useAuth';
+import { getApiErrorMessage } from '@/shared/lib/apiError';
+import type { AccessLogEntry, Company, GuestPass, PaginatedResponse } from '@/shared/types';
+
+const PAGE_SIZE = 20;
+
+function fmt(value: string | null | undefined) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
 
 export default function AccessLogPage() {
+  const user = useUser();
+  const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
+
+  const [companyId, setCompanyId] = useState('');
+  const [search, setSearch] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [page, setPage] = useState(1);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const params = useMemo(() => {
+    const query: Record<string, string | number> = {
+      page,
+      page_size: PAGE_SIZE,
+      ordering: '-validated_at',
+    };
+    if (search.trim()) query.search = search.trim();
+    if (dateFrom) query.date_from = dateFrom;
+    if (dateTo) query.date_to = dateTo;
+    if (isSuperadmin && companyId.trim()) query.company_id = companyId.trim();
+    return query;
+  }, [companyId, dateFrom, dateTo, isSuperadmin, page, search]);
+
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ['access-logs', params],
+    queryFn: () =>
+      apiClient
+        .get<PaginatedResponse<AccessLogEntry>>(API.accessLog.list, { params })
+        .then((response) => response.data),
+    placeholderData: (prev) => prev,
+  });
+
+  const guestPassIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const log of data?.results ?? []) {
+      if (typeof log.guest_pass === 'number') ids.add(log.guest_pass);
+    }
+    return Array.from(ids);
+  }, [data?.results]);
+
+  const { data: guestPassMap } = useQuery({
+    queryKey: ['access-log-guest-passes', guestPassIds],
+    queryFn: async () => {
+      const entries = await Promise.all(
+        guestPassIds.map(async (passId) => {
+          const response = await apiClient.get<GuestPass>(API.passes.detail(String(passId)));
+          return [passId, response.data] as const;
+        }),
+      );
+      return Object.fromEntries(entries) as Record<number, GuestPass>;
+    },
+    enabled: guestPassIds.length > 0,
+  });
+
+  const { data: companiesData, isLoading: isCompaniesLoading } = useQuery({
+    queryKey: ['access-log-companies'],
+    queryFn: () =>
+      apiClient
+        .get<PaginatedResponse<Company>>(API.companies.list, {
+          params: { page_size: 200 },
+        })
+        .then((response) => response.data),
+    enabled: isSuperadmin,
+  });
+
+  const totalCount = data?.count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  async function handleExport() {
+    try {
+      setIsExporting(true);
+      setExportError(null);
+      const exportParams: Record<string, string> = { format: 'csv' };
+      if (dateFrom) exportParams.date_from = dateFrom;
+      if (dateTo) exportParams.date_to = dateTo;
+      if (isSuperadmin && companyId.trim()) exportParams.company_id = companyId.trim();
+      if (search.trim()) exportParams.search = search.trim();
+
+      const response = await apiClient.get<Blob>(API.accessLog.export, {
+        params: exportParams,
+        responseType: 'blob',
+      });
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const stamp = new Date().toISOString().slice(0, 10);
+      link.href = url;
+      link.setAttribute('download', `access_logs_${stamp}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      setExportError(getApiErrorMessage(e, 'Не удалось выгрузить CSV.'));
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   return (
-    <PageStub
-      title="Лог доступа"
-      description="Все проходы (суперадмин)"
-      todos={[
-        'Таблица: кто, когда, через какой вход, каким способом',
-        'Фильтры: дата, компания, тип (гость/сотрудник)',
-        'Экспорт в CSV',
-        'Интеграция с GET /api/v1/access/log/',
-      ]}
-    />
+    <main className="mx-auto max-w-7xl space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Лог доступа</h1>
+          <p className="text-sm text-gray-400">
+            История валидаций QR-пропусков и ручных проверок доступа.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleExport}
+          disabled={isExporting}
+          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isExporting ? 'Экспорт...' : 'Экспорт CSV'}
+        </button>
+      </div>
+
+      <section className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <label className="text-sm text-gray-300">
+            Поиск
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
+              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              placeholder="Имя или email гостя"
+            />
+          </label>
+
+          <label className="text-sm text-gray-300">
+            Дата от
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(event) => {
+                setDateFrom(event.target.value);
+                setPage(1);
+              }}
+              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            />
+          </label>
+
+          <label className="text-sm text-gray-300">
+            Дата до
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(event) => {
+                setDateTo(event.target.value);
+                setPage(1);
+              }}
+              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            />
+          </label>
+
+          {isSuperadmin ? (
+            <label className="text-sm text-gray-300">
+              Компания
+              <select
+                value={companyId}
+                onChange={(event) => {
+                  setCompanyId(event.target.value);
+                  setPage(1);
+                }}
+                className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              >
+                <option value="">{isCompaniesLoading ? 'Загрузка компаний...' : 'Все компании'}</option>
+                {(companiesData?.results ?? []).map((company) => (
+                  <option key={company.id} value={String(company.id)}>
+                    {company.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </div>
+      </section>
+
+      {exportError ? <p className="text-sm text-rose-400">{exportError}</p> : null}
+      {isError ? <p className="text-sm text-rose-400">{getApiErrorMessage(error, 'Не удалось загрузить лог доступа.')}</p> : null}
+
+      <div className="overflow-hidden rounded-xl border border-gray-700 bg-gray-800">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[900px] divide-y divide-gray-700 text-sm">
+            <thead className="bg-gray-900 text-left text-gray-300">
+              <tr>
+                <th className="px-4 py-3">Гость</th>
+                <th className="px-4 py-3">Пригласил</th>
+                <th className="px-4 py-3">Проверил</th>
+                <th className="px-4 py-3">Валидирован</th>
+                <th className="px-4 py-3">Метод</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-700">
+              {isLoading ? (
+                <tr>
+                  <td className="px-4 py-6 text-center text-gray-400" colSpan={5}>
+                    Загрузка лога...
+                  </td>
+                </tr>
+              ) : (data?.results?.length ?? 0) === 0 ? (
+                <tr>
+                  <td className="px-4 py-6 text-center text-gray-400" colSpan={5}>
+                    По выбранным фильтрам ничего не найдено.
+                  </td>
+                </tr>
+              ) : (
+                data?.results.map((log) => (
+                  <tr key={log.id} className="text-gray-200">
+                    <td className="px-4 py-3 align-top">
+                      {typeof log.guest_pass === 'number' && guestPassMap?.[log.guest_pass] ? (
+                        <div>
+                          <div className="font-medium text-white">{guestPassMap[log.guest_pass].guest_name}</div>
+                          <div className="text-xs text-gray-400">{guestPassMap[log.guest_pass].guest_email}</div>
+                        </div>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="px-4 py-3 align-top">{log.invited_by ?? '—'}</td>
+                    <td className="px-4 py-3 align-top">{log.validated_by ?? '—'}</td>
+                    <td className="px-4 py-3 align-top whitespace-nowrap">{fmt(log.validated_at)}</td>
+                    <td className="px-4 py-3 align-top">{log.method || '—'}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 text-sm text-gray-400 sm:flex-row sm:items-center sm:justify-between">
+        <span>
+          Всего записей: {totalCount}
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={page <= 1 || isLoading}
+            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+            className="rounded-lg border border-gray-700 px-3 py-2 text-gray-300 hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Назад
+          </button>
+          <span className="text-gray-300">
+            Страница {page} из {totalPages}
+          </span>
+          <button
+            type="button"
+            disabled={page >= totalPages || isLoading}
+            onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+            className="rounded-lg border border-gray-700 px-3 py-2 text-gray-300 hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Вперед
+          </button>
+        </div>
+      </div>
+    </main>
   );
 }

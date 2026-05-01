@@ -197,6 +197,7 @@ export const router = createBrowserRouter([
               { path: '/team/manage', element: <TeamManagePage /> },
               { path: '/announcements/new', element: <AnnouncementCreatePage /> },
               { path: '/analytics', element: <AnalyticsDashboardPage /> },
+              { path: '/access/logs', element: <AccessLogPage /> },
             ],
           },
 
@@ -261,7 +262,6 @@ export const router = createBrowserRouter([
               { path: '/resources', element: <ResourceListPage /> },
               { path: '/resources/new', element: <ResourceCreatePage /> },
               { path: '/resources/:id', element: <ResourceDetailPage /> },
-              { path: '/access-log', element: <AccessLogPage /> },
               { path: '/building/map/manage', element: <MapManagePage /> },
               { path: '/users', element: <UsersListPage /> },
               { path: '/users/:id', element: <UserDetailPage /> },
