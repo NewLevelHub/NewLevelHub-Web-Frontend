@@ -126,8 +126,8 @@ export const API = {
     validate: '/access/validate/',
   },
   accessLog: {
-    list: '/access/log/',
-    export: '/access/log/export/',
+    list: '/access/logs/',
+    export: '/access/logs/export/',
   },
   building: {
     floors: '/building/floors/',
