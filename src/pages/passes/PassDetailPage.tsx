@@ -48,11 +48,11 @@ export default function PassDetailPage() {
   });
 
   if (isLoading) {
-    return <main className="p-6 text-sm text-gray-400">Загрузка пропуска...</main>;
+    return <main className="p-3 sm:p-4 md:p-6 text-sm text-gray-400">Загрузка пропуска...</main>;
   }
 
   if (isError || !data) {
-    return <main className="p-6 text-sm text-rose-400">Не удалось загрузить детали пропуска.</main>;
+    return <main className="p-3 sm:p-4 md:p-6 text-sm text-rose-400">Не удалось загрузить детали пропуска.</main>;
   }
 
   const canManagePass =
@@ -64,8 +64,8 @@ export default function PassDetailPage() {
     data.status !== PASS_STATUSES.REVOKED;
 
   return (
-    <main className="mx-auto max-w-3xl space-y-6 p-6">
-      <div className="flex items-center justify-between">
+    <main className="mx-auto max-w-3xl space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-white">Пропуск #{data.id}</h1>
         <Link to="/passes" className="text-sm text-indigo-300 hover:text-indigo-200">
           Назад к списку

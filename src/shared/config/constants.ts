@@ -1,5 +1,6 @@
 export const USER_ROLES = {
   SUPERADMIN: 'superadmin',
+  RECEPTION: 'reception',
   COMPANY_ADMIN: 'company_admin',
   EMPLOYEE: 'employee',
   GUEST: 'guest',

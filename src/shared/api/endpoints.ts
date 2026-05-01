@@ -123,7 +123,7 @@ export const API = {
     detail: (id: string) => `/access/passes/${id}/`,
     revoke: (id: string) => `/access/passes/${id}/revoke/`,
     resend: (id: string) => `/access/passes/${id}/resend/`,
-    validate: (code: string) => `/access/passes/validate/${code}/`,
+    validate: '/access/validate/',
   },
   accessLog: {
     list: '/access/log/',

@@ -358,6 +358,22 @@ export interface GuestPass {
   created_at: string;
 }
 
+export interface PassValidationSuccess {
+  valid: true;
+  guest_name: string;
+  purpose: string;
+  invited_by: string;
+  valid_from: string;
+  valid_until: string;
+}
+
+export interface PassValidationFailure {
+  valid: false;
+  reason: 'expired' | 'revoked' | 'already_used' | 'not_found';
+}
+
+export type PassValidationResponse = PassValidationSuccess | PassValidationFailure;
+
 export interface AccessLogEntry {
   id: number;
   person_name: string;
