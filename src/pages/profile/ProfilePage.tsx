@@ -284,7 +284,7 @@ export default function ProfilePage() {
   // ---------------------------------------------------------------------------
 
   return (
-    <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+    <main className="max-w-2xl mx-auto px-3 py-4 sm:px-4 sm:py-6 md:py-8 space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Мой профиль</h1>
 
       {/* ---- Profile card ---- */}

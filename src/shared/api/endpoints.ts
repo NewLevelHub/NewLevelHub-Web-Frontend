@@ -121,7 +121,9 @@ export const API = {
     list: '/access/passes/',
     create: '/access/passes/',
     detail: (id: string) => `/access/passes/${id}/`,
-    validate: (code: string) => `/access/passes/validate/${code}/`,
+    revoke: (id: string) => `/access/passes/${id}/revoke/`,
+    resend: (id: string) => `/access/passes/${id}/resend/`,
+    validate: '/access/validate/',
   },
   accessLog: {
     list: '/access/log/',

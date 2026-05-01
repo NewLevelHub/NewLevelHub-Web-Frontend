@@ -192,7 +192,7 @@ function LimitBar({ label, current, max, unit = '', unlimited, currentFormatted,
 
 function DetailSkeleton() {
   return (
-    <main className="px-4 py-8 max-w-4xl mx-auto space-y-6 animate-pulse">
+    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-4xl mx-auto space-y-6 animate-pulse">
       <div className="flex items-center gap-3 mb-2">
         <div className="w-8 h-8 rounded-lg bg-gray-200" />
         <div className="w-40 h-4 rounded bg-gray-200" />
@@ -646,7 +646,7 @@ export default function CompanyDetailPage() {
 
   if (isError || !company) {
     return (
-      <main className="px-4 py-8 max-w-4xl mx-auto">
+      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-4xl mx-auto">
         <button
           type="button"
           onClick={() => navigate(companiesBasePath)}
@@ -677,7 +677,7 @@ export default function CompanyDetailPage() {
   const storageMaxFormatted = storageUnlimited ? '∞' : formatStorageSize(limitStorageMaxGb);
 
   return (
-    <main className="px-4 py-8 max-w-4xl mx-auto space-y-6">
+    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>

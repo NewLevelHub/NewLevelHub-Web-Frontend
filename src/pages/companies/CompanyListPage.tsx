@@ -235,7 +235,7 @@ export default function CompanyListPage() {
 
   if (isError) {
     return (
-      <main className="px-4 py-8 max-w-7xl mx-auto">
+      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-7xl mx-auto">
         <div className="flex h-64 flex-col items-center justify-center gap-2 text-center">
           <p className="text-sm font-medium text-red-300">Ошибка загрузки компаний.</p>
           <p className="text-xs text-gray-400">Проверьте соединение и обновите страницу.</p>
@@ -247,7 +247,7 @@ export default function CompanyListPage() {
   const currentModal = modal ? modalConfig(modal.action, modal.company.name) : null;
 
   return (
-    <main className="px-4 py-8 max-w-7xl mx-auto space-y-6">
+    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
       {/* Page header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -285,9 +285,9 @@ export default function CompanyListPage() {
           className="bg-gray-800 rounded-2xl border border-gray-700 p-4"
           aria-label="Фильтры компаний"
         >
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             {/* Search */}
-            <div className="relative flex-1 min-w-52">
+            <div className="relative w-full sm:flex-1 sm:min-w-52">
               <Search
                 size={16}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
@@ -308,7 +308,7 @@ export default function CompanyListPage() {
               value={planFilter}
               onChange={(e) => setPlanFilter(e.target.value)}
               aria-label="Фильтр по тарифу"
-              className="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full sm:w-auto rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="">Все тарифы</option>
               <option value={COMPANY_TIERS.BASIC}>Базовый</option>
@@ -321,7 +321,7 @@ export default function CompanyListPage() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               aria-label="Фильтр по статусу"
-              className="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full sm:w-auto rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="">Все статусы</option>
               <option value="true">Активные</option>
@@ -335,7 +335,7 @@ export default function CompanyListPage() {
       <div className="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table
-            className="w-full text-sm"
+            className="w-full min-w-[820px] text-sm"
             role="table"
             aria-label="Список компаний"
           >
@@ -414,7 +414,7 @@ export default function CompanyListPage() {
 
       {/* Pagination */}
       {!isLoading && totalCount > 0 && (
-        <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-gray-400">
             Показано{' '}
             <span className="font-medium text-white">
@@ -424,7 +424,7 @@ export default function CompanyListPage() {
             <span className="font-medium text-white">{totalCount}</span> компаний
           </p>
 
-          <nav aria-label="Пагинация" className="flex items-center gap-1">
+          <nav aria-label="Пагинация" className="flex flex-wrap items-center gap-1">
             <button
               type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -600,7 +600,7 @@ function CompanyRow({
 
       {/* Actions */}
       <td className="px-4 py-3">
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           <Link
             to={`${detailBasePath}/${company.id}`}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-300 bg-blue-900/30 hover:bg-blue-900/50 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"

@@ -340,6 +340,8 @@ export interface GuestPass {
   id: number;
   created_by: number;
   created_by_name: string;
+  created_by_email?: string;
+  created_by_company_name?: string | null;
   company: number | null;
   guest_name: string;
   guest_email: string;
@@ -355,6 +357,22 @@ export interface GuestPass {
   status: PassStatus;
   created_at: string;
 }
+
+export interface PassValidationSuccess {
+  valid: true;
+  guest_name: string;
+  purpose: string;
+  invited_by: string;
+  valid_from: string;
+  valid_until: string;
+}
+
+export interface PassValidationFailure {
+  valid: false;
+  reason: 'expired' | 'revoked' | 'already_used' | 'not_found';
+}
+
+export type PassValidationResponse = PassValidationSuccess | PassValidationFailure;
 
 export interface AccessLogEntry {
   id: number;
