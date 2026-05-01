@@ -102,6 +102,10 @@ import UserDetailPage from '@/pages/users/UserDetailPage';
 // Onboarding
 import OnboardingWizardPage from '@/pages/onboarding/OnboardingWizardPage';
 
+// Unsubscribe
+import UnsubscribeSuccessPage from '@/pages/unsubscribe/UnsubscribeSuccessPage';
+import UnsubscribeInvalidPage from '@/pages/unsubscribe/UnsubscribeInvalidPage';
+
 // Errors
 import NotFoundPage from '@/pages/errors/NotFoundPage';
 import ForbiddenPage from '@/pages/errors/ForbiddenPage';
@@ -131,6 +135,15 @@ export const router = createBrowserRouter([
   {
     element: <AuthLayout />,
     children: [{ path: '/verify-email', element: <VerifyEmailPage /> }],
+  },
+
+  // ── Unsubscribe pages (public, no auth required) ──
+  {
+    element: <AuthLayout />,
+    children: [
+      { path: '/unsubscribe/success', element: <UnsubscribeSuccessPage /> },
+      { path: '/unsubscribe/invalid', element: <UnsubscribeInvalidPage /> },
+    ],
   },
 
   // ── Protected routes (authenticated) ──
