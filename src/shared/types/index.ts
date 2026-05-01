@@ -606,7 +606,13 @@ export interface MapMarker {
 }
 
 export type MapPointType = 'desk' | 'meeting_room' | 'parking' | 'capsule' | 'office';
-export type MapPointStatus = 'available' | 'booked' | 'unavailable';
+export type MapPointStatus = 'free' | 'soon_available' | 'occupied' | 'blocked';
+export type MapPointStatusReason =
+  | 'active_block'
+  | 'active_booking'
+  | 'active_booking_ends_within_threshold'
+  | 'no_active_booking_or_block'
+  | 'not_a_bookable_resource';
 
 export interface MapPoint {
   id: number;
@@ -617,6 +623,8 @@ export interface MapPoint {
   resource_id: number | null;
   resource_name: string | null;
   resource_status: MapPointStatus | null;
+  resource_status_reason: MapPointStatusReason;
+  next_free_at: string | null;
 }
 
 export interface FloorMap {

@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, X, MapPin, Loader2, Pencil, Trash2, ToggleLeft, ToggleRight, Move } from 'lucide-react';
 
@@ -9,7 +10,6 @@ import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { USER_ROLES } from '@/shared/config/constants';
-import { BookingModal } from '@/shared/ui/BookingModal';
 import type {
   FloorMap,
   MapPoint,
@@ -21,6 +21,17 @@ import type {
   BookingResourceListItem,
   PaginatedResponse,
 } from '@/shared/types';
+import {
+  LEGEND_ITEMS,
+  POINT_STATUS_CLASS,
+  POINT_STATUS_LABEL,
+  STATUS_LABEL_CLASS,
+  formatNextFreeAt,
+  getPointStatusReasonLabel,
+  isBookablePoint,
+  normalizePointStatus,
+  type PointUiStatus,
+} from '@/pages/map/lib/status';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -33,78 +44,6 @@ const POINT_TYPE_LABELS: Record<string, string> = {
 };
 
 const POINT_TYPES: MapPointType[] = ['desk', 'meeting_room', 'parking', 'capsule', 'office'];
-
-type PointUiStatus =
-  | 'free'
-  | 'occupied'
-  | 'soon_available'
-  | 'blocked'
-  | 'none'
-  | 'disabled';
-
-const POINT_STATUS_CLASS: Record<PointUiStatus, string> = {
-  free: 'bg-emerald-500 border-emerald-600 hover:bg-emerald-400',
-  occupied: 'bg-rose-500 border-rose-600 hover:bg-rose-400',
-  soon_available: 'bg-amber-500 border-amber-600 hover:bg-amber-400',
-  blocked: 'bg-violet-600 border-violet-700 hover:bg-violet-500',
-  /** Точка без привязки к ресурсу или тип без статуса бронирования (null с бэка) */
-  none: 'bg-stone-500 border-stone-600 hover:bg-stone-400',
-  disabled: 'bg-slate-400 border-slate-500 hover:bg-slate-300',
-};
-
-const POINT_STATUS_LABEL: Record<PointUiStatus, string> = {
-  free: 'Свободно',
-  occupied: 'Занято',
-  soon_available: 'Скоро освободится',
-  blocked: 'Заблокировано',
-  none: 'Статус не применим',
-  disabled: 'Недоступно',
-};
-
-const STATUS_LABEL_CLASS: Record<PointUiStatus, string> = {
-  free: 'text-emerald-400',
-  occupied: 'text-rose-400',
-  soon_available: 'text-amber-400',
-  blocked: 'text-violet-400',
-  none: 'text-stone-400',
-  disabled: 'text-slate-400',
-};
-
-const LEGEND_ITEMS = [
-  { status: 'free' as const, label: 'Свободно', color: 'bg-emerald-500' },
-  { status: 'occupied' as const, label: 'Занято', color: 'bg-rose-500' },
-  { status: 'soon_available' as const, label: 'Скоро освободится', color: 'bg-amber-500' },
-  { status: 'blocked' as const, label: 'Заблокировано', color: 'bg-violet-600' },
-  { status: 'none' as const, label: 'Статус не применим', color: 'bg-stone-500' },
-  { status: 'disabled' as const, label: 'Недоступно', color: 'bg-slate-400' },
-];
-
-function normalizePointStatus(status: string | null | undefined): PointUiStatus {
-  switch (status) {
-    case 'free':
-    case 'available':
-      return 'free';
-    case 'occupied':
-    case 'booked':
-      return 'occupied';
-    case 'soon_available':
-      return 'soon_available';
-    case 'blocked':
-      return 'blocked';
-    case 'disabled':
-    case 'unavailable':
-      return 'disabled';
-    case null:
-    case undefined:
-      return 'none';
-    default:
-      return 'disabled';
-  }
-}
-
-function isBookablePoint(point: MapPoint): boolean {
-  return normalizePointStatus(point.resource_status) === 'free' && Boolean(point.resource_id);
-}
 
 // ─── MapPoint form state ──────────────────────────────────────────────────────
 
@@ -134,6 +73,8 @@ interface MapPointTooltipProps {
 
 const MapPointTooltip = memo<MapPointTooltipProps>(({ point }) => {
   const status = normalizePointStatus(point.resource_status);
+  const nextFreeAt = formatNextFreeAt(point.next_free_at);
+  const reasonLabel = getPointStatusReasonLabel(point);
   return (
     <div
       className="pointer-events-none absolute z-20 bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-48 rounded-lg bg-gray-900 px-3 py-2 text-center shadow-xl"
@@ -157,6 +98,12 @@ const MapPointTooltip = memo<MapPointTooltipProps>(({ point }) => {
         >
           {POINT_STATUS_LABEL[status]}
         </p>
+      ) : null}
+      {status === 'soon_available' && nextFreeAt ? (
+        <p className="mt-0.5 text-[11px] text-amber-300">Свободен в {nextFreeAt}</p>
+      ) : null}
+      {reasonLabel ? (
+        <p className="mt-0.5 text-[11px] text-gray-500">{reasonLabel}</p>
       ) : null}
       {/* caret */}
       <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
@@ -1321,6 +1268,7 @@ DeleteConfirmDialog.displayName = 'DeleteConfirmDialog';
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function MapPage() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
@@ -1330,8 +1278,6 @@ export default function MapPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
-  const [bookingResource, setBookingResource] = useState<BookingResourceListItem | null>(null);
-  const [bookingModalOpen, setBookingModalOpen] = useState(false);
 
   // Edit mode state (superadmin only)
   const [editMode, setEditMode] = useState(false);
@@ -1465,21 +1411,16 @@ export default function MapPage() {
     staleTime: 30_000,
   });
 
-  // Fetch resource detail when a point is clicked (read-only mode)
+  // Open booking modal when a free map point is clicked (read-only mode)
   const handlePointClick = useCallback(
-    async (point: MapPoint) => {
+    (point: MapPoint) => {
       if (!isBookablePoint(point)) return;
-      try {
-        const { data } = await apiClient.get<BookingResourceListItem>(
-          API.bookings.resources.detail(String(point.resource_id)),
-        );
-        setBookingResource(data);
-        setBookingModalOpen(true);
-      } catch {
-        window.location.href = `/bookings/catalog`;
-      }
+      const pointWithFallback = point as MapPoint & { resource?: number | null };
+      const resourceId = pointWithFallback.resource_id ?? pointWithFallback.resource ?? null;
+      if (resourceId === null) return;
+      navigate(`/bookings/catalog?resource=${resourceId}`);
     },
-    [],
+    [navigate],
   );
 
   const handleSearchSelect = useCallback(
@@ -1615,6 +1556,14 @@ export default function MapPage() {
     ? resolveMediaUrl(selectedFloor.plan_image_url ?? selectedFloor.plan_image)
     : null;
   const showSearch = debouncedQuery.length >= 2;
+  const statusCounts = floorMap?.points.reduce<Record<PointUiStatus, number>>(
+    (acc, point) => {
+      const status = normalizePointStatus(point.resource_status);
+      acc[status] += 1;
+      return acc;
+    },
+    { free: 0, occupied: 0, soon_available: 0, blocked: 0, none: 0, disabled: 0 },
+  );
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -1683,7 +1632,10 @@ export default function MapPage() {
           {LEGEND_ITEMS.map((item) => (
             <div key={item.label} className="flex items-center gap-1.5">
               <span className={cn('block h-3 w-3 rounded-full', item.color)} aria-hidden="true" />
-              <span className="text-xs text-gray-600">{item.label}</span>
+              <span className="text-xs text-gray-600">
+                {item.label}
+                {statusCounts ? ` (${statusCounts[item.status]})` : ''}
+              </span>
             </div>
           ))}
         </div>
@@ -1918,18 +1870,6 @@ export default function MapPage() {
         )}
       </div>
 
-      {/* Booking modal (read-only mode) */}
-      {bookingResource && (
-        <BookingModal
-          resource={bookingResource}
-          open={bookingModalOpen}
-          onClose={() => {
-            setBookingModalOpen(false);
-            setBookingResource(null);
-          }}
-        />
-      )}
-
       {/* Edit point modal (superadmin) */}
       {selectedFloorId !== null && (
         <MapPointEditModal
@@ -1952,6 +1892,7 @@ export default function MapPage() {
           onSuccess={handleDeleteSuccess}
         />
       )}
+
     </div>
   );
 }
