@@ -67,7 +67,7 @@ const superadminNav: NavSection[] = [
   },
   {
     title: 'Аналитика',
-    items: [{ label: 'Аналитика', path: '/analytics', icon: BarChart3 }],
+    items: [{ label: 'Аналитика', path: '/company/analytics', icon: BarChart3 }],
   },
   {
     title: 'Настройки',
