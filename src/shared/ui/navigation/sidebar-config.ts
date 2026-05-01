@@ -109,6 +109,7 @@ const companyAdminNav: NavSection[] = [
       { label: 'Файлы', path: '/storage', icon: FileText },
       { label: 'Объявления', path: '/announcements', icon: Megaphone },
       { label: 'Отпуска', path: '/hr/leaves', icon: Clock },
+      { label: 'Сервисные заявки', path: '/service-requests', icon: Wrench },
     ],
   },
   {

@@ -390,17 +390,42 @@ export interface AccessLogEntry {
 
 export interface ServiceRequest {
   id: number;
-  type: ServiceRequestType;
-  floor: number;
+  user: number;
+  user_name: string;
+  request_type: ServiceRequestType;
+  floor: number | null;
   location: string;
   description: string;
   urgency: 'normal' | 'urgent';
   photo: string | null;
   status: ServiceRequestStatus;
   rating: number | null;
-  created_by: User;
-  assigned_to: User | null;
+  assigned_to: number | null;
+  assigned_to_name: string | null;
+  completed_at: string | null;
   created_at: string;
+  updated_at: string;
+}
+
+export interface ServiceRequestCreatePayload {
+  request_type: ServiceRequestType;
+  description: string;
+  floor?: number | null;
+  location?: string;
+  urgency?: 'normal' | 'urgent';
+}
+
+export interface ServiceRequestCleaningPayload {
+  description?: string;
+  floor?: number | null;
+}
+
+export interface ServiceRequestUpdateStatusPayload {
+  status: ServiceRequestStatus;
+}
+
+export interface ServiceRequestRatePayload {
+  rating: number;
 }
 
 export interface Announcement {

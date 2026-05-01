@@ -135,9 +135,13 @@ export const API = {
     markers: (floorId: string) => `/building/floors/${floorId}/markers/`,
   },
   serviceRequests: {
-    list: '/service-requests/',
-    create: '/service-requests/',
-    detail: (id: string) => `/service-requests/${id}/`,
+    list: '/services/requests/',
+    create: '/services/requests/',
+    floors: '/services/floors/',
+    quickCleaning: '/services/requests/quick-cleaning/',
+    detail: (id: string) => `/services/requests/${id}/`,
+    updateStatus: (id: string) => `/services/requests/${id}/status/`,
+    rate: (id: string) => `/services/requests/${id}/rate/`,
   },
   announcements: {
     list: '/announcements/',
