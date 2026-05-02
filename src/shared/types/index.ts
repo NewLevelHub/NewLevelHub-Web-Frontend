@@ -635,6 +635,69 @@ export interface MapMarker {
   resource_id: number | null;
 }
 
+export type MapPointType = 'desk' | 'meeting_room' | 'parking' | 'capsule' | 'office';
+export type MapPointStatus = 'free' | 'soon_available' | 'occupied' | 'blocked';
+export type MapPointStatusReason =
+  | 'active_block'
+  | 'active_booking'
+  | 'active_booking_ends_within_threshold'
+  | 'no_active_booking_or_block'
+  | 'not_a_bookable_resource';
+
+export interface MapPoint {
+  id: number;
+  point_type: MapPointType;
+  label: string;
+  x: number;
+  y: number;
+  resource_id: number | null;
+  resource_name: string | null;
+  resource_status: MapPointStatus | null;
+  resource_status_reason: MapPointStatusReason;
+  next_free_at: string | null;
+}
+
+export interface FloorMap {
+  floor_id: number;
+  floor_name: string;
+  at_time: string;
+  points: MapPoint[];
+}
+
+export interface ServiceFloor {
+  id: number;
+  name: string;
+  number: number;
+  plan_image: string | null;
+  plan_image_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MapPointSearchResult {
+  id: number;
+  label: string;
+  point_type: MapPointType;
+  x: number;
+  y: number;
+  floor_id: number;
+  floor_name: string;
+  resource_id: number | null;
+  resource_name: string | null;
+}
+
+export interface MapPointCreatePayload {
+  floor: number;
+  point_type: MapPointType;
+  label: string;
+  x: number;
+  y: number;
+  resource?: number | null;
+  company?: number | null;
+}
+
+export type MapPointUpdatePayload = Partial<MapPointCreatePayload>;
+
 export interface PaginatedResponse<T> {
   count: number;
   next: string | null;

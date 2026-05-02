@@ -134,6 +134,16 @@ export const API = {
     floor: (id: string) => `/building/floors/${id}/`,
     markers: (floorId: string) => `/building/floors/${floorId}/markers/`,
   },
+  map: {
+    floors: '/services/floors/',
+    floorMap: (floorId: number | string) => `/services/floors/${floorId}/map/`,
+    search: '/services/map-points/search/',
+    mapPoints: {
+      list: '/services/map-points/',
+      create: '/services/map-points/',
+      detail: (id: number) => `/services/map-points/${id}/`,
+    },
+  },
   serviceRequests: {
     list: '/services/requests/',
     create: '/services/requests/',

@@ -104,6 +104,7 @@ const companyAdminNav: NavSection[] = [
       { label: 'Бронирование', path: '/bookings/catalog', icon: Bookmark },
       { label: 'Рекуррентные брони', path: '/bookings/recurring', icon: Repeat },
       { label: 'Бронирования (админ)', path: '/admin/bookings', icon: CalendarDays },
+      { label: 'Карта здания', path: '/building/map', icon: Map },
       { label: 'Гостевые пропуска', path: '/passes', icon: ShieldCheck },
       { label: 'Лог доступа', path: '/access/logs', icon: Clock },
       { label: 'Файлы', path: '/storage', icon: FileText },
