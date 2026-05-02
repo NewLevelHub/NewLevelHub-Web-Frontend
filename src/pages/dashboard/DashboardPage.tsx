@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Sparkles } from 'lucide-react';
 import { useAuthStore } from '@/shared/store/auth';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -9,10 +10,11 @@ import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { authPrimaryBtn } from '@/shared/ui/authFormStyles';
 import { cn } from '@/shared/lib/cn';
 import { AnnouncementsWidget } from '@/pages/announcements/AnnouncementsWidget';
-import type { OnboardingStatus } from '@/shared/types';
+import type { OnboardingStatus, ServiceRequest, ServiceRequestCleaningPayload } from '@/shared/types';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const fetchMe = useAuthStore((s) => s.fetchMe);
@@ -37,6 +39,23 @@ export default function DashboardPage() {
   const [resendMsg, setResendMsg] = useState('');
   const [resendErr, setResendErr] = useState('');
   const [resendLoading, setResendLoading] = useState(false);
+
+  const [cleaningSuccess, setCleaningSuccess] = useState(false);
+  const [cleaningError, setCleaningError] = useState('');
+
+  const cleaningMutation = useMutation({
+    mutationFn: (payload: ServiceRequestCleaningPayload) =>
+      apiClient.post<ServiceRequest>(API.serviceRequests.quickCleaning, payload).then((r) => r.data),
+    onSuccess: async () => {
+      setCleaningSuccess(true);
+      setCleaningError('');
+      await queryClient.invalidateQueries({ queryKey: ['service-requests'] });
+    },
+    onError: (err: unknown) => {
+      setCleaningError(getApiErrorMessage(err, 'Не удалось создать заявку на уборку.'));
+      setCleaningSuccess(false);
+    },
+  });
 
   async function handleResend() {
     setResendMsg('');
@@ -68,6 +87,8 @@ export default function DashboardPage() {
     );
   }
 
+  const isEmployee = user?.role === USER_ROLES.EMPLOYEE;
+
   return (
     <div className="max-w-2xl space-y-8">
       <div>
@@ -77,7 +98,49 @@ export default function DashboardPage() {
 
       <AnnouncementsWidget />
 
-      <div className="rounded-xl border border-gray-800 bg-gray-900/80 p-6">
+      {/* Quick cleaning action for employees */}
+      {isEmployee ? (
+        <div className="mt-6 rounded-xl border border-gray-700 bg-gray-800 p-5">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-900/40">
+              <Sparkles className="h-5 w-5 text-sky-400" aria-hidden="true" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-sm font-semibold text-white">Нужна уборка?</h2>
+              <p className="mt-0.5 text-xs text-gray-400">
+                Этаж определится автоматически по последнему подтверждённому бронированию.
+              </p>
+
+              {cleaningSuccess ? (
+                <p className="mt-2 text-sm text-emerald-400">
+                  Заявка на уборку отправлена. Мы займёмся этим в ближайшее время.
+                </p>
+              ) : null}
+
+              {cleaningError ? (
+                <p className="mt-2 text-sm text-rose-400">{cleaningError}</p>
+              ) : null}
+
+              <button
+                type="button"
+                disabled={cleaningMutation.isPending || cleaningSuccess}
+                onClick={() => {
+                  setCleaningSuccess(false);
+                  setCleaningError('');
+                  cleaningMutation.mutate({});
+                }}
+                className={cn(
+                  'mt-3 inline-flex items-center rounded-lg border border-sky-700 bg-sky-900/30 px-4 py-2 text-sm font-medium text-sky-300 hover:bg-sky-900/50 disabled:opacity-50',
+                )}
+              >
+                {cleaningMutation.isPending ? 'Отправляем...' : 'Вызвать уборку'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="mt-8 rounded-xl border border-gray-800 bg-gray-900/80 p-6">
         <dl className="grid gap-3 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-gray-500">Имя</dt>

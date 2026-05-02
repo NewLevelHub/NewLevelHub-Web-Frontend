@@ -358,28 +358,74 @@ export interface GuestPass {
   created_at: string;
 }
 
+export interface PassValidationSuccess {
+  valid: true;
+  guest_name: string;
+  purpose: string;
+  invited_by: string;
+  valid_from: string;
+  valid_until: string;
+}
+
+export interface PassValidationFailure {
+  valid: false;
+  reason: 'expired' | 'revoked' | 'already_used' | 'not_found';
+}
+
+export type PassValidationResponse = PassValidationSuccess | PassValidationFailure;
+
 export interface AccessLogEntry {
   id: number;
-  person_name: string;
-  company: string | null;
-  entry_type: 'guest' | 'employee';
+  guest_pass: number | null;
+  invited_by: string | null;
+  validated_at: string;
+  validated_by: string | null;
+  checked_by: number | null;
+  user: number | null;
+  entry_point: string;
   method: string;
-  timestamp: string;
+  is_entry: boolean;
+  created_at: string;
 }
 
 export interface ServiceRequest {
   id: number;
-  type: ServiceRequestType;
-  floor: number;
+  user: number;
+  user_name: string;
+  request_type: ServiceRequestType;
+  floor: number | null;
   location: string;
   description: string;
   urgency: 'normal' | 'urgent';
   photo: string | null;
   status: ServiceRequestStatus;
   rating: number | null;
-  created_by: User;
-  assigned_to: User | null;
+  assigned_to: number | null;
+  assigned_to_name: string | null;
+  completed_at: string | null;
   created_at: string;
+  updated_at: string;
+}
+
+export interface ServiceRequestCreatePayload {
+  request_type: ServiceRequestType;
+  description: string;
+  floor?: number | null;
+  location?: string;
+  urgency?: 'normal' | 'urgent';
+}
+
+export interface ServiceRequestCleaningPayload {
+  description?: string;
+  floor?: number | null;
+}
+
+export interface ServiceRequestUpdateStatusPayload {
+  status: ServiceRequestStatus;
+}
+
+export interface ServiceRequestRatePayload {
+  rating: number;
 }
 
 export interface Announcement {
@@ -595,6 +641,69 @@ export interface MapMarker {
   y: number;
   resource_id: number | null;
 }
+
+export type MapPointType = 'desk' | 'meeting_room' | 'parking' | 'capsule' | 'office';
+export type MapPointStatus = 'free' | 'soon_available' | 'occupied' | 'blocked';
+export type MapPointStatusReason =
+  | 'active_block'
+  | 'active_booking'
+  | 'active_booking_ends_within_threshold'
+  | 'no_active_booking_or_block'
+  | 'not_a_bookable_resource';
+
+export interface MapPoint {
+  id: number;
+  point_type: MapPointType;
+  label: string;
+  x: number;
+  y: number;
+  resource_id: number | null;
+  resource_name: string | null;
+  resource_status: MapPointStatus | null;
+  resource_status_reason: MapPointStatusReason;
+  next_free_at: string | null;
+}
+
+export interface FloorMap {
+  floor_id: number;
+  floor_name: string;
+  at_time: string;
+  points: MapPoint[];
+}
+
+export interface ServiceFloor {
+  id: number;
+  name: string;
+  number: number;
+  plan_image: string | null;
+  plan_image_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MapPointSearchResult {
+  id: number;
+  label: string;
+  point_type: MapPointType;
+  x: number;
+  y: number;
+  floor_id: number;
+  floor_name: string;
+  resource_id: number | null;
+  resource_name: string | null;
+}
+
+export interface MapPointCreatePayload {
+  floor: number;
+  point_type: MapPointType;
+  label: string;
+  x: number;
+  y: number;
+  resource?: number | null;
+  company?: number | null;
+}
+
+export type MapPointUpdatePayload = Partial<MapPointCreatePayload>;
 
 export interface PaginatedResponse<T> {
   count: number;

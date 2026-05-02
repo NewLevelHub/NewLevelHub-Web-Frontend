@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Bookmark, Search, Settings2 } from 'lucide-react';
 import dayjs from 'dayjs';
@@ -26,7 +26,7 @@ import {
 import { useAuth } from '@/shared/hooks/useAuth';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import { cn } from '@/shared/lib/cn';
-import type { BookingResourceListItem, PaginatedResponse } from '@/shared/types';
+import type { BookingResourceDetail, BookingResourceListItem, PaginatedResponse } from '@/shared/types';
 
 const PAGE_SIZE = 24;
 
@@ -85,6 +85,8 @@ function formatAvailableAt(iso: string | null): string | null {
 }
 
 export default function BookingCatalogPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const preselectResourceId = Number(searchParams.get('resource'));
   const { user } = useAuth();
   const [page, setPage] = useState(1);
   const [selectedResource, setSelectedResource] = useState<BookingResourceListItem | null>(null);
@@ -135,6 +137,46 @@ export default function BookingCatalogPage() {
   const totalCount = data?.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const results = data?.results ?? [];
+
+  const { data: preselectedResource } = useQuery({
+    queryKey: ['booking-resource-detail-for-modal', preselectResourceId],
+    queryFn: () =>
+      apiClient
+        .get<BookingResourceDetail>(API.bookings.resources.detail(String(preselectResourceId)))
+        .then((r) => r.data),
+    enabled: Number.isFinite(preselectResourceId) && preselectResourceId > 0,
+  });
+
+  useEffect(() => {
+    if (!Number.isFinite(preselectResourceId) || preselectResourceId <= 0) return;
+    if (selectedResource !== null) return;
+    const fromList = results.find((item) => item.id === preselectResourceId);
+    if (fromList) {
+      setSelectedResource(fromList);
+      return;
+    }
+    if (preselectedResource) {
+      setSelectedResource({
+        id: preselectedResource.id,
+        type: preselectedResource.type,
+        name: preselectedResource.name,
+        floor: preselectedResource.floor,
+        zone: preselectedResource.zone,
+        photo: preselectedResource.photo,
+        photo_url: null,
+        capacity: preselectedResource.capacity,
+        equipment: preselectedResource.equipment,
+        is_active: preselectedResource.is_active,
+        is_hot_desk: preselectedResource.is_hot_desk,
+        availability_days: preselectedResource.availability_days,
+        parking_type: preselectedResource.parking_type,
+        capsule_zone: preselectedResource.capsule_zone,
+        status: BOOKING_RESOURCE_CATALOG_STATUS.FREE,
+        reason: null,
+        available_at: null,
+      });
+    }
+  }, [preselectResourceId, preselectedResource, results, selectedResource]);
 
   const equipmentFacetKeys = useMemo((): ResourceEquipmentKey[] => {
     const raw = data?.meeting_room_equipment_keys;
@@ -192,7 +234,7 @@ export default function BookingCatalogPage() {
   };
 
   return (
-    <main className="px-4 py-8 max-w-7xl mx-auto space-y-6">
+    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Каталог ресурсов</h1>
@@ -200,7 +242,7 @@ export default function BookingCatalogPage() {
             Подбор площадок и мест для бронирования. Фильтры слева, карточки справа.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           {(user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN) && (
             <Link
               to="/admin/bookings"
@@ -412,7 +454,7 @@ export default function BookingCatalogPage() {
           ) : results.length === 0 ? (
             <div className="py-20 text-center text-sm text-gray-400">Нет ресурсов по заданным условиям.</div>
           ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <ul className="grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {results.map((r) => {
                 const imgSrc = resolveMediaUrl(r.photo_url ?? r.photo ?? '') ?? r.photo_url ?? r.photo ?? '';
                 const statusLabel = STATUS_LABELS[r.status] ?? r.status;
@@ -515,7 +557,7 @@ export default function BookingCatalogPage() {
           )}
 
           {totalPages > 1 && (
-            <div className="flex justify-center gap-2 pt-2">
+            <div className="flex flex-wrap justify-center gap-2 pt-2">
               <button
                 type="button"
                 disabled={page <= 1}
@@ -544,7 +586,14 @@ export default function BookingCatalogPage() {
         <BookingModal
           resource={selectedResource}
           open={selectedResource !== null}
-          onClose={() => setSelectedResource(null)}
+          onClose={() => {
+            setSelectedResource(null);
+            if (searchParams.has('resource')) {
+              const next = new URLSearchParams(searchParams);
+              next.delete('resource');
+              setSearchParams(next, { replace: true });
+            }
+          }}
         />
       )}
     </main>

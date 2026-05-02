@@ -88,8 +88,8 @@ export default function NotificationListPage() {
   }
 
   return (
-    <main className="px-4 py-8 max-w-2xl mx-auto space-y-4">
-      <div className="flex items-center justify-between">
+    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-2xl mx-auto space-y-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Уведомления</h1>
         {hasUnread && (
           <button
@@ -104,8 +104,8 @@ export default function NotificationListPage() {
       </div>
 
       {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex w-full sm:w-auto rounded-lg border border-gray-200 overflow-hidden text-sm">
           <button
             type="button"
             onClick={() => setUnreadFilter('all')}
@@ -135,7 +135,7 @@ export default function NotificationListPage() {
         <select
           value={typeFilter}
           onChange={e => setTypeFilter(e.target.value)}
-          className="text-sm rounded-lg border border-gray-200 px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full sm:w-auto text-sm rounded-lg border border-gray-200 px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           aria-label="Фильтр по типу"
         >
           <option value="">Все типы</option>
