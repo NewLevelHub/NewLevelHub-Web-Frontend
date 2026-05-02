@@ -115,6 +115,31 @@ export interface MemberActivity {
   bookings_last_30_days: number;
 }
 
+export interface CompanyAnalyticsEmployeeActivity {
+  user_id: number;
+  full_name: string;
+  booking_count_30d: number;
+  task_count_active: number;
+  last_login: string | null;
+}
+
+export interface CompanyAnalytics {
+  total_employees: number;
+  active_7d: number;
+  bookings_month: number;
+  storage: {
+    used: number;
+    limit: number;
+  };
+  active_crm_tasks: {
+    todo: number;
+    in_progress: number;
+    done: number;
+  };
+  guest_visits_month: number;
+  employee_activity: CompanyAnalyticsEmployeeActivity[];
+}
+
 export interface CompanyDirectoryMember {
   id: number;
   avatar: string | null;

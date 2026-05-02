@@ -215,6 +215,7 @@ export const router = createBrowserRouter([
               { path: '/team/manage', element: <TeamManagePage /> },
               { path: '/announcements/new', element: <AnnouncementCreatePage /> },
               { path: '/analytics', element: <AnalyticsDashboardPage /> },
+              { path: '/company/analytics', element: <AnalyticsDashboardPage /> },
               { path: '/access/logs', element: <AccessLogPage /> },
             ],
           },

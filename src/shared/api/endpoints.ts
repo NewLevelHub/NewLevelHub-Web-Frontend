@@ -207,6 +207,7 @@ export const API = {
     overview: '/analytics/overview/',
     bookings: '/analytics/bookings/',
     resources: '/analytics/resources/',
+    companyDashboard: '/analytics/company/',
     company: (id: string) => `/analytics/companies/${id}/`,
   },
   profile: {
