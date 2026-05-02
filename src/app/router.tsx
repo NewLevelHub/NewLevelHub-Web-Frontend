@@ -90,6 +90,7 @@ import NotificationPreferencesPage from '@/pages/notifications/NotificationPrefe
 
 // Analytics
 import AnalyticsDashboardPage from '@/pages/analytics/AnalyticsDashboardPage';
+import SuperadminAnalyticsPage from '@/pages/analytics/SuperadminAnalyticsPage';
 
 // Profile
 import ProfilePage from '@/pages/profile/ProfilePage';
@@ -276,6 +277,7 @@ export const router = createBrowserRouter([
           {
             element: <RequireRole allowed={[SUPERADMIN]} />,
             children: [
+              { path: '/admin/analytics', element: <SuperadminAnalyticsPage /> },
               { path: '/admin/crm/boards', element: <AdminBoardsPage /> },
               { path: '/resources', element: <ResourceListPage /> },
               { path: '/resources/new', element: <ResourceCreatePage /> },

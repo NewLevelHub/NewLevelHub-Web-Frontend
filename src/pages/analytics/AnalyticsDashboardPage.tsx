@@ -2,6 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import type { CompanyAnalytics } from '@/shared/types';
+import { Navigate } from 'react-router';
+
+import { PageStub } from '@/shared/ui/PageStub';
+import { useAuth } from '@/shared/hooks/useAuth';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useAuthStore } from '@/shared/store/auth';
 import { PageStub } from '@/shared/ui/PageStub';
