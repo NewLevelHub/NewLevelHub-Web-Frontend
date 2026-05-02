@@ -59,6 +59,26 @@ export interface CompanyDetail extends Company {
   storage_used: number;
 }
 
+/** GET /analytics/superadmin/ — обзорные метрики (суперадмин). */
+export type SuperadminAnalyticsPeriod = '7d' | '30d' | '90d' | 'custom';
+
+export interface SuperadminAnalyticsOverview {
+  total_companies: number;
+  active_companies: number;
+  total_users: number;
+  active_users_7d: number;
+  bookings_today: number;
+  guests_today: number;
+  open_service_requests: number;
+}
+
+export interface SuperadminAnalyticsResponse {
+  period: SuperadminAnalyticsPeriod;
+  date_from: string;
+  date_to: string;
+  overview: SuperadminAnalyticsOverview;
+}
+
 export interface CompanyLimits {
   employees: {
     current: number;

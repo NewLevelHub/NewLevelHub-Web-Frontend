@@ -203,6 +203,7 @@ export const API = {
     doNotDisturb: '/notifications/do-not-disturb/',
   },
   analytics: {
+    superadmin: '/analytics/superadmin/',
     overview: '/analytics/overview/',
     bookings: '/analytics/bookings/',
     resources: '/analytics/resources/',
