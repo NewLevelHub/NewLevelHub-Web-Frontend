@@ -16,12 +16,15 @@ const NOTIFICATION_TYPE_LABELS: Record<string, string> = {
   task_moved: 'Задача перемещена',
   task_comment: 'Комментарий к задаче',
   task_deadline: 'Дедлайн задачи',
+  task_deadline_overdue: 'Просрочен дедлайн',
   guest_validated: 'Гость подтверждён',
   guest_pass_expiring: 'Пропуск истекает',
   service_request_update: 'Обновление заявки',
   announcement: 'Объявление',
   invitation: 'Приглашение',
   leave_review: 'Проверка отпуска',
+  leave_approved: 'Отпуск одобрен',
+  leave_rejected: 'Отпуск отклонён',
   system: 'Системное',
 };
 
