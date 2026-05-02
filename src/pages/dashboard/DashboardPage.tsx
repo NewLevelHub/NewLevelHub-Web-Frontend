@@ -9,6 +9,7 @@ import { USER_ROLES } from '@/shared/config/constants';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { authPrimaryBtn } from '@/shared/ui/authFormStyles';
 import { cn } from '@/shared/lib/cn';
+import { AnnouncementsWidget } from '@/pages/announcements/AnnouncementsWidget';
 import type { OnboardingStatus, ServiceRequest, ServiceRequestCleaningPayload } from '@/shared/types';
 
 export default function DashboardPage() {
@@ -89,9 +90,13 @@ export default function DashboardPage() {
   const isEmployee = user?.role === USER_ROLES.EMPLOYEE;
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="text-2xl font-bold text-white">Дашборд (тест API)</h1>
-      <p className="mt-1 text-sm text-gray-500">Данные из Zustand после login/register или GET /auth/me/</p>
+    <div className="max-w-2xl space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold text-white">Дашборд (тест API)</h1>
+        <p className="mt-1 text-sm text-gray-500">Данные из Zustand после login/register или GET /auth/me/</p>
+      </div>
+
+      <AnnouncementsWidget />
 
       {/* Quick cleaning action for employees */}
       {isEmployee ? (
