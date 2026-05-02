@@ -96,7 +96,15 @@ export function AnnouncementsWidget() {
                     {a.is_pinned ? (
                       <Pin size={12} aria-hidden="true" className="text-indigo-300" />
                     ) : null}
-                    <p className="truncate text-sm font-medium text-white">{a.title}</p>
+                    {!a.is_read ? (
+                      <span
+                        className="inline-block h-2 w-2 shrink-0 rounded-full bg-indigo-400"
+                        aria-label="Непрочитано"
+                      />
+                    ) : null}
+                    <p className={cn('truncate text-sm font-medium', a.is_read ? 'text-gray-400' : 'text-white')}>
+                      {a.title}
+                    </p>
                     {isBuilding ? (
                       <span className="inline-flex items-center gap-1 rounded-full border border-gray-700 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-gray-300">
                         <Building2 size={10} aria-hidden="true" />
