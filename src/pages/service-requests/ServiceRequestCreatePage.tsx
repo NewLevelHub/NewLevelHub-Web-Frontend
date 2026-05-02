@@ -68,7 +68,9 @@ export default function ServiceRequestCreatePage() {
     queryKey: ['building-floors'],
     queryFn: () =>
       apiClient
-        .get<ServiceFloorOption[] | PaginatedResponse<ServiceFloorOption>>(API.serviceRequests.floors)
+        .get<ServiceFloorOption[] | PaginatedResponse<ServiceFloorOption>>(API.serviceRequests.floors, {
+          params: { page_size: 500 },
+        })
         .then((r) => normalizeServiceFloors(r.data)),
   });
 
@@ -131,7 +133,8 @@ export default function ServiceRequestCreatePage() {
           <label className="block text-sm text-gray-300">
             Выбор этажа
             <p className="mt-1 text-xs text-gray-500">
-              Выберите существующий этаж из настроек здания.
+              Здесь только этажи из справочника здания. Поле «этаж» в профиле компании к заявкам не
+              подключается — справочник настраивает супер-администратор.
             </p>
             <select
               value={floorId}

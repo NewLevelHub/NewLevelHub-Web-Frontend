@@ -258,6 +258,16 @@ export default function BookingDetailPage() {
             {STATUS_LABEL[data.status] ?? data.status}
           </span>
         </p>
+        {data.status === BOOKING_STATUSES.CANCELLED && data.cancel_reason?.trim() ? (
+          <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-gray-900">
+            <p className="font-medium text-rose-900">
+              {data.cancelled_by != null && data.cancelled_by !== data.user
+                ? 'Комментарий администратора'
+                : 'Причина отмены'}
+            </p>
+            <p className="mt-1 whitespace-pre-wrap text-gray-800">{data.cancel_reason.trim()}</p>
+          </div>
+        ) : null}
         {data.checked_in_at ? (
           <p className="text-sm text-gray-600">
             <span className="font-medium text-gray-700">Чек-ин: </span>

@@ -63,7 +63,6 @@ export default function TaskDetailPage() {
     enabled: !isNaN(taskId),
     queryFn: async () => {
       const { data } = await apiClient.get<CrmTask>(API.crm.taskDetail(taskId));
-      console.log('Fetched task data:', data);
       return data;
     },
   });
@@ -108,6 +107,9 @@ export default function TaskDetailPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
       void queryClient.invalidateQueries({ queryKey: ['crm', 'task', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications-recent'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
     },
   });
 
@@ -132,6 +134,9 @@ export default function TaskDetailPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
       void queryClient.invalidateQueries({ queryKey: ['crm', 'task', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications-recent'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
     },
   });
 
@@ -146,6 +151,13 @@ export default function TaskDetailPage() {
       if (!task) return;
       if (field === 'title' && !value.trim()) {
         setTitle(task.title);
+        return;
+      }
+      if (field === 'deadline') {
+        const cur = task.deadline ? String(task.deadline).slice(0, 10) : '';
+        const next = value.trim().slice(0, 10);
+        if (cur === next) return;
+        patchMutation.mutate({ deadline: next || null });
         return;
       }
       const current = task[field] ?? '';

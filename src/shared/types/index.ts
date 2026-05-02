@@ -394,6 +394,8 @@ export interface ServiceRequest {
   user_name: string;
   request_type: ServiceRequestType;
   floor: number | null;
+  floor_number?: number | null;
+  floor_name?: string | null;
   location: string;
   description: string;
   urgency: 'normal' | 'urgent';
@@ -571,15 +573,13 @@ export interface StorageFileShare {
 
 export interface Notification {
   id: number;
-  notification_type: string;
-  /** @deprecated backend now sends `type` */
+  /** Legacy/alternate name — list API exposes `type` (see DRF `NotificationSerializer`). */
   type?: string;
+  notification_type?: string;
   title: string;
-  body: string;
-  /** @deprecated backend now sends `message` */
+  body?: string;
   message?: string;
-  url: string | null;
-  /** @deprecated backend now sends `link` */
+  url?: string | null;
   link?: string | null;
   is_read: boolean;
   created_at: string;

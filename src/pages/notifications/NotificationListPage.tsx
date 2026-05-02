@@ -30,6 +30,10 @@ const NOTIFICATION_TYPE_LABELS: Record<string, string> = {
 
 type UnreadFilter = 'all' | 'unread';
 
+function notificationType(n: Notification): string {
+  return n.type ?? n.notification_type ?? '';
+}
+
 export default function NotificationListPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -172,7 +176,7 @@ export default function NotificationListPage() {
                   : 'bg-blue-50 border-blue-100 hover:bg-blue-100',
               )}
             >
-              {n.notification_type === 'booking_reminder' && (
+              {notificationType(n) === 'booking_reminder' && (
                 <Bell size={16} className="mt-0.5 shrink-0 text-blue-500" aria-hidden="true" />
               )}
               <div className="flex-1 min-w-0">
