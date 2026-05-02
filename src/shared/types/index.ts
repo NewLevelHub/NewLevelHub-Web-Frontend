@@ -77,6 +77,44 @@ export interface SuperadminAnalyticsResponse {
   date_from: string;
   date_to: string;
   overview: SuperadminAnalyticsOverview;
+  resource_utilization: Array<{
+    date: string;
+    desk_bookings: number;
+    room_bookings: number;
+    parking_bookings: number;
+    capsule_bookings: number;
+  }>;
+  peak_hours: Array<{
+    day_of_week: number;
+    hour: number;
+    booking_count: number;
+  }>;
+  new_registrations: Array<{
+    week: string;
+    count: number;
+  }>;
+  service_requests_by_type: Array<{
+    type: string;
+    count: number;
+  }>;
+  top_resources: Array<{
+    resource_id: number;
+    name: string;
+    resource_type: string;
+    booking_count: number;
+  }>;
+  top_companies: Array<{
+    company_id: number;
+    company_name: string;
+    booking_count: number;
+  }>;
+  low_utilization: Array<{
+    resource_id: number;
+    name: string;
+    resource_type: string;
+    booking_count: number;
+    utilization_percent: number;
+  }>;
 }
 
 export interface CompanyLimits {

@@ -9,6 +9,18 @@ import {
   Users,
   UserPlus,
 } from 'lucide-react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -26,6 +38,8 @@ const PERIOD_OPTIONS: { value: SuperadminAnalyticsPeriod; label: string }[] = [
 ];
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const WEEKDAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+const HEATMAP_COLORS = ['#1f2937', '#1d4ed8', '#2563eb', '#3b82f6', '#60a5fa'];
 
 function isValidIsoDate(v: string): boolean {
   if (!ISO_DATE_RE.test(v)) return false;
@@ -135,6 +149,18 @@ export default function SuperadminAnalyticsPage() {
 
   const overview = data?.overview;
   const errorText = isError ? getApiErrorMessage(error) : null;
+  const heatmapRows = useMemo(() => {
+    if (!data?.peak_hours) return [];
+    return data.peak_hours.map((item) => ({
+      ...item,
+      slot: `${WEEKDAY_LABELS[item.day_of_week] ?? item.day_of_week} ${String(item.hour).padStart(2, '0')}:00`,
+    }));
+  }, [data?.peak_hours]);
+
+  const maxHeat = useMemo(() => {
+    const values = heatmapRows.map((x) => x.booking_count);
+    return values.length ? Math.max(...values) : 0;
+  }, [heatmapRows]);
 
   if (authLoading) {
     return (
@@ -327,6 +353,119 @@ export default function SuperadminAnalyticsPage() {
 
       {!queryEnabled && period === 'custom' && (
         <p className="text-sm text-gray-500">Укажите и проверьте даты, чтобы загрузить обзор.</p>
+      )}
+
+      {data && (
+        <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4">
+            <h2 className="text-sm font-semibold text-white mb-3">Загруженность ресурсов (по дням)</h2>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data.resource_utilization}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="date" tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                  <YAxis tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="desk_bookings" stroke="#3b82f6" name="Столы" />
+                  <Line type="monotone" dataKey="room_bookings" stroke="#22c55e" name="Переговорки" />
+                  <Line type="monotone" dataKey="parking_bookings" stroke="#f59e0b" name="Парковки" />
+                  <Line type="monotone" dataKey="capsule_bookings" stroke="#a855f7" name="Капсулы" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4">
+            <h2 className="text-sm font-semibold text-white mb-3">Пиковые часы (тепловая карта)</h2>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={heatmapRows}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="slot" tick={{ fill: '#9ca3af', fontSize: 11 }} interval={0} angle={-35} height={80} />
+                  <YAxis tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                  <Tooltip />
+                  <Bar dataKey="booking_count" name="Бронирования">
+                    {heatmapRows.map((entry) => {
+                      const ratio = maxHeat > 0 ? entry.booking_count / maxHeat : 0;
+                      const colorIdx = Math.min(HEATMAP_COLORS.length - 1, Math.floor(ratio * HEATMAP_COLORS.length));
+                      return <Cell key={`${entry.day_of_week}-${entry.hour}`} fill={HEATMAP_COLORS[colorIdx]} />;
+                    })}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4">
+            <h2 className="text-sm font-semibold text-white mb-3">Новые регистрации</h2>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.new_registrations}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="week" tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                  <YAxis tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#3b82f6" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4">
+            <h2 className="text-sm font-semibold text-white mb-3">Заявки по типам</h2>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.service_requests_by_type}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="type" tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                  <YAxis tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#22c55e" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {data && (
+        <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4 xl:col-span-1">
+            <h3 className="text-sm font-semibold text-white mb-3">Top-5 ресурсов</h3>
+            <div className="space-y-2 text-sm">
+              {data.top_resources.map((row) => (
+                <div key={row.resource_id} className="flex items-center justify-between text-gray-200">
+                  <span className="truncate pr-3">{row.name}</span>
+                  <span className="tabular-nums">{row.booking_count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4 xl:col-span-1">
+            <h3 className="text-sm font-semibold text-white mb-3">Top-5 компаний</h3>
+            <div className="space-y-2 text-sm">
+              {data.top_companies.map((row) => (
+                <div key={row.company_id} className="flex items-center justify-between text-gray-200">
+                  <span className="truncate pr-3">{row.company_name}</span>
+                  <span className="tabular-nums">{row.booking_count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4 xl:col-span-1">
+            <h3 className="text-sm font-semibold text-white mb-3">Низкая загруженность (&lt;20%)</h3>
+            <div className="space-y-2 text-sm">
+              {data.low_utilization.map((row) => (
+                <div key={row.resource_id} className="flex items-center justify-between text-gray-200">
+                  <span className="truncate pr-3">{row.name}</span>
+                  <span className="tabular-nums">{row.utilization_percent}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
       )}
     </main>
   );
