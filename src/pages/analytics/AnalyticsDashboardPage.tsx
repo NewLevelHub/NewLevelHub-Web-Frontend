@@ -1,24 +1,24 @@
+import { Navigate } from 'react-router';
+
 import { PageStub } from '@/shared/ui/PageStub';
-import { useAuthStore } from '@/shared/store/auth';
+import { useAuth } from '@/shared/hooks/useAuth';
 import { USER_ROLES } from '@/shared/config/constants';
 
 export default function AnalyticsDashboardPage() {
-  const role = useAuthStore((s) => s.user?.role);
-  const isSuperadmin = role === USER_ROLES.SUPERADMIN;
+  const { user, isLoading } = useAuth();
+  const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
 
-  const superadminTodos = [
-    'Карточки: компании, пользователи, бронирования сегодня, гости, заявки',
-    'Загруженность ресурсов по типам (30 дней)',
-    'Тепловая карта: день недели × час (пиковые часы)',
-    'Новые регистрации по неделям',
-    'Сервисные заявки по типам',
-    'Топ-5 популярных ресурсов',
-    'Топ-5 активных компаний',
-    'Ресурсы с низкой загруженностью',
-    'Фильтры: период, тип ресурса, компания',
-    'Экспорт в CSV / PDF',
-    'Интеграция с GET /api/v1/analytics/overview/',
-  ];
+  if (isLoading) {
+    return (
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <p className="text-sm text-gray-500">Загрузка…</p>
+      </main>
+    );
+  }
+
+  if (isSuperadmin) {
+    return <Navigate to="/admin/analytics" replace />;
+  }
 
   const companyAdminTodos = [
     'Активные сотрудники за неделю',
@@ -33,8 +33,8 @@ export default function AnalyticsDashboardPage() {
   return (
     <PageStub
       title="Аналитика"
-      description={isSuperadmin ? 'Аналитика всего БЦ' : 'Аналитика компании'}
-      todos={isSuperadmin ? superadminTodos : companyAdminTodos}
+      description="Аналитика компании"
+      todos={companyAdminTodos}
     />
   );
 }
