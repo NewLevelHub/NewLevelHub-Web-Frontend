@@ -99,8 +99,15 @@ import ProfileSettingsPage from '@/pages/profile/ProfileSettingsPage';
 import UsersListPage from '@/pages/users/UsersListPage';
 import UserDetailPage from '@/pages/users/UserDetailPage';
 
+// Map
+import MapPage from '@/pages/map/MapPage';
+
 // Onboarding
 import OnboardingWizardPage from '@/pages/onboarding/OnboardingWizardPage';
+
+// Unsubscribe
+import UnsubscribeSuccessPage from '@/pages/unsubscribe/UnsubscribeSuccessPage';
+import UnsubscribeInvalidPage from '@/pages/unsubscribe/UnsubscribeInvalidPage';
 
 // Errors
 import NotFoundPage from '@/pages/errors/NotFoundPage';
@@ -133,6 +140,15 @@ export const router = createBrowserRouter([
     children: [{ path: '/verify-email', element: <VerifyEmailPage /> }],
   },
 
+  // ── Unsubscribe pages (public, no auth required) ──
+  {
+    element: <AuthLayout />,
+    children: [
+      { path: '/unsubscribe/success', element: <UnsubscribeSuccessPage /> },
+      { path: '/unsubscribe/invalid', element: <UnsubscribeInvalidPage /> },
+    ],
+  },
+
   // ── Protected routes (authenticated) ──
   {
     element: <RequireAuth />,
@@ -152,7 +168,8 @@ export const router = createBrowserRouter([
           { path: '/bookings/new', element: <BookingCreatePage /> },
           { path: '/bookings/my', element: <MyBookingsPage /> },
           { path: '/bookings/:id', element: <BookingDetailPage /> },
-          { path: '/building/map', element: <BuildingMapPage /> },
+          // { path: '/building/map', element: <BuildingMapPage /> },
+          { path: 'building/map', element: <MapPage /> },
           { path: '/announcements', element: <AnnouncementListPage /> },
           { path: '/passes', element: <PassListPage /> },
           { path: '/passes/new', element: <PassCreatePage /> },
@@ -198,6 +215,7 @@ export const router = createBrowserRouter([
               { path: '/announcements/new', element: <AnnouncementCreatePage /> },
               { path: '/analytics', element: <AnalyticsDashboardPage /> },
               { path: '/company/analytics', element: <AnalyticsDashboardPage /> },
+              { path: '/access/logs', element: <AccessLogPage /> },
             ],
           },
 
@@ -262,7 +280,6 @@ export const router = createBrowserRouter([
               { path: '/resources', element: <ResourceListPage /> },
               { path: '/resources/new', element: <ResourceCreatePage /> },
               { path: '/resources/:id', element: <ResourceDetailPage /> },
-              { path: '/access-log', element: <AccessLogPage /> },
               { path: '/building/map/manage', element: <MapManagePage /> },
               { path: '/users', element: <UsersListPage /> },
               { path: '/users/:id', element: <UserDetailPage /> },

@@ -109,6 +109,13 @@ export const SERVICE_REQUEST_TYPES = {
 
 export type ServiceRequestType = (typeof SERVICE_REQUEST_TYPES)[keyof typeof SERVICE_REQUEST_TYPES];
 
+export const SERVICE_REQUEST_TYPE_LABELS: Record<ServiceRequestType, string> = {
+  cleaning: 'Уборка',
+  repair: 'Ремонт',
+  supplies: 'Расходники',
+  general: 'Общая',
+};
+
 export const SERVICE_REQUEST_STATUSES = {
   NEW: 'new',
   ACCEPTED: 'accepted',
@@ -118,6 +125,20 @@ export const SERVICE_REQUEST_STATUSES = {
 
 export type ServiceRequestStatus =
   (typeof SERVICE_REQUEST_STATUSES)[keyof typeof SERVICE_REQUEST_STATUSES];
+
+export const SERVICE_REQUEST_STATUS_LABELS: Record<ServiceRequestStatus, string> = {
+  new: 'Новая',
+  accepted: 'Принята',
+  in_progress: 'В работе',
+  completed: 'Выполнена',
+};
+
+export const SERVICE_REQUEST_STATUS_TRANSITIONS: Record<ServiceRequestStatus, ServiceRequestStatus | null> = {
+  new: 'accepted',
+  accepted: 'in_progress',
+  in_progress: 'completed',
+  completed: null,
+};
 
 export const LEAVE_TYPES = {
   VACATION: 'vacation',
@@ -182,6 +203,12 @@ export const ANNOUNCEMENT_CATEGORIES = {
 
 export type AnnouncementCategory =
   (typeof ANNOUNCEMENT_CATEGORIES)[keyof typeof ANNOUNCEMENT_CATEGORIES];
+
+export const ANNOUNCEMENT_CATEGORY_LABELS: Record<AnnouncementCategory, string> = {
+  [ANNOUNCEMENT_CATEGORIES.INFO]: 'Информация',
+  [ANNOUNCEMENT_CATEGORIES.IMPORTANT]: 'Важное',
+  [ANNOUNCEMENT_CATEGORIES.EVENT]: 'Мероприятие',
+};
 
 export const CALENDAR_EVENT_TYPES = {
   BOOKING: 'booking',

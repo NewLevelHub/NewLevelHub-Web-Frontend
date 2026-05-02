@@ -401,37 +401,74 @@ export type PassValidationResponse = PassValidationSuccess | PassValidationFailu
 
 export interface AccessLogEntry {
   id: number;
-  person_name: string;
-  company: string | null;
-  entry_type: 'guest' | 'employee';
+  guest_pass: number | null;
+  invited_by: string | null;
+  validated_at: string;
+  validated_by: string | null;
+  checked_by: number | null;
+  user: number | null;
+  entry_point: string;
   method: string;
-  timestamp: string;
+  is_entry: boolean;
+  created_at: string;
 }
 
 export interface ServiceRequest {
   id: number;
-  type: ServiceRequestType;
-  floor: number;
+  user: number;
+  user_name: string;
+  request_type: ServiceRequestType;
+  floor: number | null;
   location: string;
   description: string;
   urgency: 'normal' | 'urgent';
   photo: string | null;
   status: ServiceRequestStatus;
   rating: number | null;
-  created_by: User;
-  assigned_to: User | null;
+  assigned_to: number | null;
+  assigned_to_name: string | null;
+  completed_at: string | null;
   created_at: string;
+  updated_at: string;
+}
+
+export interface ServiceRequestCreatePayload {
+  request_type: ServiceRequestType;
+  description: string;
+  floor?: number | null;
+  location?: string;
+  urgency?: 'normal' | 'urgent';
+}
+
+export interface ServiceRequestCleaningPayload {
+  description?: string;
+  floor?: number | null;
+}
+
+export interface ServiceRequestUpdateStatusPayload {
+  status: ServiceRequestStatus;
+}
+
+export interface ServiceRequestRatePayload {
+  rating: number;
 }
 
 export interface Announcement {
   id: number;
   title: string;
-  content: string;
+  /** Backend AC vocabulary (DEV-100). Maps to model field ``body``. */
+  text: string;
   category: AnnouncementCategory;
   image: string | null;
   is_pinned: boolean;
+  /** ``null`` means a building-wide (БЦ) announcement. */
   company_id: number | null;
-  created_by: User;
+  author: number | null;
+  author_name: string;
+  is_read: boolean;
+  notify_email: boolean;
+  /** Derived on the backend from ``company_id``. */
+  scope: 'building' | 'company';
   created_at: string;
 }
 
@@ -630,6 +667,69 @@ export interface MapMarker {
   resource_id: number | null;
 }
 
+export type MapPointType = 'desk' | 'meeting_room' | 'parking' | 'capsule' | 'office';
+export type MapPointStatus = 'free' | 'soon_available' | 'occupied' | 'blocked';
+export type MapPointStatusReason =
+  | 'active_block'
+  | 'active_booking'
+  | 'active_booking_ends_within_threshold'
+  | 'no_active_booking_or_block'
+  | 'not_a_bookable_resource';
+
+export interface MapPoint {
+  id: number;
+  point_type: MapPointType;
+  label: string;
+  x: number;
+  y: number;
+  resource_id: number | null;
+  resource_name: string | null;
+  resource_status: MapPointStatus | null;
+  resource_status_reason: MapPointStatusReason;
+  next_free_at: string | null;
+}
+
+export interface FloorMap {
+  floor_id: number;
+  floor_name: string;
+  at_time: string;
+  points: MapPoint[];
+}
+
+export interface ServiceFloor {
+  id: number;
+  name: string;
+  number: number;
+  plan_image: string | null;
+  plan_image_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MapPointSearchResult {
+  id: number;
+  label: string;
+  point_type: MapPointType;
+  x: number;
+  y: number;
+  floor_id: number;
+  floor_name: string;
+  resource_id: number | null;
+  resource_name: string | null;
+}
+
+export interface MapPointCreatePayload {
+  floor: number;
+  point_type: MapPointType;
+  label: string;
+  x: number;
+  y: number;
+  resource?: number | null;
+  company?: number | null;
+}
+
+export type MapPointUpdatePayload = Partial<MapPointCreatePayload>;
+
 export interface PaginatedResponse<T> {
   count: number;
   next: string | null;
@@ -640,6 +740,17 @@ export interface PaginatedResponse<T> {
    * переговорки в выборке с теми же фильтрами, но без фильтра по equipment.
    */
   meeting_room_equipment_keys?: ResourceEquipmentKey[];
+}
+
+/**
+ * Cursor-based paginated response (used by the announcements feed for infinite
+ * scroll). Differs from {@link PaginatedResponse} in that it has no ``count``:
+ * cursor pagination treats the dataset as a stream.
+ */
+export interface CursorPaginatedResponse<T> {
+  next: string | null;
+  previous: string | null;
+  results: T[];
 }
 
 export interface UserListItem {
