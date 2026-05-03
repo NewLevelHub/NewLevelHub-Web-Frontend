@@ -374,6 +374,9 @@ function CreateTaskModal({ boardId, columnId, onClose }: CreateTaskModalProps) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications-recent'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
       onClose();
     },
   });
@@ -1484,6 +1487,9 @@ export function CommentSection({ taskId }: CommentSectionProps) {
     onSuccess: () => {
       setNewText('');
       void queryClient.invalidateQueries({ queryKey: commentsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: ['notifications-recent'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
     },
   });
 
@@ -2486,6 +2492,9 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
       void queryClient.invalidateQueries({ queryKey: ['crm', 'task', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications-recent'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
     },
   });
 
@@ -2513,6 +2522,9 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
       void queryClient.invalidateQueries({ queryKey: ['crm', 'task', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications-recent'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
     },
   });
 
@@ -2527,6 +2539,13 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
       if (!task) return;
       if (field === 'title' && !value.trim()) {
         setTitle(task.title);
+        return;
+      }
+      if (field === 'deadline') {
+        const cur = task.deadline ? String(task.deadline).slice(0, 10) : '';
+        const next = value.trim().slice(0, 10);
+        if (cur === next) return;
+        patchMutation.mutate({ deadline: next || null });
         return;
       }
       const current = task[field] ?? '';
@@ -3975,6 +3994,9 @@ export default function BoardDetailPage() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications-recent'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
     },
   });
 
