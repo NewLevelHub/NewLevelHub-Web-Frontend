@@ -49,6 +49,7 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
         })
         .then(r => r.data),
     enabled: open,
+    refetchInterval: open ? 12_000 : false,
   });
 
   const markReadMutation = useMutation({
@@ -89,10 +90,8 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
     if (!n.is_read) {
       markReadMutation.mutate(n.id);
     }
-    console.log('Navigating to', n);
     setOpen(false);
     if (n.link) {
-      console.log('Navigating to', n.link);
       navigate(n.link);
     }
   }
@@ -184,7 +183,9 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
                       )}
                       <div className={cn('flex-1 min-w-0', n.is_read && 'ml-4')}>
                         <p className="text-sm font-medium text-white truncate">{n.title}</p>
-                        <p className="text-xs text-gray-400 mt-0.5 truncate">{n.body}</p>
+                        <p className="text-xs text-gray-400 mt-0.5 line-clamp-3 whitespace-pre-line">
+                          {n.message ?? n.body}
+                        </p>
                         <p className="text-[11px] text-gray-600 mt-1">
                           {formatRelativeTime(n.created_at)}
                         </p>

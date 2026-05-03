@@ -64,6 +64,20 @@ function formatFloorOptionLabel(floor: ServiceFloorOption): string {
   return floorName ? `Этаж ${floorNumber} — ${floorName}` : `Этаж ${floorNumber}`;
 }
 
+/** Prefer API floor_number/floor_name; otherwise resolve Floor id against loaded floors (never show raw DB id). */
+function formatServiceRequestFloorCell(req: ServiceRequest, floors: ServiceFloorOption[]): string {
+  const n = req.floor_number;
+  const name = req.floor_name?.trim();
+  if (n != null) {
+    return name ? `Этаж ${n} — ${name}` : `Этаж ${n}`;
+  }
+  if (req.floor != null) {
+    const match = floors.find((f) => f.id === req.floor);
+    if (match) return formatFloorOptionLabel(match);
+  }
+  return '—';
+}
+
 type CreateModalState =
   | { mode: 'general' }
   | { mode: 'cleaning' };
@@ -127,7 +141,9 @@ export default function ServiceRequestListPage() {
     queryKey: ['building-floors'],
     queryFn: () =>
       apiClient
-        .get<ServiceFloorOption[] | PaginatedResponse<ServiceFloorOption>>(API.serviceRequests.floors)
+        .get<ServiceFloorOption[] | PaginatedResponse<ServiceFloorOption>>(API.serviceRequests.floors, {
+          params: { page_size: 500 },
+        })
         .then((r) => normalizeServiceFloors(r.data)),
   });
 
@@ -436,7 +452,7 @@ export default function ServiceRequestListPage() {
                           <span className="text-gray-500">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3">{req.floor ?? '—'}</td>
+                      <td className="px-4 py-3">{formatServiceRequestFloorCell(req, floors)}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-gray-400">
                         {new Date(req.created_at).toLocaleDateString('ru-RU')}
                       </td>
@@ -531,7 +547,8 @@ export default function ServiceRequestListPage() {
               <label className="block text-sm text-gray-300">
                 Выбор этажа
                 <p className="mt-1 text-xs text-gray-500">
-                  Выберите существующий этаж из настроек здания.
+                  Справочник этажей здания; не путать с полем «этаж» в настройках компании. Пустой
+                  список — в БД нет записей Floor (их создаёт супер-админ).
                 </p>
                 <select
                   value={createFloorId}

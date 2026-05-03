@@ -16,16 +16,25 @@ const NOTIFICATION_TYPE_LABELS: Record<string, string> = {
   task_moved: 'Задача перемещена',
   task_comment: 'Комментарий к задаче',
   task_deadline: 'Дедлайн задачи',
+  task_deadline_overdue: 'Просрочен дедлайн',
   guest_validated: 'Гость подтверждён',
   guest_pass_expiring: 'Пропуск истекает',
   service_request_update: 'Обновление заявки',
-  announcement: 'Объявление',
+  announcement: 'Новое объявление',
+  announcement_building: 'Объявление для здания',
+  announcement_company: 'Объявление компании',
   invitation: 'Приглашение',
   leave_review: 'Проверка отпуска',
+  leave_approved: 'Отпуск одобрен',
+  leave_rejected: 'Отпуск отклонён',
   system: 'Системное',
 };
 
 type UnreadFilter = 'all' | 'unread';
+
+function notificationType(n: Notification): string {
+  return n.type ?? n.notification_type ?? '';
+}
 
 export default function NotificationListPage() {
   const queryClient = useQueryClient();
@@ -169,12 +178,12 @@ export default function NotificationListPage() {
                   : 'bg-blue-50 border-blue-100 hover:bg-blue-100',
               )}
             >
-              {n.notification_type === 'booking_reminder' && (
+              {notificationType(n) === 'booking_reminder' && (
                 <Bell size={16} className="mt-0.5 shrink-0 text-blue-500" aria-hidden="true" />
               )}
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm text-gray-900">{n.title}</p>
-                <p className="text-sm text-gray-600 mt-0.5">{n.message ?? n.body}</p>
+                <p className="text-sm text-gray-600 mt-0.5 whitespace-pre-line">{n.message ?? n.body}</p>
                 <p className="text-xs text-gray-400 mt-1">
                   {new Date(n.created_at).toLocaleString()}
                 </p>
