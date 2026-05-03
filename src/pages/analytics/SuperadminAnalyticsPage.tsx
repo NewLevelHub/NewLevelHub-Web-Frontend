@@ -13,9 +13,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
+  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -39,7 +37,39 @@ const PERIOD_OPTIONS: { value: SuperadminAnalyticsPeriod; label: string }[] = [
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const WEEKDAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-const HEATMAP_COLORS = ['#1f2937', '#1d4ed8', '#2563eb', '#3b82f6', '#60a5fa'];
+const HEATMAP_PALETTE = ['#111827', '#1e3a6e', '#1d4ed8', '#2563eb', '#3b82f6', '#60a5fa'];
+
+const SR_TYPE_LABELS: Record<string, string> = {
+  cleaning: 'Уборка',
+  repair: 'Ремонт',
+  supplies: 'Снабжение',
+  general: 'Общая',
+};
+
+/** "2026-05-04" → "4 мая" */
+function fmtDate(dateStr: string): string {
+  const d = new Date(`${dateStr}T12:00:00`);
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+}
+
+/** "2026-W18" → "Нед. 18 (4 мая)" */
+function fmtWeek(weekStr: string): string {
+  const m = weekStr.match(/^(\d{4})-W(\d+)$/);
+  if (!m) return weekStr;
+  const [, year, week] = m;
+  // ISO week Monday: Jan 4 is always in week 1
+  const jan4 = new Date(Number(year), 0, 4);
+  const monday = new Date(jan4);
+  monday.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7) + (Number(week) - 1) * 7);
+  const dayStr = monday.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  return `${dayStr}`;
+}
+
+/** "cleaning" → "Уборка" */
+function fmtType(type: string): string {
+  return SR_TYPE_LABELS[type] ?? type;
+}
 
 function isValidIsoDate(v: string): boolean {
   if (!ISO_DATE_RE.test(v)) return false;
@@ -73,6 +103,94 @@ function StatCard({
           {isLoading ? <span className="inline-block h-8 w-16 animate-pulse rounded bg-gray-700" /> : value}
         </p>
         <p className="text-sm text-gray-400">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+function PeakHoursHeatmap({
+  data,
+}: {
+  data: Array<{ day_of_week: number; hour: number; booking_count: number }>;
+}) {
+  const lookup = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const item of data) m.set(`${item.day_of_week}-${item.hour}`, item.booking_count);
+    return m;
+  }, [data]);
+
+  const maxCount = useMemo(
+    () => (data.length ? Math.max(...data.map((d) => d.booking_count)) : 0),
+    [data],
+  );
+
+  const activeHours = useMemo(
+    () => (data.length ? [...new Set(data.map((d) => d.hour))].sort((a, b) => a - b) : []),
+    [data],
+  );
+
+  if (!activeHours.length) {
+    return (
+      <p className="py-10 text-center text-sm text-gray-500">
+        Нет данных за выбранный период
+      </p>
+    );
+  }
+
+  function cellBg(count: number): string {
+    if (maxCount === 0 || count === 0) return HEATMAP_PALETTE[0];
+    const idx = Math.ceil((count / maxCount) * (HEATMAP_PALETTE.length - 1));
+    return HEATMAP_PALETTE[Math.min(idx, HEATMAP_PALETTE.length - 1)];
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse select-none text-xs">
+          <thead>
+            <tr>
+              <th className="w-12 pr-2 text-right font-normal text-gray-500" />
+              {WEEKDAY_LABELS.map((d) => (
+                <th key={d} className="pb-1 text-center font-normal text-gray-400">
+                  {d}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {activeHours.map((hour) => (
+              <tr key={hour}>
+                <td className="py-0.5 pr-2 text-right leading-none text-gray-500">
+                  {String(hour).padStart(2, '0')}:00
+                </td>
+                {[0, 1, 2, 3, 4, 5, 6].map((day) => {
+                  const count = lookup.get(`${day}-${hour}`) ?? 0;
+                  return (
+                    <td key={day} className="px-0.5 py-0.5">
+                      <div
+                        className="flex h-6 w-full items-center justify-center rounded"
+                        style={{ backgroundColor: cellBg(count) }}
+                        title={`${WEEKDAY_LABELS[day]} ${String(hour).padStart(2, '0')}:00 — ${count} бр.`}
+                      >
+                        {count > 0 && (
+                          <span className="text-[9px] font-medium text-white/80">{count}</span>
+                        )}
+                      </div>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="flex items-center gap-1.5 text-[10px] text-gray-400">
+        <span>0</span>
+        {HEATMAP_PALETTE.slice(1).map((c) => (
+          <div key={c} className="h-3 w-6 rounded-sm" style={{ backgroundColor: c }} />
+        ))}
+        <span>{maxCount}</span>
       </div>
     </div>
   );
@@ -149,18 +267,6 @@ export default function SuperadminAnalyticsPage() {
 
   const overview = data?.overview;
   const errorText = isError ? getApiErrorMessage(error) : null;
-  const heatmapRows = useMemo(() => {
-    if (!data?.peak_hours) return [];
-    return data.peak_hours.map((item) => ({
-      ...item,
-      slot: `${WEEKDAY_LABELS[item.day_of_week] ?? item.day_of_week} ${String(item.hour).padStart(2, '0')}:00`,
-    }));
-  }, [data?.peak_hours]);
-
-  const maxHeat = useMemo(() => {
-    const values = heatmapRows.map((x) => x.booking_count);
-    return values.length ? Math.max(...values) : 0;
-  }, [heatmapRows]);
 
   if (authLoading) {
     return (
@@ -358,71 +464,104 @@ export default function SuperadminAnalyticsPage() {
       {data && (
         <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4">
-            <h2 className="text-sm font-semibold text-white mb-3">Загруженность ресурсов (по дням)</h2>
+            <h2 className="text-sm font-semibold text-white mb-1">Загруженность ресурсов (по дням)</h2>
+            <p className="text-xs text-gray-500 mb-3">Количество броней каждого типа за день</p>
             <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data.resource_utilization}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="date" tick={{ fill: '#9ca3af', fontSize: 12 }} />
-                  <YAxis tick={{ fill: '#9ca3af', fontSize: 12 }} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="desk_bookings" stroke="#3b82f6" name="Столы" />
-                  <Line type="monotone" dataKey="room_bookings" stroke="#22c55e" name="Переговорки" />
-                  <Line type="monotone" dataKey="parking_bookings" stroke="#f59e0b" name="Парковки" />
-                  <Line type="monotone" dataKey="capsule_bookings" stroke="#a855f7" name="Капсулы" />
-                </LineChart>
-              </ResponsiveContainer>
+              {data.resource_utilization.length === 0 ? (
+                <div className="flex h-full items-center justify-center">
+                  <p className="text-sm text-gray-500">Нет бронирований за выбранный период</p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+                  <BarChart data={data.resource_utilization} barCategoryGap="35%">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fill: '#9ca3af', fontSize: 11 }}
+                      tickFormatter={fmtDate}
+                    />
+                    <YAxis tick={{ fill: '#9ca3af', fontSize: 12 }} allowDecimals={false} width={28} />
+                    <Tooltip
+                      contentStyle={{ background: '#111827', border: '1px solid #374151', color: '#f9fafb', borderRadius: 8 }}
+                      cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                      labelFormatter={fmtDate}
+                    />
+                    <Legend wrapperStyle={{ color: '#9ca3af', fontSize: 12 }} />
+                    <Bar dataKey="desk_bookings" stackId="a" fill="#3b82f6" name="Столы" />
+                    <Bar dataKey="room_bookings" stackId="a" fill="#22c55e" name="Переговорки" />
+                    <Bar dataKey="parking_bookings" stackId="a" fill="#f59e0b" name="Парковки" />
+                    <Bar dataKey="capsule_bookings" stackId="a" fill="#a855f7" name="Капсулы" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
           <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4">
-            <h2 className="text-sm font-semibold text-white mb-3">Пиковые часы (тепловая карта)</h2>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={heatmapRows}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="slot" tick={{ fill: '#9ca3af', fontSize: 11 }} interval={0} angle={-35} height={80} />
-                  <YAxis tick={{ fill: '#9ca3af', fontSize: 12 }} />
-                  <Tooltip />
-                  <Bar dataKey="booking_count" name="Бронирования">
-                    {heatmapRows.map((entry) => {
-                      const ratio = maxHeat > 0 ? entry.booking_count / maxHeat : 0;
-                      const colorIdx = Math.min(HEATMAP_COLORS.length - 1, Math.floor(ratio * HEATMAP_COLORS.length));
-                      return <Cell key={`${entry.day_of_week}-${entry.hour}`} fill={HEATMAP_COLORS[colorIdx]} />;
-                    })}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <h2 className="text-sm font-semibold text-white mb-3">
+              Пиковые часы{' '}
+              <span className="font-normal text-gray-400 text-xs">(бронирований по дню и часу)</span>
+            </h2>
+            <PeakHoursHeatmap data={data.peak_hours} />
           </div>
 
           <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4">
-            <h2 className="text-sm font-semibold text-white mb-3">Новые регистрации</h2>
+            <h2 className="text-sm font-semibold text-white mb-1">Новые регистрации</h2>
+            <p className="text-xs text-gray-500 mb-3">Пользователей зарегистрировано по неделям</p>
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.new_registrations}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="week" tick={{ fill: '#9ca3af', fontSize: 12 }} />
-                  <YAxis tick={{ fill: '#9ca3af', fontSize: 12 }} />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#3b82f6" />
-                </BarChart>
-              </ResponsiveContainer>
+              {data.new_registrations.length === 0 ? (
+                <div className="flex h-full items-center justify-center">
+                  <p className="text-sm text-gray-500">Нет регистраций за выбранный период</p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+                  <BarChart data={data.new_registrations} barCategoryGap="40%">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                    <XAxis
+                      dataKey="week"
+                      tick={{ fill: '#9ca3af', fontSize: 11 }}
+                      tickFormatter={fmtWeek}
+                    />
+                    <YAxis tick={{ fill: '#9ca3af', fontSize: 12 }} allowDecimals={false} width={28} />
+                    <Tooltip
+                      contentStyle={{ background: '#111827', border: '1px solid #374151', color: '#f9fafb', borderRadius: 8 }}
+                      cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                      labelFormatter={(w: string) => `Неделя с ${fmtWeek(w)}`}
+                    />
+                    <Bar dataKey="count" fill="#3b82f6" name="Новых пользователей" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
           <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4">
-            <h2 className="text-sm font-semibold text-white mb-3">Заявки по типам</h2>
+            <h2 className="text-sm font-semibold text-white mb-1">Заявки по типам</h2>
+            <p className="text-xs text-gray-500 mb-3">Сервисные заявки за период</p>
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.service_requests_by_type}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="type" tick={{ fill: '#9ca3af', fontSize: 12 }} />
-                  <YAxis tick={{ fill: '#9ca3af', fontSize: 12 }} />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#22c55e" />
-                </BarChart>
-              </ResponsiveContainer>
+              {data.service_requests_by_type.length === 0 ? (
+                <div className="flex h-full items-center justify-center">
+                  <p className="text-sm text-gray-500">Нет заявок за выбранный период</p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
+                  <BarChart data={data.service_requests_by_type} barCategoryGap="40%">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                    <XAxis
+                      dataKey="type"
+                      tick={{ fill: '#9ca3af', fontSize: 12 }}
+                      tickFormatter={fmtType}
+                    />
+                    <YAxis tick={{ fill: '#9ca3af', fontSize: 12 }} allowDecimals={false} width={28} />
+                    <Tooltip
+                      contentStyle={{ background: '#111827', border: '1px solid #374151', color: '#f9fafb', borderRadius: 8 }}
+                      cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                      labelFormatter={fmtType}
+                    />
+                    <Bar dataKey="count" fill="#22c55e" name="Заявок" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
         </section>
