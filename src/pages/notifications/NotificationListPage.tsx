@@ -20,7 +20,9 @@ const NOTIFICATION_TYPE_LABELS: Record<string, string> = {
   guest_validated: 'Гость подтверждён',
   guest_pass_expiring: 'Пропуск истекает',
   service_request_update: 'Обновление заявки',
-  announcement: 'Объявление',
+  announcement: 'Новое объявление',
+  announcement_building: 'Объявление для здания',
+  announcement_company: 'Объявление компании',
   invitation: 'Приглашение',
   leave_review: 'Проверка отпуска',
   leave_approved: 'Отпуск одобрен',
@@ -181,7 +183,7 @@ export default function NotificationListPage() {
               )}
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm text-gray-900">{n.title}</p>
-                <p className="text-sm text-gray-600 mt-0.5">{n.message ?? n.body}</p>
+                <p className="text-sm text-gray-600 mt-0.5 whitespace-pre-line">{n.message ?? n.body}</p>
                 <p className="text-xs text-gray-400 mt-1">
                   {new Date(n.created_at).toLocaleString()}
                 </p>

@@ -183,7 +183,7 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
                       )}
                       <div className={cn('flex-1 min-w-0', n.is_read && 'ml-4')}>
                         <p className="text-sm font-medium text-white truncate">{n.title}</p>
-                        <p className="text-xs text-gray-400 mt-0.5 truncate">
+                        <p className="text-xs text-gray-400 mt-0.5 line-clamp-3 whitespace-pre-line">
                           {n.message ?? n.body}
                         </p>
                         <p className="text-[11px] text-gray-600 mt-1">
