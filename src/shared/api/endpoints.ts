@@ -205,6 +205,8 @@ export const API = {
   },
   analytics: {
     superadmin: '/analytics/superadmin/',
+    superadminExport: '/analytics/superadmin/export/',
+    companyExport: '/analytics/company/export/',
     overview: '/analytics/overview/',
     bookings: '/analytics/bookings/',
     resources: '/analytics/resources/',

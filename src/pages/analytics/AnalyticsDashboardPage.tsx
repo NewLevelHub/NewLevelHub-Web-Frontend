@@ -1,9 +1,15 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Download } from 'lucide-react';
+
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import type { CompanyAnalytics } from '@/shared/types';
 import { PageStub } from '@/shared/ui/PageStub';
 import { USER_ROLES } from '@/shared/config/constants';
+import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { cn } from '@/shared/lib/cn';
+import { filenameFromContentDisposition, triggerCsvFileDownload } from '@/shared/lib/csvDownload';
 import { useAuthStore } from '@/shared/store/auth';
 
 function formatBytes(value: number) {
@@ -28,6 +34,8 @@ function formatDateTime(value: string | null) {
 export default function AnalyticsDashboardPage() {
   const role = useAuthStore((s) => s.user?.role);
   const isCompanyAdmin = role === USER_ROLES.COMPANY_ADMIN;
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useQuery<CompanyAnalytics>({
     queryKey: ['analytics', 'company-dashboard'],
@@ -35,6 +43,31 @@ export default function AnalyticsDashboardPage() {
     enabled: isCompanyAdmin,
     staleTime: 30_000,
   });
+
+  async function handleExportCsv() {
+    try {
+      setIsExporting(true);
+      setExportError(null);
+      const response = await apiClient.get<Blob>(API.analytics.companyExport, {
+        params: { format: 'csv' },
+        responseType: 'blob',
+        headers: {
+          Accept: 'text/csv, */*;q=0.9',
+        },
+      });
+      const fallback = 'analytics-company.csv';
+      const rawCd =
+        response.headers['content-disposition'] ??
+        (response.headers as { get?: (n: string) => string | undefined }).get?.('content-disposition');
+      const filename = filenameFromContentDisposition(rawCd, fallback);
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+      triggerCsvFileDownload(blob, filename);
+    } catch (e) {
+      setExportError(getApiErrorMessage(e, 'Не удалось выгрузить CSV.'));
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   if (role === USER_ROLES.SUPERADMIN) {
     return (
@@ -75,10 +108,32 @@ export default function AnalyticsDashboardPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Аналитика компании</h1>
-        <p className="mt-1 text-sm text-gray-400">Ключевые метрики и активность сотрудников.</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Аналитика компании</h1>
+          <p className="mt-1 text-sm text-gray-400">Ключевые метрики и активность сотрудников.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void handleExportCsv()}
+          disabled={isExporting}
+          className={cn(
+            'inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors shrink-0',
+            isExporting
+              ? 'border-gray-700 bg-gray-900 text-gray-500 cursor-not-allowed'
+              : 'border-emerald-700 bg-emerald-950/50 text-emerald-100 hover:border-emerald-600',
+          )}
+        >
+          <Download size={18} aria-hidden />
+          {isExporting ? 'Выгрузка…' : 'Скачать CSV'}
+        </button>
       </div>
+
+      {exportError && (
+        <div className="rounded-xl border border-rose-800 bg-rose-950/40 px-4 py-3 text-sm text-rose-100" role="alert">
+          {exportError}
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {cards.map((card) => (

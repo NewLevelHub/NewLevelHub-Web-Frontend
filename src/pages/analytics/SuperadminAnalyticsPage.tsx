@@ -5,6 +5,7 @@ import {
   Building2,
   Bookmark,
   ClipboardList,
+  Download,
   UserCheck,
   Users,
   UserPlus,
@@ -16,6 +17,7 @@ import { RESOURCE_TYPES, RESOURCE_TYPE_LABELS, USER_ROLES } from '@/shared/confi
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { cn } from '@/shared/lib/cn';
+import { filenameFromContentDisposition, triggerCsvFileDownload } from '@/shared/lib/csvDownload';
 import type { Company, PaginatedResponse, SuperadminAnalyticsPeriod, SuperadminAnalyticsResponse } from '@/shared/types';
 
 const PERIOD_OPTIONS: { value: SuperadminAnalyticsPeriod; label: string }[] = [
@@ -73,6 +75,8 @@ export default function SuperadminAnalyticsPage() {
   const [dateTo, setDateTo] = useState('');
   const [companyId, setCompanyId] = useState('');
   const [resourceType, setResourceType] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const { data: companiesData } = useQuery({
     queryKey: ['analytics-superadmin', 'company-options'],
@@ -136,6 +140,33 @@ export default function SuperadminAnalyticsPage() {
   const overview = data?.overview;
   const errorText = isError ? getApiErrorMessage(error) : null;
 
+  async function handleExportCsv() {
+    if (!queryEnabled) return;
+    try {
+      setIsExporting(true);
+      setExportError(null);
+      const params = { ...requestParams, format: 'csv' as const };
+      const response = await apiClient.get<Blob>(API.analytics.superadminExport, {
+        params,
+        responseType: 'blob',
+        headers: {
+          Accept: 'text/csv, */*;q=0.9',
+        },
+      });
+      const fallback = `analytics-superadmin-${period}.csv`;
+      const rawCd =
+        response.headers['content-disposition'] ??
+        (response.headers as { get?: (n: string) => string | undefined }).get?.('content-disposition');
+      const filename = filenameFromContentDisposition(rawCd, fallback);
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+      triggerCsvFileDownload(blob, filename);
+    } catch (e) {
+      setExportError(getApiErrorMessage(e, 'Не удалось выгрузить CSV.'));
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   if (authLoading) {
     return (
       <main className="max-w-7xl mx-auto px-4 py-8">
@@ -178,8 +209,28 @@ export default function SuperadminAnalyticsPage() {
               {opt.label}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => void handleExportCsv()}
+            disabled={!queryEnabled || isExporting}
+            className={cn(
+              'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium border transition-colors',
+              !queryEnabled || isExporting
+                ? 'border-gray-700 bg-gray-900 text-gray-500 cursor-not-allowed'
+                : 'border-emerald-700 bg-emerald-950/50 text-emerald-100 hover:border-emerald-600',
+            )}
+          >
+            <Download size={16} aria-hidden />
+            {isExporting ? 'Выгрузка…' : 'Скачать CSV'}
+          </button>
         </div>
       </header>
+
+      {exportError && (
+        <div className="rounded-xl border border-rose-800 bg-rose-950/40 px-4 py-3 text-sm text-rose-100" role="alert">
+          {exportError}
+        </div>
+      )}
 
       {period === 'custom' && (
         <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4">
