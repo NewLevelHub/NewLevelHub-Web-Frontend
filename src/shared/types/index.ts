@@ -964,3 +964,71 @@ export interface CrmTask {
   created_at: string;
   checklists: CrmChecklist[];
 }
+
+// ── Dashboard API (GET /api/v1/dashboard/) ────────────────────────────────
+
+export interface DashboardUserInfo {
+  id: number;
+  full_name: string;
+  avatar: string | null;
+}
+
+export interface DashboardAnnouncementItem {
+  id: number;
+  title: string;
+  body: string;
+  category: AnnouncementCategory;
+  scope: string;
+  created_at: string;
+}
+
+export interface DashboardRecentEvent {
+  event_type: string;
+  id: number;
+  title: string;
+  start_time: string;
+  status: string;
+}
+
+export interface SuperadminDashboardData {
+  role: 'superadmin';
+  user: DashboardUserInfo;
+  total_companies: number;
+  total_users: number;
+  bookings_today: number;
+  recent_events: DashboardRecentEvent[];
+  quick_actions: string[];
+}
+
+export interface CompanyAdminDashboardData {
+  role: 'company_admin';
+  user: DashboardUserInfo;
+  employee_count: number;
+  active_tasks: number;
+  bookings_today: number;
+  announcement_feed: DashboardAnnouncementItem[];
+  pending_approvals: { leaves: number; guest_passes: number };
+}
+
+export interface EmployeeDashboardData {
+  role: 'employee';
+  user: DashboardUserInfo;
+  my_tasks_today: number;
+  my_bookings_today: number;
+  announcement_feed: DashboardAnnouncementItem[];
+  unread_notifications_count: number;
+}
+
+export interface GuestDashboardData {
+  role: 'guest';
+  user: DashboardUserInfo;
+  my_bookings_today: number;
+  quick_booking: { available_desks: number; available_rooms: number };
+  bc_announcements: DashboardAnnouncementItem[];
+}
+
+export type DashboardData =
+  | SuperadminDashboardData
+  | CompanyAdminDashboardData
+  | EmployeeDashboardData
+  | GuestDashboardData;

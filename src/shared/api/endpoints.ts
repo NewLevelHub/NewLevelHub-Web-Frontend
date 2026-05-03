@@ -225,4 +225,5 @@ export const API = {
     unblock: (id: number) => `/auth/users/${id}/unblock/`,
     impersonate: (id: number) => `/auth/users/${id}/impersonate/`,
   },
+  dashboard: '/dashboard/',
 } as const;
