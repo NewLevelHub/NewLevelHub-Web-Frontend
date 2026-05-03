@@ -484,7 +484,7 @@ export default function SuperadminAnalyticsPage() {
                     <Tooltip
                       contentStyle={{ background: '#111827', border: '1px solid #374151', color: '#f9fafb', borderRadius: 8 }}
                       cursor={{ fill: 'rgba(255,255,255,0.04)' }}
-                      labelFormatter={fmtDate}
+                      labelFormatter={(label) => fmtDate(String(label))}
                     />
                     <Legend wrapperStyle={{ color: '#9ca3af', fontSize: 12 }} />
                     <Bar dataKey="desk_bookings" stackId="a" fill="#3b82f6" name="Столы" />
@@ -526,7 +526,7 @@ export default function SuperadminAnalyticsPage() {
                     <Tooltip
                       contentStyle={{ background: '#111827', border: '1px solid #374151', color: '#f9fafb', borderRadius: 8 }}
                       cursor={{ fill: 'rgba(255,255,255,0.04)' }}
-                      labelFormatter={(w: string) => `Неделя с ${fmtWeek(w)}`}
+                      labelFormatter={(label) => `Неделя с ${fmtWeek(String(label))}`}
                     />
                     <Bar dataKey="count" fill="#3b82f6" name="Новых пользователей" radius={[4, 4, 0, 0]} />
                   </BarChart>
@@ -556,7 +556,7 @@ export default function SuperadminAnalyticsPage() {
                     <Tooltip
                       contentStyle={{ background: '#111827', border: '1px solid #374151', color: '#f9fafb', borderRadius: 8 }}
                       cursor={{ fill: 'rgba(255,255,255,0.04)' }}
-                      labelFormatter={fmtType}
+                      labelFormatter={(label) => fmtType(String(label))}
                     />
                     <Bar dataKey="count" fill="#22c55e" name="Заявок" radius={[4, 4, 0, 0]} />
                   </BarChart>
