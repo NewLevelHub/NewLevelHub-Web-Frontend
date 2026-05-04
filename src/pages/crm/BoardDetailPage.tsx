@@ -3139,14 +3139,37 @@ interface DeleteColumnDialogProps {
   boardId: string;
   column: CrmColumn;
   otherColumns: CrmColumn[];
+  taskCountByColumnId: Record<number, number>;
   onClose: () => void;
 }
 
-function DeleteColumnDialog({ boardId, column, otherColumns, onClose }: DeleteColumnDialogProps) {
+function DeleteColumnDialog({ boardId, column, otherColumns, taskCountByColumnId, onClose }: DeleteColumnDialogProps) {
   const queryClient = useQueryClient();
   const [moveToId, setMoveToId] = useState<string>(
     otherColumns.length > 0 ? String(otherColumns[0].id) : '',
   );
+
+  const tasksToMove = taskCountByColumnId[column.id] ?? 0;
+
+  const selectedColumn = moveToId
+    ? otherColumns.find((c) => String(c.id) === moveToId) ?? null
+    : null;
+
+  const wipViolation = (() => {
+    if (!selectedColumn) return false;
+    if (tasksToMove === 0) return false;
+    const limit = selectedColumn.wip_limit;
+    if (limit === null || limit === 0) return false;
+    const targetCount = taskCountByColumnId[selectedColumn.id] ?? 0;
+    return targetCount + tasksToMove > limit;
+  })();
+
+  const wipWarning = (() => {
+    if (!wipViolation || !selectedColumn) return null;
+    const limit = selectedColumn.wip_limit as number;
+    const targetCount = taskCountByColumnId[selectedColumn.id] ?? 0;
+    return `Недостаточно места в целевой колонке (WIP-лимит: ${limit}). Сейчас там ${targetCount} задач, переносится ${tasksToMove}. Выберите другую колонку или освободите место.`;
+  })();
 
   const mutation = useMutation({
     mutationFn: async (targetId: string) => {
@@ -3156,12 +3179,14 @@ function DeleteColumnDialog({ boardId, column, otherColumns, onClose }: DeleteCo
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'columns', boardId] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'board', boardId] });
       onClose();
     },
   });
 
   const handleConfirm = () => {
-    if (!moveToId) return;
+    if (!moveToId || wipViolation) return;
     mutation.mutate(moveToId);
   };
 
@@ -3210,7 +3235,7 @@ function DeleteColumnDialog({ boardId, column, otherColumns, onClose }: DeleteCo
               className={cn(
                 'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white',
                 'focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors',
-                'border-gray-700 focus:border-red-500',
+                wipViolation ? 'border-orange-600 focus:border-orange-500' : 'border-gray-700 focus:border-red-500',
               )}
             >
               {otherColumns.map((col) => (
@@ -3221,6 +3246,13 @@ function DeleteColumnDialog({ boardId, column, otherColumns, onClose }: DeleteCo
             </select>
           </div>
         ) : null}
+
+        {wipWarning && (
+          <div className="flex items-start gap-2 rounded-lg bg-orange-900/30 border border-orange-700 px-4 py-3 text-sm text-orange-300">
+            <AlertCircle size={16} className="mt-0.5 shrink-0" />
+            <span>{wipWarning}</span>
+          </div>
+        )}
 
         {mutation.isError && (
           <div className="flex items-start gap-2 rounded-lg bg-red-900/30 border border-red-800 px-4 py-3 text-sm text-red-300">
@@ -3240,7 +3272,7 @@ function DeleteColumnDialog({ boardId, column, otherColumns, onClose }: DeleteCo
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={!moveToId || mutation.isPending || otherColumns.length === 0}
+            disabled={!moveToId || mutation.isPending || otherColumns.length === 0 || wipViolation}
             className={cn(
               'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
               'bg-red-600 text-white hover:bg-red-500',
@@ -3327,6 +3359,7 @@ interface KanbanColumnProps {
   allColumns: CrmColumn[];
   boardId: string;
   tasks: CrmTask[];
+  taskCountByColumnId: Record<number, number>;
   onTaskClick: (taskId: number) => void;
   dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>;
   isDragOverlay?: boolean;
@@ -3337,6 +3370,7 @@ function KanbanColumn({
   allColumns,
   boardId,
   tasks,
+  taskCountByColumnId,
   onTaskClick,
   dragHandleProps,
   isDragOverlay,
@@ -3475,6 +3509,7 @@ function KanbanColumn({
           boardId={boardId}
           column={column}
           otherColumns={otherColumns}
+          taskCountByColumnId={taskCountByColumnId}
           onClose={() => setShowDelete(false)}
         />
       )}
@@ -3489,10 +3524,11 @@ interface SortableColumnProps {
   allColumns: CrmColumn[];
   boardId: string;
   tasks: CrmTask[];
+  taskCountByColumnId: Record<number, number>;
   onTaskClick: (taskId: number) => void;
 }
 
-function SortableColumn({ column, allColumns, boardId, tasks, onTaskClick }: SortableColumnProps) {
+function SortableColumn({ column, allColumns, boardId, tasks, taskCountByColumnId, onTaskClick }: SortableColumnProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: column.id,
   });
@@ -3509,6 +3545,7 @@ function SortableColumn({ column, allColumns, boardId, tasks, onTaskClick }: Sor
         allColumns={allColumns}
         boardId={boardId}
         tasks={tasks}
+        taskCountByColumnId={taskCountByColumnId}
         onTaskClick={onTaskClick}
         dragHandleProps={{ ...attributes, ...listeners }}
       />
@@ -4577,6 +4614,9 @@ export default function BoardDetailPage() {
                   allColumns={localColumns}
                   boardId={boardId}
                   tasks={isTasksLoading ? [] : (localTasksByColumn[column.id] ?? [])}
+                  taskCountByColumnId={Object.fromEntries(
+                    Object.entries(localTasksByColumn).map(([k, v]) => [Number(k), v.length]),
+                  )}
                   onTaskClick={(taskId) => setSelectedTaskId(taskId)}
                 />
               ))}
@@ -4599,6 +4639,9 @@ export default function BoardDetailPage() {
                 allColumns={localColumns}
                 boardId={boardId}
                 tasks={localTasksByColumn[activeColumn.id] ?? []}
+                taskCountByColumnId={Object.fromEntries(
+                  Object.entries(localTasksByColumn).map(([k, v]) => [Number(k), v.length]),
+                )}
                 onTaskClick={() => undefined}
                 isDragOverlay
               />
