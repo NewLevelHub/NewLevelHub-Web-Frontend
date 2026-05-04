@@ -767,6 +767,12 @@ export interface ServiceFloor {
   updated_at: string;
 }
 
+/** POST /services/floors/ (JSON). `plan_image` передаётся только через multipart. */
+export interface ServiceFloorCreatePayload {
+  number: number;
+  name?: string;
+}
+
 export interface MapPointSearchResult {
   id: number;
   label: string;

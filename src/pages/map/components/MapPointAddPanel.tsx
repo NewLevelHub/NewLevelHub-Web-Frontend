@@ -1,0 +1,312 @@
+import { memo, useCallback, useState } from 'react';
+import { MapPin, X, Loader2 } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { apiClient } from '@/shared/api/client';
+import { API } from '@/shared/api/endpoints';
+import { getApiErrorMessage } from '@/shared/lib/apiError';
+import type {
+  BookingResourceListItem,
+  MapPointCreatePayload,
+  MapPointType,
+  PaginatedResponse,
+} from '@/shared/types';
+
+import { POINT_TYPES, POINT_TYPE_LABELS } from '@/pages/map/constants/mapConstants';
+import type { MapPointFormState } from '@/pages/map/types/mapPage.types';
+
+export interface MapPointAddPanelProps {
+  form: MapPointFormState;
+  floorId: number;
+  onFormChange: (updates: Partial<MapPointFormState>) => void;
+  onCancel: () => void;
+  onSuccess: () => void;
+}
+
+function requiresResource(t: MapPointType) {
+  return t === 'desk' || t === 'meeting_room' || t === 'parking' || t === 'capsule';
+}
+
+export const MapPointAddPanel = memo<MapPointAddPanelProps>(
+  ({ form, floorId, onFormChange, onCancel, onSuccess }) => {
+    const queryClient = useQueryClient();
+    const [formError, setFormError] = useState<string | null>(null);
+
+    const { data: resourcesData, isLoading: resourcesLoading } = useQuery({
+      queryKey: ['booking-resources-list'],
+      queryFn: () =>
+        apiClient
+          .get<PaginatedResponse<BookingResourceListItem>>(API.bookings.resources.list)
+          .then((r) => r.data),
+      enabled: requiresResource(form.point_type),
+      staleTime: 60_000,
+    });
+
+    const createMutation = useMutation({
+      mutationFn: (payload: MapPointCreatePayload) =>
+        apiClient.post(API.map.mapPoints.create, payload).then((r) => r.data),
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: ['floor-map', floorId] });
+        onSuccess();
+      },
+      onError: (err: unknown) => {
+        setFormError(getApiErrorMessage(err, 'Не удалось создать точку'));
+      },
+    });
+
+    const handleInputChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        onFormChange({ [name]: value });
+        setFormError(null);
+      },
+      [onFormChange],
+    );
+
+    const handleResourceChangeWithAutoLabel = useCallback(
+      (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const resourceId = e.target.value;
+        const selectedResource = resourcesData?.results.find((r) => String(r.id) === resourceId);
+        const updates: Partial<MapPointFormState> = {
+          resource: resourceId,
+        };
+        if (selectedResource) {
+          updates.point_type = selectedResource.type as MapPointType;
+          updates.label = selectedResource.name;
+        }
+        onFormChange(updates);
+        setFormError(null);
+      },
+      [resourcesData, onFormChange],
+    );
+
+    const handleSubmit = useCallback(
+      (e: React.FormEvent) => {
+        e.preventDefault();
+        setFormError(null);
+
+        const xNum = parseFloat(form.x);
+        const yNum = parseFloat(form.y);
+
+        if (isNaN(xNum) || xNum < 0 || xNum > 100) {
+          setFormError('X должно быть числом от 0 до 100');
+          return;
+        }
+        if (isNaN(yNum) || yNum < 0 || yNum > 100) {
+          setFormError('Y должно быть числом от 0 до 100');
+          return;
+        }
+        if (!form.label.trim()) {
+          setFormError('Метка обязательна');
+          return;
+        }
+        if (requiresResource(form.point_type) && !form.resource.trim()) {
+          setFormError('Выберите ресурс для данного типа точки');
+          return;
+        }
+        if (form.point_type === 'office' && !form.company.trim()) {
+          setFormError('ID компании обязателен для офисной точки');
+          return;
+        }
+
+        const payload: MapPointCreatePayload = {
+          floor: floorId,
+          point_type: form.point_type,
+          label: form.label.trim(),
+          x: xNum,
+          y: yNum,
+          resource: form.resource.trim() ? parseInt(form.resource, 10) : null,
+          company: form.company.trim() ? parseInt(form.company, 10) : null,
+        };
+
+        createMutation.mutate(payload);
+      },
+      [form, floorId, createMutation],
+    );
+
+    const handlePanelClick = useCallback((e: React.MouseEvent) => {
+      e.stopPropagation();
+    }, []);
+
+    return (
+      <div
+        className="absolute bottom-0 left-0 right-0 z-30 rounded-b-xl bg-gray-800 border-t-2 border-indigo-500 shadow-2xl"
+        onClick={handlePanelClick}
+        role="dialog"
+        aria-modal="false"
+        aria-label="Добавить точку"
+      >
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="px-4 pt-3 pb-1 flex items-center justify-between">
+            <span className="text-sm font-semibold text-white flex items-center gap-2">
+              <MapPin className="h-3.5 w-3.5 text-indigo-400" aria-hidden="true" />
+              Новая точка
+            </span>
+            <button
+              type="button"
+              aria-label="Отмена"
+              onClick={onCancel}
+              className="rounded p-1 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400"
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+
+          {formError ? (
+            <div
+              className="mx-4 mb-2 rounded-lg border border-rose-700 bg-rose-900/60 px-3 py-2 text-xs text-rose-300"
+              role="alert"
+            >
+              {formError}
+            </div>
+          ) : null}
+
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2 px-4 pb-2 sm:grid-cols-4">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="ap-x" className="text-xs font-medium text-gray-400">
+                X (0–100)
+              </label>
+              <input
+                id="ap-x"
+                type="number"
+                name="x"
+                value={form.x}
+                onChange={handleInputChange}
+                min={0}
+                max={100}
+                step={0.1}
+                required
+                className="rounded-md border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-white outline-none placeholder:text-gray-500 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/40 transition [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="ap-y" className="text-xs font-medium text-gray-400">
+                Y (0–100)
+              </label>
+              <input
+                id="ap-y"
+                type="number"
+                name="y"
+                value={form.y}
+                onChange={handleInputChange}
+                min={0}
+                max={100}
+                step={0.1}
+                required
+                className="rounded-md border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-white outline-none placeholder:text-gray-500 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/40 transition [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="ap-resource" className="text-xs font-medium text-gray-400">
+                Ресурс {requiresResource(form.point_type) ? <span className="text-rose-400">*</span> : null}
+              </label>
+              {resourcesLoading ? (
+                <div className="flex items-center gap-1.5 rounded-md border border-gray-600 bg-gray-700 px-2 py-1.5 text-xs text-gray-400">
+                  <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                  Загрузка...
+                </div>
+              ) : (
+                <select
+                  id="ap-resource"
+                  name="resource"
+                  value={form.resource}
+                  onChange={handleResourceChangeWithAutoLabel}
+                  className="rounded-md border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-white outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/40 transition"
+                >
+                  <option value="">— Выбрать —</option>
+                  {resourcesData?.results.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="ap-label" className="text-xs font-medium text-gray-400">
+                Метка <span className="text-rose-400">*</span>
+              </label>
+              <input
+                id="ap-label"
+                type="text"
+                name="label"
+                value={form.label}
+                onChange={handleInputChange}
+                required
+                placeholder="Desk A1"
+                className="rounded-md border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-white outline-none placeholder:text-gray-500 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/40 transition"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="ap-point_type" className="text-xs font-medium text-gray-400">
+                Тип точки
+              </label>
+              <select
+                id="ap-point_type"
+                name="point_type"
+                value={form.point_type}
+                disabled
+                aria-disabled="true"
+                title="Выберите ресурс — тип точки возьмётся из ресурса"
+                className="cursor-not-allowed rounded-md border border-gray-600 bg-gray-600/40 px-2 py-1.5 text-sm text-gray-400 outline-none"
+              >
+                {POINT_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {POINT_TYPE_LABELS[t]}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] leading-snug text-gray-500">
+                Меняется при выборе ресурса (тип берётся из ресурса).
+              </p>
+            </div>
+
+            {form.point_type === 'office' ? (
+              <div className="flex flex-col gap-1">
+                <label htmlFor="ap-company" className="text-xs font-medium text-gray-400">
+                  ID компании <span className="text-rose-400">*</span>
+                </label>
+                <input
+                  id="ap-company"
+                  type="number"
+                  name="company"
+                  value={form.company}
+                  onChange={handleInputChange}
+                  required
+                  min={1}
+                  placeholder="3"
+                  className="rounded-md border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-white outline-none placeholder:text-gray-500 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/40 transition [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                />
+              </div>
+            ) : null}
+          </div>
+
+          <div className="flex items-center justify-end gap-2 border-t border-gray-700 px-4 py-2.5">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={createMutation.isPending}
+              className="rounded-lg border border-gray-600 bg-transparent px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-gray-700 hover:text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400 disabled:opacity-50 transition-colors"
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              disabled={createMutation.isPending}
+              className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 focus:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400 disabled:opacity-50 transition-colors"
+            >
+              {createMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" /> : null}
+              Создать точку
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  },
+);
+
+MapPointAddPanel.displayName = 'MapPointAddPanel';
