@@ -3973,7 +3973,8 @@ function ArchivePanel({
         API.crm.tasksList,
         { params: { board_id: boardId, is_archived: true } },
       );
-      return Array.isArray(data) ? data : data.results;
+      const list = Array.isArray(data) ? data : data.results;
+      return list.filter((t) => t.is_archived);
     },
   });
 

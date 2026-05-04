@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { Plus, Archive, LayoutGrid, Calendar, X, AlertCircle, Inbox, ArchiveRestore } from 'lucide-react';
@@ -445,6 +445,12 @@ export default function BoardListPage() {
     },
   });
 
+  /** `include_archived` отдаёт и активные, и архивные — в UI режимы не смешиваем. */
+  const visibleBoards = useMemo(() => {
+    if (!boards?.length) return [];
+    return showArchived ? boards.filter((b) => b.is_archived) : boards.filter((b) => !b.is_archived);
+  }, [boards, showArchived]);
+
   const archiveMutation = useMutation({
     mutationFn: async (boardId: number) => {
       const { data } = await apiClient.post(API.crm.boardArchive(String(boardId)));
@@ -559,7 +565,7 @@ export default function BoardListPage() {
         </div>
 
         {/* Empty state */}
-        {boards?.length === 0 && (
+        {boards && visibleBoards.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
             <div className="rounded-full bg-gray-800 p-5">
               <Inbox size={32} className="text-gray-500" />
@@ -586,9 +592,9 @@ export default function BoardListPage() {
         )}
 
         {/* Board grid */}
-        {boards && boards.length > 0 && (
+        {visibleBoards.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {boards.map((board) => (
+            {visibleBoards.map((board) => (
               <BoardCard
                 key={board.id}
                 board={board}
