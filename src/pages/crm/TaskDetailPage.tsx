@@ -276,7 +276,7 @@ export default function TaskDetailPage() {
 
           {/* Comments */}
           <section className="rounded-2xl border border-gray-700 bg-gray-900 p-5">
-            <CommentSection taskId={taskId} />
+            <CommentSection taskId={taskId} boardId={boardId} />
           </section>
 
           {/* History */}

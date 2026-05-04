@@ -1477,9 +1477,10 @@ function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps) {
 
 interface CommentSectionProps {
   taskId: number;
+  boardId: string;
 }
 
-export function CommentSection({ taskId }: CommentSectionProps) {
+export function CommentSection({ taskId, boardId }: CommentSectionProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [newText, setNewText] = useState('');
@@ -1504,6 +1505,10 @@ export function CommentSection({ taskId }: CommentSectionProps) {
     onSuccess: () => {
       setNewText('');
       void queryClient.invalidateQueries({ queryKey: commentsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'task', taskId] });
+      if (boardId) {
+        void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+      }
       void queryClient.invalidateQueries({ queryKey: ['notifications-recent'] });
       void queryClient.invalidateQueries({ queryKey: ['notifications'] });
       void queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
@@ -2782,7 +2787,7 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
               <AttachmentsSection taskId={taskId} boardId={boardId} />
 
               {/* Comments */}
-              <CommentSection taskId={taskId} />
+              <CommentSection taskId={taskId} boardId={boardId} />
 
               {/* History */}
               <HistorySection taskId={taskId} />
