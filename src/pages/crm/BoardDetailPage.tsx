@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -2467,14 +2467,14 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
 
   const members = membersData?.results ?? [];
 
-  // Local state for editable fields (initialised from fetched task)
+  // Local draft state for editable fields (initialised from fetched task)
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<TaskPriorityValue>('medium');
   const [deadline, setDeadline] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
 
-  // Sync local state when task loads
+  // Sync local state when task loads for the first time
   useEffect(() => {
     if (!task) return;
     setTitle(task.title);
@@ -2482,10 +2482,10 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
     setPriority(task.priority);
     setDeadline(task.deadline ? task.deadline.slice(0, 10) : '');
     setAssigneeId(task.assignee ? String(task.assignee.id) : '');
-  }, [task]);
+  }, [task?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const patchMutation = useMutation({
-    mutationFn: async (payload: Partial<Pick<CrmTask, 'title' | 'description' | 'priority' | 'deadline'>>) => {
+    mutationFn: async (payload: Record<string, unknown>) => {
       const { data } = await apiClient.patch<CrmTask>(API.crm.taskDetail(taskId), payload);
       return data;
     },
@@ -2512,54 +2512,40 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
     archiveMutation.mutate();
   };
 
-  const assigneeMutation = useMutation({
-    mutationFn: async (newAssigneeId: number | null) => {
-      const { data } = await apiClient.patch<CrmTask>(API.crm.taskDetail(taskId), {
-        assignee_id: newAssigneeId,
-      });
-      return data;
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
-      void queryClient.invalidateQueries({ queryKey: ['crm', 'task', taskId] });
-      void queryClient.invalidateQueries({ queryKey: ['notifications-recent'] });
-      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      void queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
-    },
-  });
+  const handleSave = () => {
+    if (!task || patchMutation.isPending) return;
 
-  const handleAssigneeChange = (value: string) => {
-    setAssigneeId(value);
-    const parsed = value ? parseInt(value, 10) : null;
-    assigneeMutation.mutate(parsed);
+    const payload: Record<string, unknown> = {};
+
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
+      setTitle(task.title);
+      return;
+    }
+    if (trimmedTitle !== task.title) payload.title = trimmedTitle;
+    if (description !== (task.description ?? '')) payload.description = description || null;
+    if (priority !== task.priority) payload.priority = priority;
+
+    const originalDeadline = task.deadline ? task.deadline.slice(0, 10) : '';
+    if (deadline !== originalDeadline) payload.deadline = deadline || null;
+
+    const originalAssigneeId = task.assignee ? String(task.assignee.id) : '';
+    if (assigneeId !== originalAssigneeId) {
+      payload.assignee_id = assigneeId ? parseInt(assigneeId, 10) : null;
+    }
+
+    if (Object.keys(payload).length === 0) return;
+
+    patchMutation.mutate(payload);
   };
 
-  const handleFieldBlur = useCallback(
-    (field: 'title' | 'description' | 'priority' | 'deadline', value: string) => {
-      if (!task) return;
-      if (field === 'title' && !value.trim()) {
-        setTitle(task.title);
-        return;
-      }
-      if (field === 'deadline') {
-        const cur = task.deadline ? String(task.deadline).slice(0, 10) : '';
-        const next = value.trim().slice(0, 10);
-        if (cur === next) return;
-        patchMutation.mutate({ deadline: next || null });
-        return;
-      }
-      const current = task[field] ?? '';
-      if (String(current) === value) return;
-      patchMutation.mutate({ [field]: value || null });
-    },
-    [task, patchMutation],
-  );
-
-  const handlePriorityChange = (val: TaskPriorityValue) => {
-    setPriority(val);
-    if (task && val !== task.priority) {
-      patchMutation.mutate({ priority: val });
-    }
+  const handleCancel = () => {
+    if (!task) return;
+    setTitle(task.title);
+    setDescription(task.description ?? '');
+    setPriority(task.priority);
+    setDeadline(task.deadline ? task.deadline.slice(0, 10) : '');
+    setAssigneeId(task.assignee ? String(task.assignee.id) : '');
   };
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -2626,11 +2612,12 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  onBlur={(e) => handleFieldBlur('title', e.target.value.trim())}
                   maxLength={255}
+                  disabled={patchMutation.isPending}
                   className={cn(
                     'w-full rounded-lg border bg-gray-800 px-3 py-2 text-base font-medium text-white',
                     'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-gray-700',
+                    'disabled:opacity-60',
                   )}
                 />
               </div>
@@ -2644,10 +2631,12 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
                   <select
                     id="task-priority"
                     value={priority}
-                    onChange={(e) => handlePriorityChange(e.target.value as TaskPriorityValue)}
+                    onChange={(e) => setPriority(e.target.value as TaskPriorityValue)}
+                    disabled={patchMutation.isPending}
                     className={cn(
                       'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white',
                       'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-gray-700',
+                      'disabled:opacity-60',
                     )}
                   >
                     <option value="low">Низкий</option>
@@ -2665,11 +2654,11 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
                     type="date"
                     value={deadline}
                     onChange={(e) => setDeadline(e.target.value)}
-                    onBlur={(e) => handleFieldBlur('deadline', e.target.value)}
+                    disabled={patchMutation.isPending}
                     className={cn(
                       'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white',
                       'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-gray-700',
-                      '[color-scheme:dark]',
+                      '[color-scheme:dark] disabled:opacity-60',
                     )}
                   />
                 </div>
@@ -2691,8 +2680,8 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
                   <select
                     id="task-assignee"
                     value={assigneeId}
-                    onChange={(e) => handleAssigneeChange(e.target.value)}
-                    disabled={assigneeMutation.isPending}
+                    onChange={(e) => setAssigneeId(e.target.value)}
+                    disabled={patchMutation.isPending}
                     className={cn(
                       'w-full rounded-lg border bg-gray-800 pl-8 pr-3 py-2 text-sm text-white',
                       'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-gray-700',
@@ -2709,9 +2698,6 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
                       ))}
                   </select>
                 </div>
-                {assigneeMutation.isError && (
-                  <p className="text-xs text-red-400">Не удалось изменить исполнителя.</p>
-                )}
               </div>
 
               {/* Labels */}
@@ -2730,14 +2716,46 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
                   id="task-description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  onBlur={(e) => handleFieldBlur('description', e.target.value)}
                   rows={4}
                   placeholder="Добавьте описание..."
+                  disabled={patchMutation.isPending}
                   className={cn(
                     'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-600',
                     'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-gray-700 resize-none',
+                    'disabled:opacity-60',
                   )}
                 />
+              </div>
+
+              {/* Save / Cancel */}
+              <div className="flex items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={patchMutation.isPending}
+                  className={cn(
+                    'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                    'bg-blue-600 text-white hover:bg-blue-500',
+                    'disabled:opacity-50 disabled:cursor-not-allowed',
+                  )}
+                >
+                  {patchMutation.isPending ? 'Сохранение...' : 'Сохранить'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  disabled={patchMutation.isPending}
+                  className={cn(
+                    'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                    'text-gray-400 hover:text-white hover:bg-gray-800',
+                    'disabled:opacity-50 disabled:cursor-not-allowed',
+                  )}
+                >
+                  Отменить
+                </button>
+                {patchMutation.isError && (
+                  <p className="text-xs text-red-400">Не удалось сохранить изменения.</p>
+                )}
               </div>
 
               {/* Checklists */}
@@ -2745,10 +2763,6 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
 
               {/* Attachments */}
               <AttachmentsSection taskId={taskId} boardId={boardId} />
-
-              {patchMutation.isError && (
-                <p className="text-xs text-red-400">Не удалось сохранить изменения.</p>
-              )}
 
               {/* Comments */}
               <CommentSection taskId={taskId} />
