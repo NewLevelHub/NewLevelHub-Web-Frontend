@@ -2922,15 +2922,22 @@ function CreateColumnModal({ boardId, onClose }: CreateColumnModalProps) {
 interface EditColumnModalProps {
   boardId: string;
   column: CrmColumn;
+  taskCount: number;
   onClose: () => void;
 }
 
-function EditColumnModal({ boardId, column, onClose }: EditColumnModalProps) {
+function EditColumnModal({ boardId, column, taskCount, onClose }: EditColumnModalProps) {
   const queryClient = useQueryClient();
   const [name, setName] = useState(column.name);
   const [wipLimit, setWipLimit] = useState(column.wip_limit !== null ? String(column.wip_limit) : '');
   const [position, setPosition] = useState(String(column.order));
   const nameRef = useRef<HTMLInputElement>(null);
+
+  const wipLimitNum = wipLimit.trim() === '' ? null : Number(wipLimit.trim());
+  const wipLimitError =
+    wipLimitNum !== null && wipLimitNum < taskCount
+      ? `Лимит не может быть меньше текущего количества задач: ${taskCount}`
+      : null;
 
   useEffect(() => {
     nameRef.current?.focus();
@@ -2955,6 +2962,7 @@ function EditColumnModal({ boardId, column, onClose }: EditColumnModalProps) {
     if (!name.trim()) return;
     const trimmed = wipLimit.trim();
     const resolvedWipLimit: number | null = trimmed === '' ? null : Number(trimmed);
+    if (resolvedWipLimit !== null && resolvedWipLimit < taskCount) return;
     const resolvedPosition = Number(position);
 
     const payload: { name: string; wip_limit: number | null; position?: number } = {
@@ -3028,12 +3036,21 @@ function EditColumnModal({ boardId, column, onClose }: EditColumnModalProps) {
               value={wipLimit}
               onChange={(e) => setWipLimit(e.target.value)}
               placeholder="Без ограничений"
+              aria-describedby={wipLimitError ? 'edit-column-wip-error' : undefined}
+              aria-invalid={wipLimitError ? true : undefined}
               className={cn(
                 'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500',
-                'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
-                'border-gray-700 focus:border-blue-500',
+                'focus:outline-none focus:ring-2 transition-colors',
+                wipLimitError
+                  ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                  : 'border-gray-700 focus:ring-blue-500 focus:border-blue-500',
               )}
             />
+            {wipLimitError && (
+              <p id="edit-column-wip-error" className="text-xs text-red-400 mt-1">
+                {wipLimitError}
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -3064,7 +3081,7 @@ function EditColumnModal({ boardId, column, onClose }: EditColumnModalProps) {
             </button>
             <button
               type="submit"
-              disabled={!name.trim() || mutation.isPending}
+              disabled={!name.trim() || !!wipLimitError || mutation.isPending}
               className={cn(
                 'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
                 'bg-blue-600 text-white hover:bg-blue-500',
@@ -3401,6 +3418,7 @@ function KanbanColumn({
         <EditColumnModal
           boardId={boardId}
           column={column}
+          taskCount={tasks.length}
           onClose={() => setShowEdit(false)}
         />
       )}
