@@ -19,7 +19,7 @@ import {
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { USER_ROLES, COMPANY_TIERS } from '@/shared/config/constants';
+import { COMPANY_TIERS, SUPERADMIN_UI_PREFIX, USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { cn } from '@/shared/lib/cn';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
@@ -109,7 +109,7 @@ export default function CompanyListPage() {
   const queryClient = useQueryClient();
 
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
-  const companiesBasePath = isSuperadmin ? '/admin/companies' : '/companies';
+  const companiesBasePath = isSuperadmin ? `${SUPERADMIN_UI_PREFIX}/companies` : '/companies';
 
   // ── Filter state ────────────────────────────────────────────────────────────
 

@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { USER_ROLES } from '@/shared/config/constants';
+import { SUPERADMIN_UI_PREFIX, USER_ROLES } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
 import { mapApiUser } from '@/shared/lib/mapUser';
 import { useAuth } from '@/shared/hooks/useAuth';
@@ -368,7 +368,7 @@ export default function UserDetailPage() {
       <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-4xl mx-auto">
         <button
           type="button"
-          onClick={() => navigate('/admin/users')}
+          onClick={() => navigate(`${SUPERADMIN_UI_PREFIX}/users`)}
           className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 mb-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
         >
           <ArrowLeft size={16} aria-hidden="true" />
@@ -391,7 +391,7 @@ export default function UserDetailPage() {
         <div>
           <button
             type="button"
-          onClick={() => navigate('/admin/users')}
+          onClick={() => navigate(`${SUPERADMIN_UI_PREFIX}/users`)}
             className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 mb-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
             aria-label="Назад к списку пользователей"
           >

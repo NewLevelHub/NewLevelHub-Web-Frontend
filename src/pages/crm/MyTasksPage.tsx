@@ -296,9 +296,9 @@ export default function MyTasksPage() {
                       {/* Title */}
                       <td className="px-4 py-3">
                         <Link
-                          to={`/crm/boards/${task.board.id}`}
+                          to={`/crm/tasks/${task.id}`}
                           className="group inline-flex items-center gap-1.5 text-white hover:text-blue-400 transition-colors font-medium"
-                          title={`Открыть доску: ${task.board_title}`}
+                          title="Открыть задачу"
                         >
                           <span className="line-clamp-1">{task.title}</span>
                           <ExternalLink

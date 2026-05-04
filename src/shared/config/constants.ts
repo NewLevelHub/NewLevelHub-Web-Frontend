@@ -8,6 +8,19 @@ export const USER_ROLES = {
 
 export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
 
+/**
+ * SPA routes only for the platform superadmin. Kept outside `/admin/` so they never
+ * collide with Django admin (`/admin/<app_label>/`).
+ */
+export const SUPERADMIN_UI_PREFIX = '/superadmin' as const;
+
+/**
+ * SPA routes for elevated staff tools shared by superadmin and company admin
+ * (e.g. cross-company or company-wide booking management). Not under `/superadmin/`
+ * so company admins are not sent through a misleading URL prefix.
+ */
+export const STAFF_UI_PREFIX = '/staff' as const;
+
 export const RESOURCE_TYPES = {
   DESK: 'desk',
   MEETING_ROOM: 'meeting_room',

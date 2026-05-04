@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -22,7 +22,13 @@ import {
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { USER_ROLES, COMPANY_TIERS } from '@/shared/config/constants';
+import {
+  COMPANY_PLAN_DEFAULT_LIMITS,
+  COMPANY_TIERS,
+  SUPERADMIN_UI_PREFIX,
+  USER_ROLES,
+  type CompanyTier,
+} from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { cn } from '@/shared/lib/cn';
@@ -41,6 +47,8 @@ const PLAN_BADGE_COLORS: Record<string, string> = {
   [COMPANY_TIERS.STANDARD]: 'bg-blue-900/60 text-blue-300',
   [COMPANY_TIERS.PREMIUM]: 'bg-purple-900/60 text-purple-300',
 };
+
+const LOGO_MAX_BYTES = 10 * 1024 * 1024;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -249,6 +257,7 @@ interface EditFormData {
   office_number: string;
   plan: string;
   max_employees: string;
+  max_boards: string;
   storage_limit_gb: string;
 }
 
@@ -271,6 +280,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
     office_number: company.office_number ?? '',
     plan: company.plan,
     max_employees: String(company.max_employees),
+    max_boards: String(company.max_boards),
     storage_limit_gb: String(company.storage_limit_gb),
   });
 
@@ -279,6 +289,12 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    return () => {
+      if (logoPreview) URL.revokeObjectURL(logoPreview);
+    };
+  }, [logoPreview]);
 
   const { mutate, isPending } = useMutation({
     mutationFn: () => {
@@ -292,6 +308,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
         if (form.office_number) formData.append('office_number', form.office_number);
         formData.append('plan', form.plan);
         formData.append('max_employees', form.max_employees);
+        formData.append('max_boards', form.max_boards);
         formData.append('storage_limit_gb', form.storage_limit_gb);
       }
       if (logoFile) formData.append('logo', logoFile);
@@ -334,20 +351,54 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
     },
   });
 
-  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleLogoChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setFieldErrors((prev) => ({ ...prev, logo: 'Можно загрузить только изображение.' }));
+      return;
+    }
+    if (file.size > LOGO_MAX_BYTES) {
+      setFieldErrors((prev) => ({ ...prev, logo: 'Файл слишком большой. Максимум 10 МБ.' }));
+      return;
+    }
+    if (logoPreview) URL.revokeObjectURL(logoPreview);
     setLogoFile(file);
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      delete next.logo;
+      return next;
+    });
     const url = URL.createObjectURL(file);
     setLogoPreview(url);
   }
 
   function handleField(field: keyof EditFormData, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }));
-    if (fieldErrors[field]) {
+    setForm((prev) => {
+      if (field === 'plan') {
+        const limits =
+          COMPANY_PLAN_DEFAULT_LIMITS[value as CompanyTier] ??
+          COMPANY_PLAN_DEFAULT_LIMITS[COMPANY_TIERS.BASIC];
+        return {
+          ...prev,
+          plan: value,
+          max_employees: String(limits.max_employees),
+          max_boards: String(limits.max_boards),
+          storage_limit_gb: String(limits.storage_limit_gb),
+        };
+      }
+      return { ...prev, [field]: value };
+    });
+    const keysToClear: (keyof EditFormData)[] =
+      field === 'plan'
+        ? ['plan', 'max_employees', 'max_boards', 'storage_limit_gb']
+        : [field];
+    if (keysToClear.some((k) => fieldErrors[k])) {
       setFieldErrors((prev) => {
         const next = { ...prev };
-        delete next[field];
+        for (const k of keysToClear) {
+          delete next[k];
+        }
         return next;
       });
     }
@@ -362,10 +413,11 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
 
   const inputClass = (field: string) =>
     cn(
-      'w-full px-3 py-2 text-sm rounded-lg border text-gray-900 focus:outline-none focus:ring-2 focus:border-transparent',
+      'w-full px-3 py-2 text-sm rounded-lg border bg-gray-900 text-white placeholder:text-gray-500',
+      'focus:outline-none focus:ring-2 focus:border-transparent',
       fieldErrors[field]
-        ? 'border-red-400 focus:ring-red-500'
-        : 'border-gray-300 focus:ring-blue-500',
+        ? 'border-red-500 focus:ring-red-500'
+        : 'border-gray-600 focus:ring-indigo-500',
     );
 
   return (
@@ -374,7 +426,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
         {generalError && (
           <div
             role="alert"
-            className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm"
+            className="flex items-center gap-2 px-4 py-3 rounded-xl border border-red-800 bg-red-950/50 text-red-200 text-sm"
           >
             <AlertTriangle size={15} className="shrink-0" aria-hidden="true" />
             {generalError}
@@ -385,10 +437,10 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
         <div>
           <p className="text-xs text-gray-500 mb-2">Логотип</p>
           <div className="flex items-center gap-4">
-            {logoPreview || company.logo ? (
+            {company.logo ? (
               <img
-                src={logoPreview ?? company.logo!}
-                alt="Логотип компании"
+                src={company.logo}
+                alt="Текущий логотип компании"
                 className="w-16 h-16 rounded-xl object-cover border border-gray-200"
               />
             ) : (
@@ -396,10 +448,17 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
                 <Building2 className="w-7 h-7 text-blue-400" aria-hidden="true" />
               </div>
             )}
+            {logoPreview ? (
+              <img
+                src={logoPreview}
+                alt="Новый логотип (предпросмотр)"
+                className="w-16 h-16 rounded-xl object-cover border border-indigo-400"
+              />
+            ) : null}
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-200 bg-gray-700 border border-gray-600 rounded-lg hover:bg-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors"
             >
               <Upload size={14} aria-hidden="true" />
               Загрузить логотип
@@ -413,6 +472,14 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
               aria-label="Выбрать файл логотипа"
             />
           </div>
+          {logoPreview ? (
+            <p className="mt-1 text-xs text-indigo-300">
+              Новый логотип применится только после нажатия «Сохранить».
+            </p>
+          ) : null}
+          {fieldErrors.logo ? (
+            <p className="mt-1 text-xs text-red-600" role="alert">{fieldErrors.logo}</p>
+          ) : null}
         </div>
 
         {/* Name */}
@@ -532,7 +599,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Max employees */}
               <div>
                 <label htmlFor="edit-max-employees" className="block text-xs text-gray-500 mb-1">
@@ -545,6 +612,21 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
                   value={form.max_employees}
                   onChange={(e) => handleField('max_employees', e.target.value)}
                   className={inputClass('max_employees')}
+                />
+              </div>
+
+              {/* Max boards */}
+              <div>
+                <label htmlFor="edit-max-boards" className="block text-xs text-gray-500 mb-1">
+                  Макс. досок
+                </label>
+                <input
+                  id="edit-max-boards"
+                  type="number"
+                  min={1}
+                  value={form.max_boards}
+                  onChange={(e) => handleField('max_boards', e.target.value)}
+                  className={inputClass('max_boards')}
                 />
               </div>
 
@@ -597,7 +679,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-300 border border-gray-600 hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:opacity-50"
           >
             <X size={15} aria-hidden="true" />
             Отмена
@@ -618,7 +700,7 @@ export default function CompanyDetailPage() {
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
   const isCompanyAdmin = user?.role === USER_ROLES.COMPANY_ADMIN;
   const canEdit = isSuperadmin || isCompanyAdmin;
-  const companiesBasePath = isSuperadmin ? '/admin/companies' : '/companies';
+  const companiesBasePath = isSuperadmin ? `${SUPERADMIN_UI_PREFIX}/companies` : '/companies';
 
   const [isEditing, setIsEditing] = useState(false);
 

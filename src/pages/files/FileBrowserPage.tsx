@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
+import { PromptModal } from '@/shared/ui/PromptModal';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -17,6 +19,15 @@ import type {
 } from '@/shared/types';
 
 type StorageScope = 'personal' | 'company';
+
+type FileBrowserConfirmAction =
+  | { type: 'delete-folder'; folder: StorageFolder }
+  | { type: 'delete-file'; file: StorageFile }
+  | { type: 'revoke-share'; shareId: number };
+
+type RenameTarget =
+  | { kind: 'folder'; folder: StorageFolder }
+  | { kind: 'file'; file: StorageFile };
 const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 const STORAGE_SHARE_PERMISSIONS: StorageSharePermission[] = ['view', 'download', 'full'];
 const STORAGE_SHARE_PERMISSION_LABEL: Record<StorageSharePermission, string> = {
@@ -52,6 +63,8 @@ export default function FileBrowserPage() {
   const [shareError, setShareError] = useState<string | null>(null);
   const [openedSharedFile, setOpenedSharedFile] = useState<StorageFile | null>(null);
   const [trail, setTrail] = useState<StorageFolder[]>([]);
+  const [confirmAction, setConfirmAction] = useState<FileBrowserConfirmAction | null>(null);
+  const [renameTarget, setRenameTarget] = useState<RenameTarget | null>(null);
   const currentFolder = trail.length > 0 ? trail[trail.length - 1] : null;
   const normalizedSearchTerm = searchTerm.trim();
   const isSearching = normalizedSearchTerm.length > 0;
@@ -393,27 +406,19 @@ export default function FileBrowserPage() {
   const resetToRoot = () => setTrail([]);
 
   const handleRename = (folder: StorageFolder) => {
-    const nextName = window.prompt('Новое имя папки', folder.name);
-    if (!nextName || !nextName.trim() || nextName.trim() === folder.name) return;
-    renameFolderMutation.mutate({ folderId: folder.id, name: nextName.trim() });
+    setRenameTarget({ kind: 'folder', folder });
   };
 
   const handleDelete = (folder: StorageFolder) => {
-    const ok = window.confirm(`Удалить папку "${folder.name}" со всем содержимым?`);
-    if (!ok) return;
-    deleteFolderMutation.mutate(folder.id);
+    setConfirmAction({ type: 'delete-folder', folder });
   };
 
   const handleFileRename = (file: StorageFile) => {
-    const nextName = window.prompt('Новое имя файла', file.name);
-    if (!nextName || !nextName.trim() || nextName.trim() === file.name) return;
-    renameFileMutation.mutate({ fileId: file.id, name: nextName.trim() });
+    setRenameTarget({ kind: 'file', file });
   };
 
   const handleFileDelete = (file: StorageFile) => {
-    const ok = window.confirm(`Удалить файл "${file.name}"?`);
-    if (!ok) return;
-    deleteFileMutation.mutate(file.id);
+    setConfirmAction({ type: 'delete-file', file });
   };
 
   const handleSelectShareFile = (file: StorageFile) => {
@@ -431,9 +436,7 @@ export default function FileBrowserPage() {
   };
 
   const handleRevokeShare = (shareId: number) => {
-    const ok = window.confirm('Отозвать доступ к файлу у пользователя?');
-    if (!ok) return;
-    revokeShareMutation.mutate(shareId);
+    setConfirmAction({ type: 'revoke-share', shareId });
   };
 
   const handleFileUpload = () => {
@@ -862,6 +865,92 @@ export default function FileBrowserPage() {
           </section>
         </>
       ) : null}
+
+      <ConfirmModal
+        isOpen={confirmAction !== null}
+        onClose={() =>
+          !deleteFolderMutation.isPending &&
+          !deleteFileMutation.isPending &&
+          !revokeShareMutation.isPending &&
+          setConfirmAction(null)
+        }
+        onConfirm={() => {
+          if (!confirmAction) return;
+          if (confirmAction.type === 'delete-folder') {
+            deleteFolderMutation.mutate(confirmAction.folder.id, {
+              onSettled: () => setConfirmAction(null),
+            });
+            return;
+          }
+          if (confirmAction.type === 'delete-file') {
+            deleteFileMutation.mutate(confirmAction.file.id, {
+              onSettled: () => setConfirmAction(null),
+            });
+            return;
+          }
+          revokeShareMutation.mutate(confirmAction.shareId, {
+            onSettled: () => setConfirmAction(null),
+          });
+        }}
+        title={
+          confirmAction?.type === 'delete-folder'
+            ? 'Удалить папку?'
+            : confirmAction?.type === 'delete-file'
+              ? 'Удалить файл?'
+              : 'Отозвать доступ?'
+        }
+        description={
+          confirmAction?.type === 'delete-folder'
+            ? `Папка «${confirmAction.folder.name}» и всё её содержимое будут удалены без возможности восстановления.`
+            : confirmAction?.type === 'delete-file'
+              ? `Файл «${confirmAction.file.name}» будет удалён без возможности восстановления.`
+              : 'Доступ к файлу у выбранного пользователя будет отозван.'
+        }
+        confirmLabel={
+          confirmAction?.type === 'revoke-share' ? 'Отозвать' : 'Удалить'
+        }
+        variant="danger"
+        isLoading={
+          deleteFolderMutation.isPending ||
+          deleteFileMutation.isPending ||
+          revokeShareMutation.isPending
+        }
+      />
+
+      <PromptModal
+        isOpen={renameTarget !== null}
+        onClose={() => !renameFolderMutation.isPending && !renameFileMutation.isPending && setRenameTarget(null)}
+        onConfirm={(raw) => {
+          if (!renameTarget) return;
+          const nextName = raw.trim();
+          if (renameTarget.kind === 'folder') {
+            const { folder } = renameTarget;
+            if (!nextName || nextName === folder.name) {
+              setRenameTarget(null);
+              return;
+            }
+            renameFolderMutation.mutate(
+              { folderId: folder.id, name: nextName },
+              { onSettled: () => setRenameTarget(null) },
+            );
+            return;
+          }
+          const { file } = renameTarget;
+          if (!nextName || nextName === file.name) {
+            setRenameTarget(null);
+            return;
+          }
+          renameFileMutation.mutate(
+            { fileId: file.id, name: nextName },
+            { onSettled: () => setRenameTarget(null) },
+          );
+        }}
+        title={renameTarget?.kind === 'folder' ? 'Переименовать папку' : 'Переименовать файл'}
+        label="Новое имя"
+        defaultValue={renameTarget?.kind === 'folder' ? renameTarget.folder.name : renameTarget?.file.name ?? ''}
+        confirmLabel="Сохранить"
+        isLoading={renameFolderMutation.isPending || renameFileMutation.isPending}
+      />
     </div>
   );
 }

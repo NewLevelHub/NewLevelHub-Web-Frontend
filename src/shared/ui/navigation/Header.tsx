@@ -97,7 +97,7 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
   }
 
   return (
-    <header className="h-14 border-b border-gray-800 bg-gray-950/80 backdrop-blur-sm flex items-center justify-between md:justify-end gap-3 px-3 sm:px-4 md:px-6">
+    <header className="relative z-[90] h-14 border-b border-gray-800 bg-gray-950/80 backdrop-blur-sm flex items-center justify-between md:justify-end gap-3 px-3 sm:px-4 md:px-6">
       <button
         type="button"
         onClick={onOpenMobileNav}
@@ -132,7 +132,7 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
 
         {open && (
           <div
-            className="absolute right-0 top-full mt-2 w-[calc(100vw-1rem)] max-w-sm max-h-[28rem] overflow-y-auto rounded-xl border border-gray-700 bg-gray-900 shadow-xl z-50"
+            className="absolute right-0 top-full mt-2 w-[calc(100vw-1rem)] max-w-sm max-h-[28rem] overflow-y-auto rounded-xl border border-gray-700 bg-gray-900 shadow-xl z-[100]"
             role="dialog"
             aria-label="Уведомления"
           >

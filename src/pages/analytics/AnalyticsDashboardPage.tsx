@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 
@@ -91,7 +92,20 @@ export default function AnalyticsDashboardPage() {
     return <div className="p-6 text-sm text-red-400">Не удалось загрузить аналитику компании.</div>;
   }
 
-  const cards = [
+  const crm = data.active_crm_tasks;
+  const statusLineParts = [
+    `К выполнению (эвристика): ${crm.todo}`,
+    `В работе: ${crm.in_progress}`,
+    `Готово: ${crm.done}`,
+  ];
+  if (crm.other > 0) {
+    statusLineParts.push(`Другие колонки: ${crm.other}`);
+  }
+
+  const cards: Array<{
+    title: string;
+    value: ReactNode;
+  }> = [
     { title: 'Сотрудники', value: data.total_employees },
     { title: 'Активные за 7 дней', value: data.active_7d },
     { title: 'Бронирования за месяц', value: data.bookings_month },
@@ -102,7 +116,25 @@ export default function AnalyticsDashboardPage() {
     },
     {
       title: 'CRM задачи',
-      value: `ToDo: ${data.active_crm_tasks.todo}, In Progress: ${data.active_crm_tasks.in_progress}, Done: ${data.active_crm_tasks.done}`,
+      value: (
+        <div className="space-y-2">
+          <span className="text-2xl font-semibold text-white">{crm.total}</span>
+          <p className="text-sm font-normal leading-snug text-gray-300">Всего активных задач на досках</p>
+          <p className="text-xs font-normal leading-relaxed text-gray-400">{statusLineParts.join(' · ')}</p>
+          {crm.by_column.length > 0 ? (
+            <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto text-xs text-gray-300" aria-label="Задачи по колонкам">
+              {crm.by_column.map((col) => (
+                <li key={col.column_id} className="flex justify-between gap-2 border-t border-gray-700/60 pt-1 first:border-t-0 first:pt-0">
+                  <span className="min-w-0 truncate" title={col.board_name ? `${col.board_name} — ${col.name}` : col.name}>
+                    {col.board_name ? `${col.board_name}: ${col.name}` : col.name}
+                  </span>
+                  <span className="shrink-0 font-medium tabular-nums text-white">{col.count}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ),
     },
   ];
 
@@ -136,12 +168,22 @@ export default function AnalyticsDashboardPage() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {cards.map((card) => (
-          <div key={card.title} className="rounded-xl border border-gray-700 bg-gray-800 p-4">
-            <p className="text-xs uppercase tracking-wide text-gray-400">{card.title}</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{card.value}</p>
-          </div>
-        ))}
+        {cards.map((card) => {
+          const simple = typeof card.value === 'number' || typeof card.value === 'string';
+          return (
+            <div key={card.title} className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+              <p className="text-xs uppercase tracking-wide text-gray-400">{card.title}</p>
+              <div
+                className={cn(
+                  'mt-2',
+                  simple && 'text-2xl font-semibold text-white',
+                )}
+              >
+                {card.value}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="overflow-hidden rounded-xl border border-gray-700 bg-gray-800">

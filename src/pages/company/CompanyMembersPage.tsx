@@ -109,7 +109,7 @@ export default function CompanyMembersPage() {
     },
   });
 
-  if (!companyId) {
+  if (!companyId && !isSuperadmin) {
     return (
       <div className="max-w-2xl">
         <h1 className="text-2xl font-semibold text-white">Участники</h1>
@@ -138,14 +138,22 @@ export default function CompanyMembersPage() {
         <div>
           <h1 className="text-2xl font-semibold text-white">Участники</h1>
           <p className="mt-1 text-sm text-gray-400">
-            Сотрудники компании и приглашения по email.{' '}
-            <Link to="/company/settings" className="text-indigo-400 hover:text-indigo-300">
-              Общие настройки
-            </Link>
+            {isSuperadmin && !companyId
+              ? 'Выберите компанию ниже, чтобы просматривать участников и отправлять приглашения.'
+              : (
+                  <>
+                    Сотрудники компании и приглашения по email.{' '}
+                    <Link to="/company/settings" className="text-indigo-400 hover:text-indigo-300">
+                      Общие настройки
+                    </Link>
+                  </>
+                )}
           </p>
         </div>
         <button
           type="button"
+          disabled={!companyId}
+          title={!companyId ? 'Сначала выберите компанию' : undefined}
           onClick={() => {
             setInviteOpen((v) => !v);
             setFormError('');

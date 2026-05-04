@@ -14,6 +14,7 @@ import {
   DragOverlay,
   closestCenter,
   pointerWithin,
+  type CollisionDetection,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -62,6 +63,7 @@ import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
 import { useAuth } from '@/shared/hooks/useAuth';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { USER_ROLES } from '@/shared/config/constants';
 import type { CrmBoard, CrmColumn, CrmTask, CrmLabel, CrmComment, CrmChecklist, CrmChecklistItem, CrmTaskHistory, CrmAttachment, CompanyMember, PaginatedResponse } from '@/shared/types';
 
@@ -305,6 +307,7 @@ function SortableTaskCard({ task, onTaskClick }: SortableTaskCardProps) {
       style={style}
       {...attributes}
       {...listeners}
+      data-task-id={task.id}
       className={cn(
         isDragging && 'opacity-40',
         'cursor-grab active:cursor-grabbing',
@@ -1273,6 +1276,7 @@ function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps) {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [pendingDeleteAttachmentId, setPendingDeleteAttachmentId] = useState<number | null>(null);
 
   const attachmentsQueryKey = ['crm', 'task', taskId, 'attachments'] as const;
   const taskQueryKey = ['crm', 'task', taskId] as const;
@@ -1329,8 +1333,7 @@ function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps) {
   };
 
   const handleDeleteClick = (attachmentId: number) => {
-    if (!window.confirm('Удалить вложение?')) return;
-    deleteMutation.mutate(attachmentId);
+    setPendingDeleteAttachmentId(attachmentId);
   };
 
   const canDelete = (uploadedById: number) => {
@@ -1452,6 +1455,21 @@ function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps) {
           })}
         </ul>
       )}
+
+      <ConfirmModal
+        isOpen={pendingDeleteAttachmentId !== null}
+        onClose={() => !deleteMutation.isPending && setPendingDeleteAttachmentId(null)}
+        onConfirm={() => {
+          if (pendingDeleteAttachmentId === null) return;
+          const id = pendingDeleteAttachmentId;
+          deleteMutation.mutate(id, { onSettled: () => setPendingDeleteAttachmentId(null) });
+        }}
+        title="Удалить вложение?"
+        description="Файл будет удалён из задачи без возможности восстановления."
+        variant="danger"
+        confirmLabel="Удалить"
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 }
@@ -1975,6 +1993,7 @@ function LabelsManagerModal({ onClose }: LabelsManagerModalProps) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState('');
   const [editColor, setEditColor] = useState('');
+  const [pendingDeleteLabelId, setPendingDeleteLabelId] = useState<number | null>(null);
 
   const { data: labels, isLoading } = useQuery({
     queryKey: ['crm', 'labels'],
@@ -2032,9 +2051,8 @@ function LabelsManagerModal({ onClose }: LabelsManagerModalProps) {
     updateMutation.mutate({ id: editingId!, payload: { name: trimmed, color: editColor } });
   };
 
-  const handleDelete = (id: number) => {
-    if (!window.confirm('Удалить метку? Она будет снята со всех задач.')) return;
-    deleteMutation.mutate(id);
+  const handleDeleteRequest = (id: number) => {
+    setPendingDeleteLabelId(id);
   };
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -2149,7 +2167,7 @@ function LabelsManagerModal({ onClose }: LabelsManagerModalProps) {
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDelete(label.id)}
+                          onClick={() => handleDeleteRequest(label.id)}
                           disabled={deleteMutation.isPending}
                           className="rounded p-1 text-gray-500 hover:text-red-400 hover:bg-gray-700 transition-colors disabled:opacity-50"
                           aria-label={`Удалить метку ${label.name}`}
@@ -2204,6 +2222,22 @@ function LabelsManagerModal({ onClose }: LabelsManagerModalProps) {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        rootClassName="z-[70]"
+        isOpen={pendingDeleteLabelId !== null}
+        onClose={() => !deleteMutation.isPending && setPendingDeleteLabelId(null)}
+        onConfirm={() => {
+          if (pendingDeleteLabelId === null) return;
+          const id = pendingDeleteLabelId;
+          deleteMutation.mutate(id, { onSettled: () => setPendingDeleteLabelId(null) });
+        }}
+        title="Удалить метку?"
+        description="Метка будет снята со всех задач. Это действие нельзя отменить."
+        variant="danger"
+        confirmLabel="Удалить"
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 }
@@ -3866,6 +3900,7 @@ export default function BoardDetailPage() {
   const [showAddColumn, setShowAddColumn] = useState(false);
   const [reorderError, setReorderError] = useState(false);
   const [taskMoveError, setTaskMoveError] = useState<string | null>(null);
+  const [focusTaskAfterDropId, setFocusTaskAfterDropId] = useState<number | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(() => {
     const taskParam = searchParams.get('task');
     return taskParam ? Number(taskParam) : null;
@@ -3882,6 +3917,13 @@ export default function BoardDetailPage() {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  // Keyboard DnD has no pointer coordinates, so pointerWithin alone can return
+  // empty matches. Fallback to closestCenter keeps keyboard moves stable.
+  const collisionDetectionStrategy: CollisionDetection = useCallback((args) => {
+    const pointerCollisions = pointerWithin(args);
+    return pointerCollisions.length > 0 ? pointerCollisions : closestCenter(args);
+  }, []);
 
   const {
     data: board,
@@ -3954,6 +3996,16 @@ export default function BoardDetailPage() {
     localTasksByColumnRef.current = grouped;
     setLocalTasksByColumn(grouped);
   }, [tasksData]);
+
+  useEffect(() => {
+    if (focusTaskAfterDropId === null) return;
+    const frame = requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLElement>(`[data-task-id="${focusTaskAfterDropId}"]`);
+      target?.focus();
+      setFocusTaskAfterDropId(null);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusTaskAfterDropId, localTasksByColumn]);
 
   const reorderMutation = useMutation({
     mutationFn: (columnIds: number[]) =>
@@ -4218,6 +4270,7 @@ export default function BoardDetailPage() {
 
       if (!hasColumnChanged && !hasPositionChanged) return;
 
+      setFocusTaskAfterDropId(activeTaskId);
       taskMoveMutation.mutate({
         taskId: activeTaskId,
         columnId: targetColId,
@@ -4337,7 +4390,7 @@ export default function BoardDetailPage() {
       ) : (
         <DndContext
           sensors={sensors}
-          collisionDetection={pointerWithin}
+          collisionDetection={collisionDetectionStrategy}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}

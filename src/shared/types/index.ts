@@ -170,9 +170,17 @@ export interface CompanyAnalytics {
     limit: number;
   };
   active_crm_tasks: {
+    total: number;
     todo: number;
     in_progress: number;
     done: number;
+    other: number;
+    by_column: Array<{
+      column_id: number;
+      name: string;
+      board_name: string;
+      count: number;
+    }>;
   };
   guest_visits_month: number;
   employee_activity: CompanyAnalyticsEmployeeActivity[];

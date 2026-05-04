@@ -13,9 +13,10 @@ import { USER_ROLES } from '@/shared/config/constants';
 
 interface CreateBoardModalProps {
   onClose: () => void;
+  companyId: string | null;
 }
 
-function CreateBoardModal({ onClose }: CreateBoardModalProps) {
+function CreateBoardModal({ onClose, companyId }: CreateBoardModalProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
@@ -34,6 +35,9 @@ function CreateBoardModal({ onClose }: CreateBoardModalProps) {
     },
     onSuccess: (newBoard) => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'boards'] });
+      if (companyId) {
+        void queryClient.invalidateQueries({ queryKey: ['company-onboarding', companyId] });
+      }
       void navigate(`/crm/boards/${newBoard.id}`);
     },
     onError: (error: unknown) => {
@@ -604,7 +608,10 @@ export default function BoardListPage() {
 
       {/* Create modal */}
       {showCreateModal && (
-        <CreateBoardModal onClose={() => setShowCreateModal(false)} />
+        <CreateBoardModal
+          onClose={() => setShowCreateModal(false)}
+          companyId={user?.company_id != null ? String(user.company_id) : null}
+        />
       )}
 
       {/* Archive confirm */}

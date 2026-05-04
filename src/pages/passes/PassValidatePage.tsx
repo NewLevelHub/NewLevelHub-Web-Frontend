@@ -1,15 +1,9 @@
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { BrowserQRCodeReader, type IScannerControls } from '@zxing/browser';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import type { PassValidationResponse } from '@/shared/types';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
-
-type DetectedBarcode = { rawValue?: string };
-type BarcodeDetectorLike = {
-  detect: (image: ImageBitmapSource | ImageData) => Promise<DetectedBarcode[]>;
-};
-type BarcodeDetectorCtor = new (options?: { formats?: string[] }) => BarcodeDetectorLike;
-type CameraConstraints = MediaStreamConstraints;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -20,6 +14,26 @@ const REASON_LABELS: Record<Exclude<PassValidationResponse, { valid: true }>['re
   not_found: 'Пропуск не найден',
 };
 
+const CAMERA_CONSTRAINTS_CHAIN: MediaStreamConstraints[] = [
+  {
+    video: {
+      facingMode: { ideal: 'environment' },
+      width: { ideal: 1280 },
+      height: { ideal: 720 },
+    },
+    audio: false,
+  },
+  {
+    video: {
+      facingMode: { ideal: 'user' },
+      width: { ideal: 1280 },
+      height: { ideal: 720 },
+    },
+    audio: false,
+  },
+  { video: true, audio: false },
+];
+
 export default function PassValidatePage() {
   const [qrCode, setQrCode] = useState('');
   const [result, setResult] = useState<PassValidationResponse | null>(null);
@@ -29,33 +43,21 @@ export default function PassValidatePage() {
   const [cameraError, setCameraError] = useState('');
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const detectorRef = useRef<BarcodeDetectorLike | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const scanTimerRef = useRef<number | null>(null);
-  const scanInProgressRef = useRef(false);
-
-  const hasBarcodeDetector = useMemo(
-    () => typeof window !== 'undefined' && 'BarcodeDetector' in window,
-    [],
-  );
+  const readerRef = useRef<BrowserQRCodeReader | null>(null);
+  const controlsRef = useRef<IScannerControls | null>(null);
+  const scanHandledRef = useRef(false);
 
   const stopCamera = useCallback(() => {
-    if (scanTimerRef.current) {
-      window.clearInterval(scanTimerRef.current);
-      scanTimerRef.current = null;
-    }
+    controlsRef.current?.stop();
+    controlsRef.current = null;
+    scanHandledRef.current = false;
     if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
+      BrowserQRCodeReader.cleanVideoSource(videoRef.current);
     }
     setIsCameraActive(false);
   }, []);
 
-  async function submitValidation(code: string) {
+  const submitValidation = useCallback(async (code: string) => {
     setIsSubmitting(true);
     setError('');
 
@@ -70,81 +72,7 @@ export default function PassValidatePage() {
     } finally {
       setIsSubmitting(false);
     }
-  }
-
-  const startScanLoop = useCallback(() => {
-    if (scanTimerRef.current) {
-      window.clearInterval(scanTimerRef.current);
-    }
-    scanTimerRef.current = window.setInterval(async () => {
-      if (!videoRef.current || !canvasRef.current || !detectorRef.current || scanInProgressRef.current) {
-        return;
-      }
-      scanInProgressRef.current = true;
-
-      try {
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        const context = canvas.getContext('2d');
-        if (!context || video.videoWidth === 0 || video.videoHeight === 0) {
-          return;
-        }
-
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const image = context.getImageData(0, 0, canvas.width, canvas.height);
-        const barcodes = await detectorRef.current.detect(image);
-        const value = barcodes[0]?.rawValue?.trim();
-
-        if (value && UUID_RE.test(value)) {
-          setQrCode(value);
-          stopCamera();
-          await submitValidation(value);
-        }
-      } catch {
-        // Ignore frame-level scanning errors and continue scanning.
-      } finally {
-        scanInProgressRef.current = false;
-      }
-    }, 700);
-  }, [stopCamera]);
-
-  const attachStreamToVideo = useCallback(async () => {
-    if (!videoRef.current || !streamRef.current) {
-      return;
-    }
-    const video = videoRef.current;
-    video.autoplay = true;
-    video.muted = true;
-    video.playsInline = true;
-    video.srcObject = streamRef.current;
-
-    await new Promise<void>((resolve, reject) => {
-      const onLoaded = () => {
-        cleanup();
-        resolve();
-      };
-      const onError = () => {
-        cleanup();
-        reject(new Error('Failed to load camera stream into video'));
-      };
-      const timer = window.setTimeout(() => {
-        cleanup();
-        reject(new Error('Camera stream metadata loading timeout'));
-      }, 3000);
-      const cleanup = () => {
-        window.clearTimeout(timer);
-        video.removeEventListener('loadedmetadata', onLoaded);
-        video.removeEventListener('error', onError);
-      };
-      video.addEventListener('loadedmetadata', onLoaded);
-      video.addEventListener('error', onError);
-    });
-
-    await video.play();
-    startScanLoop();
-  }, [startScanLoop]);
+  }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -157,41 +85,9 @@ export default function PassValidatePage() {
     await submitValidation(normalizedCode);
   };
 
-  const getCameraStream = useCallback(async () => {
-    const constraintsChain: CameraConstraints[] = [
-      {
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        audio: false,
-      },
-      {
-        video: {
-          facingMode: { ideal: 'user' },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        audio: false,
-      },
-      { video: true, audio: false },
-    ];
-
-    let lastError: unknown = null;
-    for (const constraints of constraintsChain) {
-      try {
-        return await navigator.mediaDevices.getUserMedia(constraints);
-      } catch (error) {
-        lastError = error;
-      }
-    }
-    throw lastError ?? new Error('No camera stream available');
-  }, []);
-
-  const startCamera = useCallback(async () => {
-    if (!hasBarcodeDetector) {
-      setCameraError('Ваш браузер не поддерживает сканирование QR. Используйте ручной ввод.');
+  const startCamera = useCallback(() => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError('В этом браузере недоступен доступ к камере. Используйте ручной ввод.');
       return;
     }
 
@@ -199,35 +95,65 @@ export default function PassValidatePage() {
     setError('');
     setResult(null);
     stopCamera();
-
-    try {
-      if (!detectorRef.current) {
-        const BarcodeDetectorImpl = (window as Window & { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector;
-        if (!BarcodeDetectorImpl) {
-          setCameraError('Ваш браузер не поддерживает сканирование QR. Используйте ручной ввод.');
-          return;
-        }
-        detectorRef.current = new BarcodeDetectorImpl({ formats: ['qr_code'] });
-      }
-
-      const stream = await getCameraStream();
-      streamRef.current = stream;
-      setIsCameraActive(true);
-    } catch {
-      stopCamera();
-      setCameraError('Не удалось получить доступ к камере. Проверьте разрешения браузера.');
-    }
-  }, [getCameraStream, hasBarcodeDetector, stopCamera]);
+    setIsCameraActive(true);
+  }, [stopCamera]);
 
   useEffect(() => {
-    if (!isCameraActive || !streamRef.current || !videoRef.current) {
+    if (!isCameraActive || !videoRef.current) {
       return;
     }
-    void attachStreamToVideo().catch(() => {
-      stopCamera();
-      setCameraError('Не удалось отобразить видео с камеры.');
-    });
-  }, [attachStreamToVideo, isCameraActive, stopCamera]);
+
+    const video = videoRef.current;
+    video.muted = true;
+    video.playsInline = true;
+    video.setAttribute('playsinline', '');
+
+    const reader = readerRef.current ?? new BrowserQRCodeReader();
+    readerRef.current = reader;
+
+    let cancelled = false;
+
+    const tryDecode = async () => {
+      for (const constraints of CAMERA_CONSTRAINTS_CHAIN) {
+        if (cancelled) return;
+        BrowserQRCodeReader.cleanVideoSource(video);
+        try {
+          const controls = await reader.decodeFromConstraints(constraints, video, (scanResult, _err, ctrls) => {
+            if (cancelled || scanHandledRef.current) return;
+            const text = scanResult?.getText()?.trim();
+            if (!text || !UUID_RE.test(text)) return;
+            scanHandledRef.current = true;
+            ctrls.stop();
+            controlsRef.current = null;
+            setIsCameraActive(false);
+            setQrCode(text);
+            void submitValidation(text);
+          });
+          if (cancelled) {
+            controls.stop();
+            return;
+          }
+          controlsRef.current = controls;
+          return;
+        } catch {
+          /* try next constraint */
+        }
+      }
+      if (!cancelled) {
+        setCameraError('Не удалось получить доступ к камере. Проверьте разрешения браузера.');
+        setIsCameraActive(false);
+      }
+    };
+
+    void tryDecode();
+
+    return () => {
+      cancelled = true;
+      controlsRef.current?.stop();
+      controlsRef.current = null;
+      BrowserQRCodeReader.cleanVideoSource(video);
+    };
+  }, [isCameraActive, submitValidation]);
 
   useEffect(() => () => stopCamera(), [stopCamera]);
 
@@ -269,7 +195,7 @@ export default function PassValidatePage() {
             ) : (
               <button
                 type="button"
-                onClick={() => void startCamera()}
+                onClick={startCamera}
                 className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
               >
                 Сканировать камерой
@@ -291,7 +217,6 @@ export default function PassValidatePage() {
             playsInline
             muted
           />
-          <canvas ref={canvasRef} className="hidden" />
         </section>
       ) : null}
 

@@ -12,6 +12,8 @@ export interface ConfirmModalProps {
   cancelLabel?: string;
   variant?: 'danger' | 'warning';
   isLoading?: boolean;
+  /** Merged onto the fixed root wrapper (e.g. higher z-index when stacking modals). */
+  rootClassName?: string;
 }
 
 export function ConfirmModal({
@@ -24,6 +26,7 @@ export function ConfirmModal({
   cancelLabel = 'Отмена',
   variant = 'danger',
   isLoading = false,
+  rootClassName,
 }: ConfirmModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
@@ -74,7 +77,7 @@ export function ConfirmModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className={cn('fixed inset-0 z-50 flex items-center justify-center p-4', rootClassName)}
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-modal-title"

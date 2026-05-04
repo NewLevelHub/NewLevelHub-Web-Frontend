@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -21,7 +21,7 @@ import {
 import { useAuthStore } from '@/shared/store/auth';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { USER_ROLES } from '@/shared/config/constants';
+import { STAFF_UI_PREFIX, SUPERADMIN_UI_PREFIX, USER_ROLES } from '@/shared/config/constants';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { authPrimaryBtn } from '@/shared/ui/authFormStyles';
 import { cn } from '@/shared/lib/cn';
@@ -36,6 +36,27 @@ import type {
   ServiceRequest,
   ServiceRequestCleaningPayload,
 } from '@/shared/types';
+
+interface CompanyOnboardingStep {
+  key: string;
+  title: string;
+  completed: boolean;
+}
+
+interface CompanyOnboardingStatus {
+  completed: boolean;
+  steps: CompanyOnboardingStep[];
+}
+
+const LOGO_MAX_BYTES = 10 * 1024 * 1024;
+
+/** Локализация ключей шагов онбординга (приходят из бэкенда на английском). */
+const ONBOARDING_STEP_LABELS: Record<string, string> = {
+  upload_logo: 'Загрузить логотип компании',
+  fill_description: 'Заполнить описание компании',
+  create_first_board: 'Создать первую CRM-доску',
+  invite_first_employee: 'Пригласить первого сотрудника',
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Reusable primitives
@@ -102,8 +123,8 @@ function AnnouncementFeed({ items, title = 'Объявления' }: Announcemen
 const QUICK_ACTION_CONFIG: Record<string, { label: string; to: string }> = {
   invite_user: { label: 'Пригласить пользователя', to: '/companies' },
   create_announcement: { label: 'Создать объявление', to: '/announcements' },
-  manage_bookings: { label: 'Управление бронями', to: '/bookings' },
-  view_analytics: { label: 'Аналитика', to: '/admin/analytics' },
+  manage_bookings: { label: 'Управление бронями', to: `${STAFF_UI_PREFIX}/bookings` },
+  view_analytics: { label: 'Аналитика', to: `${SUPERADMIN_UI_PREFIX}/analytics` },
   manage_companies: { label: 'Компании', to: '/companies' },
 };
 
@@ -342,21 +363,33 @@ export default function DashboardPage() {
   const logout = useAuthStore((s) => s.logout);
   const fetchMe = useAuthStore((s) => s.fetchMe);
 
-  const requiresOnboarding =
-    user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.EMPLOYEE;
+  const isCompanyAdmin = user?.role === USER_ROLES.COMPANY_ADMIN;
+  const isEmployee = user?.role === USER_ROLES.EMPLOYEE;
+  const companyId = user?.company_id != null ? String(user.company_id) : null;
+  const requiresHrOnboarding = isEmployee;
 
   const { data: onboardingProgress } = useQuery<OnboardingStatus>({
-    queryKey: ['onboarding-progress'],
+    queryKey: ['hr-onboarding-progress'],
     queryFn: () => apiClient.get<OnboardingStatus>(API.onboarding.progress).then((r) => r.data),
-    enabled: Boolean(user) && requiresOnboarding,
+    enabled: Boolean(user) && requiresHrOnboarding,
+    retry: false,
+  });
+
+  const { data: companyOnboarding } = useQuery<CompanyOnboardingStatus>({
+    queryKey: ['company-onboarding', companyId],
+    queryFn: () =>
+      apiClient
+        .get<CompanyOnboardingStatus>(API.companies.onboardingStatus(companyId!))
+        .then((r) => r.data),
+    enabled: Boolean(user) && isCompanyAdmin && Boolean(companyId),
     retry: false,
   });
 
   useEffect(() => {
-    if (requiresOnboarding && onboardingProgress && onboardingProgress.completed === false) {
+    if (requiresHrOnboarding && onboardingProgress && onboardingProgress.completed === false) {
       void navigate('/onboarding', { replace: true });
     }
-  }, [requiresOnboarding, onboardingProgress, navigate]);
+  }, [requiresHrOnboarding, onboardingProgress, navigate]);
 
   const { data: dashboard, isLoading: dashLoading } = useQuery<DashboardData>({
     queryKey: ['dashboard'],
@@ -371,6 +404,8 @@ export default function DashboardPage() {
 
   const [cleaningSuccess, setCleaningSuccess] = useState(false);
   const [cleaningError, setCleaningError] = useState('');
+  const [logoUploadError, setLogoUploadError] = useState('');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
 
   const cleaningMutation = useMutation({
     mutationFn: (payload: ServiceRequestCleaningPayload) =>
@@ -383,6 +418,27 @@ export default function DashboardPage() {
     onError: (err: unknown) => {
       setCleaningError(getApiErrorMessage(err, 'Не удалось создать заявку на уборку.'));
       setCleaningSuccess(false);
+    },
+  });
+
+  const uploadLogoMutation = useMutation({
+    mutationFn: (file: File) => {
+      const formData = new FormData();
+      formData.append('logo', file);
+      return apiClient.patch(API.companies.detail(companyId!), formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    },
+    onSuccess: async () => {
+      setLogoUploadError('');
+      setLogoFile(null);
+      await queryClient.invalidateQueries({ queryKey: ['company-onboarding', companyId] });
+      await queryClient.invalidateQueries({ queryKey: ['company', companyId] });
+      await queryClient.invalidateQueries({ queryKey: ['companies'] });
+      await fetchMe();
+    },
+    onError: (err: unknown) => {
+      setLogoUploadError(getApiErrorMessage(err, 'Не удалось загрузить логотип компании.'));
     },
   });
 
@@ -408,11 +464,31 @@ export default function DashboardPage() {
     }
   }
 
+  const uploadLogoStepPending = Boolean(
+    isCompanyAdmin &&
+    companyOnboarding?.steps.find((step) => step.key === 'upload_logo' && !step.completed),
+  );
+
+  function handleLogoSelect(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoUploadError('');
+    if (!file.type.startsWith('image/')) {
+      setLogoFile(null);
+      setLogoUploadError('Можно загрузить только изображение.');
+      return;
+    }
+    if (file.size > LOGO_MAX_BYTES) {
+      setLogoFile(null);
+      setLogoUploadError('Файл слишком большой. Максимум 10 МБ.');
+      return;
+    }
+    setLogoFile(file);
+  }
+
   if (!user) {
     return <div className="text-gray-400">Загрузка профиля…</div>;
   }
-
-  const isEmployee = user.role === USER_ROLES.EMPLOYEE;
 
   const cleaningSection = isEmployee ? (
     <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
@@ -489,6 +565,93 @@ export default function DashboardPage() {
             {resendLoading ? 'Отправка…' : 'Отправить письмо повторно'}
           </button>
         </div>
+      )}
+
+      {isCompanyAdmin && companyOnboarding && (
+        companyOnboarding.completed ? (
+          /* ── Компания уже полностью настроена ── */
+          <section className="rounded-xl border border-emerald-800/50 bg-emerald-950/20 p-5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-900/50">
+                <span className="text-lg leading-none">✓</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-sm font-semibold text-emerald-300">Компания полностью настроена</h2>
+                <p className="mt-1 text-xs text-emerald-400/70">
+                  Все обязательные шаги онбординга выполнены — можно работать.
+                </p>
+                <ul className="mt-3 space-y-1.5">
+                  {companyOnboarding.steps.map((step) => (
+                    <li key={step.key} className="flex items-center gap-2 text-xs text-emerald-300">
+                      <span className="shrink-0 text-emerald-400">✓</span>
+                      {ONBOARDING_STEP_LABELS[step.key] ?? step.title}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </section>
+        ) : (
+          /* ── Онбординг ещё не завершён — показываем шаги ── */
+          <section className="rounded-xl border border-indigo-800/60 bg-indigo-950/20 p-5">
+            <h2 className="text-sm font-semibold text-indigo-200">Онбординг компании не завершён</h2>
+            <p className="mt-1 text-xs text-indigo-300/80">
+              Завершите обязательные шаги, чтобы закрыть стартовый онбординг.
+            </p>
+            <ul className="mt-3 space-y-1.5 text-sm">
+              {companyOnboarding.steps.map((step) => (
+                <li key={step.key} className={cn('flex items-center gap-2', step.completed ? 'text-emerald-300' : 'text-gray-300')}>
+                  <span className={cn('shrink-0 text-base leading-none', step.completed ? 'text-emerald-400' : 'text-gray-500')}>
+                    {step.completed ? '✓' : '•'}
+                  </span>
+                  {ONBOARDING_STEP_LABELS[step.key] ?? step.title}
+                </li>
+              ))}
+            </ul>
+            {uploadLogoStepPending && (
+              <div className="mt-4 rounded-lg border border-gray-700 bg-gray-900/40 p-3">
+                <p className="text-xs text-gray-300">
+                  Загрузите логотип компании прямо сейчас:
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <input
+                    id="onboarding-logo-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoSelect}
+                    className="text-xs text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-600 file:px-2.5 file:py-1.5 file:text-xs file:font-medium file:text-white hover:file:bg-indigo-500"
+                  />
+                  <button
+                    type="button"
+                    disabled={!logoFile || uploadLogoMutation.isPending}
+                    onClick={() => {
+                      if (!logoFile) return;
+                      uploadLogoMutation.mutate(logoFile);
+                    }}
+                    className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                  >
+                    {uploadLogoMutation.isPending ? 'Загрузка...' : 'Загрузить логотип'}
+                  </button>
+                </div>
+                {logoUploadError && <p className="mt-2 text-xs text-red-300">{logoUploadError}</p>}
+              </div>
+            )}
+            <div className="mt-4 flex gap-2">
+              <Link
+                to="/crm"
+                className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white hover:bg-indigo-500"
+              >
+                Перейти в CRM
+              </Link>
+              <Link
+                to="/company/settings/members"
+                className="rounded-lg border border-gray-600 px-3 py-2 text-xs text-gray-200 hover:bg-gray-800"
+              >
+                Перейти к инвайтам
+              </Link>
+            </div>
+          </section>
+        )
       )}
 
       {/* Role-specific widgets */}
