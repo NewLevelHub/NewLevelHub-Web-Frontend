@@ -134,9 +134,10 @@ function AssigneeAvatar({ assignee, size = 'sm' }: AssigneeAvatarProps) {
 interface TaskCardProps {
   task: CrmTask;
   onClick: () => void;
+  onArchive?: () => void;
 }
 
-function TaskCard({ task, onClick }: TaskCardProps) {
+function TaskCard({ task, onClick, onArchive }: TaskCardProps) {
   const overdue = task.deadline ? isOverdue(task.deadline) : false;
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -210,6 +211,21 @@ function TaskCard({ task, onClick }: TaskCardProps) {
               <Pencil size={13} />
               Редактировать
             </button>
+            {onArchive && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen(false);
+                  onArchive();
+                }}
+                className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-red-400 hover:bg-gray-800 hover:text-red-300 transition-colors"
+                title="Архивировать"
+              >
+                <Archive size={13} />
+                Архивировать
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -286,9 +302,10 @@ function TaskCard({ task, onClick }: TaskCardProps) {
 interface SortableTaskCardProps {
   task: CrmTask;
   onTaskClick: (taskId: number) => void;
+  onArchive?: (taskId: number) => void;
 }
 
-function SortableTaskCard({ task, onTaskClick }: SortableTaskCardProps) {
+function SortableTaskCard({ task, onTaskClick, onArchive }: SortableTaskCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `task-${task.id}`,
     data: { type: 'task', task },
@@ -310,7 +327,7 @@ function SortableTaskCard({ task, onTaskClick }: SortableTaskCardProps) {
         'cursor-grab active:cursor-grabbing',
       )}
     >
-      <TaskCard task={task} onClick={() => onTaskClick(task.id)} />
+      <TaskCard task={task} onClick={() => onTaskClick(task.id)} onArchive={onArchive ? () => onArchive(task.id) : undefined} />
     </div>
   );
 }
@@ -2499,11 +2516,11 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
   });
 
   const archiveMutation = useMutation({
-    mutationFn: async () => {
-      await apiClient.post(API.crm.taskArchive(taskId));
-    },
+    mutationFn: () =>
+      apiClient.patch<CrmTask>(API.crm.taskDetail(taskId), { is_archived: true }).then((r) => r.data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId, 'archived'] });
       onClose();
     },
   });
@@ -3319,11 +3336,21 @@ function KanbanColumn({
   dragHandleProps,
   isDragOverlay,
 }: KanbanColumnProps) {
+  const queryClient = useQueryClient();
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
 
   const otherColumns = allColumns.filter((c) => c.id !== column.id);
+
+  const archiveTaskMutation = useMutation({
+    mutationFn: (taskId: number) =>
+      apiClient.patch<CrmTask>(API.crm.taskDetail(taskId), { is_archived: true }).then((r) => r.data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId, 'archived'] });
+    },
+  });
 
   return (
     <>
@@ -3395,6 +3422,7 @@ function KanbanColumn({
                   key={task.id}
                   task={task}
                   onTaskClick={onTaskClick}
+                  onArchive={archiveTaskMutation.mutate}
                 />
               ))
             )}
@@ -3859,6 +3887,145 @@ function ListView({ tasks, columns, isLoading, onTaskClick }: ListViewProps) {
   );
 }
 
+// ─── Archive Panel ────────────────────────────────────────────────────────────
+
+interface ArchivePanelProps {
+  boardId: string;
+  columns: CrmColumn[];
+  onClose: () => void;
+}
+
+function ArchivePanel({ boardId, columns, onClose }: ArchivePanelProps) {
+  const queryClient = useQueryClient();
+  const columnMap = new Map(columns.map((c) => [c.id, c.name]));
+
+  const { data: archivedTasks = [], isLoading: archiveLoading } = useQuery({
+    queryKey: ['crm', 'tasks', boardId, 'archived'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<CrmTask[] | { results: CrmTask[] }>(
+        API.crm.tasksList,
+        { params: { board_id: boardId, is_archived: true } },
+      );
+      return Array.isArray(data) ? data : data.results;
+    },
+  });
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  const unarchiveMutation = useMutation({
+    mutationFn: (taskId: number) =>
+      apiClient.patch<CrmTask>(API.crm.taskDetail(taskId), { is_archived: false }).then((r) => r.data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId, 'archived'] });
+    },
+  });
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) onClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex justify-end bg-black/50"
+      onClick={handleBackdropClick}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Архив задач"
+    >
+      <div className="flex flex-col w-full max-w-md bg-gray-900 border-l border-gray-800 shadow-2xl h-full overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800 shrink-0">
+          <div className="flex items-center gap-2">
+            <Archive size={16} className="text-gray-400" />
+            <h2 className="text-base font-semibold text-white">Архив задач</h2>
+            {archivedTasks.length > 0 && (
+              <span className="inline-flex items-center rounded-md bg-gray-800 border border-gray-700 px-1.5 py-0.5 text-xs text-gray-400">
+                {archivedTasks.length}
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-400 hover:text-white transition-colors rounded-md p-1 hover:bg-gray-800"
+            aria-label="Закрыть архив"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          {archiveLoading ? (
+            <div className="flex items-center justify-center h-full py-16">
+              <p className="text-sm text-gray-500">Загрузка...</p>
+            </div>
+          ) : archivedTasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3 py-16 text-center">
+              <Archive size={36} className="text-gray-700" />
+              <p className="text-sm text-gray-500">Здесь пока нет архивных задач</p>
+            </div>
+          ) : (
+            <ul className="space-y-2" role="list" aria-label="Архивные задачи">
+              {archivedTasks.map((task) => (
+                <li
+                  key={task.id}
+                  className="flex items-start gap-3 rounded-lg border border-gray-700 bg-gray-800 px-3 py-3"
+                >
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <p className="text-sm text-white leading-snug break-words">{task.title}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs text-gray-500">
+                        {columnMap.get(task.column_id) ?? '—'}
+                      </span>
+                      <span
+                        className={cn(
+                          'inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-medium',
+                          PRIORITY_BADGE_CLASS[task.priority],
+                        )}
+                      >
+                        {PRIORITY_LABELS[task.priority]}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => unarchiveMutation.mutate(task.id)}
+                    disabled={unarchiveMutation.isPending && unarchiveMutation.variables === task.id}
+                    className={cn(
+                      'shrink-0 rounded-md border border-gray-600 px-2.5 py-1.5 text-xs font-medium transition-colors',
+                      'text-gray-300 hover:text-white hover:border-gray-400 hover:bg-gray-700',
+                      'disabled:opacity-50 disabled:cursor-not-allowed',
+                    )}
+                    aria-label={`Восстановить задачу: ${task.title}`}
+                  >
+                    {unarchiveMutation.isPending && unarchiveMutation.variables === task.id
+                      ? '...'
+                      : 'Восстановить'}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {unarchiveMutation.isError && (
+          <div className="px-5 py-3 border-t border-gray-800 shrink-0">
+            <p className="text-xs text-red-400">Не удалось восстановить задачу. Попробуйте снова.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function BoardDetailSkeleton() {
@@ -3896,6 +4063,7 @@ export default function BoardDetailPage() {
   const [activeTask, setActiveTask] = useState<CrmTask | null>(null);
   const [activeDragType, setActiveDragType] = useState<'column' | 'task' | null>(null);
   const [showAddColumn, setShowAddColumn] = useState(false);
+  const [archivePanelOpen, setArchivePanelOpen] = useState(false);
   const [reorderError, setReorderError] = useState(false);
   const [taskMoveError, setTaskMoveError] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(() => {
@@ -3966,7 +4134,7 @@ export default function BoardDetailPage() {
     enabled: Boolean(boardId),
   });
 
-  const tasks = tasksData ?? [];
+  const tasks = (tasksData ?? []).filter((t) => !t.is_archived);
 
   useEffect(() => {
     if (columns) setLocalColumns([...columns].sort((a, b) => a.order - b.order));
@@ -3975,6 +4143,7 @@ export default function BoardDetailPage() {
   useEffect(() => {
     if (!tasksData) return;
     const grouped = tasksData.reduce<Record<number, CrmTask[]>>((acc, task) => {
+      if (task.is_archived) return acc;
       const col = task.column_id;
       if (!acc[col]) acc[col] = [];
       acc[col].push(task);
@@ -4304,12 +4473,24 @@ export default function BoardDetailPage() {
         <div className="rounded-lg bg-blue-600/20 p-2 shrink-0">
           <LayoutGrid size={20} className="text-blue-400" />
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <h1 className="text-xl font-semibold text-white">{board.name}</h1>
           {board.description && (
             <p className="text-sm text-gray-500 mt-0.5">{board.description}</p>
           )}
         </div>
+        <button
+          type="button"
+          onClick={() => setArchivePanelOpen(true)}
+          className={cn(
+            'flex items-center gap-2 rounded-lg border border-gray-700 px-3 py-2 text-sm font-medium shrink-0',
+            'text-gray-400 hover:text-white hover:border-gray-500 transition-colors',
+          )}
+          aria-label="Открыть архив задач"
+        >
+          <Archive size={15} />
+          Архив
+        </button>
       </div>
 
       {/* Reorder error banner */}
@@ -4439,6 +4620,15 @@ export default function BoardDetailPage() {
               setSearchParams(searchParams, { replace: true });
             }
           }}
+        />
+      )}
+
+      {/* Archive panel */}
+      {archivePanelOpen && (
+        <ArchivePanel
+          boardId={boardId}
+          columns={localColumns}
+          onClose={() => setArchivePanelOpen(false)}
         />
       )}
     </div>

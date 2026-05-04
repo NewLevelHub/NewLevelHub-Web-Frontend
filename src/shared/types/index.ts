@@ -961,6 +961,7 @@ export interface CrmTask {
   comments_count: number;
   attachments_count: number;
   position: number;
+  is_archived: boolean;
   created_at: string;
   checklists: CrmChecklist[];
 }
