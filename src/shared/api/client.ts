@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { env } from '@/shared/config/env';
 import { API } from '@/shared/api/endpoints';
+import { queryClient } from '@/shared/lib/queryClient';
 import { tokenStorage } from '@/shared/lib/storage';
 
 export const apiClient = axios.create({
@@ -40,6 +41,7 @@ apiClient.interceptors.response.use(
     // Не пытаемся «refresh» повторно при ошибке самого refresh — иначе цикл.
     if (reqUrl.includes('/auth/token/refresh/')) {
       tokenStorage.clear();
+      queryClient.clear();
       window.location.href = '/login';
       return Promise.reject(error);
     }
@@ -80,6 +82,7 @@ apiClient.interceptors.response.use(
     } catch (refreshError) {
       processQueue(refreshError, null);
       tokenStorage.clear();
+      queryClient.clear();
       window.location.href = '/login';
       return Promise.reject(refreshError);
     } finally {
