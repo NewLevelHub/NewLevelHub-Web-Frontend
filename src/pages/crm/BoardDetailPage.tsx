@@ -61,6 +61,8 @@ import {
 import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
+import { checkWipLimit } from '@/shared/lib/crm-wip-limit';
+import { useWipLimitToast, WIP_LIMIT_VIOLATION_MESSAGE } from '@/pages/crm/useWipLimitToast';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { USER_ROLES } from '@/shared/config/constants';
 import type { CrmBoard, CrmColumn, CrmTask, CrmLabel, CrmComment, CrmChecklist, CrmChecklistItem, CrmTaskHistory, CrmAttachment, CompanyMember, PaginatedResponse } from '@/shared/types';
@@ -338,9 +340,11 @@ interface CreateTaskModalProps {
   boardId: string;
   columnId: number;
   onClose: () => void;
+  /** True when column already at WIP — block create */
+  wipBlocked?: boolean;
 }
 
-function CreateTaskModal({ boardId, columnId, onClose }: CreateTaskModalProps) {
+function CreateTaskModal({ boardId, columnId, onClose, wipBlocked }: CreateTaskModalProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const titleRef = useRef<HTMLInputElement>(null);
@@ -400,7 +404,7 @@ function CreateTaskModal({ boardId, columnId, onClose }: CreateTaskModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || mutation.isPending) return;
+    if (!title.trim() || mutation.isPending || wipBlocked) return;
 
     const payload: Parameters<typeof mutation.mutate>[0] = {
       board_id: Number(boardId),
@@ -579,7 +583,7 @@ function CreateTaskModal({ boardId, columnId, onClose }: CreateTaskModalProps) {
             </button>
             <button
               type="submit"
-              disabled={!title.trim() || mutation.isPending}
+              disabled={!title.trim() || mutation.isPending || wipBlocked}
               className={cn(
                 'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
                 'bg-blue-600 text-white hover:bg-blue-500',
@@ -592,7 +596,7 @@ function CreateTaskModal({ boardId, columnId, onClose }: CreateTaskModalProps) {
 
           {/* Error */}
           {mutation.isError && (
-            <p className="text-sm text-red-400">Превышен WIP-лимит колонки.</p>
+            <p className="text-sm text-red-400">{WIP_LIMIT_VIOLATION_MESSAGE}</p>
           )}
         </form>
       </div>
@@ -3155,19 +3159,22 @@ function DeleteColumnDialog({ boardId, column, otherColumns, taskCountByColumnId
     ? otherColumns.find((c) => String(c.id) === moveToId) ?? null
     : null;
 
-  const wipViolation = (() => {
-    if (!selectedColumn) return false;
-    if (tasksToMove === 0) return false;
-    const limit = selectedColumn.wip_limit;
-    if (limit === null || limit === 0) return false;
-    const targetCount = taskCountByColumnId[selectedColumn.id] ?? 0;
-    return targetCount + tasksToMove > limit;
-  })();
+  const wipCheck =
+    selectedColumn && tasksToMove > 0
+      ? checkWipLimit({
+          columns: [selectedColumn],
+          taskCountByColumnId,
+          targetColumnId: selectedColumn.id,
+          tasksToAddCount: tasksToMove,
+        })
+      : { ok: true as const };
+
+  const wipViolation = !wipCheck.ok;
 
   const wipWarning = (() => {
-    if (!wipViolation || !selectedColumn) return null;
-    const limit = selectedColumn.wip_limit as number;
-    const targetCount = taskCountByColumnId[selectedColumn.id] ?? 0;
+    if (!wipViolation || !selectedColumn || wipCheck.ok) return null;
+    const limit = wipCheck.limit ?? selectedColumn.wip_limit ?? 0;
+    const targetCount = wipCheck.current ?? taskCountByColumnId[selectedColumn.id] ?? 0;
     return `Недостаточно места в целевой колонке (WIP-лимит: ${limit}). Сейчас там ${targetCount} задач, переносится ${tasksToMove}. Выберите другую колонку или освободите место.`;
   })();
 
@@ -3381,6 +3388,7 @@ function KanbanColumn({
   const [showAddTask, setShowAddTask] = useState(false);
 
   const otherColumns = allColumns.filter((c) => c.id !== column.id);
+  const atWipLimit = column.wip_limit !== null && tasks.length >= column.wip_limit;
 
   const archiveTaskMutation = useMutation({
     mutationFn: (taskId: number) =>
@@ -3474,10 +3482,17 @@ function KanbanColumn({
             <button
               type="button"
               onClick={() => setShowAddTask(true)}
+              disabled={atWipLimit}
+              title={
+                atWipLimit
+                  ? 'Достигнут WIP-лимит колонки. Освободите место, чтобы добавить задачу.'
+                  : undefined
+              }
               className={cn(
                 'flex w-full items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium',
                 'text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                atWipLimit && 'opacity-50 cursor-not-allowed hover:bg-transparent hover:text-gray-500',
               )}
             >
               <Plus size={13} />
@@ -3491,6 +3506,7 @@ function KanbanColumn({
         <CreateTaskModal
           boardId={boardId}
           columnId={column.id}
+          wipBlocked={atWipLimit}
           onClose={() => setShowAddTask(false)}
         />
       )}
@@ -3934,10 +3950,19 @@ function ListView({ tasks, columns, isLoading, onTaskClick }: ListViewProps) {
 interface ArchivePanelProps {
   boardId: string;
   columns: CrmColumn[];
+  taskCountByColumnId: Record<number, number>;
   onClose: () => void;
+  /** Called when user tries to restore while the task's column is at WIP limit */
+  onRestoreWipBlocked?: () => void;
 }
 
-function ArchivePanel({ boardId, columns, onClose }: ArchivePanelProps) {
+function ArchivePanel({
+  boardId,
+  columns,
+  taskCountByColumnId,
+  onClose,
+  onRestoreWipBlocked,
+}: ArchivePanelProps) {
   const queryClient = useQueryClient();
   const columnMap = new Map(columns.map((c) => [c.id, c.name]));
 
@@ -4016,7 +4041,16 @@ function ArchivePanel({ boardId, columns, onClose }: ArchivePanelProps) {
             </div>
           ) : (
             <ul className="space-y-2" role="list" aria-label="Архивные задачи">
-              {archivedTasks.map((task) => (
+              {archivedTasks.map((task) => {
+                const restoreCheck = checkWipLimit({
+                  columns,
+                  taskCountByColumnId,
+                  targetColumnId: task.column_id,
+                  tasksToAddCount: 1,
+                });
+                const restoreBlocked = !restoreCheck.ok;
+
+                return (
                 <li
                   key={task.id}
                   className="flex items-start gap-3 rounded-lg border border-gray-700 bg-gray-800 px-3 py-3"
@@ -4039,11 +4073,26 @@ function ArchivePanel({ boardId, columns, onClose }: ArchivePanelProps) {
                   </div>
                   <button
                     type="button"
-                    onClick={() => unarchiveMutation.mutate(task.id)}
-                    disabled={unarchiveMutation.isPending && unarchiveMutation.variables === task.id}
+                    onClick={() => {
+                      if (restoreBlocked) {
+                        onRestoreWipBlocked?.();
+                        return;
+                      }
+                      unarchiveMutation.mutate(task.id);
+                    }}
+                    disabled={
+                      unarchiveMutation.isPending && unarchiveMutation.variables === task.id
+                    }
+                    aria-disabled={restoreBlocked || undefined}
+                    title={
+                      restoreBlocked
+                        ? 'Нельзя восстановить: превышен WIP-лимит этой колонки. Освободите место.'
+                        : undefined
+                    }
                     className={cn(
                       'shrink-0 rounded-md border border-gray-600 px-2.5 py-1.5 text-xs font-medium transition-colors',
                       'text-gray-300 hover:text-white hover:border-gray-400 hover:bg-gray-700',
+                      restoreBlocked && 'opacity-50 cursor-not-allowed hover:bg-transparent hover:text-gray-500 hover:border-gray-600',
                       'disabled:opacity-50 disabled:cursor-not-allowed',
                     )}
                     aria-label={`Восстановить задачу: ${task.title}`}
@@ -4053,7 +4102,8 @@ function ArchivePanel({ boardId, columns, onClose }: ArchivePanelProps) {
                       : 'Восстановить'}
                   </button>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
         </div>
@@ -4116,9 +4166,13 @@ export default function BoardDetailPage() {
   const taskMoveErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const snapshotRef = useRef<CrmColumn[]>([]);
   const taskSnapshotRef = useRef<Record<number, CrmTask[]>>({});
+  /** One toast per task-drag when user hits a WIP-full column in handleDragOver */
+  const wipDragBlockedToastShownRef = useRef(false);
   // Refs to avoid stale closures in DnD event handlers
   const activeDragTypeRef = useRef<'column' | 'task' | null>(null);
   const localTasksByColumnRef = useRef<Record<number, CrmTask[]>>({});
+
+  const { showWipLimitToast, WipLimitToast } = useWipLimitToast();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -4228,7 +4282,7 @@ export default function BoardDetailPage() {
         const raw = data?.detail ?? (data?.non_field_errors as unknown[])?.[0];
         const detail = typeof raw === 'string' ? raw : JSON.stringify(raw ?? '');
         if (detail.toLowerCase().includes('wip')) {
-          message = 'Превышен WIP-лимит колонки.';
+          message = WIP_LIMIT_VIOLATION_MESSAGE;
         }
       }
       setTaskMoveError(message);
@@ -4251,6 +4305,7 @@ export default function BoardDetailPage() {
       setActiveTask(task);
       setActiveDragType('task');
       activeDragTypeRef.current = 'task';
+      wipDragBlockedToastShownRef.current = false;
       taskSnapshotRef.current = structuredClone(localTasksByColumnRef.current);
     } else {
       const col = localColumns.find(c => c.id === event.active.id);
@@ -4326,6 +4381,24 @@ export default function BoardDetailPage() {
           [sourceColId]: reordered,
         };
         setLocalTasksByColumn(localTasksByColumnRef.current);
+      }
+      return;
+    }
+
+    const taskCountByColumnIdForWip = Object.fromEntries(
+      Object.entries(currentTasksByColumn).map(([k, v]) => [Number(k), v.length]),
+    );
+    const wipCross = checkWipLimit({
+      columns: localColumns,
+      taskCountByColumnId: taskCountByColumnIdForWip,
+      targetColumnId: targetColId,
+      tasksToAddCount: 1,
+      sourceColumnId: sourceColId,
+    });
+    if (!wipCross.ok) {
+      if (!wipDragBlockedToastShownRef.current) {
+        wipDragBlockedToastShownRef.current = true;
+        showWipLimitToast();
       }
       return;
     }
@@ -4461,6 +4534,25 @@ export default function BoardDetailPage() {
 
       if (!hasColumnChanged && !hasPositionChanged) return;
 
+      if (hasColumnChanged) {
+        const snapshotCounts = Object.fromEntries(
+          Object.entries(taskSnapshotRef.current).map(([k, v]) => [Number(k), v.length]),
+        );
+        const wipBeforeMove = checkWipLimit({
+          columns: localColumns,
+          taskCountByColumnId: snapshotCounts,
+          targetColumnId: targetColId,
+          tasksToAddCount: 1,
+          sourceColumnId: originalColId ?? undefined,
+        });
+        if (!wipBeforeMove.ok) {
+          localTasksByColumnRef.current = taskSnapshotRef.current;
+          setLocalTasksByColumn(taskSnapshotRef.current);
+          showWipLimitToast();
+          return;
+        }
+      }
+
       taskMoveMutation.mutate({
         taskId: activeTaskId,
         columnId: targetColId,
@@ -4501,6 +4593,7 @@ export default function BoardDetailPage() {
 
   return (
     <div className="space-y-6">
+      {WipLimitToast}
       {/* Back navigation */}
       <Link
         to="/crm"
@@ -4676,7 +4769,11 @@ export default function BoardDetailPage() {
         <ArchivePanel
           boardId={boardId}
           columns={localColumns}
+          taskCountByColumnId={Object.fromEntries(
+            Object.entries(localTasksByColumn).map(([k, v]) => [Number(k), v.length]),
+          )}
           onClose={() => setArchivePanelOpen(false)}
+          onRestoreWipBlocked={showWipLimitToast}
         />
       )}
     </div>
