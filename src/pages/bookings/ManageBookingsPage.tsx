@@ -4,9 +4,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { BOOKING_STATUSES, RESOURCE_TYPES, RESOURCE_TYPE_LABELS, USER_ROLES } from '@/shared/config/constants';
+import {
+  BOOKING_STATUSES,
+  RESOURCE_TYPES,
+  RESOURCE_TYPE_LABELS,
+  STAFF_UI_PREFIX,
+  USER_ROLES,
+} from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
 import type {
   Booking,
@@ -99,7 +106,7 @@ export default function ManageBookingsPage() {
   const [editFormError, setEditFormError] = useState<string | null>(null);
 
   const { data: companiesData } = useQuery({
-    queryKey: ['admin-bookings', 'company-options'],
+    queryKey: [...companiesCacheRoot(user?.id), 'admin-bookings', 'company-options'],
     enabled: isSuperadmin,
     queryFn: async () => {
       const { data: response } = await apiClient.get<PaginatedResponse<Company>>(API.companies.list, {
@@ -545,7 +552,7 @@ export default function ManageBookingsPage() {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <Link
-                        to={`/admin/bookings/${booking.id}`}
+                        to={`${STAFF_UI_PREFIX}/bookings/${booking.id}`}
                         className="text-sm font-semibold text-white hover:text-indigo-300"
                       >
                         {booking.resource_name}

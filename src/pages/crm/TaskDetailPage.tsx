@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -94,13 +94,11 @@ export default function TaskDetailPage() {
     setPriority(task.priority);
     setDeadline(task.deadline ? task.deadline.slice(0, 10) : '');
     setAssigneeId(task.assignee ? String(task.assignee.id) : '');
-  }, [task]);
+  }, [task?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Mutations ────────────────────────────────────────────────────
   const patchMutation = useMutation({
-    mutationFn: async (
-      payload: Partial<Pick<CrmTask, 'title' | 'description' | 'priority' | 'deadline'>>,
-    ) => {
+    mutationFn: async (payload: Record<string, unknown>) => {
       const { data } = await apiClient.patch<CrmTask>(API.crm.taskDetail(taskId), payload);
       return data;
     },
@@ -124,54 +122,40 @@ export default function TaskDetailPage() {
     },
   });
 
-  const assigneeMutation = useMutation({
-    mutationFn: async (newAssigneeId: number | null) => {
-      const { data } = await apiClient.patch<CrmTask>(API.crm.taskDetail(taskId), {
-        assignee_id: newAssigneeId,
-      });
-      return data;
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
-      void queryClient.invalidateQueries({ queryKey: ['crm', 'task', taskId] });
-      void queryClient.invalidateQueries({ queryKey: ['notifications-recent'] });
-      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      void queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
-    },
-  });
+  const handleSave = () => {
+    if (!task || patchMutation.isPending) return;
 
-  const handleAssigneeChange = (value: string) => {
-    setAssigneeId(value);
-    const parsed = value ? parseInt(value, 10) : null;
-    assigneeMutation.mutate(parsed);
+    const payload: Record<string, unknown> = {};
+
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
+      setTitle(task.title);
+      return;
+    }
+    if (trimmedTitle !== task.title) payload.title = trimmedTitle;
+    if (description !== (task.description ?? '')) payload.description = description || null;
+    if (priority !== task.priority) payload.priority = priority;
+
+    const originalDeadline = task.deadline ? task.deadline.slice(0, 10) : '';
+    if (deadline !== originalDeadline) payload.deadline = deadline || null;
+
+    const originalAssigneeId = task.assignee ? String(task.assignee.id) : '';
+    if (assigneeId !== originalAssigneeId) {
+      payload.assignee_id = assigneeId ? parseInt(assigneeId, 10) : null;
+    }
+
+    if (Object.keys(payload).length === 0) return;
+
+    patchMutation.mutate(payload);
   };
 
-  const handleFieldBlur = useCallback(
-    (field: 'title' | 'description' | 'priority' | 'deadline', value: string) => {
-      if (!task) return;
-      if (field === 'title' && !value.trim()) {
-        setTitle(task.title);
-        return;
-      }
-      if (field === 'deadline') {
-        const cur = task.deadline ? String(task.deadline).slice(0, 10) : '';
-        const next = value.trim().slice(0, 10);
-        if (cur === next) return;
-        patchMutation.mutate({ deadline: next || null });
-        return;
-      }
-      const current = task[field] ?? '';
-      if (String(current) === value) return;
-      patchMutation.mutate({ [field]: value || null });
-    },
-    [task, patchMutation],
-  );
-
-  const handlePriorityChange = (val: TaskPriorityValue) => {
-    setPriority(val);
-    if (task && val !== task.priority) {
-      patchMutation.mutate({ priority: val });
-    }
+  const handleCancel = () => {
+    if (!task) return;
+    setTitle(task.title);
+    setDescription(task.description ?? '');
+    setPriority(task.priority);
+    setDeadline(task.deadline ? task.deadline.slice(0, 10) : '');
+    setAssigneeId(task.assignee ? String(task.assignee.id) : '');
   };
 
   // ─── Loading / Error states ───────────────────────────────────────
@@ -241,11 +225,12 @@ export default function TaskDetailPage() {
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          onBlur={(e) => handleFieldBlur('title', e.target.value.trim())}
           maxLength={255}
+          disabled={patchMutation.isPending}
           className={cn(
             'w-full bg-transparent text-2xl font-bold text-white outline-none',
             'border-b-2 border-transparent focus:border-blue-500 transition-colors py-1',
+            'disabled:opacity-60',
           )}
         />
       </div>
@@ -266,13 +251,14 @@ export default function TaskDetailPage() {
               id="page-task-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              onBlur={(e) => handleFieldBlur('description', e.target.value)}
               rows={6}
               placeholder="Добавьте описание задачи..."
+              disabled={patchMutation.isPending}
               className={cn(
                 'w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2.5 text-sm text-white',
                 'placeholder-gray-600 resize-none',
                 'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors',
+                'disabled:opacity-60',
               )}
             />
           </section>
@@ -290,7 +276,7 @@ export default function TaskDetailPage() {
 
           {/* Comments */}
           <section className="rounded-2xl border border-gray-700 bg-gray-900 p-5">
-            <CommentSection taskId={taskId} />
+            <CommentSection taskId={taskId} boardId={boardId} />
           </section>
 
           {/* History */}
@@ -317,12 +303,12 @@ export default function TaskDetailPage() {
               <select
                 id="page-task-priority"
                 value={priority}
-                onChange={(e) =>
-                  handlePriorityChange(e.target.value as TaskPriorityValue)
-                }
+                onChange={(e) => setPriority(e.target.value as TaskPriorityValue)}
+                disabled={patchMutation.isPending}
                 className={cn(
                   'w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white',
                   'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors',
+                  'disabled:opacity-60',
                 )}
               >
                 {Object.entries(PRIORITY_LABELS).map(([val, label]) => (
@@ -355,10 +341,11 @@ export default function TaskDetailPage() {
                 type="date"
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
-                onBlur={(e) => handleFieldBlur('deadline', e.target.value)}
+                disabled={patchMutation.isPending}
                 className={cn(
                   'w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white [color-scheme:dark]',
                   'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors',
+                  'disabled:opacity-60',
                 )}
               />
             </div>
@@ -375,8 +362,8 @@ export default function TaskDetailPage() {
               <select
                 id="page-task-assignee"
                 value={assigneeId}
-                onChange={(e) => handleAssigneeChange(e.target.value)}
-                disabled={assigneeMutation.isPending}
+                onChange={(e) => setAssigneeId(e.target.value)}
+                disabled={patchMutation.isPending}
                 className={cn(
                   'w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white',
                   'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors',
@@ -392,9 +379,6 @@ export default function TaskDetailPage() {
                     </option>
                   ))}
               </select>
-              {assigneeMutation.isError && (
-                <p className="text-xs text-red-400">Не удалось изменить исполнителя.</p>
-              )}
             </div>
 
             {/* Created at */}
@@ -430,9 +414,37 @@ export default function TaskDetailPage() {
           <section className="rounded-2xl border border-gray-700 bg-gray-900 p-5 space-y-3">
             <h2 className="text-sm font-semibold text-gray-300">Действия</h2>
 
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={patchMutation.isPending}
+                className={cn(
+                  'flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                  'bg-blue-600 text-white hover:bg-blue-500',
+                  'disabled:opacity-50 disabled:cursor-not-allowed',
+                )}
+              >
+                {patchMutation.isPending ? 'Сохранение...' : 'Сохранить'}
+              </button>
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={patchMutation.isPending}
+                className={cn(
+                  'flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                  'border border-gray-700 text-gray-400 hover:text-white hover:bg-gray-800',
+                  'disabled:opacity-50 disabled:cursor-not-allowed',
+                )}
+              >
+                Отменить
+              </button>
+            </div>
+
             {patchMutation.isError && (
               <p className="text-xs text-red-400">Не удалось сохранить изменения.</p>
             )}
+
             {archiveMutation.isError && (
               <p className="text-xs text-red-400">Не удалось архивировать задачу.</p>
             )}

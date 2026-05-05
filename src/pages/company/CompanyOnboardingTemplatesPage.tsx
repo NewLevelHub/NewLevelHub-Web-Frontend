@@ -4,6 +4,7 @@ import { Plus, Save, ListChecks, Pencil, Trash2 } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import type { OnboardingTemplate, OnboardingTemplateStepInput } from '@/shared/types';
 
 interface TemplatesApiResponse {
@@ -36,6 +37,10 @@ export default function CompanyOnboardingTemplatesPage() {
   const [editingTemplateId, setEditingTemplateId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [templatePendingDelete, setTemplatePendingDelete] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
 
   const templatesQuery = useQuery({
     queryKey: ['onboarding-templates'],
@@ -295,15 +300,7 @@ export default function CompanyOnboardingTemplatesPage() {
                   <button
                     type="button"
                     disabled={deleteMutation.isPending}
-                    onClick={() => {
-                      const isConfirmed = window.confirm(
-                        `Удалить шаблон "${template.name}"? Это действие нельзя отменить.`,
-                      );
-                      if (!isConfirmed) return;
-                      setError(null);
-                      setSuccess(null);
-                      deleteMutation.mutate(template.id);
-                    }}
+                    onClick={() => setTemplatePendingDelete({ id: template.id, name: template.name })}
                     className="inline-flex items-center gap-1 rounded-lg border border-red-800 bg-red-900/30 px-3 py-1.5 text-xs text-red-300 hover:bg-red-900/50 disabled:opacity-50"
                   >
                     <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
@@ -315,6 +312,27 @@ export default function CompanyOnboardingTemplatesPage() {
           ))}
         </div>
       </section>
+
+      <ConfirmModal
+        isOpen={templatePendingDelete !== null}
+        onClose={() => !deleteMutation.isPending && setTemplatePendingDelete(null)}
+        onConfirm={() => {
+          if (!templatePendingDelete) return;
+          const { id } = templatePendingDelete;
+          setError(null);
+          setSuccess(null);
+          deleteMutation.mutate(id, { onSettled: () => setTemplatePendingDelete(null) });
+        }}
+        title="Удалить шаблон?"
+        description={
+          templatePendingDelete
+            ? `Шаблон «${templatePendingDelete.name}» будет удалён без возможности восстановления.`
+            : ''
+        }
+        variant="danger"
+        confirmLabel="Удалить"
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 }

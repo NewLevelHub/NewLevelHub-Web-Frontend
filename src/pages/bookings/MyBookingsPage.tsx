@@ -5,7 +5,14 @@ import { ArrowLeft } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { BOOKING_STATUSES, RESOURCE_TYPES, RESOURCE_TYPE_LABELS, USER_ROLES, type ResourceType } from '@/shared/config/constants';
+import {
+  BOOKING_STATUSES,
+  RESOURCE_TYPES,
+  RESOURCE_TYPE_LABELS,
+  STAFF_UI_PREFIX,
+  USER_ROLES,
+  type ResourceType,
+} from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { cn } from '@/shared/lib/cn';
@@ -254,7 +261,7 @@ export default function MyBookingsPage() {
         <div className="flex flex-wrap items-center gap-3">
           {(user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN) && (
             <Link
-              to="/admin/bookings"
+              to={`${STAFF_UI_PREFIX}/bookings`}
               className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
             >
               <ArrowLeft className="h-4 w-4" />

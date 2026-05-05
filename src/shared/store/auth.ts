@@ -4,6 +4,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { env } from '@/shared/config/env';
 import { mapApiUser } from '@/shared/lib/mapUser';
+import { queryClient } from '@/shared/lib/queryClient';
 import { tokenStorage } from '@/shared/lib/storage';
 import type { User } from '@/shared/types';
 
@@ -118,6 +119,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       password,
       remember_me: rememberMe,
     });
+    queryClient.clear();
     tokenStorage.setAccessFromAuthResponse(data.tokens.access);
     setSessionHint();
     set({ user: mapApiUser(data.user as Record<string, unknown>), isAuthenticated: true });
@@ -125,6 +127,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   register: async (payload) => {
     const { data } = await apiClient.post(API.auth.register, payload);
+    queryClient.clear();
     tokenStorage.setAccessFromAuthResponse(data.tokens.access);
     setSessionHint();
     set({ user: mapApiUser(data.user as Record<string, unknown>), isAuthenticated: true });
@@ -132,6 +135,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   registerByInvite: async (payload) => {
     const { data } = await apiClient.post(API.auth.registerInvite, payload);
+    queryClient.clear();
     tokenStorage.setAccessFromAuthResponse(data.tokens.access);
     setSessionHint();
     set({ user: mapApiUser(data.user as Record<string, unknown>), isAuthenticated: true });
@@ -144,6 +148,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       tokenStorage.clear();
       clearSessionHint();
       clearImpersonationStorage();
+      queryClient.clear();
       set({
         user: null,
         isAuthenticated: false,
@@ -193,6 +198,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       tokenStorage.clear();
       clearSessionHint();
       clearImpersonationStorage();
+      queryClient.clear();
       set({
         user: null,
         isAuthenticated: false,
@@ -207,6 +213,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   startImpersonation: (targetUser, accessToken) => {
     const { user } = get();
     if (!user) return;
+
+    queryClient.clear();
 
     // Сохраняем оригинального суперадмина в localStorage для индикации активной сессии.
     saveOriginalUserToStorage(user);
@@ -225,6 +233,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   stopImpersonation: () => {
     const { originalUser } = get();
     if (!originalUser) return;
+
+    queryClient.clear();
 
     /**
      * Сбрасываем токен в памяти: при следующем запросе apiClient использует null,

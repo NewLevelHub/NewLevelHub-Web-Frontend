@@ -170,9 +170,17 @@ export interface CompanyAnalytics {
     limit: number;
   };
   active_crm_tasks: {
+    total: number;
     todo: number;
     in_progress: number;
     done: number;
+    other: number;
+    by_column: Array<{
+      column_id: number;
+      name: string;
+      board_name: string;
+      count: number;
+    }>;
   };
   guest_visits_month: number;
   employee_activity: CompanyAnalyticsEmployeeActivity[];
@@ -767,6 +775,12 @@ export interface ServiceFloor {
   updated_at: string;
 }
 
+/** POST /services/floors/ (JSON). `plan_image` передаётся только через multipart. */
+export interface ServiceFloorCreatePayload {
+  number: number;
+  name?: string;
+}
+
 export interface MapPointSearchResult {
   id: number;
   label: string;
@@ -961,6 +975,7 @@ export interface CrmTask {
   comments_count: number;
   attachments_count: number;
   position: number;
+  is_archived: boolean;
   created_at: string;
   checklists: CrmChecklist[];
 }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Bookmark, Search, Settings2 } from 'lucide-react';
+import { ArrowLeft, Bookmark, CalendarDays, ChevronDown, ChevronUp, Search, Settings2 } from 'lucide-react';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
@@ -19,6 +19,7 @@ import {
   RESOURCE_TYPE_LABELS,
   RESOURCE_EQUIPMENT_KEYS,
   RESOURCE_EQUIPMENT_LABELS,
+  STAFF_UI_PREFIX,
   USER_ROLES,
   type ResourceEquipmentKey,
   type ResourceType,
@@ -27,6 +28,7 @@ import { useAuth } from '@/shared/hooks/useAuth';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import { cn } from '@/shared/lib/cn';
 import type { BookingResourceDetail, BookingResourceListItem, PaginatedResponse } from '@/shared/types';
+import { ResourceWeekMiniTimeline } from '@/pages/bookings/components/ResourceWeekMiniTimeline';
 
 const PAGE_SIZE = 24;
 
@@ -90,6 +92,8 @@ export default function BookingCatalogPage() {
   const { user } = useAuth();
   const [page, setPage] = useState(1);
   const [selectedResource, setSelectedResource] = useState<BookingResourceListItem | null>(null);
+  const [expandedScheduleId, setExpandedScheduleId] = useState<number | null>(null);
+  const autoOpenedForRef = useRef<number | null>(null);
   const [typeFilter, setTypeFilter] = useState('');
   const [floorFilter, setFloorFilter] = useState('');
   const [capacityMin, setCapacityMin] = useState('');
@@ -148,14 +152,19 @@ export default function BookingCatalogPage() {
   });
 
   useEffect(() => {
-    if (!Number.isFinite(preselectResourceId) || preselectResourceId <= 0) return;
-    if (selectedResource !== null) return;
+    if (!Number.isFinite(preselectResourceId) || preselectResourceId <= 0) {
+      autoOpenedForRef.current = null;
+      return;
+    }
+    if (autoOpenedForRef.current === preselectResourceId) return;
     const fromList = results.find((item) => item.id === preselectResourceId);
     if (fromList) {
+      autoOpenedForRef.current = preselectResourceId;
       setSelectedResource(fromList);
       return;
     }
     if (preselectedResource) {
+      autoOpenedForRef.current = preselectResourceId;
       setSelectedResource({
         id: preselectedResource.id,
         type: preselectedResource.type,
@@ -176,7 +185,7 @@ export default function BookingCatalogPage() {
         available_at: null,
       });
     }
-  }, [preselectResourceId, preselectedResource, results, selectedResource]);
+  }, [preselectResourceId, preselectedResource, results]);
 
   const equipmentFacetKeys = useMemo((): ResourceEquipmentKey[] => {
     const raw = data?.meeting_room_equipment_keys;
@@ -245,7 +254,7 @@ export default function BookingCatalogPage() {
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           {(user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN) && (
             <Link
-              to="/admin/bookings"
+              to={`${STAFF_UI_PREFIX}/bookings`}
               className="inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-200 hover:bg-gray-700"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -521,7 +530,35 @@ export default function BookingCatalogPage() {
                         {r.is_hot_desk && r.type === RESOURCE_TYPES.DESK && (
                           <span className="text-xs font-medium text-blue-300">Hot desk</span>
                         )}
-                        <div className="mt-auto pt-2">
+
+                        {/* ── Weekly schedule toggle ── */}
+                        <div className="border-t border-gray-700/60 pt-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpandedScheduleId((prev) => (prev === r.id ? null : r.id))
+                            }
+                            className="flex w-full items-center justify-between gap-2 rounded-lg px-1 py-1 text-xs font-medium text-gray-400 hover:bg-gray-700/50 hover:text-gray-200 transition-colors"
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <CalendarDays size={13} />
+                              Расписание на неделю
+                            </span>
+                            {expandedScheduleId === r.id ? (
+                              <ChevronUp size={13} />
+                            ) : (
+                              <ChevronDown size={13} />
+                            )}
+                          </button>
+
+                          {expandedScheduleId === r.id && (
+                            <div className="mt-2 rounded-lg border border-gray-700/60 bg-gray-900/50 px-2 py-2">
+                              <ResourceWeekMiniTimeline resourceId={r.id} />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pt-1">
                           {r.status === BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED ? (
                             <button
                               type="button"

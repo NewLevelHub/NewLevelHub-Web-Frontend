@@ -4,10 +4,10 @@ import { useNavigate } from 'react-router';
 import { Search, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { USER_ROLES } from '@/shared/config/constants';
+import { SUPERADMIN_UI_PREFIX, USER_ROLES } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
-import type { UserListItem, PaginatedResponse } from '@/shared/types';
+import type { Company, UserListItem, PaginatedResponse } from '@/shared/types';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -165,6 +165,14 @@ export default function UsersListPage() {
   if (companyId) queryParams.company_id = companyId;
   if (isActive !== '') queryParams.is_active = isActive;
 
+  const { data: companies } = useQuery<Company[]>({
+    queryKey: ['companies'],
+    queryFn: () =>
+      apiClient
+        .get<Company[] | { results: Company[] }>(API.companies.list)
+        .then((r) => (Array.isArray(r.data) ? r.data : r.data.results)),
+  });
+
   const { data, isLoading, isError } = useQuery<PaginatedResponse<UserListItem>>({
     queryKey: ['users', { search, role, companyId, isActive, ordering, page }],
     queryFn: () =>
@@ -174,106 +182,139 @@ export default function UsersListPage() {
     placeholderData: (prev) => prev,
   });
 
+  const { data: companiesData, isLoading: isCompaniesLoading } = useQuery<PaginatedResponse<Company>>({
+    queryKey: ['users', 'company-filter-options'],
+    queryFn: () =>
+      apiClient
+        .get<PaginatedResponse<Company>>(API.companies.list, {
+          params: { page: 1, page_size: 500, ordering: 'name' },
+        })
+        .then((r) => r.data),
+    staleTime: 5 * 60 * 1000,
+  });
+
   const totalCount = data?.count ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
   const rangeStart = totalCount === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const rangeEnd = Math.min(page * PAGE_SIZE, totalCount);
 
   function handleRowClick(id: number) {
-    navigate(`/admin/users/${id}`);
+    navigate(`${SUPERADMIN_UI_PREFIX}/users/${id}`);
   }
 
   function handleRowKeyDown(e: React.KeyboardEvent, id: number) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      navigate(`/admin/users/${id}`);
+      navigate(`${SUPERADMIN_UI_PREFIX}/users/${id}`);
     }
   }
 
   return (
     <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Пользователи</h1>
+      <h1 className="text-2xl font-bold text-white">Пользователи</h1>
 
       {/* ---- Filters ---- */}
       <section
-        className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4"
+        className="bg-gray-800 rounded-2xl border border-gray-700 p-4"
         aria-label="Фильтры пользователей"
       >
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12">
           {/* Search */}
-          <div className="relative w-full sm:flex-1 sm:min-w-52">
-            <Search
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-              aria-hidden="true"
-            />
-            <input
-              type="search"
-              value={searchInput}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder="Поиск по имени или email..."
-              aria-label="Поиск пользователей"
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+          <label className="flex flex-col gap-1.5 lg:col-span-4">
+            <span className="text-xs font-medium text-gray-400">Поиск</span>
+            <div className="relative">
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                aria-hidden="true"
+              />
+              <input
+                type="search"
+                value={searchInput}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                placeholder="По имени или email..."
+                aria-label="Поиск пользователей"
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-700 bg-gray-900 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
+          </label>
 
           {/* Role filter */}
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            aria-label="Фильтр по роли"
-            className="w-full sm:w-auto px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            {ROLE_FILTER_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
+          <label className="flex flex-col gap-1.5 lg:col-span-2">
+            <span className="text-xs font-medium text-gray-400">Роль</span>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              aria-label="Фильтр по роли"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-700 bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              {ROLE_FILTER_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {/* Company filter */}
+          <label className="flex flex-col gap-1.5 lg:col-span-2">
+            <span className="text-xs font-medium text-gray-400">Компания</span>
+            <select
+              value={companyId}
+              onChange={(e) => setCompanyId(e.target.value)}
+              aria-label="Фильтр по компании"
+              disabled={isCompaniesLoading}
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-700 bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-800 disabled:text-gray-500"
+            >
+              <option value="">
+                {isCompaniesLoading ? 'Загрузка компаний...' : 'Все компании'}
               </option>
-            ))}
-          </select>
+              {(companiesData?.results ?? []).map((company) => (
+                <option key={company.id} value={String(company.id)}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
           {/* Active status filter */}
-          <input
-            type="number"
-            min={1}
-            value={companyId}
-            onChange={(e) => setCompanyId(e.target.value)}
-            placeholder="ID компании"
-            aria-label="Фильтр по ID компании"
-            className="w-full sm:w-36 px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-
-          {/* Active status filter */}
-          <select
-            value={isActive}
-            onChange={(e) => setIsActive(e.target.value)}
-            aria-label="Фильтр по статусу"
-            className="w-full sm:w-auto px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            {ACTIVE_FILTER_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+          <label className="flex flex-col gap-1.5 lg:col-span-2">
+            <span className="text-xs font-medium text-gray-400">Статус</span>
+            <select
+              value={isActive}
+              onChange={(e) => setIsActive(e.target.value)}
+              aria-label="Фильтр по статусу"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-700 bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              {ACTIVE_FILTER_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </label>
 
           {/* Ordering */}
-          <select
-            value={ordering}
-            onChange={(e) => setOrdering(e.target.value)}
-            aria-label="Сортировка"
-            className="w-full sm:w-auto px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            {ORDERING_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+          <label className="flex flex-col gap-1.5 lg:col-span-2">
+            <span className="text-xs font-medium text-gray-400">Сортировка</span>
+            <select
+              value={ordering}
+              onChange={(e) => setOrdering(e.target.value)}
+              aria-label="Сортировка"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-700 bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              {ORDERING_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </section>
 
       {/* ---- Table ---- */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
         {isError ? (
           <div className="flex items-center justify-center py-16 px-4">
             <p className="text-red-600 font-medium text-sm">
@@ -284,46 +325,46 @@ export default function UsersListPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-sm" role="table" aria-label="Список пользователей">
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
+                <tr className="border-b border-gray-700 bg-gray-900/60">
                   <th
                     scope="col"
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                    className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide"
                   >
                     Пользователь
                   </th>
                   <th
                     scope="col"
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                    className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide"
                   >
                     Email
                   </th>
                   <th
                     scope="col"
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                    className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide"
                   >
                     Роль
                   </th>
                   <th
                     scope="col"
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                    className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide"
                   >
                     Компания
                   </th>
                   <th
                     scope="col"
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                    className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide"
                   >
                     Статус
                   </th>
                   <th
                     scope="col"
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                    className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide"
                   >
                     Дата регистрации
                   </th>
                   <th
                     scope="col"
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                    className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide"
                   >
                     Последний вход
                   </th>
@@ -332,7 +373,7 @@ export default function UsersListPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-gray-700/80">
                 {isLoading ? (
                   Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)
                 ) : data?.results.length === 0 ? (
@@ -350,7 +391,7 @@ export default function UsersListPage() {
                       tabIndex={0}
                       role="row"
                       aria-label={`Пользователь ${user.first_name} ${user.last_name}`}
-                      className="hover:bg-gray-50 cursor-pointer transition-colors focus-visible:outline-none focus-visible:bg-blue-50"
+                      className="hover:bg-gray-700/40 cursor-pointer transition-colors focus-visible:outline-none focus-visible:bg-gray-700/60"
                     >
                       {/* Avatar + Name */}
                       <td className="px-4 py-3">
@@ -360,14 +401,14 @@ export default function UsersListPage() {
                             firstName={user.first_name}
                             lastName={user.last_name}
                           />
-                          <span className="font-medium text-gray-900 whitespace-nowrap">
+                          <span className="font-medium text-white whitespace-nowrap">
                             {user.first_name} {user.last_name}
                           </span>
                         </div>
                       </td>
 
                       {/* Email */}
-                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{user.email}</td>
+                      <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{user.email}</td>
 
                       {/* Role badge */}
                       <td className="px-4 py-3">
@@ -382,7 +423,7 @@ export default function UsersListPage() {
                       </td>
 
                       {/* Company */}
-                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                      <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
                         {user.company?.name ?? '—'}
                       </td>
 
@@ -401,12 +442,12 @@ export default function UsersListPage() {
                       </td>
 
                       {/* Date joined */}
-                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                      <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
                         {formatDate(user.date_joined)}
                       </td>
 
                       {/* Last login */}
-                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                      <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
                         {formatDate(user.last_login)}
                       </td>
 
@@ -416,10 +457,10 @@ export default function UsersListPage() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/admin/users/${user.id}`);
+                            navigate(`${SUPERADMIN_UI_PREFIX}/users/${user.id}`);
                           }}
                           aria-label={`Открыть профиль ${user.first_name} ${user.last_name}`}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-200 bg-indigo-900/40 hover:bg-indigo-900/60 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                         >
                           <ExternalLink size={13} aria-hidden="true" />
                           Открыть
@@ -437,13 +478,13 @@ export default function UsersListPage() {
       {/* ---- Pagination ---- */}
       {!isLoading && !isError && totalCount > 0 && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-400">
             Показано{' '}
-            <span className="font-medium text-gray-900">
+            <span className="font-medium text-white">
               {rangeStart}–{rangeEnd}
             </span>{' '}
             из{' '}
-            <span className="font-medium text-gray-900">{totalCount}</span> пользователей
+            <span className="font-medium text-white">{totalCount}</span> пользователей
           </p>
 
           <nav aria-label="Пагинация" className="flex flex-wrap items-center gap-1">
@@ -453,10 +494,10 @@ export default function UsersListPage() {
               disabled={page === 1}
               aria-label="Предыдущая страница"
               className={cn(
-                'p-2 rounded-lg border text-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                'p-2 rounded-lg border text-gray-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
                 page === 1
-                  ? 'border-gray-200 text-gray-300 cursor-not-allowed'
-                  : 'border-gray-300 hover:bg-gray-50',
+                  ? 'border-gray-700 text-gray-600 cursor-not-allowed'
+                  : 'border-gray-600 hover:bg-gray-700/50',
               )}
             >
               <ChevronLeft size={16} aria-hidden="true" />
@@ -471,7 +512,7 @@ export default function UsersListPage() {
               }, [])
               .map((item, idx) =>
                 item === 'ellipsis' ? (
-                  <span key={`ellipsis-${idx}`} className="px-2 text-gray-400 text-sm select-none">
+                  <span key={`ellipsis-${idx}`} className="px-2 text-gray-500 text-sm select-none">
                     …
                   </span>
                 ) : (
@@ -482,10 +523,10 @@ export default function UsersListPage() {
                     aria-label={`Страница ${item}`}
                     aria-current={item === page ? 'page' : undefined}
                     className={cn(
-                      'w-9 h-9 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                      'w-9 h-9 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
                       item === page
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-700 hover:bg-gray-100 border border-gray-300',
+                        ? 'bg-indigo-600 text-white'
+                        : 'text-gray-200 hover:bg-gray-700/50 border border-gray-600',
                     )}
                   >
                     {item}
@@ -499,10 +540,10 @@ export default function UsersListPage() {
               disabled={page === totalPages}
               aria-label="Следующая страница"
               className={cn(
-                'p-2 rounded-lg border text-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                'p-2 rounded-lg border text-gray-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
                 page === totalPages
-                  ? 'border-gray-200 text-gray-300 cursor-not-allowed'
-                  : 'border-gray-300 hover:bg-gray-50',
+                  ? 'border-gray-700 text-gray-600 cursor-not-allowed'
+                  : 'border-gray-600 hover:bg-gray-700/50',
               )}
             >
               <ChevronRight size={16} aria-hidden="true" />

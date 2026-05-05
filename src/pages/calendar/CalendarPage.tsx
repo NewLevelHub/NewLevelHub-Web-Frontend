@@ -15,6 +15,7 @@ import {
   type CalendarView,
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
+import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { cn } from '@/shared/lib/cn';
 import type {
@@ -159,8 +160,11 @@ export default function CalendarPage() {
   const period = useMemo(() => resolveRange(anchorDate, view), [anchorDate, view]);
 
   const { data: companiesData } = useQuery<PaginatedResponse<Company>>({
-    queryKey: ['calendar', 'companies'],
-    queryFn: () => apiClient.get<PaginatedResponse<Company>>(API.companies.list, { params: { page_size: 1000 } }).then((r) => r.data),
+    queryKey: [...companiesCacheRoot(user?.id), 'calendar', 'companies'],
+    queryFn: () =>
+      apiClient
+        .get<PaginatedResponse<Company>>(API.companies.list, { params: { page_size: 1000 } })
+        .then((r) => r.data),
     enabled: isSuperadmin,
     staleTime: 60_000,
   });

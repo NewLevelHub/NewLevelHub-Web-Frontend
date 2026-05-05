@@ -14,6 +14,7 @@ import {
   DragOverlay,
   closestCenter,
   pointerWithin,
+  type CollisionDetection,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -61,7 +62,10 @@ import {
 import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
+import { checkWipLimit } from '@/shared/lib/crm-wip-limit';
+import { useWipLimitToast, WIP_LIMIT_VIOLATION_MESSAGE } from '@/pages/crm/useWipLimitToast';
 import { useAuth } from '@/shared/hooks/useAuth';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { USER_ROLES } from '@/shared/config/constants';
 import type { CrmBoard, CrmColumn, CrmTask, CrmLabel, CrmComment, CrmChecklist, CrmChecklistItem, CrmTaskHistory, CrmAttachment, CompanyMember, PaginatedResponse } from '@/shared/types';
 
@@ -134,9 +138,10 @@ function AssigneeAvatar({ assignee, size = 'sm' }: AssigneeAvatarProps) {
 interface TaskCardProps {
   task: CrmTask;
   onClick: () => void;
+  onArchive?: () => void;
 }
 
-function TaskCard({ task, onClick }: TaskCardProps) {
+function TaskCard({ task, onClick, onArchive }: TaskCardProps) {
   const overdue = task.deadline ? isOverdue(task.deadline) : false;
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -210,6 +215,21 @@ function TaskCard({ task, onClick }: TaskCardProps) {
               <Pencil size={13} />
               Редактировать
             </button>
+            {onArchive && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen(false);
+                  onArchive();
+                }}
+                className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-red-400 hover:bg-gray-800 hover:text-red-300 transition-colors"
+                title="Архивировать"
+              >
+                <Archive size={13} />
+                Архивировать
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -286,9 +306,10 @@ function TaskCard({ task, onClick }: TaskCardProps) {
 interface SortableTaskCardProps {
   task: CrmTask;
   onTaskClick: (taskId: number) => void;
+  onArchive?: (taskId: number) => void;
 }
 
-function SortableTaskCard({ task, onTaskClick }: SortableTaskCardProps) {
+function SortableTaskCard({ task, onTaskClick, onArchive }: SortableTaskCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `task-${task.id}`,
     data: { type: 'task', task },
@@ -305,12 +326,13 @@ function SortableTaskCard({ task, onTaskClick }: SortableTaskCardProps) {
       style={style}
       {...attributes}
       {...listeners}
+      data-task-id={task.id}
       className={cn(
         isDragging && 'opacity-40',
         'cursor-grab active:cursor-grabbing',
       )}
     >
-      <TaskCard task={task} onClick={() => onTaskClick(task.id)} />
+      <TaskCard task={task} onClick={() => onTaskClick(task.id)} onArchive={onArchive ? () => onArchive(task.id) : undefined} />
     </div>
   );
 }
@@ -321,9 +343,11 @@ interface CreateTaskModalProps {
   boardId: string;
   columnId: number;
   onClose: () => void;
+  /** True when column already at WIP — block create */
+  wipBlocked?: boolean;
 }
 
-function CreateTaskModal({ boardId, columnId, onClose }: CreateTaskModalProps) {
+function CreateTaskModal({ boardId, columnId, onClose, wipBlocked }: CreateTaskModalProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const titleRef = useRef<HTMLInputElement>(null);
@@ -383,7 +407,7 @@ function CreateTaskModal({ boardId, columnId, onClose }: CreateTaskModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || mutation.isPending) return;
+    if (!title.trim() || mutation.isPending || wipBlocked) return;
 
     const payload: Parameters<typeof mutation.mutate>[0] = {
       board_id: Number(boardId),
@@ -562,7 +586,7 @@ function CreateTaskModal({ boardId, columnId, onClose }: CreateTaskModalProps) {
             </button>
             <button
               type="submit"
-              disabled={!title.trim() || mutation.isPending}
+              disabled={!title.trim() || mutation.isPending || wipBlocked}
               className={cn(
                 'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
                 'bg-blue-600 text-white hover:bg-blue-500',
@@ -575,7 +599,7 @@ function CreateTaskModal({ boardId, columnId, onClose }: CreateTaskModalProps) {
 
           {/* Error */}
           {mutation.isError && (
-            <p className="text-sm text-red-400">Превышен WIP-лимит колонки.</p>
+            <p className="text-sm text-red-400">{WIP_LIMIT_VIOLATION_MESSAGE}</p>
           )}
         </form>
       </div>
@@ -1273,6 +1297,7 @@ function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps) {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [pendingDeleteAttachmentId, setPendingDeleteAttachmentId] = useState<number | null>(null);
 
   const attachmentsQueryKey = ['crm', 'task', taskId, 'attachments'] as const;
   const taskQueryKey = ['crm', 'task', taskId] as const;
@@ -1329,8 +1354,7 @@ function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps) {
   };
 
   const handleDeleteClick = (attachmentId: number) => {
-    if (!window.confirm('Удалить вложение?')) return;
-    deleteMutation.mutate(attachmentId);
+    setPendingDeleteAttachmentId(attachmentId);
   };
 
   const canDelete = (uploadedById: number) => {
@@ -1452,6 +1476,21 @@ function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps) {
           })}
         </ul>
       )}
+
+      <ConfirmModal
+        isOpen={pendingDeleteAttachmentId !== null}
+        onClose={() => !deleteMutation.isPending && setPendingDeleteAttachmentId(null)}
+        onConfirm={() => {
+          if (pendingDeleteAttachmentId === null) return;
+          const id = pendingDeleteAttachmentId;
+          deleteMutation.mutate(id, { onSettled: () => setPendingDeleteAttachmentId(null) });
+        }}
+        title="Удалить вложение?"
+        description="Файл будет удалён из задачи без возможности восстановления."
+        variant="danger"
+        confirmLabel="Удалить"
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 }
@@ -1460,9 +1499,10 @@ function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps) {
 
 interface CommentSectionProps {
   taskId: number;
+  boardId: string;
 }
 
-export function CommentSection({ taskId }: CommentSectionProps) {
+export function CommentSection({ taskId, boardId }: CommentSectionProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [newText, setNewText] = useState('');
@@ -1487,6 +1527,10 @@ export function CommentSection({ taskId }: CommentSectionProps) {
     onSuccess: () => {
       setNewText('');
       void queryClient.invalidateQueries({ queryKey: commentsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'task', taskId] });
+      if (boardId) {
+        void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+      }
       void queryClient.invalidateQueries({ queryKey: ['notifications-recent'] });
       void queryClient.invalidateQueries({ queryKey: ['notifications'] });
       void queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
@@ -1975,6 +2019,7 @@ function LabelsManagerModal({ onClose }: LabelsManagerModalProps) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState('');
   const [editColor, setEditColor] = useState('');
+  const [pendingDeleteLabelId, setPendingDeleteLabelId] = useState<number | null>(null);
 
   const { data: labels, isLoading } = useQuery({
     queryKey: ['crm', 'labels'],
@@ -2032,9 +2077,8 @@ function LabelsManagerModal({ onClose }: LabelsManagerModalProps) {
     updateMutation.mutate({ id: editingId!, payload: { name: trimmed, color: editColor } });
   };
 
-  const handleDelete = (id: number) => {
-    if (!window.confirm('Удалить метку? Она будет снята со всех задач.')) return;
-    deleteMutation.mutate(id);
+  const handleDeleteRequest = (id: number) => {
+    setPendingDeleteLabelId(id);
   };
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -2149,7 +2193,7 @@ function LabelsManagerModal({ onClose }: LabelsManagerModalProps) {
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDelete(label.id)}
+                          onClick={() => handleDeleteRequest(label.id)}
                           disabled={deleteMutation.isPending}
                           className="rounded p-1 text-gray-500 hover:text-red-400 hover:bg-gray-700 transition-colors disabled:opacity-50"
                           aria-label={`Удалить метку ${label.name}`}
@@ -2204,6 +2248,22 @@ function LabelsManagerModal({ onClose }: LabelsManagerModalProps) {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        rootClassName="z-[70]"
+        isOpen={pendingDeleteLabelId !== null}
+        onClose={() => !deleteMutation.isPending && setPendingDeleteLabelId(null)}
+        onConfirm={() => {
+          if (pendingDeleteLabelId === null) return;
+          const id = pendingDeleteLabelId;
+          deleteMutation.mutate(id, { onSettled: () => setPendingDeleteLabelId(null) });
+        }}
+        title="Удалить метку?"
+        description="Метка будет снята со всех задач. Это действие нельзя отменить."
+        variant="danger"
+        confirmLabel="Удалить"
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 }
@@ -2467,14 +2527,14 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
 
   const members = membersData?.results ?? [];
 
-  // Local state for editable fields (initialised from fetched task)
+  // Local draft state for editable fields (initialised from fetched task)
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<TaskPriorityValue>('medium');
   const [deadline, setDeadline] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
 
-  // Sync local state when task loads
+  // Sync local state when task loads for the first time
   useEffect(() => {
     if (!task) return;
     setTitle(task.title);
@@ -2482,10 +2542,10 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
     setPriority(task.priority);
     setDeadline(task.deadline ? task.deadline.slice(0, 10) : '');
     setAssigneeId(task.assignee ? String(task.assignee.id) : '');
-  }, [task]);
+  }, [task?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const patchMutation = useMutation({
-    mutationFn: async (payload: Partial<Pick<CrmTask, 'title' | 'description' | 'priority' | 'deadline'>>) => {
+    mutationFn: async (payload: Record<string, unknown>) => {
       const { data } = await apiClient.patch<CrmTask>(API.crm.taskDetail(taskId), payload);
       return data;
     },
@@ -2499,11 +2559,11 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
   });
 
   const archiveMutation = useMutation({
-    mutationFn: async () => {
-      await apiClient.post(API.crm.taskArchive(taskId));
-    },
+    mutationFn: () =>
+      apiClient.patch<CrmTask>(API.crm.taskDetail(taskId), { is_archived: true }).then((r) => r.data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId, 'archived'] });
       onClose();
     },
   });
@@ -2512,54 +2572,40 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
     archiveMutation.mutate();
   };
 
-  const assigneeMutation = useMutation({
-    mutationFn: async (newAssigneeId: number | null) => {
-      const { data } = await apiClient.patch<CrmTask>(API.crm.taskDetail(taskId), {
-        assignee_id: newAssigneeId,
-      });
-      return data;
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
-      void queryClient.invalidateQueries({ queryKey: ['crm', 'task', taskId] });
-      void queryClient.invalidateQueries({ queryKey: ['notifications-recent'] });
-      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      void queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
-    },
-  });
+  const handleSave = () => {
+    if (!task || patchMutation.isPending) return;
 
-  const handleAssigneeChange = (value: string) => {
-    setAssigneeId(value);
-    const parsed = value ? parseInt(value, 10) : null;
-    assigneeMutation.mutate(parsed);
+    const payload: Record<string, unknown> = {};
+
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
+      setTitle(task.title);
+      return;
+    }
+    if (trimmedTitle !== task.title) payload.title = trimmedTitle;
+    if (description !== (task.description ?? '')) payload.description = description || null;
+    if (priority !== task.priority) payload.priority = priority;
+
+    const originalDeadline = task.deadline ? task.deadline.slice(0, 10) : '';
+    if (deadline !== originalDeadline) payload.deadline = deadline || null;
+
+    const originalAssigneeId = task.assignee ? String(task.assignee.id) : '';
+    if (assigneeId !== originalAssigneeId) {
+      payload.assignee_id = assigneeId ? parseInt(assigneeId, 10) : null;
+    }
+
+    if (Object.keys(payload).length === 0) return;
+
+    patchMutation.mutate(payload);
   };
 
-  const handleFieldBlur = useCallback(
-    (field: 'title' | 'description' | 'priority' | 'deadline', value: string) => {
-      if (!task) return;
-      if (field === 'title' && !value.trim()) {
-        setTitle(task.title);
-        return;
-      }
-      if (field === 'deadline') {
-        const cur = task.deadline ? String(task.deadline).slice(0, 10) : '';
-        const next = value.trim().slice(0, 10);
-        if (cur === next) return;
-        patchMutation.mutate({ deadline: next || null });
-        return;
-      }
-      const current = task[field] ?? '';
-      if (String(current) === value) return;
-      patchMutation.mutate({ [field]: value || null });
-    },
-    [task, patchMutation],
-  );
-
-  const handlePriorityChange = (val: TaskPriorityValue) => {
-    setPriority(val);
-    if (task && val !== task.priority) {
-      patchMutation.mutate({ priority: val });
-    }
+  const handleCancel = () => {
+    if (!task) return;
+    setTitle(task.title);
+    setDescription(task.description ?? '');
+    setPriority(task.priority);
+    setDeadline(task.deadline ? task.deadline.slice(0, 10) : '');
+    setAssigneeId(task.assignee ? String(task.assignee.id) : '');
   };
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -2626,11 +2672,12 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  onBlur={(e) => handleFieldBlur('title', e.target.value.trim())}
                   maxLength={255}
+                  disabled={patchMutation.isPending}
                   className={cn(
                     'w-full rounded-lg border bg-gray-800 px-3 py-2 text-base font-medium text-white',
                     'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-gray-700',
+                    'disabled:opacity-60',
                   )}
                 />
               </div>
@@ -2644,10 +2691,12 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
                   <select
                     id="task-priority"
                     value={priority}
-                    onChange={(e) => handlePriorityChange(e.target.value as TaskPriorityValue)}
+                    onChange={(e) => setPriority(e.target.value as TaskPriorityValue)}
+                    disabled={patchMutation.isPending}
                     className={cn(
                       'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white',
                       'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-gray-700',
+                      'disabled:opacity-60',
                     )}
                   >
                     <option value="low">Низкий</option>
@@ -2665,11 +2714,11 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
                     type="date"
                     value={deadline}
                     onChange={(e) => setDeadline(e.target.value)}
-                    onBlur={(e) => handleFieldBlur('deadline', e.target.value)}
+                    disabled={patchMutation.isPending}
                     className={cn(
                       'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white',
                       'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-gray-700',
-                      '[color-scheme:dark]',
+                      '[color-scheme:dark] disabled:opacity-60',
                     )}
                   />
                 </div>
@@ -2691,8 +2740,8 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
                   <select
                     id="task-assignee"
                     value={assigneeId}
-                    onChange={(e) => handleAssigneeChange(e.target.value)}
-                    disabled={assigneeMutation.isPending}
+                    onChange={(e) => setAssigneeId(e.target.value)}
+                    disabled={patchMutation.isPending}
                     className={cn(
                       'w-full rounded-lg border bg-gray-800 pl-8 pr-3 py-2 text-sm text-white',
                       'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-gray-700',
@@ -2709,9 +2758,6 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
                       ))}
                   </select>
                 </div>
-                {assigneeMutation.isError && (
-                  <p className="text-xs text-red-400">Не удалось изменить исполнителя.</p>
-                )}
               </div>
 
               {/* Labels */}
@@ -2730,14 +2776,46 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
                   id="task-description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  onBlur={(e) => handleFieldBlur('description', e.target.value)}
                   rows={4}
                   placeholder="Добавьте описание..."
+                  disabled={patchMutation.isPending}
                   className={cn(
                     'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-600',
                     'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-gray-700 resize-none',
+                    'disabled:opacity-60',
                   )}
                 />
+              </div>
+
+              {/* Save / Cancel */}
+              <div className="flex items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={patchMutation.isPending}
+                  className={cn(
+                    'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                    'bg-blue-600 text-white hover:bg-blue-500',
+                    'disabled:opacity-50 disabled:cursor-not-allowed',
+                  )}
+                >
+                  {patchMutation.isPending ? 'Сохранение...' : 'Сохранить'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  disabled={patchMutation.isPending}
+                  className={cn(
+                    'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                    'text-gray-400 hover:text-white hover:bg-gray-800',
+                    'disabled:opacity-50 disabled:cursor-not-allowed',
+                  )}
+                >
+                  Отменить
+                </button>
+                {patchMutation.isError && (
+                  <p className="text-xs text-red-400">Не удалось сохранить изменения.</p>
+                )}
               </div>
 
               {/* Checklists */}
@@ -2746,12 +2824,8 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
               {/* Attachments */}
               <AttachmentsSection taskId={taskId} boardId={boardId} />
 
-              {patchMutation.isError && (
-                <p className="text-xs text-red-400">Не удалось сохранить изменения.</p>
-              )}
-
               {/* Comments */}
-              <CommentSection taskId={taskId} />
+              <CommentSection taskId={taskId} boardId={boardId} />
 
               {/* History */}
               <HistorySection taskId={taskId} />
@@ -2922,15 +2996,22 @@ function CreateColumnModal({ boardId, onClose }: CreateColumnModalProps) {
 interface EditColumnModalProps {
   boardId: string;
   column: CrmColumn;
+  taskCount: number;
   onClose: () => void;
 }
 
-function EditColumnModal({ boardId, column, onClose }: EditColumnModalProps) {
+function EditColumnModal({ boardId, column, taskCount, onClose }: EditColumnModalProps) {
   const queryClient = useQueryClient();
   const [name, setName] = useState(column.name);
   const [wipLimit, setWipLimit] = useState(column.wip_limit !== null ? String(column.wip_limit) : '');
   const [position, setPosition] = useState(String(column.order));
   const nameRef = useRef<HTMLInputElement>(null);
+
+  const wipLimitNum = wipLimit.trim() === '' ? null : Number(wipLimit.trim());
+  const wipLimitError =
+    wipLimitNum !== null && wipLimitNum < taskCount
+      ? `Лимит не может быть меньше текущего количества задач: ${taskCount}`
+      : null;
 
   useEffect(() => {
     nameRef.current?.focus();
@@ -2955,6 +3036,7 @@ function EditColumnModal({ boardId, column, onClose }: EditColumnModalProps) {
     if (!name.trim()) return;
     const trimmed = wipLimit.trim();
     const resolvedWipLimit: number | null = trimmed === '' ? null : Number(trimmed);
+    if (resolvedWipLimit !== null && resolvedWipLimit < taskCount) return;
     const resolvedPosition = Number(position);
 
     const payload: { name: string; wip_limit: number | null; position?: number } = {
@@ -3028,12 +3110,21 @@ function EditColumnModal({ boardId, column, onClose }: EditColumnModalProps) {
               value={wipLimit}
               onChange={(e) => setWipLimit(e.target.value)}
               placeholder="Без ограничений"
+              aria-describedby={wipLimitError ? 'edit-column-wip-error' : undefined}
+              aria-invalid={wipLimitError ? true : undefined}
               className={cn(
                 'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500',
-                'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
-                'border-gray-700 focus:border-blue-500',
+                'focus:outline-none focus:ring-2 transition-colors',
+                wipLimitError
+                  ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                  : 'border-gray-700 focus:ring-blue-500 focus:border-blue-500',
               )}
             />
+            {wipLimitError && (
+              <p id="edit-column-wip-error" className="text-xs text-red-400 mt-1">
+                {wipLimitError}
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -3064,7 +3155,7 @@ function EditColumnModal({ boardId, column, onClose }: EditColumnModalProps) {
             </button>
             <button
               type="submit"
-              disabled={!name.trim() || mutation.isPending}
+              disabled={!name.trim() || !!wipLimitError || mutation.isPending}
               className={cn(
                 'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
                 'bg-blue-600 text-white hover:bg-blue-500',
@@ -3086,14 +3177,40 @@ interface DeleteColumnDialogProps {
   boardId: string;
   column: CrmColumn;
   otherColumns: CrmColumn[];
+  taskCountByColumnId: Record<number, number>;
   onClose: () => void;
 }
 
-function DeleteColumnDialog({ boardId, column, otherColumns, onClose }: DeleteColumnDialogProps) {
+function DeleteColumnDialog({ boardId, column, otherColumns, taskCountByColumnId, onClose }: DeleteColumnDialogProps) {
   const queryClient = useQueryClient();
   const [moveToId, setMoveToId] = useState<string>(
     otherColumns.length > 0 ? String(otherColumns[0].id) : '',
   );
+
+  const tasksToMove = taskCountByColumnId[column.id] ?? 0;
+
+  const selectedColumn = moveToId
+    ? otherColumns.find((c) => String(c.id) === moveToId) ?? null
+    : null;
+
+  const wipCheck =
+    selectedColumn && tasksToMove > 0
+      ? checkWipLimit({
+          columns: [selectedColumn],
+          taskCountByColumnId,
+          targetColumnId: selectedColumn.id,
+          tasksToAddCount: tasksToMove,
+        })
+      : { ok: true as const };
+
+  const wipViolation = !wipCheck.ok;
+
+  const wipWarning = (() => {
+    if (!wipViolation || !selectedColumn || wipCheck.ok) return null;
+    const limit = wipCheck.limit ?? selectedColumn.wip_limit ?? 0;
+    const targetCount = wipCheck.current ?? taskCountByColumnId[selectedColumn.id] ?? 0;
+    return `Недостаточно места в целевой колонке (WIP-лимит: ${limit}). Сейчас там ${targetCount} задач, переносится ${tasksToMove}. Выберите другую колонку или освободите место.`;
+  })();
 
   const mutation = useMutation({
     mutationFn: async (targetId: string) => {
@@ -3103,12 +3220,14 @@ function DeleteColumnDialog({ boardId, column, otherColumns, onClose }: DeleteCo
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'columns', boardId] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'board', boardId] });
       onClose();
     },
   });
 
   const handleConfirm = () => {
-    if (!moveToId) return;
+    if (!moveToId || wipViolation) return;
     mutation.mutate(moveToId);
   };
 
@@ -3157,7 +3276,7 @@ function DeleteColumnDialog({ boardId, column, otherColumns, onClose }: DeleteCo
               className={cn(
                 'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white',
                 'focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors',
-                'border-gray-700 focus:border-red-500',
+                wipViolation ? 'border-orange-600 focus:border-orange-500' : 'border-gray-700 focus:border-red-500',
               )}
             >
               {otherColumns.map((col) => (
@@ -3168,6 +3287,13 @@ function DeleteColumnDialog({ boardId, column, otherColumns, onClose }: DeleteCo
             </select>
           </div>
         ) : null}
+
+        {wipWarning && (
+          <div className="flex items-start gap-2 rounded-lg bg-orange-900/30 border border-orange-700 px-4 py-3 text-sm text-orange-300">
+            <AlertCircle size={16} className="mt-0.5 shrink-0" />
+            <span>{wipWarning}</span>
+          </div>
+        )}
 
         {mutation.isError && (
           <div className="flex items-start gap-2 rounded-lg bg-red-900/30 border border-red-800 px-4 py-3 text-sm text-red-300">
@@ -3187,7 +3313,7 @@ function DeleteColumnDialog({ boardId, column, otherColumns, onClose }: DeleteCo
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={!moveToId || mutation.isPending || otherColumns.length === 0}
+            disabled={!moveToId || mutation.isPending || otherColumns.length === 0 || wipViolation}
             className={cn(
               'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
               'bg-red-600 text-white hover:bg-red-500',
@@ -3274,6 +3400,7 @@ interface KanbanColumnProps {
   allColumns: CrmColumn[];
   boardId: string;
   tasks: CrmTask[];
+  taskCountByColumnId: Record<number, number>;
   onTaskClick: (taskId: number) => void;
   dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>;
   isDragOverlay?: boolean;
@@ -3284,15 +3411,27 @@ function KanbanColumn({
   allColumns,
   boardId,
   tasks,
+  taskCountByColumnId,
   onTaskClick,
   dragHandleProps,
   isDragOverlay,
 }: KanbanColumnProps) {
+  const queryClient = useQueryClient();
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
 
   const otherColumns = allColumns.filter((c) => c.id !== column.id);
+  const atWipLimit = column.wip_limit !== null && tasks.length >= column.wip_limit;
+
+  const archiveTaskMutation = useMutation({
+    mutationFn: (taskId: number) =>
+      apiClient.patch<CrmTask>(API.crm.taskDetail(taskId), { is_archived: true }).then((r) => r.data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId, 'archived'] });
+    },
+  });
 
   return (
     <>
@@ -3364,6 +3503,7 @@ function KanbanColumn({
                   key={task.id}
                   task={task}
                   onTaskClick={onTaskClick}
+                  onArchive={archiveTaskMutation.mutate}
                 />
               ))
             )}
@@ -3376,10 +3516,17 @@ function KanbanColumn({
             <button
               type="button"
               onClick={() => setShowAddTask(true)}
+              disabled={atWipLimit}
+              title={
+                atWipLimit
+                  ? 'Достигнут WIP-лимит колонки. Освободите место, чтобы добавить задачу.'
+                  : undefined
+              }
               className={cn(
                 'flex w-full items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium',
                 'text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                atWipLimit && 'opacity-50 cursor-not-allowed hover:bg-transparent hover:text-gray-500',
               )}
             >
               <Plus size={13} />
@@ -3393,6 +3540,7 @@ function KanbanColumn({
         <CreateTaskModal
           boardId={boardId}
           columnId={column.id}
+          wipBlocked={atWipLimit}
           onClose={() => setShowAddTask(false)}
         />
       )}
@@ -3401,6 +3549,7 @@ function KanbanColumn({
         <EditColumnModal
           boardId={boardId}
           column={column}
+          taskCount={tasks.length}
           onClose={() => setShowEdit(false)}
         />
       )}
@@ -3410,6 +3559,7 @@ function KanbanColumn({
           boardId={boardId}
           column={column}
           otherColumns={otherColumns}
+          taskCountByColumnId={taskCountByColumnId}
           onClose={() => setShowDelete(false)}
         />
       )}
@@ -3424,10 +3574,11 @@ interface SortableColumnProps {
   allColumns: CrmColumn[];
   boardId: string;
   tasks: CrmTask[];
+  taskCountByColumnId: Record<number, number>;
   onTaskClick: (taskId: number) => void;
 }
 
-function SortableColumn({ column, allColumns, boardId, tasks, onTaskClick }: SortableColumnProps) {
+function SortableColumn({ column, allColumns, boardId, tasks, taskCountByColumnId, onTaskClick }: SortableColumnProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: column.id,
   });
@@ -3444,6 +3595,7 @@ function SortableColumn({ column, allColumns, boardId, tasks, onTaskClick }: Sor
         allColumns={allColumns}
         boardId={boardId}
         tasks={tasks}
+        taskCountByColumnId={taskCountByColumnId}
         onTaskClick={onTaskClick}
         dragHandleProps={{ ...attributes, ...listeners }}
       />
@@ -3827,6 +3979,180 @@ function ListView({ tasks, columns, isLoading, onTaskClick }: ListViewProps) {
   );
 }
 
+// ─── Archive Panel ────────────────────────────────────────────────────────────
+
+interface ArchivePanelProps {
+  boardId: string;
+  columns: CrmColumn[];
+  taskCountByColumnId: Record<number, number>;
+  onClose: () => void;
+  /** Called when user tries to restore while the task's column is at WIP limit */
+  onRestoreWipBlocked?: () => void;
+}
+
+function ArchivePanel({
+  boardId,
+  columns,
+  taskCountByColumnId,
+  onClose,
+  onRestoreWipBlocked,
+}: ArchivePanelProps) {
+  const queryClient = useQueryClient();
+  const columnMap = new Map(columns.map((c) => [c.id, c.name]));
+
+  const { data: archivedTasks = [], isLoading: archiveLoading } = useQuery({
+    queryKey: ['crm', 'tasks', boardId, 'archived'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<CrmTask[] | { results: CrmTask[] }>(
+        API.crm.tasksList,
+        { params: { board_id: boardId, is_archived: true } },
+      );
+      const list = Array.isArray(data) ? data : data.results;
+      return list.filter((t) => t.is_archived);
+    },
+  });
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  const unarchiveMutation = useMutation({
+    mutationFn: (taskId: number) =>
+      apiClient.patch<CrmTask>(API.crm.taskDetail(taskId), { is_archived: false }).then((r) => r.data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId, 'archived'] });
+    },
+  });
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) onClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex justify-end bg-black/50"
+      onClick={handleBackdropClick}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Архив задач"
+    >
+      <div className="flex flex-col w-full max-w-md bg-gray-900 border-l border-gray-800 shadow-2xl h-full overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800 shrink-0">
+          <div className="flex items-center gap-2">
+            <Archive size={16} className="text-gray-400" />
+            <h2 className="text-base font-semibold text-white">Архив задач</h2>
+            {archivedTasks.length > 0 && (
+              <span className="inline-flex items-center rounded-md bg-gray-800 border border-gray-700 px-1.5 py-0.5 text-xs text-gray-400">
+                {archivedTasks.length}
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-400 hover:text-white transition-colors rounded-md p-1 hover:bg-gray-800"
+            aria-label="Закрыть архив"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          {archiveLoading ? (
+            <div className="flex items-center justify-center h-full py-16">
+              <p className="text-sm text-gray-500">Загрузка...</p>
+            </div>
+          ) : archivedTasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3 py-16 text-center">
+              <Archive size={36} className="text-gray-700" />
+              <p className="text-sm text-gray-500">Здесь пока нет архивных задач</p>
+            </div>
+          ) : (
+            <ul className="space-y-2" role="list" aria-label="Архивные задачи">
+              {archivedTasks.map((task) => {
+                const restoreCheck = checkWipLimit({
+                  columns,
+                  taskCountByColumnId,
+                  targetColumnId: task.column_id,
+                  tasksToAddCount: 1,
+                });
+                const restoreBlocked = !restoreCheck.ok;
+
+                return (
+                <li
+                  key={task.id}
+                  className="flex items-start gap-3 rounded-lg border border-gray-700 bg-gray-800 px-3 py-3"
+                >
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <p className="text-sm text-white leading-snug break-words">{task.title}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs text-gray-500">
+                        {columnMap.get(task.column_id) ?? '—'}
+                      </span>
+                      <span
+                        className={cn(
+                          'inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-medium',
+                          PRIORITY_BADGE_CLASS[task.priority],
+                        )}
+                      >
+                        {PRIORITY_LABELS[task.priority]}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (restoreBlocked) {
+                        onRestoreWipBlocked?.();
+                        return;
+                      }
+                      unarchiveMutation.mutate(task.id);
+                    }}
+                    disabled={
+                      unarchiveMutation.isPending && unarchiveMutation.variables === task.id
+                    }
+                    aria-disabled={restoreBlocked || undefined}
+                    title={
+                      restoreBlocked
+                        ? 'Нельзя восстановить: превышен WIP-лимит этой колонки. Освободите место.'
+                        : undefined
+                    }
+                    className={cn(
+                      'shrink-0 rounded-md border border-gray-600 px-2.5 py-1.5 text-xs font-medium transition-colors',
+                      'text-gray-300 hover:text-white hover:border-gray-400 hover:bg-gray-700',
+                      restoreBlocked && 'opacity-50 cursor-not-allowed hover:bg-transparent hover:text-gray-500 hover:border-gray-600',
+                      'disabled:opacity-50 disabled:cursor-not-allowed',
+                    )}
+                    aria-label={`Восстановить задачу: ${task.title}`}
+                  >
+                    {unarchiveMutation.isPending && unarchiveMutation.variables === task.id
+                      ? '...'
+                      : 'Восстановить'}
+                  </button>
+                </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        {unarchiveMutation.isError && (
+          <div className="px-5 py-3 border-t border-gray-800 shrink-0">
+            <p className="text-xs text-red-400">Не удалось восстановить задачу. Попробуйте снова.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function BoardDetailSkeleton() {
@@ -3864,8 +4190,10 @@ export default function BoardDetailPage() {
   const [activeTask, setActiveTask] = useState<CrmTask | null>(null);
   const [activeDragType, setActiveDragType] = useState<'column' | 'task' | null>(null);
   const [showAddColumn, setShowAddColumn] = useState(false);
+  const [archivePanelOpen, setArchivePanelOpen] = useState(false);
   const [reorderError, setReorderError] = useState(false);
   const [taskMoveError, setTaskMoveError] = useState<string | null>(null);
+  const [focusTaskAfterDropId, setFocusTaskAfterDropId] = useState<number | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(() => {
     const taskParam = searchParams.get('task');
     return taskParam ? Number(taskParam) : null;
@@ -3874,14 +4202,25 @@ export default function BoardDetailPage() {
   const taskMoveErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const snapshotRef = useRef<CrmColumn[]>([]);
   const taskSnapshotRef = useRef<Record<number, CrmTask[]>>({});
+  /** One toast per task-drag when user hits a WIP-full column in handleDragOver */
+  const wipDragBlockedToastShownRef = useRef(false);
   // Refs to avoid stale closures in DnD event handlers
   const activeDragTypeRef = useRef<'column' | 'task' | null>(null);
   const localTasksByColumnRef = useRef<Record<number, CrmTask[]>>({});
+
+  const { showWipLimitToast, WipLimitToast } = useWipLimitToast();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  // Keyboard DnD has no pointer coordinates, so pointerWithin alone can return
+  // empty matches. Fallback to closestCenter keeps keyboard moves stable.
+  const collisionDetectionStrategy: CollisionDetection = useCallback((args) => {
+    const pointerCollisions = pointerWithin(args);
+    return pointerCollisions.length > 0 ? pointerCollisions : closestCenter(args);
+  }, []);
 
   const {
     data: board,
@@ -3934,7 +4273,7 @@ export default function BoardDetailPage() {
     enabled: Boolean(boardId),
   });
 
-  const tasks = tasksData ?? [];
+  const tasks = (tasksData ?? []).filter((t) => !t.is_archived);
 
   useEffect(() => {
     if (columns) setLocalColumns([...columns].sort((a, b) => a.order - b.order));
@@ -3943,6 +4282,7 @@ export default function BoardDetailPage() {
   useEffect(() => {
     if (!tasksData) return;
     const grouped = tasksData.reduce<Record<number, CrmTask[]>>((acc, task) => {
+      if (task.is_archived) return acc;
       const col = task.column_id;
       if (!acc[col]) acc[col] = [];
       acc[col].push(task);
@@ -3954,6 +4294,16 @@ export default function BoardDetailPage() {
     localTasksByColumnRef.current = grouped;
     setLocalTasksByColumn(grouped);
   }, [tasksData]);
+
+  useEffect(() => {
+    if (focusTaskAfterDropId === null) return;
+    const frame = requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLElement>(`[data-task-id="${focusTaskAfterDropId}"]`);
+      target?.focus();
+      setFocusTaskAfterDropId(null);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusTaskAfterDropId, localTasksByColumn]);
 
   const reorderMutation = useMutation({
     mutationFn: (columnIds: number[]) =>
@@ -3985,7 +4335,7 @@ export default function BoardDetailPage() {
         const raw = data?.detail ?? (data?.non_field_errors as unknown[])?.[0];
         const detail = typeof raw === 'string' ? raw : JSON.stringify(raw ?? '');
         if (detail.toLowerCase().includes('wip')) {
-          message = 'Превышен WIP-лимит колонки.';
+          message = WIP_LIMIT_VIOLATION_MESSAGE;
         }
       }
       setTaskMoveError(message);
@@ -4008,6 +4358,7 @@ export default function BoardDetailPage() {
       setActiveTask(task);
       setActiveDragType('task');
       activeDragTypeRef.current = 'task';
+      wipDragBlockedToastShownRef.current = false;
       taskSnapshotRef.current = structuredClone(localTasksByColumnRef.current);
     } else {
       const col = localColumns.find(c => c.id === event.active.id);
@@ -4083,6 +4434,24 @@ export default function BoardDetailPage() {
           [sourceColId]: reordered,
         };
         setLocalTasksByColumn(localTasksByColumnRef.current);
+      }
+      return;
+    }
+
+    const taskCountByColumnIdForWip = Object.fromEntries(
+      Object.entries(currentTasksByColumn).map(([k, v]) => [Number(k), v.length]),
+    );
+    const wipCross = checkWipLimit({
+      columns: localColumns,
+      taskCountByColumnId: taskCountByColumnIdForWip,
+      targetColumnId: targetColId,
+      tasksToAddCount: 1,
+      sourceColumnId: sourceColId,
+    });
+    if (!wipCross.ok) {
+      if (!wipDragBlockedToastShownRef.current) {
+        wipDragBlockedToastShownRef.current = true;
+        showWipLimitToast();
       }
       return;
     }
@@ -4218,6 +4587,26 @@ export default function BoardDetailPage() {
 
       if (!hasColumnChanged && !hasPositionChanged) return;
 
+      if (hasColumnChanged) {
+        const snapshotCounts = Object.fromEntries(
+          Object.entries(taskSnapshotRef.current).map(([k, v]) => [Number(k), v.length]),
+        );
+        const wipBeforeMove = checkWipLimit({
+          columns: localColumns,
+          taskCountByColumnId: snapshotCounts,
+          targetColumnId: targetColId,
+          tasksToAddCount: 1,
+          sourceColumnId: originalColId ?? undefined,
+        });
+        if (!wipBeforeMove.ok) {
+          localTasksByColumnRef.current = taskSnapshotRef.current;
+          setLocalTasksByColumn(taskSnapshotRef.current);
+          showWipLimitToast();
+          return;
+        }
+      }
+
+
       taskMoveMutation.mutate({
         taskId: activeTaskId,
         columnId: targetColId,
@@ -4258,6 +4647,7 @@ export default function BoardDetailPage() {
 
   return (
     <div className="space-y-6">
+      {WipLimitToast}
       {/* Back navigation */}
       <Link
         to="/crm"
@@ -4272,12 +4662,24 @@ export default function BoardDetailPage() {
         <div className="rounded-lg bg-blue-600/20 p-2 shrink-0">
           <LayoutGrid size={20} className="text-blue-400" />
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <h1 className="text-xl font-semibold text-white">{board.name}</h1>
           {board.description && (
             <p className="text-sm text-gray-500 mt-0.5">{board.description}</p>
           )}
         </div>
+        <button
+          type="button"
+          onClick={() => setArchivePanelOpen(true)}
+          className={cn(
+            'flex items-center gap-2 rounded-lg border border-gray-700 px-3 py-2 text-sm font-medium shrink-0',
+            'text-gray-400 hover:text-white hover:border-gray-500 transition-colors',
+          )}
+          aria-label="Открыть архив задач"
+        >
+          <Archive size={15} />
+          Архив
+        </button>
       </div>
 
       {/* Reorder error banner */}
@@ -4337,7 +4739,7 @@ export default function BoardDetailPage() {
       ) : (
         <DndContext
           sensors={sensors}
-          collisionDetection={pointerWithin}
+          collisionDetection={collisionDetectionStrategy}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
@@ -4359,6 +4761,9 @@ export default function BoardDetailPage() {
                   allColumns={localColumns}
                   boardId={boardId}
                   tasks={isTasksLoading ? [] : (localTasksByColumn[column.id] ?? [])}
+                  taskCountByColumnId={Object.fromEntries(
+                    Object.entries(localTasksByColumn).map(([k, v]) => [Number(k), v.length]),
+                  )}
                   onTaskClick={(taskId) => setSelectedTaskId(taskId)}
                 />
               ))}
@@ -4381,6 +4786,9 @@ export default function BoardDetailPage() {
                 allColumns={localColumns}
                 boardId={boardId}
                 tasks={localTasksByColumn[activeColumn.id] ?? []}
+                taskCountByColumnId={Object.fromEntries(
+                  Object.entries(localTasksByColumn).map(([k, v]) => [Number(k), v.length]),
+                )}
                 onTaskClick={() => undefined}
                 isDragOverlay
               />
@@ -4407,6 +4815,19 @@ export default function BoardDetailPage() {
               setSearchParams(searchParams, { replace: true });
             }
           }}
+        />
+      )}
+
+      {/* Archive panel */}
+      {archivePanelOpen && (
+        <ArchivePanel
+          boardId={boardId}
+          columns={localColumns}
+          taskCountByColumnId={Object.fromEntries(
+            Object.entries(localTasksByColumn).map(([k, v]) => [Number(k), v.length]),
+          )}
+          onClose={() => setArchivePanelOpen(false)}
+          onRestoreWipBlocked={showWipLimitToast}
         />
       )}
     </div>

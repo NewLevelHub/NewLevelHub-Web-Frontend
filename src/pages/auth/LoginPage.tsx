@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router';
 import { useAuthStore } from '@/shared/store/auth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { authInput, authLabel, authPrimaryBtn, authLink } from '@/shared/ui/authFormStyles';
+import { AuthPasswordField } from '@/shared/ui/AuthPasswordField';
 
 export default function LoginPage() {
   const login = useAuthStore((s) => s.login);
@@ -70,14 +71,12 @@ export default function LoginPage() {
               Забыли пароль?
             </Link>
           </div>
-          <input
+          <AuthPasswordField
             id="login-password"
-            type="password"
             autoComplete="current-password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className={authInput}
           />
         </div>
 

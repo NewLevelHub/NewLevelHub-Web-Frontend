@@ -12,6 +12,7 @@ import {
 } from '@/shared/config/constants';
 import { useUser } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import type { Announcement, Company, PaginatedResponse } from '@/shared/types';
 
 type AudienceMode = 'building' | 'company';
@@ -40,7 +41,7 @@ export default function AnnouncementCreatePage() {
 
   // Superadmin only: load companies for the recipient picker.
   const companiesQuery = useQuery({
-    queryKey: ['companies', 'list-for-announcement'],
+    queryKey: [...companiesCacheRoot(user?.id), 'list-for-announcement'],
     queryFn: async () => {
       const response = await apiClient.get<PaginatedResponse<Company>>(API.companies.list);
       return response.data;

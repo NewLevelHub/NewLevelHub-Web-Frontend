@@ -14,6 +14,7 @@ import { API } from '@/shared/api/endpoints';
 import {
   COMPANY_PLAN_DEFAULT_LIMITS,
   COMPANY_TIERS,
+  SUPERADMIN_UI_PREFIX,
   USER_ROLES,
   type CompanyTier,
 } from '@/shared/config/constants';
@@ -32,6 +33,7 @@ interface FormData {
   contact_phone: string;
   plan: string;
   max_employees: string;
+  max_boards: string;
   storage_limit_gb: string;
 }
 
@@ -53,7 +55,8 @@ const basicPlanLimits = COMPANY_PLAN_DEFAULT_LIMITS[COMPANY_TIERS.BASIC];
 export default function CompanyCreatePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const companiesBasePath = user?.role === USER_ROLES.SUPERADMIN ? '/admin/companies' : '/companies';
+  const companiesBasePath =
+    user?.role === USER_ROLES.SUPERADMIN ? `${SUPERADMIN_UI_PREFIX}/companies` : '/companies';
 
   const [form, setForm] = useState<FormData>({
     name: '',
@@ -64,6 +67,7 @@ export default function CompanyCreatePage() {
     contact_phone: '',
     plan: COMPANY_TIERS.BASIC,
     max_employees: String(basicPlanLimits.max_employees),
+    max_boards: String(basicPlanLimits.max_boards),
     storage_limit_gb: String(basicPlanLimits.storage_limit_gb),
   });
 
@@ -84,6 +88,7 @@ export default function CompanyCreatePage() {
       if (form.contact_phone) formData.append('contact_phone', form.contact_phone);
       formData.append('plan', form.plan);
       formData.append('max_employees', form.max_employees);
+      formData.append('max_boards', form.max_boards);
       formData.append('storage_limit_gb', form.storage_limit_gb);
       if (logoFile) formData.append('logo', logoFile);
 
@@ -126,13 +131,16 @@ export default function CompanyCreatePage() {
           ...prev,
           plan: value,
           max_employees: String(limits.max_employees),
+          max_boards: String(limits.max_boards),
           storage_limit_gb: String(limits.storage_limit_gb),
         };
       }
       return { ...prev, [field]: value };
     });
     const keysToClear: (keyof FormData)[] =
-      field === 'plan' ? ['plan', 'max_employees', 'storage_limit_gb'] : [field];
+      field === 'plan'
+        ? ['plan', 'max_employees', 'max_boards', 'storage_limit_gb']
+        : [field];
     if (keysToClear.some((k) => fieldErrors[k])) {
       setFieldErrors((prev) => {
         const next = { ...prev };

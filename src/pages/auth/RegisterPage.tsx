@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { useAuthStore } from '@/shared/store/auth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { authInput, authLabel, authPrimaryBtn, authLink } from '@/shared/ui/authFormStyles';
+import { AuthPasswordField } from '@/shared/ui/AuthPasswordField';
 
 export default function RegisterPage() {
   const register = useAuthStore((s) => s.register);
@@ -115,14 +116,13 @@ export default function RegisterPage() {
           <label htmlFor="reg-pass" className={authLabel}>
             Пароль
           </label>
-          <input
+          <AuthPasswordField
             id="reg-pass"
-            type="password"
+            autoComplete="new-password"
             required
             minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className={authInput}
           />
         </div>
 
@@ -130,13 +130,12 @@ export default function RegisterPage() {
           <label htmlFor="reg-pass2" className={authLabel}>
             Пароль ещё раз
           </label>
-          <input
+          <AuthPasswordField
             id="reg-pass2"
-            type="password"
             required
             value={passwordConfirm}
             onChange={(e) => setPasswordConfirm(e.target.value)}
-            className={authInput}
+            autoComplete="new-password"
           />
         </div>
 

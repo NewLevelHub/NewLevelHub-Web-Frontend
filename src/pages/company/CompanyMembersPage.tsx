@@ -7,6 +7,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES, type UserRole } from '@/shared/config/constants';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
 import { useAuth } from '@/shared/hooks/useAuth';
 import type { Company, CompanyInvitation, CompanyMember, PaginatedResponse } from '@/shared/types';
@@ -45,7 +46,7 @@ export default function CompanyMembersPage() {
   const [filterExpired, setFilterExpired] = useState<boolean | undefined>(undefined);
 
   const { data: companiesData } = useQuery({
-    queryKey: ['companies', 'list'],
+    queryKey: [...companiesCacheRoot(user?.id), 'list'],
     enabled: isSuperadmin,
     queryFn: () =>
       apiClient
@@ -109,7 +110,7 @@ export default function CompanyMembersPage() {
     },
   });
 
-  if (!companyId) {
+  if (!companyId && !isSuperadmin) {
     return (
       <div className="max-w-2xl">
         <h1 className="text-2xl font-semibold text-white">Участники</h1>
@@ -138,14 +139,22 @@ export default function CompanyMembersPage() {
         <div>
           <h1 className="text-2xl font-semibold text-white">Участники</h1>
           <p className="mt-1 text-sm text-gray-400">
-            Сотрудники компании и приглашения по email.{' '}
-            <Link to="/company/settings" className="text-indigo-400 hover:text-indigo-300">
-              Общие настройки
-            </Link>
+            {isSuperadmin && !companyId
+              ? 'Выберите компанию ниже, чтобы просматривать участников и отправлять приглашения.'
+              : (
+                  <>
+                    Сотрудники компании и приглашения по email.{' '}
+                    <Link to="/company/settings" className="text-indigo-400 hover:text-indigo-300">
+                      Общие настройки
+                    </Link>
+                  </>
+                )}
           </p>
         </div>
         <button
           type="button"
+          disabled={!companyId}
+          title={!companyId ? 'Сначала выберите компанию' : undefined}
           onClick={() => {
             setInviteOpen((v) => !v);
             setFormError('');

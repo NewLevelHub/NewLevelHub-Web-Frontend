@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router';
 import { Bell, User, Menu } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -31,7 +32,9 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
   const queryClient = useQueryClient();
 
   const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
 
   const { data: unreadData } = useQuery({
     queryKey: ['notifications-unread-count'],
@@ -72,8 +75,20 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
 
   useEffect(() => {
     if (!open) return;
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (rect) {
+      setDropdownPos({
+        top: rect.bottom + window.scrollY + 8,
+        right: window.innerWidth - rect.right,
+      });
+    }
     function handleOutsideClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
     }
@@ -97,7 +112,7 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
   }
 
   return (
-    <header className="h-14 border-b border-gray-800 bg-gray-950/80 backdrop-blur-sm flex items-center justify-between md:justify-end gap-3 px-3 sm:px-4 md:px-6">
+    <header className="relative z-[90] h-14 border-b border-gray-800 bg-gray-950/80 backdrop-blur-sm flex items-center justify-between md:justify-end gap-3 px-3 sm:px-4 md:px-6">
       <button
         type="button"
         onClick={onOpenMobileNav}
@@ -109,8 +124,9 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
         <Menu size={18} />
       </button>
       <div className="flex items-center gap-3 sm:gap-4">
-      <div className="relative" ref={dropdownRef}>
+      <div className="relative">
         <button
+          ref={buttonRef}
           type="button"
           onClick={() => setOpen(prev => !prev)}
           className="text-gray-400 hover:text-white transition-colors relative"
@@ -130,9 +146,11 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
           )}
         </button>
 
-        {open && (
+        {open && createPortal(
           <div
-            className="absolute right-0 top-full mt-2 w-[calc(100vw-1rem)] max-w-sm max-h-[28rem] overflow-y-auto rounded-xl border border-gray-700 bg-gray-900 shadow-xl z-50"
+            ref={dropdownRef}
+            style={{ top: dropdownPos.top, right: dropdownPos.right }}
+            className="fixed w-[calc(100vw-1rem)] max-w-sm max-h-[28rem] overflow-y-auto rounded-xl border border-gray-700 bg-gray-900 shadow-xl z-[9999]"
             role="dialog"
             aria-label="Уведомления"
           >
@@ -205,7 +223,8 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
                 Смотреть все уведомления
               </Link>
             </div>
-          </div>
+          </div>,
+          document.body,
         )}
       </div>
 

@@ -15,7 +15,9 @@ import {
   type ResourceEquipmentKey,
   type ResourceType,
 } from '@/shared/config/constants';
+import { useUser } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import {
@@ -85,6 +87,7 @@ function equipmentFromDetail(eq: BookingResourceDetail['equipment']): EquipmentS
 }
 
 export default function ResourceDetailPage() {
+  const user = useUser();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -158,7 +161,7 @@ export default function ResourceDetailPage() {
   }, [scheduleDay]);
 
   const { data: companies = [] } = useQuery({
-    queryKey: ['companies', 'resource-form'],
+    queryKey: [...companiesCacheRoot(user?.id), 'resource-form'],
     queryFn: async () => {
       const { data: res } = await apiClient.get<PaginatedResponse<Company>>(API.companies.list, {
         params: { page_size: 100 },

@@ -25,7 +25,10 @@ import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
+import { PromptModal } from '@/shared/ui/PromptModal';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import type {
   Company,
@@ -445,6 +448,10 @@ export default function TeamManagePage() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [deactivateTarget, setDeactivateTarget] = useState<CompanyMember | null>(null);
+  const [activateTarget, setActivateTarget] = useState<CompanyMember | null>(null);
+  const [removeConfirmTarget, setRemoveConfirmTarget] = useState<CompanyMember | null>(null);
+  const [removeReassignTarget, setRemoveReassignTarget] = useState<CompanyMember | null>(null);
 
   // Debounce search input
   useEffect(() => {
@@ -457,7 +464,7 @@ export default function TeamManagePage() {
 
   // Fetch companies list for superadmin
   const { data: companiesData } = useQuery<PaginatedResponse<Company>>({
-    queryKey: ['companies', 'list'],
+    queryKey: [...companiesCacheRoot(user?.id), 'list'],
     queryFn: () =>
       apiClient.get<PaginatedResponse<Company>>(API.companies.list).then((r) => r.data),
     enabled: isSuperadmin,
@@ -585,38 +592,18 @@ export default function TeamManagePage() {
 
   const handleDeactivate = useCallback((member: CompanyMember) => {
     if (!companyId) return;
-    if (!window.confirm(`Деактивировать пользователя ${member.full_name}?`)) return;
-    setActionSuccess(null);
-    setActionError(null);
-    deactivateMemberMutation.mutate({ currentCompanyId: companyId, memberId: member.id });
-  }, [companyId, deactivateMemberMutation]);
+    setDeactivateTarget(member);
+  }, [companyId]);
 
   const handleActivate = useCallback((member: CompanyMember) => {
     if (!companyId) return;
-    if (!window.confirm(`Активировать пользователя ${member.full_name}?`)) return;
-    setActionSuccess(null);
-    setActionError(null);
-    activateMemberMutation.mutate({ currentCompanyId: companyId, memberId: member.id });
-  }, [companyId, activateMemberMutation]);
+    setActivateTarget(member);
+  }, [companyId]);
 
   const handleRemove = useCallback((member: CompanyMember) => {
     if (!companyId) return;
-    if (!window.confirm(`Удалить ${member.full_name} из компании?`)) return;
-
-    const reassignInput = window.prompt(
-      'ID сотрудника для переназначения задач (опционально). Оставьте пустым, чтобы снять исполнителя.',
-      '',
-    );
-    const reassignTo = reassignInput?.trim() ? reassignInput.trim() : undefined;
-
-    setActionSuccess(null);
-    setActionError(null);
-    removeMemberMutation.mutate({
-      currentCompanyId: companyId,
-      memberId: member.id,
-      reassignTo,
-    });
-  }, [companyId, removeMemberMutation]);
+    setRemoveConfirmTarget(member);
+  }, [companyId]);
 
   const totalPages = data ? Math.ceil(data.count / PAGE_SIZE) : 0;
 
@@ -913,6 +900,96 @@ export default function TeamManagePage() {
         </div>
       )}
       </>}
+
+      <ConfirmModal
+        isOpen={deactivateTarget !== null}
+        onClose={() => !deactivateMemberMutation.isPending && setDeactivateTarget(null)}
+        onConfirm={() => {
+          if (!companyId || !deactivateTarget) return;
+          setActionSuccess(null);
+          setActionError(null);
+          deactivateMemberMutation.mutate(
+            { currentCompanyId: companyId, memberId: deactivateTarget.id },
+            { onSettled: () => setDeactivateTarget(null) },
+          );
+        }}
+        title="Деактивировать пользователя?"
+        description={
+          deactivateTarget
+            ? `Пользователь ${deactivateTarget.full_name} потеряет доступ к системе до повторной активации.`
+            : ''
+        }
+        variant="warning"
+        confirmLabel="Деактивировать"
+        isLoading={deactivateMemberMutation.isPending}
+      />
+
+      <ConfirmModal
+        isOpen={activateTarget !== null}
+        onClose={() => !activateMemberMutation.isPending && setActivateTarget(null)}
+        onConfirm={() => {
+          if (!companyId || !activateTarget) return;
+          setActionSuccess(null);
+          setActionError(null);
+          activateMemberMutation.mutate(
+            { currentCompanyId: companyId, memberId: activateTarget.id },
+            { onSettled: () => setActivateTarget(null) },
+          );
+        }}
+        title="Активировать пользователя?"
+        description={
+          activateTarget
+            ? `Пользователь ${activateTarget.full_name} снова сможет входить в систему.`
+            : ''
+        }
+        variant="warning"
+        confirmLabel="Активировать"
+        isLoading={activateMemberMutation.isPending}
+      />
+
+      <ConfirmModal
+        isOpen={removeConfirmTarget !== null}
+        onClose={() => setRemoveConfirmTarget(null)}
+        onConfirm={() => {
+          if (!removeConfirmTarget) return;
+          setRemoveConfirmTarget(null);
+          setRemoveReassignTarget(removeConfirmTarget);
+        }}
+        title="Удалить из компании?"
+        description={
+          removeConfirmTarget
+            ? `Сотрудник ${removeConfirmTarget.full_name} будет удалён из компании. Далее можно указать ID другого сотрудника для переназначения CRM-задач.`
+            : ''
+        }
+        variant="danger"
+        confirmLabel="Продолжить"
+      />
+
+      <PromptModal
+        isOpen={removeReassignTarget !== null}
+        onClose={() => !removeMemberMutation.isPending && setRemoveReassignTarget(null)}
+        onConfirm={(raw) => {
+          if (!companyId || !removeReassignTarget) return;
+          const reassignTo = raw.trim() ? raw.trim() : undefined;
+          setActionSuccess(null);
+          setActionError(null);
+          removeMemberMutation.mutate(
+            {
+              currentCompanyId: companyId,
+              memberId: removeReassignTarget.id,
+              reassignTo,
+            },
+            { onSettled: () => setRemoveReassignTarget(null) },
+          );
+        }}
+        title="Переназначение задач CRM"
+        description="Укажите числовой ID сотрудника компании, которому передать задачи текущего пользователя. Оставьте поле пустым, чтобы снять исполнителя с задач."
+        label="ID сотрудника (необязательно)"
+        defaultValue=""
+        placeholder="например, 42"
+        confirmLabel="Удалить из компании"
+        isLoading={removeMemberMutation.isPending}
+      />
     </div>
   );
 }

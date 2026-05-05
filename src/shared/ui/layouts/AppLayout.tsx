@@ -4,6 +4,7 @@ import { AlertTriangle, X } from 'lucide-react';
 import { Sidebar } from '@/shared/ui/navigation/Sidebar';
 import { Header } from '@/shared/ui/navigation/Header';
 import { useAuthStore } from '@/shared/store/auth';
+import { SUPERADMIN_UI_PREFIX } from '@/shared/config/constants';
 
 function ImpersonationBanner() {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ function ImpersonationBanner() {
 
   function handleStop() {
     stopImpersonation();
-    navigate('/admin/users');
+    navigate(`${SUPERADMIN_UI_PREFIX}/users`);
   }
 
   return (

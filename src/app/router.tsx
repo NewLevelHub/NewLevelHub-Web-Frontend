@@ -1,11 +1,11 @@
-import { createBrowserRouter, Navigate } from 'react-router';
+import { createBrowserRouter, Navigate, useLocation, useParams } from 'react-router';
 
 import { RequireAuth } from '@/shared/guards/RequireAuth';
 import { RequireGuest } from '@/shared/guards/RequireGuest';
 import { RequireRole } from '@/shared/guards/RequireRole';
 import { AppLayout } from '@/shared/ui/layouts/AppLayout';
 import { AuthLayout } from '@/shared/ui/layouts/AuthLayout';
-import { USER_ROLES } from '@/shared/config/constants';
+import { STAFF_UI_PREFIX, SUPERADMIN_UI_PREFIX, USER_ROLES } from '@/shared/config/constants';
 
 // Auth pages
 import LoginPage from '@/pages/auth/LoginPage';
@@ -115,6 +115,29 @@ import NotFoundPage from '@/pages/errors/NotFoundPage';
 import ForbiddenPage from '@/pages/errors/ForbiddenPage';
 
 const { SUPERADMIN, RECEPTION, COMPANY_ADMIN, EMPLOYEE } = USER_ROLES;
+
+/** Old `/admin/bookings` SPA URLs → `/staff/bookings` (shared staff UI, not Django admin). */
+function SuperadminLegacyRedirect() {
+  const location = useLocation();
+  if (location.pathname === '/admin/bookings' || location.pathname.startsWith('/admin/bookings/')) {
+    const tail = location.pathname.slice('/admin/bookings'.length);
+    return <Navigate to={`${STAFF_UI_PREFIX}/bookings${tail}${location.search}${location.hash}`} replace />;
+  }
+  if (!location.pathname.startsWith('/admin/')) {
+    return <Navigate to="/" replace />;
+  }
+  const suffix = location.pathname.slice('/admin'.length);
+  return <Navigate to={`${SUPERADMIN_UI_PREFIX}${suffix}${location.search}${location.hash}`} replace />;
+}
+
+function RedirectSuperadminBookingsListToStaff() {
+  return <Navigate to={`${STAFF_UI_PREFIX}/bookings`} replace />;
+}
+
+function RedirectSuperadminBookingDetailToStaff() {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={`${STAFF_UI_PREFIX}/bookings/${id}`} replace />;
+}
 
 export const router = createBrowserRouter([
   // ── Public routes (only for non-authenticated) ──
@@ -242,27 +265,29 @@ export const router = createBrowserRouter([
             element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE]} />,
             children: [
               { path: '/companies', element: <CompanyListPage /> },
-              { path: '/admin/companies', element: <CompanyListPage /> },
+              { path: `${SUPERADMIN_UI_PREFIX}/companies`, element: <CompanyListPage /> },
               { path: '/companies/:id', element: <CompanyDetailPage /> },
-              { path: '/admin/companies/:id', element: <CompanyDetailPage /> },
+              { path: `${SUPERADMIN_UI_PREFIX}/companies/:id`, element: <CompanyDetailPage /> },
             ],
           },
           {
             element: <RequireRole allowed={[SUPERADMIN]} />,
             children: [
               { path: '/companies/new', element: <CompanyCreatePage /> },
-              { path: '/admin/companies/new', element: <CompanyCreatePage /> },
+              { path: `${SUPERADMIN_UI_PREFIX}/companies/new`, element: <CompanyCreatePage /> },
             ],
           },
 
-          // Superadmin + company_admin
+          // Superadmin + company_admin (neutral `/staff/` — not under `/superadmin/`)
           {
             element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN]} />,
             children: [
-              { path: '/admin/bookings', element: <ManageBookingsPage /> },
-              { path: '/admin/bookings/:id', element: <BookingDetailPage /> },
+              { path: `${STAFF_UI_PREFIX}/bookings`, element: <ManageBookingsPage /> },
+              { path: `${STAFF_UI_PREFIX}/bookings/:id`, element: <BookingDetailPage /> },
             ],
           },
+          { path: `${SUPERADMIN_UI_PREFIX}/bookings`, element: <RedirectSuperadminBookingsListToStaff /> },
+          { path: `${SUPERADMIN_UI_PREFIX}/bookings/:id`, element: <RedirectSuperadminBookingDetailToStaff /> },
 
           // Superadmin + reception
           {
@@ -277,18 +302,20 @@ export const router = createBrowserRouter([
           {
             element: <RequireRole allowed={[SUPERADMIN]} />,
             children: [
-              { path: '/admin/analytics', element: <SuperadminAnalyticsPage /> },
-              { path: '/admin/crm/boards', element: <AdminBoardsPage /> },
+              { path: `${SUPERADMIN_UI_PREFIX}/analytics`, element: <SuperadminAnalyticsPage /> },
+              { path: `${SUPERADMIN_UI_PREFIX}/crm/boards`, element: <AdminBoardsPage /> },
               { path: '/resources', element: <ResourceListPage /> },
               { path: '/resources/new', element: <ResourceCreatePage /> },
               { path: '/resources/:id', element: <ResourceDetailPage /> },
               { path: '/building/map/manage', element: <MapManagePage /> },
               { path: '/users', element: <UsersListPage /> },
               { path: '/users/:id', element: <UserDetailPage /> },
-              { path: '/admin/users', element: <UsersListPage /> },
-              { path: '/admin/users/:id', element: <UserDetailPage /> },
+              { path: `${SUPERADMIN_UI_PREFIX}/users`, element: <UsersListPage /> },
+              { path: `${SUPERADMIN_UI_PREFIX}/users/:id`, element: <UserDetailPage /> },
             ],
           },
+
+          { path: '/admin/*', element: <SuperadminLegacyRedirect /> },
 
           // Error routes
           { path: '/403', element: <ForbiddenPage /> },

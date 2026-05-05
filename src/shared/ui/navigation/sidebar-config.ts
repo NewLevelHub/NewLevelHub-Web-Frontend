@@ -19,7 +19,7 @@ import {
   Bell,
   type LucideIcon,
 } from 'lucide-react';
-import { USER_ROLES, type UserRole } from '@/shared/config/constants';
+import { STAFF_UI_PREFIX, SUPERADMIN_UI_PREFIX, USER_ROLES, type UserRole } from '@/shared/config/constants';
 
 export interface NavItem {
   label: string;
@@ -39,13 +39,13 @@ const superadminNav: NavSection[] = [
   {
     title: 'Управление',
     items: [
-      { label: 'Пользователи', path: '/admin/users', icon: Users },
+      { label: 'Пользователи', path: `${SUPERADMIN_UI_PREFIX}/users`, icon: Users },
       { label: 'Команда', path: '/company/team', icon: Users },
       { label: 'Сотрудники', path: '/team/manage', icon: Users },
       { label: 'Инвайты', path: '/company/settings/members', icon: MailPlus },
-      { label: 'Компании', path: '/admin/companies', icon: Building2 },
+      { label: 'Компании', path: `${SUPERADMIN_UI_PREFIX}/companies`, icon: Building2 },
       { label: 'Ресурсы', path: '/resources', icon: Bookmark },
-      { label: 'Бронирования', path: '/admin/bookings', icon: CalendarDays },
+      { label: 'Бронирования', path: `${STAFF_UI_PREFIX}/bookings`, icon: CalendarDays },
       { label: 'Пропуска', path: '/passes', icon: ShieldCheck },
       { label: 'Проверка QR', path: '/access/validate', icon: ShieldCheck },
       { label: 'Лог доступа', path: '/access/logs', icon: Clock },
@@ -62,12 +62,12 @@ const superadminNav: NavSection[] = [
   {
     title: 'CRM',
     items: [
-      { label: 'CRM Доски', path: '/admin/crm/boards', icon: Columns3 },
+      { label: 'CRM Доски', path: `${SUPERADMIN_UI_PREFIX}/crm/boards`, icon: Columns3 },
     ],
   },
   {
     title: 'Аналитика',
-    items: [{ label: 'Аналитика', path: '/admin/analytics', icon: BarChart3 }],
+    items: [{ label: 'Аналитика', path: `${SUPERADMIN_UI_PREFIX}/analytics`, icon: BarChart3 }],
   },
   {
     title: 'Настройки',
@@ -103,7 +103,7 @@ const companyAdminNav: NavSection[] = [
     items: [
       { label: 'Бронирование', path: '/bookings/catalog', icon: Bookmark },
       { label: 'Рекуррентные брони', path: '/bookings/recurring', icon: Repeat },
-      { label: 'Бронирования (админ)', path: '/admin/bookings', icon: CalendarDays },
+      { label: 'Бронирования (админ)', path: `${STAFF_UI_PREFIX}/bookings`, icon: CalendarDays },
       { label: 'Карта здания', path: '/building/map', icon: Map },
       { label: 'Гостевые пропуска', path: '/passes', icon: ShieldCheck },
       { label: 'Лог доступа', path: '/access/logs', icon: Clock },
