@@ -7,7 +7,7 @@ import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
-import type { UserListItem, PaginatedResponse } from '@/shared/types';
+import type { Company, UserListItem, PaginatedResponse } from '@/shared/types';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -165,6 +165,14 @@ export default function UsersListPage() {
   if (companyId) queryParams.company_id = companyId;
   if (isActive !== '') queryParams.is_active = isActive;
 
+  const { data: companies } = useQuery<Company[]>({
+    queryKey: ['companies'],
+    queryFn: () =>
+      apiClient
+        .get<Company[] | { results: Company[] }>(API.companies.list)
+        .then((r) => (Array.isArray(r.data) ? r.data : r.data.results)),
+  });
+
   const { data, isLoading, isError } = useQuery<PaginatedResponse<UserListItem>>({
     queryKey: ['users', { search, role, companyId, isActive, ordering, page }],
     queryFn: () =>
@@ -231,16 +239,20 @@ export default function UsersListPage() {
             ))}
           </select>
 
-          {/* Active status filter */}
-          <input
-            type="number"
-            min={1}
+          {/* Company filter */}
+          <select
             value={companyId}
             onChange={(e) => setCompanyId(e.target.value)}
-            placeholder="ID компании"
-            aria-label="Фильтр по ID компании"
-            className="w-full sm:w-36 px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+            aria-label="Фильтр по компании"
+            className="w-full sm:w-48 px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">Все компании</option>
+            {companies?.map((company) => (
+              <option key={company.id} value={String(company.id)}>
+                {company.name}
+              </option>
+            ))}
+          </select>
 
           {/* Active status filter */}
           <select
