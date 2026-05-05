@@ -1,66 +1,35 @@
-import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { useQuery } from '@tanstack/react-query';
 
-import { apiClient } from '@/shared/api/client';
-import { API } from '@/shared/api/endpoints';
-import { PASS_STATUSES, USER_ROLES, type PassStatus } from '@/shared/config/constants';
+import { USER_ROLES } from '@/shared/config/constants';
 import { useUser } from '@/shared/hooks/useAuth';
-import type { GuestPass, PaginatedResponse } from '@/shared/types';
-
-const STATUS_OPTIONS: Array<{ label: string; value: PassStatus | '' }> = [
-  { label: 'Все', value: '' },
-  { label: 'Активные', value: PASS_STATUSES.ACTIVE },
-  { label: 'Использованные', value: PASS_STATUSES.USED },
-  { label: 'Истекшие', value: PASS_STATUSES.EXPIRED },
-  { label: 'Отозванные', value: PASS_STATUSES.REVOKED },
-];
+import { PassFilters } from '@/pages/passes/components/PassFilters';
+import { PassRow } from '@/pages/passes/components/PassRow';
+import { PassSkeleton } from '@/pages/passes/components/PassSkeleton';
+import { usePasses } from '@/pages/passes/hooks/usePasses';
 
 export default function PassListPage() {
   const user = useUser();
-  const [statusFilter, setStatusFilter] = useState<PassStatus | ''>('');
-  const [companyNameFilter, setCompanyNameFilter] = useState('');
-  const [createdByEmailFilter, setCreatedByEmailFilter] = useState('');
-  const [dateFromFilter, setDateFromFilter] = useState('');
-  const [dateToFilter, setDateToFilter] = useState('');
   const isAdminView = user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN;
+  const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
 
-  const queryParams = useMemo(() => ({}), []);
-  const hasActiveAdminFilters = Boolean(
-    statusFilter || companyNameFilter.trim() || createdByEmailFilter.trim() || dateFromFilter || dateToFilter,
-  );
-
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['guest-passes', queryParams],
-    queryFn: async () => {
-      const response = await apiClient.get<PaginatedResponse<GuestPass>>(API.passes.list, { params: queryParams });
-      return response.data;
-    },
-  });
-  const filteredPasses = useMemo(() => {
-    const companyNeedle = companyNameFilter.trim().toLowerCase();
-    const emailNeedle = createdByEmailFilter.trim().toLowerCase();
-    const toLocalDateKey = (value: string) => {
-      const date = new Date(value);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    };
-    return (data?.results ?? []).filter((pass) => {
-      const statusMatches = statusFilter ? pass.status === statusFilter : true;
-      const companyMatches = companyNeedle
-        ? (pass.created_by_company_name ?? '').toLowerCase().includes(companyNeedle)
-        : true;
-      const emailMatches = emailNeedle
-        ? (pass.created_by_email ?? '').toLowerCase().includes(emailNeedle)
-        : true;
-      const validFromDate = toLocalDateKey(pass.valid_from);
-      const fromMatches = dateFromFilter ? validFromDate >= dateFromFilter : true;
-      const toMatches = dateToFilter ? validFromDate <= dateToFilter : true;
-      return statusMatches && companyMatches && emailMatches && fromMatches && toMatches;
-    });
-  }, [data?.results, statusFilter, companyNameFilter, createdByEmailFilter, dateFromFilter, dateToFilter]);
+  const {
+    passes,
+    isLoading,
+    isError,
+    statusFilter,
+    setStatusFilter,
+    companyNameFilter,
+    setCompanyNameFilter,
+    createdByEmailFilter,
+    setCreatedByEmailFilter,
+    dateFromFilter,
+    setDateFromFilter,
+    dateToFilter,
+    setDateToFilter,
+    hasActiveFilters,
+    resetFilters,
+    totalCount,
+  } = usePasses();
 
   return (
     <main className="mx-auto max-w-5xl space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
@@ -77,144 +46,48 @@ export default function PassListPage() {
         </Link>
       </div>
 
-      <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {isAdminView ? (
-            <label className="text-sm text-gray-300">
-              Статус
-              <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value as PassStatus | '')}
-                className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
-              >
-                {STATUS_OPTIONS.map(option => (
-                  <option key={option.label} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
+      <PassFilters
+        isAdminView={isAdminView}
+        isSuperadmin={isSuperadmin}
+        statusFilter={statusFilter}
+        companyNameFilter={companyNameFilter}
+        createdByEmailFilter={createdByEmailFilter}
+        dateFromFilter={dateFromFilter}
+        dateToFilter={dateToFilter}
+        hasActiveFilters={hasActiveFilters}
+        onStatusChange={setStatusFilter}
+        onCompanyNameChange={setCompanyNameFilter}
+        onCreatedByEmailChange={setCreatedByEmailFilter}
+        onDateFromChange={setDateFromFilter}
+        onDateToChange={setDateToFilter}
+        onReset={resetFilters}
+      />
 
-          {isAdminView ? (
-            <label className="text-sm text-gray-300">
-              Email создателя
-              <input
-                type="email"
-                value={createdByEmailFilter}
-                onChange={(event) => setCreatedByEmailFilter(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
-                placeholder="creator@company.com"
-              />
-            </label>
-          ) : null}
-
-          {user?.role === 'superadmin' ? (
-            <label className="text-sm text-gray-300">
-              Компания
-              <input
-                type="text"
-                value={companyNameFilter}
-                onChange={(event) => setCompanyNameFilter(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
-                placeholder="Название компании"
-              />
-            </label>
-          ) : null}
-
-          {isAdminView ? (
-            <label className="text-sm text-gray-300">
-              Дата от
-              <input
-                type="date"
-                value={dateFromFilter}
-                onChange={(event) => setDateFromFilter(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
-              />
-            </label>
-          ) : null}
-
-          {isAdminView ? (
-            <label className="text-sm text-gray-300">
-              Дата до
-              <input
-                type="date"
-                value={dateToFilter}
-                onChange={(event) => setDateToFilter(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
-              />
-            </label>
-          ) : null}
-        </div>
-
-        {isAdminView ? (
-          <div className="mt-3">
-            <button
-              type="button"
-              onClick={() => {
-                setStatusFilter('');
-                setCompanyNameFilter('');
-                setCreatedByEmailFilter('');
-                setDateFromFilter('');
-                setDateToFilter('');
-              }}
-              disabled={!hasActiveAdminFilters}
-              className="rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Сбросить фильтры
-            </button>
-          </div>
-        ) : null}
-      </div>
-
-      {isLoading ? <div className="text-sm text-gray-400">Загрузка пропусков...</div> : null}
+      {isLoading ? <PassSkeleton /> : null}
       {isError ? <div className="text-sm text-rose-400">Не удалось загрузить список пропусков.</div> : null}
 
       {!isLoading && !isError ? (
         <div className="overflow-hidden rounded-xl border border-gray-700 bg-gray-800">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] divide-y divide-gray-700 text-sm">
-            <thead className="bg-gray-900 text-left text-gray-300">
-              <tr>
-                <th className="px-4 py-3">Гость</th>
-                <th className="px-4 py-3">Владелец</th>
-                <th className="px-4 py-3">Цель</th>
-                <th className="px-4 py-3">Период</th>
-                <th className="px-4 py-3">Статус</th>
-                <th className="px-4 py-3 text-right">Детали</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-700">
-              {filteredPasses.map(pass => (
-                <tr key={pass.id} className="text-gray-200">
-                  <td className="px-4 py-3 align-top">
-                    <div className="font-medium text-white">{pass.guest_name}</div>
-                    <div className="text-xs text-gray-400 break-all">{pass.guest_email}</div>
-                  </td>
-                  <td className="px-4 py-3 text-gray-300 align-top">
-                    <div>{pass.created_by_name || '—'}</div>
-                    {user?.role === USER_ROLES.SUPERADMIN ? (
-                      <div className="text-xs text-gray-500 break-words">{pass.created_by_company_name || 'Без компании'}</div>
-                    ) : null}
-                  </td>
-                  <td className="px-4 py-3 align-top">{pass.purpose || '—'}</td>
-                  <td className="px-4 py-3 text-xs text-gray-300 align-top whitespace-nowrap">
-                    {new Date(pass.valid_from).toLocaleString()}
-                    <br />
-                    {new Date(pass.valid_until).toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3 align-top whitespace-nowrap">{pass.status}</td>
-                  <td className="px-4 py-3 text-right align-top whitespace-nowrap">
-                    <Link to={`/passes/${pass.id}`} className="text-indigo-300 hover:text-indigo-200">
-                      Открыть
-                    </Link>
-                  </td>
+              <thead className="bg-gray-900 text-left text-gray-300">
+                <tr>
+                  <th className="px-4 py-3">Гость</th>
+                  <th className="px-4 py-3">Владелец</th>
+                  <th className="px-4 py-3">Цель</th>
+                  <th className="px-4 py-3">Период</th>
+                  <th className="px-4 py-3">Статус</th>
+                  <th className="px-4 py-3 text-right">Детали</th>
                 </tr>
-              ))}
-            </tbody>
+              </thead>
+              <tbody className="divide-y divide-gray-700">
+                {passes.map(pass => (
+                  <PassRow key={pass.id} pass={pass} isSuperadmin={isSuperadmin} />
+                ))}
+              </tbody>
             </table>
           </div>
-          {data?.results?.length === 0 ? (
+          {totalCount === 0 ? (
             <div className="px-4 py-8 text-center text-sm text-gray-400">Пропусков пока нет.</div>
           ) : null}
         </div>
