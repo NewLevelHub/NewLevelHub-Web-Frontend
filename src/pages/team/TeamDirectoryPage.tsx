@@ -8,6 +8,7 @@ import { USER_ROLES } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import { useAuth } from '@/shared/hooks/useAuth';
+import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import type {
   Company,
   CompanyDirectoryMember,
@@ -114,7 +115,7 @@ export default function TeamDirectoryPage() {
       : null;
 
   const { data: companiesData } = useQuery<PaginatedResponse<Company>>({
-    queryKey: ['companies', 'directory-selector'],
+    queryKey: [...companiesCacheRoot(user?.id), 'directory-selector'],
     queryFn: () => apiClient.get<PaginatedResponse<Company>>(API.companies.list).then((r) => r.data),
     enabled: isSuperadmin,
     staleTime: 60_000,

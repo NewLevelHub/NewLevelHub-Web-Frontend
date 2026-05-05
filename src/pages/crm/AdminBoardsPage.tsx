@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router';
 import { LayoutGrid, Calendar, AlertCircle, Inbox, Search, Building2 } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
+import { useUser } from '@/shared/hooks/useAuth';
+import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
 import type { CrmBoard, Company } from '@/shared/types';
 
@@ -102,13 +104,14 @@ function LoadingSkeleton() {
 // ─── AdminBoardsPage ──────────────────────────────────────────────────────────
 
 export default function AdminBoardsPage() {
+  const user = useUser();
   const navigate = useNavigate();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch companies for filter dropdown
   const { data: companies } = useQuery({
-    queryKey: ['companies'],
+    queryKey: [...companiesCacheRoot(user?.id)],
     queryFn: async () => {
       const { data } = await apiClient.get<Company[] | { results: Company[] }>(API.companies.list);
       return Array.isArray(data) ? data : data.results;

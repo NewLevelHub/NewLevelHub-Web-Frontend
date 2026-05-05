@@ -214,6 +214,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { user } = get();
     if (!user) return;
 
+    queryClient.clear();
+
     // Сохраняем оригинального суперадмина в localStorage для индикации активной сессии.
     saveOriginalUserToStorage(user);
 
@@ -231,6 +233,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   stopImpersonation: () => {
     const { originalUser } = get();
     if (!originalUser) return;
+
+    queryClient.clear();
 
     /**
      * Сбрасываем токен в памяти: при следующем запросе apiClient использует null,

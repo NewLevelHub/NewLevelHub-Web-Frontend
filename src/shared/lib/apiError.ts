@@ -37,6 +37,31 @@ function unwrapPayload(data: unknown): unknown {
   return data;
 }
 
+/** 403: сотрудник без привязки к компании (бэкенд может вернуть code / detail). */
+export function isCompanyNotAssignedError(error: unknown): boolean {
+  const err = error as AxiosError<Record<string, unknown>>;
+  if (err.response?.status !== 403) return false;
+  const raw = err.response.data;
+  if (!raw || typeof raw !== 'object') return false;
+
+  const topCode = raw.code;
+  if (topCode === 'company_not_assigned') return true;
+
+  const unwrapped = unwrapPayload(raw);
+  if (unwrapped && typeof unwrapped === 'object') {
+    const u = unwrapped as Record<string, unknown>;
+    if (u.code === 'company_not_assigned') return true;
+    if (typeof u.detail === 'object' && u.detail !== null && 'code' in u.detail) {
+      if ((u.detail as { code?: string }).code === 'company_not_assigned') return true;
+    }
+  }
+
+  const detail = raw.detail;
+  if (typeof detail === 'string' && detail.toLowerCase().includes('company_not_assigned')) return true;
+
+  return false;
+}
+
 export function getApiErrorMessage(error: unknown, fallback = 'Произошла ошибка'): string {
   const err = error as AxiosError<ApiErrorBody>;
   const raw = err.response?.data;

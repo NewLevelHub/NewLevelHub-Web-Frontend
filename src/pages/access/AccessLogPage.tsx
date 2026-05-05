@@ -5,6 +5,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useUser } from '@/shared/hooks/useAuth';
+import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import type { AccessLogEntry, Company, GuestPass, PaginatedResponse } from '@/shared/types';
 
@@ -74,7 +75,7 @@ export default function AccessLogPage() {
   });
 
   const { data: companiesData, isLoading: isCompaniesLoading } = useQuery({
-    queryKey: ['access-log-companies'],
+    queryKey: [...companiesCacheRoot(user?.id), 'access-log-companies'],
     queryFn: () =>
       apiClient
         .get<PaginatedResponse<Company>>(API.companies.list, {

@@ -7,6 +7,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES, type UserRole } from '@/shared/config/constants';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
 import { useAuth } from '@/shared/hooks/useAuth';
 import type { Company, CompanyInvitation, CompanyMember, PaginatedResponse } from '@/shared/types';
@@ -45,7 +46,7 @@ export default function CompanyMembersPage() {
   const [filterExpired, setFilterExpired] = useState<boolean | undefined>(undefined);
 
   const { data: companiesData } = useQuery({
-    queryKey: ['companies', 'list'],
+    queryKey: [...companiesCacheRoot(user?.id), 'list'],
     enabled: isSuperadmin,
     queryFn: () =>
       apiClient

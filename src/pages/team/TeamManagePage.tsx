@@ -25,6 +25,7 @@ import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import type {
@@ -457,7 +458,7 @@ export default function TeamManagePage() {
 
   // Fetch companies list for superadmin
   const { data: companiesData } = useQuery<PaginatedResponse<Company>>({
-    queryKey: ['companies', 'list'],
+    queryKey: [...companiesCacheRoot(user?.id), 'list'],
     queryFn: () =>
       apiClient.get<PaginatedResponse<Company>>(API.companies.list).then((r) => r.data),
     enabled: isSuperadmin,
