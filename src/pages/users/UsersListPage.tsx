@@ -165,6 +165,14 @@ export default function UsersListPage() {
   if (companyId) queryParams.company_id = companyId;
   if (isActive !== '') queryParams.is_active = isActive;
 
+  const { data: companies } = useQuery<Company[]>({
+    queryKey: ['companies'],
+    queryFn: () =>
+      apiClient
+        .get<Company[] | { results: Company[] }>(API.companies.list)
+        .then((r) => (Array.isArray(r.data) ? r.data : r.data.results)),
+  });
+
   const { data, isLoading, isError } = useQuery<PaginatedResponse<UserListItem>>({
     queryKey: ['users', { search, role, companyId, isActive, ordering, page }],
     queryFn: () =>

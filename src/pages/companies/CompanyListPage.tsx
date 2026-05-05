@@ -21,6 +21,8 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { COMPANY_TIERS, SUPERADMIN_UI_PREFIX, USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
+import { isCompanyNotAssignedError } from '@/shared/lib/apiError';
+import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import type { Company, PaginatedResponse } from '@/shared/types';
@@ -104,7 +106,7 @@ function SkeletonRow() {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function CompanyListPage() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -144,13 +146,13 @@ export default function CompanyListPage() {
   if (planFilter) queryParams.plan = planFilter;
   if (statusFilter !== '') queryParams.is_active = statusFilter;
 
-  const { data, isLoading, isError } = useQuery<PaginatedResponse<Company>>({
-    queryKey: ['companies', { search, planFilter, statusFilter, page }],
+  const { data, isLoading, isError, error } = useQuery<PaginatedResponse<Company>>({
+    queryKey: [...companiesCacheRoot(user?.id), { search, planFilter, statusFilter, page }],
     queryFn: () =>
       apiClient
         .get<PaginatedResponse<Company>>(API.companies.list, { params: queryParams })
         .then((r) => r.data),
-    placeholderData: (prev) => prev,
+    enabled: Boolean(user) && !authLoading,
   });
 
   const companies = data?.results ?? [];
@@ -159,12 +161,14 @@ export default function CompanyListPage() {
   const rangeStart = totalCount === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const rangeEnd = Math.min(page * PAGE_SIZE, totalCount);
 
+  const showLoading = authLoading || isLoading;
+
   // For non-superadmin: redirect to their own company if only one result
   useEffect(() => {
-    if (!isSuperadmin && !isLoading && companies.length === 1) {
+    if (!isSuperadmin && !authLoading && !isLoading && companies.length === 1) {
       navigate(`/companies/${companies[0].id}`, { replace: true });
     }
-  }, [isSuperadmin, isLoading, companies, navigate]);
+  }, [isSuperadmin, authLoading, isLoading, companies, navigate]);
 
   // ── Mutations ──────────────────────────────────────────────────────────────
 
@@ -233,6 +237,21 @@ export default function CompanyListPage() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
+  if (isError && isCompanyNotAssignedError(error)) {
+    return (
+      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-7xl mx-auto">
+        <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 rounded-2xl border border-amber-900/50 bg-amber-950/20 px-6 py-12 text-center">
+          <Building2 className="h-12 w-12 text-amber-400/90" aria-hidden="true" />
+          <h1 className="text-lg font-semibold text-white">Ожидание назначения в компанию</h1>
+          <p className="max-w-md text-sm text-gray-400">
+            Ваш аккаунт ещё не привязан к организации. Когда администратор добавит вас в компанию,
+            список и доступ к разделам появятся автоматически.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   if (isError) {
     return (
       <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-7xl mx-auto">
@@ -252,7 +271,7 @@ export default function CompanyListPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Компании-арендаторы</h1>
-          {!isLoading && (
+          {!showLoading && (
             <p className="mt-1 text-sm text-gray-400">
               Всего: {totalCount}
             </p>
@@ -383,7 +402,7 @@ export default function CompanyListPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700/60">
-              {isLoading ? (
+              {showLoading ? (
                 Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)
               ) : companies.length === 0 ? (
                 <tr>
@@ -413,7 +432,7 @@ export default function CompanyListPage() {
       </div>
 
       {/* Pagination */}
-      {!isLoading && totalCount > 0 && (
+      {!showLoading && totalCount > 0 && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-gray-400">
             Показано{' '}

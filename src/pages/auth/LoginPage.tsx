@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'react-router';
-import { Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '@/shared/store/auth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { authInput, authLabel, authPrimaryBtn, authLink } from '@/shared/ui/authFormStyles';
+import { AuthPasswordField } from '@/shared/ui/AuthPasswordField';
 
 export default function LoginPage() {
   const login = useAuthStore((s) => s.login);
@@ -13,7 +13,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -72,25 +71,13 @@ export default function LoginPage() {
               Забыли пароль?
             </Link>
           </div>
-          <div className="relative">
-            <input
-              id="login-password"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={`${authInput} pr-10`}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
-              aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
+          <AuthPasswordField
+            id="login-password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
         </div>
 
         <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-300">

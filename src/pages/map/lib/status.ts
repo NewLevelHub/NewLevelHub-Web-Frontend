@@ -1,72 +1,54 @@
 import type { MapPoint, MapPointStatus } from '@/shared/types';
 
-export type PointUiStatus =
-  | 'free'
-  | 'occupied'
-  | 'soon_available'
-  | 'blocked'
-  | 'none'
-  | 'disabled';
+/**
+ * Статусы для UI карты: три «живых» статуса брони + `none` для `resource_status: null`.
+ * Значение `blocked` с API на карте не выделяем — показываем как занято (`occupied`).
+ */
+export type PointUiStatus = Exclude<MapPointStatus, 'blocked'> | 'none';
 
 export const POINT_STATUS_CLASS: Record<PointUiStatus, string> = {
   free: 'bg-emerald-500 border-emerald-600 hover:bg-emerald-400',
   occupied: 'bg-rose-500 border-rose-600 hover:bg-rose-400',
   soon_available: 'bg-amber-500 border-amber-600 hover:bg-amber-400',
-  blocked: 'bg-violet-600 border-violet-700 hover:bg-violet-500',
-  // Null status from backend: non-bookable/non-resource point.
   none: 'bg-stone-500 border-stone-600 hover:bg-stone-400',
-  disabled: 'bg-slate-400 border-slate-500 hover:bg-slate-300',
 };
 
 export const POINT_STATUS_LABEL: Record<PointUiStatus, string> = {
   free: 'Свободно',
   occupied: 'Занято',
   soon_available: 'Скоро освободится',
-  blocked: 'Заблокировано',
   none: 'Статус не применим',
-  disabled: 'Недоступно',
 };
 
 export const STATUS_LABEL_CLASS: Record<PointUiStatus, string> = {
   free: 'text-emerald-400',
   occupied: 'text-rose-400',
   soon_available: 'text-amber-400',
-  blocked: 'text-violet-400',
   none: 'text-stone-400',
-  disabled: 'text-slate-400',
 };
 
 export const LEGEND_ITEMS: Array<{ status: PointUiStatus; label: string; color: string }> = [
   { status: 'free', label: 'Свободно', color: 'bg-emerald-500' },
   { status: 'occupied', label: 'Занято', color: 'bg-rose-500' },
   { status: 'soon_available', label: 'Скоро освободится', color: 'bg-amber-500' },
-  { status: 'blocked', label: 'Заблокировано', color: 'bg-violet-600' },
   { status: 'none', label: 'Статус не применим', color: 'bg-stone-500' },
-  { status: 'disabled', label: 'Недоступно', color: 'bg-slate-400' },
 ];
 
-export function normalizePointStatus(status: string | null | undefined): PointUiStatus {
+const BOOKABLE_STATUSES: readonly PointUiStatus[] = ['free', 'occupied', 'soon_available'];
+
+function isBookableUiStatus(value: string): value is Exclude<PointUiStatus, 'none'> {
+  return (BOOKABLE_STATUSES as readonly string[]).includes(value);
+}
+
+/**
+ * null/undefined → `none`; `blocked` с API → `occupied` (на карте без отдельного состояния блокировки).
+ */
+export function normalizePointStatus(status: MapPointStatus | string | null | undefined): PointUiStatus {
+  if (status == null || status === '') return 'none';
   const normalized = typeof status === 'string' ? status.trim().toLowerCase() : status;
-  switch (normalized) {
-    case 'free':
-    case 'available':
-      return 'free';
-    case 'occupied':
-    case 'booked':
-      return 'occupied';
-    case 'soon_available':
-      return 'soon_available';
-    case 'blocked':
-      return 'blocked';
-    case 'disabled':
-    case 'unavailable':
-      return 'disabled';
-    case null:
-    case undefined:
-      return 'none';
-    default:
-      return 'disabled';
-  }
+  if (normalized === 'blocked') return 'occupied';
+  if (isBookableUiStatus(normalized)) return normalized;
+  return 'none';
 }
 
 export function formatNextFreeAt(value: string | null): string | null {
@@ -94,7 +76,7 @@ export function getPointStatusReasonLabel(point: MapPoint): string | null {
 }
 
 export function isBookablePoint(point: MapPoint): boolean {
-  const status = normalizePointStatus(point.resource_status as MapPointStatus | string | null);
+  const status = normalizePointStatus(point.resource_status);
   const pointWithFallback = point as MapPoint & { resource?: number | null };
   const resourceId = pointWithFallback.resource_id ?? pointWithFallback.resource ?? null;
   return status === 'free' && Boolean(resourceId);

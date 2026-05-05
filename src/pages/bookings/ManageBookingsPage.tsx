@@ -13,6 +13,7 @@ import {
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
 import type {
   Booking,
@@ -105,7 +106,7 @@ export default function ManageBookingsPage() {
   const [editFormError, setEditFormError] = useState<string | null>(null);
 
   const { data: companiesData } = useQuery({
-    queryKey: ['admin-bookings', 'company-options'],
+    queryKey: [...companiesCacheRoot(user?.id), 'admin-bookings', 'company-options'],
     enabled: isSuperadmin,
     queryFn: async () => {
       const { data: response } = await apiClient.get<PaginatedResponse<Company>>(API.companies.list, {

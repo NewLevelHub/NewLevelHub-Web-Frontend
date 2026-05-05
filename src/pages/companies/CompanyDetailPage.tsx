@@ -729,14 +729,16 @@ export default function CompanyDetailPage() {
   if (isError || !company) {
     return (
       <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-4xl mx-auto">
-        <button
-          type="button"
-          onClick={() => navigate(companiesBasePath)}
-          className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 mb-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
-        >
-          <ArrowLeft size={16} aria-hidden="true" />
-          Назад к списку
-        </button>
+        {isSuperadmin && (
+          <button
+            type="button"
+            onClick={() => navigate(companiesBasePath)}
+            className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 mb-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+          >
+            <ArrowLeft size={16} aria-hidden="true" />
+            Назад к списку
+          </button>
+        )}
         <p className="text-red-600 font-medium text-sm">
           Не удалось загрузить данные компании. Попробуйте перезагрузить страницу.
         </p>
@@ -763,15 +765,17 @@ export default function CompanyDetailPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <button
-            type="button"
-            onClick={() => navigate(companiesBasePath)}
-            className="inline-flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-gray-200 mb-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
-            aria-label="Назад к списку компаний"
-          >
-            <ArrowLeft size={16} aria-hidden="true" />
-            Назад к списку
-          </button>
+          {isSuperadmin && (
+            <button
+              type="button"
+              onClick={() => navigate(companiesBasePath)}
+              className="inline-flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-gray-200 mb-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
+              aria-label="Назад к списку компаний"
+            >
+              <ArrowLeft size={16} aria-hidden="true" />
+              Назад к списку
+            </button>
+          )}
           <h1 className="text-2xl font-bold text-white">{company.name}</h1>
         </div>
 

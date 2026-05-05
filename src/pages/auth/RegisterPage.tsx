@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
-import { Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '@/shared/store/auth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { authInput, authLabel, authPrimaryBtn, authLink } from '@/shared/ui/authFormStyles';
+import { AuthPasswordField } from '@/shared/ui/AuthPasswordField';
 
 export default function RegisterPage() {
   const register = useAuthStore((s) => s.register);
@@ -14,8 +14,6 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -118,49 +116,27 @@ export default function RegisterPage() {
           <label htmlFor="reg-pass" className={authLabel}>
             Пароль
           </label>
-          <div className="relative">
-            <input
-              id="reg-pass"
-              type={showPassword ? 'text' : 'password'}
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={`${authInput} pr-10`}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
-              aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
+          <AuthPasswordField
+            id="reg-pass"
+            autoComplete="new-password"
+            required
+            minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
         </div>
 
         <div>
           <label htmlFor="reg-pass2" className={authLabel}>
             Пароль ещё раз
           </label>
-          <div className="relative">
-            <input
-              id="reg-pass2"
-              type={showPasswordConfirm ? 'text' : 'password'}
-              required
-              value={passwordConfirm}
-              onChange={(e) => setPasswordConfirm(e.target.value)}
-              className={`${authInput} pr-10`}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPasswordConfirm((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
-              aria-label={showPasswordConfirm ? 'Скрыть пароль' : 'Показать пароль'}
-            >
-              {showPasswordConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
+          <AuthPasswordField
+            id="reg-pass2"
+            required
+            value={passwordConfirm}
+            onChange={(e) => setPasswordConfirm(e.target.value)}
+            autoComplete="new-password"
+          />
         </div>
 
         <p className="text-xs text-gray-500">

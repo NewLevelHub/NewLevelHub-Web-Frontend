@@ -25,6 +25,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { RESOURCE_TYPES, RESOURCE_TYPE_LABELS, USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
+import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { cn } from '@/shared/lib/cn';
 import { filenameFromContentDisposition, triggerCsvFileDownload } from '@/shared/lib/csvDownload';
@@ -211,7 +212,7 @@ export default function SuperadminAnalyticsPage() {
   const [exportError, setExportError] = useState<string | null>(null);
 
   const { data: companiesData } = useQuery({
-    queryKey: ['analytics-superadmin', 'company-options'],
+    queryKey: [...companiesCacheRoot(user?.id), 'analytics-superadmin', 'company-options'],
     enabled: isSuperadmin && !authLoading,
     queryFn: async () => {
       const { data: response } = await apiClient.get<PaginatedResponse<Company>>(API.companies.list, {

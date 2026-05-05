@@ -93,6 +93,7 @@ export default function BookingCatalogPage() {
   const [page, setPage] = useState(1);
   const [selectedResource, setSelectedResource] = useState<BookingResourceListItem | null>(null);
   const [expandedScheduleId, setExpandedScheduleId] = useState<number | null>(null);
+  const autoOpenedForRef = useRef<number | null>(null);
   const [typeFilter, setTypeFilter] = useState('');
   const [floorFilter, setFloorFilter] = useState('');
   const [capacityMin, setCapacityMin] = useState('');
@@ -151,14 +152,19 @@ export default function BookingCatalogPage() {
   });
 
   useEffect(() => {
-    if (!Number.isFinite(preselectResourceId) || preselectResourceId <= 0) return;
-    if (selectedResource !== null) return;
+    if (!Number.isFinite(preselectResourceId) || preselectResourceId <= 0) {
+      autoOpenedForRef.current = null;
+      return;
+    }
+    if (autoOpenedForRef.current === preselectResourceId) return;
     const fromList = results.find((item) => item.id === preselectResourceId);
     if (fromList) {
+      autoOpenedForRef.current = preselectResourceId;
       setSelectedResource(fromList);
       return;
     }
     if (preselectedResource) {
+      autoOpenedForRef.current = preselectResourceId;
       setSelectedResource({
         id: preselectedResource.id,
         type: preselectedResource.type,
@@ -179,7 +185,7 @@ export default function BookingCatalogPage() {
         available_at: null,
       });
     }
-  }, [preselectResourceId, preselectedResource, results, selectedResource]);
+  }, [preselectResourceId, preselectedResource, results]);
 
   const equipmentFacetKeys = useMemo((): ResourceEquipmentKey[] => {
     const raw = data?.meeting_room_equipment_keys;

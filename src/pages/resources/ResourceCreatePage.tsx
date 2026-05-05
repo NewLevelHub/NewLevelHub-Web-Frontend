@@ -14,6 +14,8 @@ import {
   type ParkingType,
   type ResourceEquipmentKey,
 } from '@/shared/config/constants';
+import { useUser } from '@/shared/hooks/useAuth';
+import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
 import type { Company, PaginatedResponse, Resource } from '@/shared/types';
 
@@ -168,6 +170,7 @@ function buildFormData(payload: ResourceCreatePayload, photoFile: File): FormDat
 }
 
 export default function ResourceCreatePage() {
+  const user = useUser();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isBulkMode, setIsBulkMode] = useState(false);
@@ -202,7 +205,7 @@ export default function ResourceCreatePage() {
   });
 
   const { data: companies = [] } = useQuery({
-    queryKey: ['companies', 'resource-create'],
+    queryKey: [...companiesCacheRoot(user?.id), 'resource-create'],
     queryFn: async () => {
       const { data } = await apiClient.get<PaginatedResponse<Company>>(API.companies.list, {
         params: { page_size: 100 },
