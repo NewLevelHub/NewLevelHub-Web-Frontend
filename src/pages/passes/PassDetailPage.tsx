@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Info } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { PASS_STATUSES, USER_ROLES } from '@/shared/config/constants';
 import { useUser } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { cn } from '@/shared/lib/cn';
 import type { GuestPass } from '@/shared/types';
 
 export default function PassDetailPage() {
@@ -47,6 +49,37 @@ export default function PassDetailPage() {
     onError: () => setSuccessMessage(null),
   });
 
+  const activatesAt = data ? new Date(data.valid_from) : null;
+  const [countdownDisplay, setCountdownDisplay] = useState<string>('');
+  const [isNowActive, setIsNowActive] = useState(false);
+
+  useEffect(() => {
+    if (!activatesAt) return;
+    if (activatesAt <= new Date()) {
+      setIsNowActive(true);
+      return;
+    }
+    const tick = () => {
+      const diff = activatesAt.getTime() - Date.now();
+      if (diff <= 0) {
+        setIsNowActive(true);
+        clearInterval(timer);
+        return;
+      }
+      const totalSeconds = Math.floor(diff / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      const hh = String(hours).padStart(2, '0');
+      const mm = String(minutes).padStart(2, '0');
+      const ss = String(seconds).padStart(2, '0');
+      setCountdownDisplay(`${hh}:${mm}:${ss}`);
+    };
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [data?.valid_from]);
+
   if (isLoading) {
     return <main className="p-3 sm:p-4 md:p-6 text-sm text-gray-400">Загрузка пропуска...</main>;
   }
@@ -54,6 +87,8 @@ export default function PassDetailPage() {
   if (isError || !data) {
     return <main className="p-3 sm:p-4 md:p-6 text-sm text-rose-400">Не удалось загрузить детали пропуска.</main>;
   }
+
+  const isNotYetActive = !isNowActive && activatesAt !== null && activatesAt > new Date();
 
   const canManagePass =
     user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN;
@@ -99,6 +134,15 @@ export default function PassDetailPage() {
               {revokeMutation.isPending ? 'Отзыв...' : 'Отозвать пропуск'}
             </button>
           </div>
+          {isNotYetActive ? (
+            <div className="mt-3 flex items-start gap-2 text-xs text-blue-300">
+              <Info size={14} className="mt-0.5 shrink-0" />
+              <span>
+                При отправке гостю — уведомите его, что QR будет активен с{' '}
+                {activatesAt!.toLocaleString('ru-RU')}.
+              </span>
+            </div>
+          ) : null}
           {resendMutation.isError ? (
             <div className="mt-3 text-sm text-rose-300">
               {getApiErrorMessage(resendMutation.error, 'Не удалось повторно отправить QR.')}
@@ -147,7 +191,23 @@ export default function PassDetailPage() {
       <section className="rounded-xl border border-gray-700 bg-gray-800 p-5">
         <h2 className="mb-3 text-lg font-semibold text-white">QR-код</h2>
         {data.qr_image ? (
-          <img src={data.qr_image} alt="QR guest pass" className="max-h-80 rounded-lg border border-gray-700 bg-white p-3" />
+          <div className="relative inline-block">
+            <img src={data.qr_image} alt="QR guest pass" className="max-h-80 rounded-lg border border-gray-700 bg-white p-3" />
+            {isNotYetActive ? (
+              <div className={cn(
+                'absolute inset-0 flex flex-col items-center justify-center gap-1',
+                'bg-black/60 backdrop-blur-sm rounded-lg'
+              )}>
+                <span className="text-sm text-gray-300">Будет активен в</span>
+                <span className="font-semibold text-white">
+                  {activatesAt!.toLocaleString('ru-RU')}
+                </span>
+                <span className="font-mono text-xs text-blue-400">
+                  Активен через {countdownDisplay}
+                </span>
+              </div>
+            ) : null}
+          </div>
         ) : (
           <div className="text-sm text-gray-400">QR изображение недоступно.</div>
         )}
