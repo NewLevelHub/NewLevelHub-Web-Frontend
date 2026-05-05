@@ -223,7 +223,7 @@ function ImpersonatePanel({ targetUser }: ImpersonatePanelProps) {
     onSuccess: (data) => {
       const mappedUser = mapApiUser(data.user);
       startImpersonation(mappedUser, data.access);
-      navigate('/');
+      navigate('/dashboard');
     },
     onError: (error: unknown) => {
       const axiosError = error as { response?: { status?: number } };

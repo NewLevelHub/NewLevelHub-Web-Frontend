@@ -26,7 +26,7 @@ export default function OnboardingWizardPage() {
 
   useEffect(() => {
     if (data?.completed) {
-      void navigate('/', { replace: true });
+      void navigate('/dashboard', { replace: true });
     }
   }, [data, navigate]);
 

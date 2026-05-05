@@ -8,6 +8,7 @@ import { AuthLayout } from '@/shared/ui/layouts/AuthLayout';
 import { STAFF_UI_PREFIX, SUPERADMIN_UI_PREFIX, USER_ROLES } from '@/shared/config/constants';
 
 // Auth pages
+import WelcomePage from '@/pages/home/WelcomePage';
 import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
@@ -124,7 +125,7 @@ function SuperadminLegacyRedirect() {
     return <Navigate to={`${STAFF_UI_PREFIX}/bookings${tail}${location.search}${location.hash}`} replace />;
   }
   if (!location.pathname.startsWith('/admin/')) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
   const suffix = location.pathname.slice('/admin'.length);
   return <Navigate to={`${SUPERADMIN_UI_PREFIX}${suffix}${location.search}${location.hash}`} replace />;
@@ -140,6 +141,11 @@ function RedirectSuperadminBookingDetailToStaff() {
 }
 
 export const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <WelcomePage />,
+  },
+
   // ── Public routes (only for non-authenticated) ──
   {
     element: <RequireGuest />,
@@ -181,7 +187,7 @@ export const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           // All roles
-          { path: '/', element: <DashboardPage /> },
+          { path: '/dashboard', element: <DashboardPage /> },
           { path: '/profile', element: <ProfilePage /> },
           { path: '/profile/settings', element: <ProfileSettingsPage /> },
           { path: '/notifications', element: <NotificationListPage /> },
