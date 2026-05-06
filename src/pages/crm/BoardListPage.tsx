@@ -462,6 +462,7 @@ export default function BoardListPage() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'boards'] });
+      void queryClient.invalidateQueries({ queryKey: ['analytics', 'company-dashboard'] });
       setBoardToArchive(null);
     },
   });
@@ -473,6 +474,7 @@ export default function BoardListPage() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'boards'] });
+      void queryClient.invalidateQueries({ queryKey: ['analytics', 'company-dashboard'] });
       setBoardToUnarchive(null);
       setUnarchiveError(null);
     },
