@@ -81,7 +81,7 @@ export function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
         )}
       >
         <div className="p-4 md:p-5 border-b border-gray-800 flex items-center justify-between">
-          <Link to="/" className="text-lg font-bold text-white tracking-tight">
+          <Link to="/dashboard" className="text-lg font-bold text-white tracking-tight">
             NewLevelHub
           </Link>
           <button
