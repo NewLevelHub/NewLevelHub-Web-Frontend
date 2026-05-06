@@ -401,6 +401,7 @@ function CreateTaskModal({ boardId, columnId, onClose, wipBlocked }: CreateTaskM
       void queryClient.invalidateQueries({ queryKey: ['notifications-recent'] });
       void queryClient.invalidateQueries({ queryKey: ['notifications'] });
       void queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'my-tasks'] });
       onClose();
     },
   });
@@ -2552,6 +2553,7 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
       void queryClient.invalidateQueries({ queryKey: ['crm', 'task', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'my-tasks'] });
       void queryClient.invalidateQueries({ queryKey: ['notifications-recent'] });
       void queryClient.invalidateQueries({ queryKey: ['notifications'] });
       void queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });

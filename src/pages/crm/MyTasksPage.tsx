@@ -17,9 +17,7 @@ import type { CrmTask, PaginatedResponse } from '@/shared/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface MyTask extends CrmTask {
-  board_title: string;
-}
+type MyTask = CrmTask;
 
 interface MyTaskFilters {
   search: string;
@@ -314,7 +312,7 @@ export default function MyTasksPage() {
                           to={`/crm/boards/${task.board.id}`}
                           className="text-gray-400 hover:text-gray-200 transition-colors text-xs"
                         >
-                          {task.board_title}
+                          {task.board.name}
                         </Link>
                       </td>
 
