@@ -27,6 +27,15 @@ const NOTIFICATION_LABELS: Record<NotificationType, string> = {
 
 const ALL_TYPES = Object.keys(NOTIFICATION_LABELS) as NotificationType[];
 
+const EMAIL_SUPPORTED_TYPES = new Set<NotificationType>([
+  'booking_confirmed',
+  'task_assigned',
+  'task_deadline',
+  'leave_review',
+  'guest_validated',
+  'announcement',
+]);
+
 // ── Toggle ────────────────────────────────────────────────────────────────────
 
 interface ToggleProps {
@@ -284,11 +293,15 @@ function PreferencesTable({ preferences, pendingKeys, onToggle }: PreferencesTab
                 </td>
                 <td className="py-3 pl-6 text-center">
                   <div className="flex justify-center">
-                    <Toggle
-                      checked={entry?.email ?? false}
-                      onChange={(v) => onToggle(type, 'email', v)}
-                      disabled={pendingKeys.has(emailKey)}
-                    />
+                    {EMAIL_SUPPORTED_TYPES.has(type) ? (
+                      <Toggle
+                        checked={entry?.email ?? false}
+                        onChange={(v) => onToggle(type, 'email', v)}
+                        disabled={pendingKeys.has(emailKey)}
+                      />
+                    ) : (
+                      <span className="text-gray-600 text-xs select-none">—</span>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -362,7 +375,6 @@ export default function NotificationPreferencesPage() {
     value: boolean,
   ) {
     const key = `${type}:${field}`;
-    console.log('Toggling', key, 'to', value);
     addPending(key);
     const currentEntry =
       queryClient.getQueryData<NotificationPreferences>(['notification-preferences'])?.[type] ??
