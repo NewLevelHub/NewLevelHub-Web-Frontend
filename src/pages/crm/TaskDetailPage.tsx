@@ -105,6 +105,7 @@ export default function TaskDetailPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
       void queryClient.invalidateQueries({ queryKey: ['crm', 'task', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'my-tasks'] });
       void queryClient.invalidateQueries({ queryKey: ['notifications-recent'] });
       void queryClient.invalidateQueries({ queryKey: ['notifications'] });
       void queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
@@ -117,6 +118,7 @@ export default function TaskDetailPage() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'my-tasks'] });
       queryClient.removeQueries({ queryKey: ['crm', 'task', taskId] });
       navigate(boardId ? `/crm/boards/${boardId}` : '/crm', { replace: true });
     },

@@ -88,6 +88,7 @@ export default function AnnouncementCreatePage() {
       return response.data;
     },
     onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['announcements'] });
       await queryClient.invalidateQueries({ queryKey: ['announcements-widget'] });
       navigate('/announcements');
     },
