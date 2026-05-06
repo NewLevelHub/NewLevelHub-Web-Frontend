@@ -112,7 +112,7 @@ export default function PassCreatePage() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block text-sm text-gray-300">
-            Действует с
+            Начало действия
             <input
               type="datetime-local"
               value={validFrom}
@@ -120,6 +120,7 @@ export default function PassCreatePage() {
               className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
               required
             />
+            <p className="mt-1 text-xs text-gray-500">Код станет активным начиная с этого момента</p>
           </label>
           <div className="block text-sm text-gray-300">
             Действует до

@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Info } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { PASS_STATUSES, USER_ROLES } from '@/shared/config/constants';
+import { PASS_STATUSES, USER_ROLES, type PassStatus } from '@/shared/config/constants';
 import { useUser } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import type { GuestPass } from '@/shared/types';
+import { PassStatusBadge } from '@/pages/passes/components/PassStatusBadge';
+import { QRCodeView } from '@/pages/passes/components/QRCodeView';
+import { usePassCountdown } from '@/pages/passes/hooks/usePassCountdown';
 
 export default function PassDetailPage() {
   const { id } = useParams();
@@ -47,6 +51,8 @@ export default function PassDetailPage() {
     onError: () => setSuccessMessage(null),
   });
 
+  const { isNowActive } = usePassCountdown(data?.valid_from);
+
   if (isLoading) {
     return <main className="p-3 sm:p-4 md:p-6 text-sm text-gray-400">Загрузка пропуска...</main>;
   }
@@ -54,6 +60,9 @@ export default function PassDetailPage() {
   if (isError || !data) {
     return <main className="p-3 sm:p-4 md:p-6 text-sm text-rose-400">Не удалось загрузить детали пропуска.</main>;
   }
+
+  const activatesAt = new Date(data.valid_from);
+  const isNotYetActive = !isNowActive && activatesAt > new Date();
 
   const canManagePass =
     user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN;
@@ -99,6 +108,15 @@ export default function PassDetailPage() {
               {revokeMutation.isPending ? 'Отзыв...' : 'Отозвать пропуск'}
             </button>
           </div>
+          {isNotYetActive ? (
+            <div className="mt-3 flex items-start gap-2 text-xs text-blue-300">
+              <Info size={14} className="mt-0.5 shrink-0" />
+              <span>
+                При отправке гостю — уведомите его, что QR будет активен с{' '}
+                {activatesAt.toLocaleString('ru-RU')}.
+              </span>
+            </div>
+          ) : null}
           {resendMutation.isError ? (
             <div className="mt-3 text-sm text-rose-300">
               {getApiErrorMessage(resendMutation.error, 'Не удалось повторно отправить QR.')}
@@ -124,7 +142,7 @@ export default function PassDetailPage() {
         </div>
         <div>
           <div className="text-gray-400">Статус</div>
-          <div>{data.status}</div>
+          <div><PassStatusBadge status={data.status as PassStatus} /></div>
         </div>
         <div>
           <div className="text-gray-400">Цель</div>
@@ -144,14 +162,7 @@ export default function PassDetailPage() {
         </div>
       </section>
 
-      <section className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-        <h2 className="mb-3 text-lg font-semibold text-white">QR-код</h2>
-        {data.qr_image ? (
-          <img src={data.qr_image} alt="QR guest pass" className="max-h-80 rounded-lg border border-gray-700 bg-white p-3" />
-        ) : (
-          <div className="text-sm text-gray-400">QR изображение недоступно.</div>
-        )}
-      </section>
+      <QRCodeView qrImage={data.qr_image} validFrom={data.valid_from} />
     </main>
   );
 }
