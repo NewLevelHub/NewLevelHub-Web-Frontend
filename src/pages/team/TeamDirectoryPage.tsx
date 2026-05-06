@@ -334,7 +334,9 @@ export default function TeamDirectoryPage() {
                       <MemberAvatar src={member.avatar} fullName={member.full_name} />
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-white">{member.full_name}</p>
-                        <p className="truncate text-xs text-gray-400">{member.position || 'Без должности'}</p>
+                        {member.position && (
+                          <p className="truncate text-xs text-gray-400">{member.position}</p>
+                        )}
                       </div>
                     </div>
 
