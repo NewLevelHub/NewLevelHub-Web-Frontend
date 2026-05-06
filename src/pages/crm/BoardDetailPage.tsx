@@ -402,6 +402,7 @@ function CreateTaskModal({ boardId, columnId, onClose, wipBlocked }: CreateTaskM
       void queryClient.invalidateQueries({ queryKey: ['notifications-recent'] });
       void queryClient.invalidateQueries({ queryKey: ['notifications'] });
       void queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'my-tasks'] });
       onClose();
     },
   });

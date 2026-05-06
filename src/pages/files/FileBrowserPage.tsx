@@ -57,6 +57,7 @@ export default function FileBrowserPage() {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [uploadInputKey, setUploadInputKey] = useState(0);
   const [shareTargetUserId, setShareTargetUserId] = useState('');
   const [sharePermission, setSharePermission] = useState<StorageSharePermission>('view');
   const [selectedShareFileId, setSelectedShareFileId] = useState<number | null>(null);
@@ -255,6 +256,7 @@ export default function FileBrowserPage() {
       setUploadFile(null);
       setUploadError(null);
       setUploadSuccess(`Файл "${createdFile.name}" успешно загружен.`);
+      setUploadInputKey((k) => k + 1);
 
       if (currentFolder === null && createdFile.folder === null) {
         queryClient.setQueryData<PaginatedResponse<StorageFile>>(
@@ -482,6 +484,10 @@ export default function FileBrowserPage() {
           onClick={() => {
             setScope('personal');
             setTrail([]);
+            setUploadFile(null);
+            setUploadError(null);
+            setUploadSuccess(null);
+            setUploadInputKey((k) => k + 1);
           }}
           className={`rounded-md border px-3 py-1.5 text-sm ${
             scope === 'personal'
@@ -496,6 +502,10 @@ export default function FileBrowserPage() {
           onClick={() => {
             setScope('company');
             setTrail([]);
+            setUploadFile(null);
+            setUploadError(null);
+            setUploadSuccess(null);
+            setUploadInputKey((k) => k + 1);
           }}
           className={`rounded-md border px-3 py-1.5 text-sm ${
             scope === 'company'
@@ -584,6 +594,7 @@ export default function FileBrowserPage() {
 
       <div className="flex flex-wrap items-center gap-2">
         <input
+          key={uploadInputKey}
           type="file"
           onChange={(e) => handleUploadInputChange(e.target.files?.[0] ?? null)}
           className="w-full max-w-sm rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-300"
