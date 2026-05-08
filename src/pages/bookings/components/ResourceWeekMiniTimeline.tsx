@@ -43,6 +43,7 @@ interface Segment {
   left: number;
   width: number;
   isBlock: boolean;
+  isSoonAvailable: boolean;
   label: string;
 }
 
@@ -56,6 +57,7 @@ function buildSegments(slots: ResourceScheduleSlot[], dayStartMs: number): Segme
       left: ((s - dayStartMs) / DAY_MS) * 100,
       width: ((e - s) / DAY_MS) * 100,
       isBlock: sl.booking_id == null,
+      isSoonAvailable: sl.status === 'soon_available',
       label:
         sl.booking_id != null
           ? sl.user_name?.trim() || `Бронь #${sl.booking_id}`
@@ -67,7 +69,7 @@ function buildSegments(slots: ResourceScheduleSlot[], dayStartMs: number): Segme
   const merged: Segment[] = [];
   for (const cur of raw) {
     const prev = merged[merged.length - 1];
-    if (prev && prev.isBlock === cur.isBlock && cur.left <= prev.left + prev.width) {
+    if (prev && prev.isBlock === cur.isBlock && prev.isSoonAvailable === cur.isSoonAvailable && cur.left <= prev.left + prev.width) {
       prev.width = Math.max(prev.width, cur.left + cur.width - prev.left);
     } else {
       merged.push({ ...cur });
@@ -96,6 +98,7 @@ function DayRow({ resourceId, isoDay, label, dateLabel, isToday }: DayRowProps) 
         })
         .then((r) => r.data),
     staleTime: 5 * 60 * 1000,
+    refetchInterval: 60_000,
   });
 
   const [y, m, d] = isoDay.split('-').map(Number);
@@ -134,7 +137,7 @@ function DayRow({ resourceId, isoDay, label, dateLabel, isToday }: DayRowProps) 
               key={i}
               className={cn(
                 'absolute top-0.5 bottom-0.5 rounded-sm',
-                seg.isBlock ? 'bg-amber-600/80' : 'bg-rose-500/85',
+                seg.isBlock ? 'bg-amber-600/80' : seg.isSoonAvailable ? 'bg-amber-400/90' : 'bg-rose-500/85',
               )}
               style={{ left: `${seg.left}%`, width: `${Math.max(seg.width, 0.6)}%` }}
               title={`${seg.label} — ${isoDay}`}
@@ -191,6 +194,10 @@ export function ResourceWeekMiniTimeline({ resourceId, className }: Props) {
           <span className="flex items-center gap-1 text-[9px] text-gray-500">
             <span className="inline-block h-2 w-3 rounded-sm bg-rose-500/85" />
             Бронь
+          </span>
+          <span className="flex items-center gap-1 text-[9px] text-gray-500">
+            <span className="inline-block h-2 w-3 rounded-sm bg-amber-400/90" />
+            Скоро свободен
           </span>
           <span className="flex items-center gap-1 text-[9px] text-gray-500">
             <span className="inline-block h-2 w-3 rounded-sm bg-amber-600/80" />
