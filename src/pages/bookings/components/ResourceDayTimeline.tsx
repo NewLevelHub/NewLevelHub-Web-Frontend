@@ -38,6 +38,7 @@ type NormalizedInterval = {
   start: number;
   end: number;
   isBlock: boolean;
+  isSoonAvailable: boolean;
   label: string;
 };
 
@@ -65,6 +66,7 @@ function normalizeIntervals(
       start: s,
       end: e,
       isBlock: sl.booking_id == null,
+      isSoonAvailable: sl.status === 'soon_available',
       label: slotLabel(sl),
     });
   }
@@ -101,7 +103,7 @@ function normalizeIntervals(
       merged.push({ ...cur });
       continue;
     }
-    if (prev.isBlock === cur.isBlock && prev.label === cur.label && cur.start <= prev.end) {
+    if (prev.isBlock === cur.isBlock && prev.isSoonAvailable === cur.isSoonAvailable && prev.label === cur.label && cur.start <= prev.end) {
       prev.end = Math.max(prev.end, cur.end);
       continue;
     }
@@ -122,14 +124,13 @@ export function ResourceDayTimeline({ dayDate, slots, className }: Props) {
       width: number;
       label: string;
       isBlock: boolean;
+      isSoonAvailable: boolean;
     }[] = [];
     const normalized = normalizeIntervals(slots, dayStartMs, dayEndMs);
     for (const sl of normalized) {
-      const start = sl.start;
-      const end = sl.end;
-      const geom = clipSegment(start, end, dayStartMs, dayEndMs);
+      const geom = clipSegment(sl.start, sl.end, dayStartMs, dayEndMs);
       if (!geom) continue;
-      out.push({ ...geom, label: sl.label, isBlock: sl.isBlock });
+      out.push({ ...geom, label: sl.label, isBlock: sl.isBlock, isSoonAvailable: sl.isSoonAvailable });
     }
     return out;
   }, [slots, dayStartMs, dayEndMs]);
@@ -151,7 +152,7 @@ export function ResourceDayTimeline({ dayDate, slots, className }: Props) {
             key={`${seg.left}-${seg.width}-${idx}`}
             className={cn(
               'absolute top-1 bottom-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium text-white shadow-sm overflow-hidden flex items-center',
-              seg.isBlock ? 'bg-amber-700/95' : 'bg-rose-600/95',
+              seg.isBlock ? 'bg-amber-700/95' : seg.isSoonAvailable ? 'bg-amber-500/95' : 'bg-rose-600/95',
             )}
             style={{ left: `${seg.left}%`, width: `${Math.max(seg.width, 0.35)}%` }}
             title={seg.label}

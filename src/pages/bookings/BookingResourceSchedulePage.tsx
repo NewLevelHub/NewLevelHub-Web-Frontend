@@ -5,7 +5,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { RESOURCE_TYPE_LABELS, type ResourceType } from '@/shared/config/constants';
+import { BOOKING_RESOURCE_CATALOG_STATUS, RESOURCE_TYPE_LABELS, type ResourceType } from '@/shared/config/constants';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import { cn } from '@/shared/lib/cn';
 import type { BookingResourceDetail, ResourceScheduleSlot } from '@/shared/types';
@@ -56,6 +56,7 @@ export default function BookingResourceSchedulePage() {
   const { data: daySlots = [], isLoading: scheduleLoading } = useQuery({
     queryKey: ['booking-resource-schedule', resourceId, selectedDay],
     enabled: Number.isFinite(resourceId),
+    refetchInterval: 60_000,
     queryFn: async () => {
       const { data } = await apiClient.get<ResourceScheduleSlot[]>(
         API.bookings.resources.schedule(String(resourceId)),
@@ -124,6 +125,18 @@ export default function BookingResourceSchedulePage() {
         </div>
       </div>
 
+      {detail.status === BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE && (
+        <div className="bg-amber-500/15 border border-amber-500/30 rounded-lg px-4 py-2 flex items-center">
+          <span className="inline-block w-2 h-2 rounded-full bg-amber-400 mr-2 shrink-0" aria-hidden="true" />
+          <span className="text-amber-400 text-sm">
+            Скоро освободится
+            {detail.available_at
+              ? ` · ${new Date(detail.available_at).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })}`
+              : ''}
+          </span>
+        </div>
+      )}
+
       <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold text-gray-900">Расписание</h2>
@@ -187,7 +200,14 @@ export default function BookingResourceSchedulePage() {
         </div>
 
         {scheduleLoading ? (
-          <p className="text-sm text-gray-500">Загрузка слотов…</p>
+          <div className="animate-pulse space-y-2" aria-hidden="true">
+            <div className="h-14 rounded-lg bg-gray-200" />
+            <div className="flex justify-between px-0.5">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-3 w-8 rounded bg-gray-200" />
+              ))}
+            </div>
+          </div>
         ) : (
           <>
             <ResourceDayTimeline dayDate={selectedDay} slots={daySlots} />
