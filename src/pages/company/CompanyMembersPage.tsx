@@ -346,8 +346,7 @@ export default function CompanyMembersPage() {
                     <p className="font-medium text-white">{inv.email}</p>
                     <p className="text-xs text-gray-500">
                       {inv.role} · до {new Date(inv.expires_at).toLocaleString()}
-                      {inv.is_used ? ' · использовано' : ''}
-                      {inv.is_expired && !inv.is_used ? ' · просрочено' : ''}
+                      {inv.is_expired ? ' · просрочено' : inv.is_used ? ' · использовано' : ''}
                     </p>
                     {isSuperadmin && selectedCompanyName ? (
                       <p className="text-xs text-gray-500">Компания: {selectedCompanyName}</p>

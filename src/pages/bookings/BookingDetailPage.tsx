@@ -223,12 +223,13 @@ export default function BookingDetailPage() {
   const end = new Date(data.end_time);
   const now = new Date();
   const isMeetingRoom = resourceData?.type === RESOURCE_TYPES.MEETING_ROOM;
-  const canEditTime = data.status === BOOKING_STATUSES.CONFIRMED;
-  const canCancel = user !== null && data.user === user.id && data.status === BOOKING_STATUSES.CONFIRMED;
+  const isOwner = user !== null && data.user === user.id;
+  const isAdmin = user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN;
+  const canEditTime = data.status === BOOKING_STATUSES.CONFIRMED && (isOwner || isAdmin);
+  const canCancel = isOwner && data.status === BOOKING_STATUSES.CONFIRMED;
 
   const canCheckIn =
-    user !== null &&
-    data.user === user.id &&
+    isOwner &&
     data.status === BOOKING_STATUSES.CONFIRMED &&
     now >= start &&
     now <= end &&
@@ -243,9 +244,11 @@ export default function BookingDetailPage() {
 
   return (
     <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto space-y-6">
-      <Link to="/bookings/my" className="text-sm text-blue-600 hover:underline">
-        ← Мои бронирования
-      </Link>
+      {isOwner ? (
+        <Link to="/bookings/my" className="text-sm text-blue-600 hover:underline">
+          ← Мои бронирования
+        </Link>
+      ) : null}
 
       <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm space-y-3">
         <h1 className="text-xl font-bold text-gray-900">{data.resource_name}</h1>
