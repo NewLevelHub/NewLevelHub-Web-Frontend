@@ -103,6 +103,7 @@ export const API = {
     checklistItemDetail: (itemId: number) => `/crm/items/${itemId}/`,
     taskMove: (id: number) => `/crm/tasks/${id}/move/`,
     taskArchive: (id: number) => `/crm/tasks/${id}/archive/`,
+    taskUnarchive: (id: number) => `/crm/tasks/${id}/unarchive/`,
     taskComments: (taskId: number) => `/crm/tasks/${taskId}/comments/`,
     taskCommentDetail: (taskId: number, commentId: number) => `/crm/tasks/${taskId}/comments/${commentId}/`,
     taskHistory: (taskId: number) => `/crm/tasks/${taskId}/history/`,

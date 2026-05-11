@@ -1676,6 +1676,7 @@ const ACTION_LABELS: Record<string, string> = {
   label_added: 'добавил(а) метку',
   label_removed: 'удалил(а) метку',
   archived: 'архивировал(а) задачу',
+  unarchived: 'восстановил(а) задачу из архива',
   moved: 'переместил(а) задачу',
 };
 
@@ -1730,7 +1731,7 @@ function HistoryValueChange({ entry }: { entry: CrmTaskHistory }) {
     return null;
   }
 
-  if (action === 'archived') {
+  if (action === 'archived' || action === 'unarchived') {
     return null;
   }
 
@@ -1984,7 +1985,7 @@ export function HistorySection({ taskId }: HistorySectionProps) {
                             <span className="font-medium text-gray-200">{entry.user.full_name}</span>
                             {' '}
                             <span className="text-gray-400">{actionLabel}</span>
-                            {entry.action === 'archived' && (
+                            {(entry.action === 'archived' || entry.action === 'unarchived') && (
                               <Archive size={11} className="inline ml-1 text-gray-500 align-middle" aria-hidden="true" />
                             )}
                           </p>
@@ -2562,8 +2563,7 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
   });
 
   const archiveMutation = useMutation({
-    mutationFn: () =>
-      apiClient.patch<CrmTask>(API.crm.taskDetail(taskId), { is_archived: true }).then((r) => r.data),
+    mutationFn: () => apiClient.post(API.crm.taskArchive(taskId)),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
       void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId, 'archived'] });
@@ -3429,8 +3429,7 @@ function KanbanColumn({
   const atWipLimit = column.wip_limit !== null && tasks.length >= column.wip_limit;
 
   const archiveTaskMutation = useMutation({
-    mutationFn: (taskId: number) =>
-      apiClient.patch<CrmTask>(API.crm.taskDetail(taskId), { is_archived: true }).then((r) => r.data),
+    mutationFn: (taskId: number) => apiClient.post(API.crm.taskArchive(taskId)),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
       void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId, 'archived'] });
@@ -4026,8 +4025,7 @@ function ArchivePanel({
   }, [onClose]);
 
   const unarchiveMutation = useMutation({
-    mutationFn: (taskId: number) =>
-      apiClient.patch<CrmTask>(API.crm.taskDetail(taskId), { is_archived: false }).then((r) => r.data),
+    mutationFn: (taskId: number) => apiClient.post(API.crm.taskUnarchive(taskId)),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
       void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId, 'archived'] });
