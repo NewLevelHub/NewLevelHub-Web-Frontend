@@ -53,6 +53,7 @@ interface Segment {
   startMs: number;
   endMs: number;
   isBlock: boolean;
+  isSoonAvailable: boolean;
   label: string;
   /** index into the original (unmerged) slots that contributed to this segment */
   slotIndices: number[];
@@ -73,9 +74,11 @@ function buildSegments(slots: ResourceScheduleSlot[], dayStartMs: number): Segme
       startMs: s,
       endMs:   e,
       isBlock: sl.booking_id == null,
-      label: sl.booking_id != null
-        ? sl.user_name?.trim() || `Бронь #${sl.booking_id}`
-        : 'Блокировка',
+      isSoonAvailable: sl.status === 'soon_available',
+      label:
+        sl.booking_id != null
+          ? sl.user_name?.trim() || `Бронь #${sl.booking_id}`
+          : 'Блокировка',
       slotIndices: [idx],
     });
   });
@@ -85,9 +88,9 @@ function buildSegments(slots: ResourceScheduleSlot[], dayStartMs: number): Segme
   const merged: Segment[] = [];
   for (const cur of raw) {
     const prev = merged[merged.length - 1];
-    if (prev && prev.isBlock === cur.isBlock && cur.left <= prev.left + prev.width) {
-      prev.width    = Math.max(prev.width, cur.left + cur.width - prev.left);
-      prev.endMs    = Math.max(prev.endMs, cur.endMs);
+    if (prev && prev.isBlock === cur.isBlock && prev.isSoonAvailable === cur.isSoonAvailable && cur.left <= prev.left + prev.width) {
+      prev.width       = Math.max(prev.width, cur.left + cur.width - prev.left);
+      prev.endMs       = Math.max(prev.endMs, cur.endMs);
       prev.slotIndices.push(...cur.slotIndices);
     } else {
       merged.push({ ...cur, slotIndices: [...cur.slotIndices] });
@@ -190,6 +193,7 @@ function DayRow({ resourceId, isoDay, label, dateLabel, isToday, nowPct, current
         })
         .then((r) => r.data),
     staleTime: 5 * 60 * 1000,
+    refetchInterval: 60_000,
   });
 
   const [y, m, d] = isoDay.split('-').map(Number);
@@ -340,8 +344,12 @@ export function ResourceWeekMiniTimeline({ resourceId, currentStatus, className 
             <span className="inline-block h-2 w-3 rounded-sm bg-rose-500/80" />
             Бронь
           </span>
-          <span className="flex items-center gap-1 text-[10px] text-gray-500">
-            <span className="inline-block h-2 w-3 rounded-sm bg-amber-500/75" />
+          <span className="flex items-center gap-1 text-[9px] text-gray-500">
+            <span className="inline-block h-2 w-3 rounded-sm bg-amber-400/90" />
+            Скоро свободен
+          </span>
+          <span className="flex items-center gap-1 text-[9px] text-gray-500">
+            <span className="inline-block h-2 w-3 rounded-sm bg-amber-600/80" />
             Блок
           </span>
           <span className="flex items-center gap-1 text-[10px] text-gray-500">

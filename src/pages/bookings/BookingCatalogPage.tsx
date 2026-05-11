@@ -72,7 +72,7 @@ function emptyEquipmentFilters(): Record<ResourceEquipmentKey, boolean> {
 /** Подписи и поля в сайдбаре в тёмной теме. */
 const sbLabel = 'text-sm font-medium text-gray-300';
 const sbInput =
-  'mt-1 w-full px-3 py-2 text-sm rounded-lg border border-gray-700 bg-gray-900 text-white placeholder:text-gray-500';
+  'mt-1 w-full px-3 py-2 text-sm rounded-lg border border-gray-700 bg-gray-900 text-white placeholder:text-gray-500 [color-scheme:dark]';
 const sbSelect =
   'mt-1 w-full px-3 py-2 text-sm rounded-lg border border-gray-700 bg-gray-900 text-white [&>option]:bg-gray-900 [&>option]:text-white';
 

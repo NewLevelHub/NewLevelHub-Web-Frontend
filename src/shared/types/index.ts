@@ -280,6 +280,7 @@ export interface ResourceScheduleSlot {
   end: string;
   booking_id: number | null;
   user_name: string | null;
+  status?: 'occupied' | 'soon_available' | 'blocked';
 }
 
 /** Полная карточка: GET/PATCH /bookings/resources/:id/ */
@@ -309,6 +310,10 @@ export interface BookingResourceDetail {
   capsule_zone: string;
   created_at: string;
   updated_at: string;
+  /** Текущий статус доступности ресурса */
+  status?: BookingResourceCatalogStatus;
+  /** Конец текущей занятости; только при status === soon_available */
+  available_at?: string | null;
   /** Занятость на 7 календарных дней (только GET retrieve) */
   schedule?: ResourceScheduleSlot[];
 }
