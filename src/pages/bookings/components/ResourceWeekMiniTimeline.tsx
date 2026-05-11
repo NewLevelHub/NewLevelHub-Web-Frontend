@@ -172,7 +172,8 @@ function SlotDetailPanel({ isoDay, slots, onClose }: SlotDetailPanelProps) {
 // ─── Single day row ────────────────────────────────────────────────────────────
 
 interface DayRowProps {
-  resourceId: number;
+  slots: ResourceScheduleSlot[];
+  isLoading: boolean;
   isoDay: string;
   label: string;
   dateLabel: string;
@@ -181,20 +182,8 @@ interface DayRowProps {
   currentStatus?: BookingResourceCatalogStatus;
 }
 
-function DayRow({ resourceId, isoDay, label, dateLabel, isToday, nowPct, currentStatus }: DayRowProps) {
+function DayRow({ slots, isLoading, isoDay, label, dateLabel, isToday, nowPct, currentStatus }: DayRowProps) {
   const [detailOpen, setDetailOpen] = useState(false);
-
-  const { data: slots = [], isLoading } = useQuery<ResourceScheduleSlot[]>({
-    queryKey: ['resource-week-slot', resourceId, isoDay],
-    queryFn: () =>
-      apiClient
-        .get<ResourceScheduleSlot[]>(API.bookings.resources.schedule(String(resourceId)), {
-          params: { date: isoDay },
-        })
-        .then((r) => r.data),
-    staleTime: 5 * 60 * 1000,
-    refetchInterval: 60_000,
-  });
 
   const [y, m, d] = isoDay.split('-').map(Number);
   const dayStartMs = new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
@@ -302,6 +291,18 @@ export function ResourceWeekMiniTimeline({ resourceId, currentStatus, className 
   const monday = getMondayIso(now);
   const days = Array.from({ length: 7 }, (_, i) => addDaysToIso(monday, i));
 
+  const { data: weekSlots = [], isLoading } = useQuery<ResourceScheduleSlot[]>({
+    queryKey: ['resource-week-schedule', resourceId, monday],
+    queryFn: () =>
+      apiClient
+        .get<ResourceScheduleSlot[]>(API.bookings.resources.schedule(String(resourceId)), {
+          params: { week: monday },
+        })
+        .then((r) => r.data),
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 60_000,
+  });
+
   // "Now" position within the 9–18 window
   const [todayY, todayM, todayD] = todayIso.split('-').map(Number);
   const todayStartMs  = new Date(todayY, todayM - 1, todayD, 0, 0, 0, 0).getTime();
@@ -326,7 +327,8 @@ export function ResourceWeekMiniTimeline({ resourceId, currentStatus, className 
       {days.map((iso, idx) => (
         <DayRow
           key={iso}
-          resourceId={resourceId}
+          slots={weekSlots.filter((sl) => sl.start.startsWith(iso))}
+          isLoading={isLoading}
           isoDay={iso}
           label={DAY_LABELS[idx]}
           dateLabel={shortDate(iso)}
