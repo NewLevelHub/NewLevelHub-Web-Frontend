@@ -221,8 +221,8 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
       queryClient.invalidateQueries({ queryKey: ['booking-resources'] });
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['booking-resource-schedule'] });
-      queryClient.invalidateQueries({ queryKey: ['resource-week-slot'] });
+      queryClient.invalidateQueries({ queryKey: ['booking-resource-schedule', resource.id], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ['resource-week-schedule', resource.id], refetchType: 'all' });
       setSuccessMsg('Бронирование успешно создано!');
       setTimeout(() => {
         onClose();
