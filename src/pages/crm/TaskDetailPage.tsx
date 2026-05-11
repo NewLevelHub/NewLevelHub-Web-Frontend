@@ -463,7 +463,7 @@ export default function TaskDetailPage() {
               <p className="text-xs text-red-400">Не удалось архивировать задачу.</p>
             )}
             {unarchiveMutation.isError && (
-              <p className="text-xs text-red-400">Не удалось расархивировать задачу.</p>
+              <p className="text-xs text-red-400">Не удалось разархивировать задачу.</p>
             )}
 
             {task.is_archived ? (
@@ -478,7 +478,7 @@ export default function TaskDetailPage() {
                 )}
               >
                 <Archive size={14} />
-                {unarchiveMutation.isPending ? 'Восстановление...' : 'Расархивировать задачу'}
+                {unarchiveMutation.isPending ? 'Восстановление...' : 'Разархивировать задачу'}
               </button>
             ) : (
               <button

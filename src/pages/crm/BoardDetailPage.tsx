@@ -2850,7 +2850,7 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
                   <p className="text-xs text-red-400 mb-2">Не удалось архивировать задачу.</p>
                 )}
                 {unarchiveFromDetailMutation.isError && (
-                  <p className="text-xs text-red-400 mb-2">Не удалось расархивировать задачу.</p>
+                  <p className="text-xs text-red-400 mb-2">Не удалось разархивировать задачу.</p>
                 )}
                 {task.is_archived ? (
                   <button
@@ -2864,7 +2864,7 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
                     )}
                   >
                     <Archive size={14} />
-                    {unarchiveFromDetailMutation.isPending ? 'Восстановление...' : 'Расархивировать'}
+                    {unarchiveFromDetailMutation.isPending ? 'Восстановление...' : 'Разархивировать'}
                   </button>
                 ) : (
                   <button
@@ -4148,9 +4148,9 @@ function ArchivePanel({
                         restoreBlocked && 'opacity-50 cursor-not-allowed hover:bg-transparent hover:text-gray-500 hover:border-gray-600',
                         'disabled:opacity-50 disabled:cursor-not-allowed',
                       )}
-                      aria-label={`Расархивировать задачу: ${task.title}`}
+                      aria-label={`Разархивировать задачу: ${task.title}`}
                     >
-                      {unarchiveMutation.isPending && unarchiveMutation.variables === task.id ? '...' : 'Расархивировать'}
+                      {unarchiveMutation.isPending && unarchiveMutation.variables === task.id ? '...' : 'Разархивировать'}
                     </button>
 
                     {/* Open as page */}
