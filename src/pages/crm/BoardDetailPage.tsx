@@ -2572,6 +2572,16 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
     },
   });
 
+  const unarchiveFromDetailMutation = useMutation({
+    mutationFn: () => apiClient.post(API.crm.taskUnarchive(taskId)),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId, 'archived'] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'task', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'my-tasks'] });
+    },
+  });
+
   const handleArchive = () => {
     archiveMutation.mutate();
   };
@@ -2660,7 +2670,7 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
           {isError && (
             <div className="flex items-center gap-2 rounded-lg border border-red-800 bg-red-900/30 px-4 py-3 text-sm text-red-300">
               <AlertCircle size={16} className="shrink-0" />
-              <span>Не удалось загрузить задачу.</span>
+              <span>Не удалось загрузить задачу. Возможно, она архивирована или была удалена.</span>
             </div>
           )}
 
@@ -2839,19 +2849,38 @@ function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
                 {archiveMutation.isError && (
                   <p className="text-xs text-red-400 mb-2">Не удалось архивировать задачу.</p>
                 )}
-                <button
-                  type="button"
-                  onClick={handleArchive}
-                  disabled={archiveMutation.isPending}
-                  className={cn(
-                    'flex items-center gap-1.5 text-sm transition-colors',
-                    'text-red-400 hover:text-red-300',
-                    'disabled:opacity-50 disabled:cursor-not-allowed',
-                  )}
-                >
-                  <Archive size={14} />
-                  {archiveMutation.isPending ? 'Архивирование...' : 'Архивировать'}
-                </button>
+                {unarchiveFromDetailMutation.isError && (
+                  <p className="text-xs text-red-400 mb-2">Не удалось расархивировать задачу.</p>
+                )}
+                {task.is_archived ? (
+                  <button
+                    type="button"
+                    onClick={() => unarchiveFromDetailMutation.mutate()}
+                    disabled={unarchiveFromDetailMutation.isPending}
+                    className={cn(
+                      'flex items-center gap-1.5 text-sm transition-colors',
+                      'text-blue-400 hover:text-blue-300',
+                      'disabled:opacity-50 disabled:cursor-not-allowed',
+                    )}
+                  >
+                    <Archive size={14} />
+                    {unarchiveFromDetailMutation.isPending ? 'Восстановление...' : 'Расархивировать'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleArchive}
+                    disabled={archiveMutation.isPending}
+                    className={cn(
+                      'flex items-center gap-1.5 text-sm transition-colors',
+                      'text-red-400 hover:text-red-300',
+                      'disabled:opacity-50 disabled:cursor-not-allowed',
+                    )}
+                  >
+                    <Archive size={14} />
+                    {archiveMutation.isPending ? 'Архивирование...' : 'Архивировать'}
+                  </button>
+                )}
               </div>
             </>
           )}
@@ -3990,6 +4019,7 @@ interface ArchivePanelProps {
   columns: CrmColumn[];
   taskCountByColumnId: Record<number, number>;
   onClose: () => void;
+  onTaskOpen: (taskId: number) => void;
   /** Called when user tries to restore while the task's column is at WIP limit */
   onRestoreWipBlocked?: () => void;
 }
@@ -3999,6 +4029,7 @@ function ArchivePanel({
   columns,
   taskCountByColumnId,
   onClose,
+  onTaskOpen,
   onRestoreWipBlocked,
 }: ArchivePanelProps) {
   const queryClient = useQueryClient();
@@ -4090,56 +4121,56 @@ function ArchivePanel({
                 const restoreBlocked = !restoreCheck.ok;
 
                 return (
-                <li
-                  key={task.id}
-                  className="flex items-start gap-3 rounded-lg border border-gray-700 bg-gray-800 px-3 py-3"
-                >
-                  <div className="flex-1 min-w-0 space-y-1.5">
+                <li key={task.id} className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-3 space-y-2">
+                  {/* Title + meta */}
+                  <div className="space-y-1.5">
                     <p className="text-sm text-white leading-snug break-words">{task.title}</p>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-gray-500">
-                        {columnMap.get(task.column_id) ?? '—'}
-                      </span>
-                      <span
-                        className={cn(
-                          'inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-medium',
-                          PRIORITY_BADGE_CLASS[task.priority],
-                        )}
-                      >
+                      <span className="text-xs text-gray-500">{columnMap.get(task.column_id) ?? '—'}</span>
+                      <span className={cn('inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-medium', PRIORITY_BADGE_CLASS[task.priority])}>
                         {PRIORITY_LABELS[task.priority]}
                       </span>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (restoreBlocked) {
-                        onRestoreWipBlocked?.();
-                        return;
-                      }
-                      unarchiveMutation.mutate(task.id);
-                    }}
-                    disabled={
-                      unarchiveMutation.isPending && unarchiveMutation.variables === task.id
-                    }
-                    aria-disabled={restoreBlocked || undefined}
-                    title={
-                      restoreBlocked
-                        ? 'Нельзя восстановить: превышен WIP-лимит этой колонки. Освободите место.'
-                        : undefined
-                    }
-                    className={cn(
-                      'shrink-0 rounded-md border border-gray-600 px-2.5 py-1.5 text-xs font-medium transition-colors',
-                      'text-gray-300 hover:text-white hover:border-gray-400 hover:bg-gray-700',
-                      restoreBlocked && 'opacity-50 cursor-not-allowed hover:bg-transparent hover:text-gray-500 hover:border-gray-600',
-                      'disabled:opacity-50 disabled:cursor-not-allowed',
-                    )}
-                    aria-label={`Восстановить задачу: ${task.title}`}
-                  >
-                    {unarchiveMutation.isPending && unarchiveMutation.variables === task.id
-                      ? '...'
-                      : 'Восстановить'}
-                  </button>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Unarchive */}
+                    <button
+                      type="button"
+                      onClick={() => { if (restoreBlocked) { onRestoreWipBlocked?.(); return; } unarchiveMutation.mutate(task.id); }}
+                      disabled={unarchiveMutation.isPending && unarchiveMutation.variables === task.id}
+                      aria-disabled={restoreBlocked || undefined}
+                      title={restoreBlocked ? 'Нельзя восстановить: превышен WIP-лимит этой колонки. Освободите место.' : undefined}
+                      className={cn(
+                        'rounded-md border border-gray-600 px-2.5 py-1.5 text-xs font-medium transition-colors',
+                        'text-gray-300 hover:text-white hover:border-gray-400 hover:bg-gray-700',
+                        restoreBlocked && 'opacity-50 cursor-not-allowed hover:bg-transparent hover:text-gray-500 hover:border-gray-600',
+                        'disabled:opacity-50 disabled:cursor-not-allowed',
+                      )}
+                      aria-label={`Расархивировать задачу: ${task.title}`}
+                    >
+                      {unarchiveMutation.isPending && unarchiveMutation.variables === task.id ? '...' : 'Расархивировать'}
+                    </button>
+
+                    {/* Open as page */}
+                    <Link
+                      to={`/crm/tasks/${task.id}`}
+                      onClick={onClose}
+                      className="rounded-md border border-gray-600 px-2.5 py-1.5 text-xs font-medium transition-colors text-gray-300 hover:text-white hover:border-gray-400 hover:bg-gray-700"
+                    >
+                      Открыть страницу
+                    </Link>
+
+                    {/* Open as modal */}
+                    <button
+                      type="button"
+                      onClick={() => { onTaskOpen(task.id); onClose(); }}
+                      className="rounded-md border border-gray-600 px-2.5 py-1.5 text-xs font-medium transition-colors text-gray-300 hover:text-white hover:border-gray-400 hover:bg-gray-700"
+                    >
+                      Открыть модалку
+                    </button>
+                  </div>
                 </li>
                 );
               })}
@@ -4831,6 +4862,7 @@ export default function BoardDetailPage() {
             Object.entries(localTasksByColumn).map(([k, v]) => [Number(k), v.length]),
           )}
           onClose={() => setArchivePanelOpen(false)}
+          onTaskOpen={(id) => { setSelectedTaskId(id); setArchivePanelOpen(false); }}
           onRestoreWipBlocked={showWipLimitToast}
         />
       )}

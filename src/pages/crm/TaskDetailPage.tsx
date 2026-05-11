@@ -124,6 +124,18 @@ export default function TaskDetailPage() {
     },
   });
 
+  const unarchiveMutation = useMutation({
+    mutationFn: async () => {
+      await apiClient.post(API.crm.taskUnarchive(taskId));
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId, 'archived'] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'task', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'my-tasks'] });
+    },
+  });
+
   const handleSave = () => {
     if (!task || patchMutation.isPending) return;
 
@@ -450,20 +462,39 @@ export default function TaskDetailPage() {
             {archiveMutation.isError && (
               <p className="text-xs text-red-400">Не удалось архивировать задачу.</p>
             )}
+            {unarchiveMutation.isError && (
+              <p className="text-xs text-red-400">Не удалось расархивировать задачу.</p>
+            )}
 
-            <button
-              type="button"
-              onClick={() => archiveMutation.mutate()}
-              disabled={archiveMutation.isPending}
-              className={cn(
-                'flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-                'border border-red-800 text-red-400 bg-red-900/30 hover:bg-red-900/50',
-                'disabled:opacity-50 disabled:cursor-not-allowed',
-              )}
-            >
-              <Archive size={14} />
-              {archiveMutation.isPending ? 'Архивирование...' : 'Архивировать задачу'}
-            </button>
+            {task.is_archived ? (
+              <button
+                type="button"
+                onClick={() => unarchiveMutation.mutate()}
+                disabled={unarchiveMutation.isPending}
+                className={cn(
+                  'flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                  'border border-blue-800 text-blue-400 bg-blue-900/30 hover:bg-blue-900/50',
+                  'disabled:opacity-50 disabled:cursor-not-allowed',
+                )}
+              >
+                <Archive size={14} />
+                {unarchiveMutation.isPending ? 'Восстановление...' : 'Расархивировать задачу'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => archiveMutation.mutate()}
+                disabled={archiveMutation.isPending}
+                className={cn(
+                  'flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                  'border border-red-800 text-red-400 bg-red-900/30 hover:bg-red-900/50',
+                  'disabled:opacity-50 disabled:cursor-not-allowed',
+                )}
+              >
+                <Archive size={14} />
+                {archiveMutation.isPending ? 'Архивирование...' : 'Архивировать задачу'}
+              </button>
+            )}
           </section>
         </div>
       </div>
