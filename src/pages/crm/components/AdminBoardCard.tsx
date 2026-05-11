@@ -1,0 +1,67 @@
+import { memo } from 'react';
+import { LayoutGrid, Calendar, Building2 } from 'lucide-react';
+import { cn } from '@/shared/lib/cn';
+import type { CrmBoard } from '@/shared/types';
+
+export interface AdminBoardCardProps {
+  board: CrmBoard;
+  companyName: string | undefined;
+  onClick: (board: CrmBoard) => void;
+}
+
+export const AdminBoardCard = memo(function AdminBoardCard({
+  board,
+  companyName,
+  onClick,
+}: AdminBoardCardProps) {
+  const formattedDate = new Date(board.created_at).toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={`Открыть доску ${board.name}`}
+      onClick={() => onClick(board)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick(board);
+        }
+      }}
+      className={cn(
+        'group relative flex flex-col rounded-xl border border-gray-800 bg-gray-900',
+        'p-5 cursor-pointer transition-all duration-200',
+        'hover:border-gray-600 hover:bg-gray-800/60 hover:shadow-lg',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+      )}
+    >
+      <div className="flex items-start gap-3 mb-3">
+        <div className="mt-0.5 rounded-lg bg-blue-600/20 p-2 shrink-0">
+          <LayoutGrid size={18} className="text-blue-400" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold text-white text-sm leading-tight truncate">{board.name}</h3>
+          {board.description && (
+            <p className="mt-1 text-xs text-gray-400 line-clamp-2">{board.description}</p>
+          )}
+        </div>
+      </div>
+
+      {companyName && (
+        <div className="mb-2 flex items-center gap-1.5">
+          <Building2 size={11} className="text-gray-500 shrink-0" />
+          <span className="text-xs text-gray-500 truncate">{companyName}</span>
+        </div>
+      )}
+
+      <div className="mt-auto flex items-center gap-1.5 text-xs text-gray-500">
+        <Calendar size={12} />
+        <span>{formattedDate}</span>
+      </div>
+    </div>
+  );
+});
