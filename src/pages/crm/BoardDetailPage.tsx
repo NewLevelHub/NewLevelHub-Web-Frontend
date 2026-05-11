@@ -1119,8 +1119,8 @@ function CommentItem({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isAuthor = comment.author.id === currentUserId;
-  const canEdit = isAuthor;
-  const canDelete = isAuthor || currentUserRole === USER_ROLES.COMPANY_ADMIN;
+  const canEdit = isAuthor || currentUserRole === USER_ROLES.SUPERADMIN;
+  const canDelete = isAuthor || currentUserRole === USER_ROLES.COMPANY_ADMIN || currentUserRole === USER_ROLES.SUPERADMIN;
 
   const initials = comment.author.full_name
     .split(' ')
