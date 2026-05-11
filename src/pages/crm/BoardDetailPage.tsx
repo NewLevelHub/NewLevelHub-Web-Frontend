@@ -4357,7 +4357,7 @@ export default function BoardDetailPage() {
 
   const taskMoveMutation = useMutation({
     mutationFn: ({ taskId, columnId, position }: { taskId: number; columnId: number; position: number }) =>
-      apiClient.post(API.crm.taskMove(taskId), { column_id: columnId, position }),
+      apiClient.post(API.crm.taskMove(taskId), { column_id: columnId, order: position }),
     onError: (error: unknown) => {
       // Rollback optimistic update
       localTasksByColumnRef.current = taskSnapshotRef.current;
