@@ -73,91 +73,93 @@ This is a **Vite + React 18 SPA** — not Next.js. Before writing any code, read
 
 ---
 
-## Implementing a New Page
+## 🏗️ Feature Architecture Standard
 
+**Apply this to every new feature and every refactor — not just when explicitly asked.**
+
+### Folder Structure
+Every non-trivial feature directory must follow this layout:
+```
+FeaturePage.tsx           — top-level container: layout + slot assembly only
+components/               — atomic, reusable UI pieces
+sections/                 — large composite blocks (optional, if needed)
+hooks/                    — all data and business logic
+utils/                    — pure helper functions (formatting, derivations)
+```
+
+### Page Component = Assembly Only
+The page file must be purely declarative — only layout and prop-passing. No `useQuery`, no `useMutation`, no business logic inside the page component:
 ```tsx
-import { useQuery } from '@tanstack/react-query';
-import { API } from '@/shared/api/endpoints';
-import { client } from '@/shared/api/client';
-import type { EntityType } from '@/shared/types';
-
 export default function FeaturePage() {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['feature'],
-    queryFn: () => client.get<EntityType[]>(API.feature.list).then(r => r.data),
-  });
-
-  if (isLoading) return <div>Loading...</div>;
-  if (isError) return <div>Something went wrong.</div>;
-
-  return <div>{/* render data */}</div>;
-}
-```
-
-## Modern React Component Example (Performance-Optimized)
-
-```tsx
-import React, { memo, useCallback } from 'react';
-import { cn } from '@/shared/lib/cn';
-
-interface DataTableProps {
-  data: Array<Record<string, unknown>>;
-  columns: { key: string; label: string }[];
-  onRowClick?: (row: Record<string, unknown>) => void;
-}
-
-export const DataTable = memo<DataTableProps>(({ data, columns, onRowClick }) => {
-  const handleRowClick = useCallback((row: Record<string, unknown>) => {
-    onRowClick?.(row);
-  }, [onRowClick]);
-
+  const { rows, isLoading, handlers } = useFeature();
   return (
-    <div
-      className="overflow-auto"
-      role="table"
-      aria-label="Data table"
-    >
-      {data.map((row, index) => (
-        <div
-          key={index}
-          className={cn('flex items-center border-b hover:bg-gray-50 cursor-pointer')}
-          onClick={() => handleRowClick(row)}
-          role="row"
-          tabIndex={0}
-        >
-          {columns.map((column) => (
-            <div key={column.key} className="px-4 py-2 flex-1" role="cell">
-              {String(row[column.key] ?? '')}
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
+    <main>
+      <FeatureFilters ... />
+      {isLoading ? <FeatureSkeleton /> : rows.length === 0 ? <FeatureEmptyState /> : (
+        <ul>{rows.map(item => <FeatureItem key={item.id} item={item} {...handlers} />)}</ul>
+      )}
+    </main>
   );
-});
+}
 ```
+
+### Hooks — Logic Layer
+All data fetching, mutations, derived state, and event handlers live in `hooks/`:
+- **`useXxx.ts`** — list query, mutations, filter state, handlers. Returns a flat object.
+- **`useXxxSettings.ts`** — settings/preferences query + patch mutation
+- Hook returns a flat object; page destructures it
+- Never call `useQuery` or `useMutation` directly in a page component
+
+### Atomic Components
+Build these for every feature that has a list or form:
+- **`XxxItem`** — card/row for a single entity → wrap with `React.memo`
+- **`XxxSkeleton`** — animated loading placeholder (never use raw "Загрузка..." text alone)
+- **`XxxEmptyState`** — empty list placeholder
+- **`XxxFilters`** — filter/search bar
+- **`XxxBadge`** — status dot, count indicator, label chip
+
+### Performance Rules
+- `React.memo` on every list-item component — prevents full-list re-render on single-item update
+- `useMemo` for filtering/sorting — never recompute inline in JSX
+- `queryKey` arrays must match exactly between `useQuery` and `invalidateQueries`
+- Skeleton > spinner > raw text for loading states
+
+### Constants Placement
+- Label maps (`Record<Type, string>`) live in the component that renders them; export if used elsewhere
+- Feature-specific config sets live in the component that uses them
+- App-wide enums/values → `@/shared/config/constants.ts` only
+
+### Single File Principle
+One responsibility per file. If a sub-section grows complex, give it its own file — never merge unrelated logic into one component.
+
+### When NOT to Split
+- Single-purpose forms under ~120 lines → keep in one file
+- Components used in only one place and under ~40 lines → inline is fine
+- Do not extract for the sake of structure — extract when complexity or reuse justifies it
 
 ---
 
 ## 🔄 Workflow Process
 
-**Step 1: Understand the task**
+**Step 1: Understand**
 - Read `CLAUDE.md` and relevant existing files before writing any code
 - Check `@/shared/types/index.ts` for existing interfaces
 - Check `@/shared/api/endpoints.ts` for existing API paths
 
-**Step 2: Component Development**
-- Create reusable components with proper TypeScript types
-- Implement responsive design with mobile-first approach
-- Build accessibility into components from the start
+**Step 2: Plan structure**
+- If the feature has a list → plan `XxxItem`, `XxxSkeleton`, `XxxEmptyState`, `useXxx` hook
+- If the feature has filters → plan `XxxFilters`
+- If the feature has settings → plan `useXxxSettings` hook
+- If the page would exceed ~80 lines → split into components + hook upfront
 
-**Step 3: Integration**
-- Wire API with React Query (`useQuery` / `useMutation`)
-- Invalidate related queries in `onSuccess` callbacks of mutations
+**Step 3: Build**
+- Create hook(s) first, then components, then assemble in the page
+- Wire API with React Query (`useQuery` / `useMutation`) inside hooks only
+- Invalidate related queries in `onSuccess` callbacks
 - Use `useAuth` from `@/shared/hooks/useAuth.ts` for auth state
 
 **Step 4: Quality Check**
-- Run `npm run typecheck` mentally — ensure no TypeScript errors
+- Run `npm run typecheck` — fix all errors before reporting done
 - Verify all imports use `@/` alias
 - Verify no hardcoded API strings
 - Verify `cn()` is used for all conditional classes
@@ -166,7 +168,7 @@ export const DataTable = memo<DataTableProps>(({ data, columns, onRowClick }) =>
 
 ## Before Finishing Any Task
 
-- Ensure no TypeScript errors
+- Ensure no TypeScript errors (`npm run typecheck`)
 - Verify all imports use `@/` alias
 - Verify no hardcoded API strings
 - Verify `cn()` is used for all conditional classes
