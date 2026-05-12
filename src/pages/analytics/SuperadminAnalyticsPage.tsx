@@ -621,40 +621,97 @@ export default function SuperadminAnalyticsPage() {
 
       {data && (
         <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4 xl:col-span-1">
-            <h3 className="text-sm font-semibold text-white mb-3">Top-5 ресурсов</h3>
-            <div className="space-y-2 text-sm">
-              {data.top_resources.map((row) => (
-                <div key={row.resource_id} className="flex items-center justify-between text-gray-200">
-                  <span className="truncate pr-3">{row.name}</span>
-                  <span className="tabular-nums">{row.booking_count}</span>
-                </div>
-              ))}
-            </div>
+          <div className="rounded-2xl border border-gray-700 bg-gray-800 p-5 xl:col-span-1">
+            <h3 className="mb-4 text-sm font-semibold text-white">Top-5 ресурсов</h3>
+            {data.top_resources.length === 0 ? (
+              <p className="text-sm text-gray-500">Нет данных за период</p>
+            ) : (
+              <ol className="space-y-3">
+                {data.top_resources.map((row, i) => {
+                  const max = data.top_resources[0]?.booking_count ?? 1;
+                  const pct = max > 0 ? (row.booking_count / max) * 100 : 0;
+                  return (
+                    <li key={row.resource_id} className="flex items-center gap-3 text-sm">
+                      <span className="w-5 shrink-0 text-center text-xs font-semibold text-gray-500">
+                        {i + 1}
+                      </span>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex justify-between gap-2">
+                          <span className="truncate text-gray-200">{row.name}</span>
+                          <span className="shrink-0 tabular-nums text-white">{row.booking_count}</span>
+                        </div>
+                        <div className="h-1 w-full overflow-hidden rounded-full bg-gray-700">
+                          <div
+                            className="h-full rounded-full bg-blue-500"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
           </div>
 
-          <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4 xl:col-span-1">
-            <h3 className="text-sm font-semibold text-white mb-3">Top-5 компаний</h3>
-            <div className="space-y-2 text-sm">
-              {data.top_companies.map((row) => (
-                <div key={row.company_id} className="flex items-center justify-between text-gray-200">
-                  <span className="truncate pr-3">{row.company_name}</span>
-                  <span className="tabular-nums">{row.booking_count}</span>
-                </div>
-              ))}
-            </div>
+          <div className="rounded-2xl border border-gray-700 bg-gray-800 p-5 xl:col-span-1">
+            <h3 className="mb-4 text-sm font-semibold text-white">Top-5 компаний</h3>
+            {data.top_companies.length === 0 ? (
+              <p className="text-sm text-gray-500">Нет данных за период</p>
+            ) : (
+              <ol className="space-y-3">
+                {data.top_companies.map((row, i) => {
+                  const max = data.top_companies[0]?.booking_count ?? 1;
+                  const pct = max > 0 ? (row.booking_count / max) * 100 : 0;
+                  return (
+                    <li key={row.company_id} className="flex items-center gap-3 text-sm">
+                      <span className="w-5 shrink-0 text-center text-xs font-semibold text-gray-500">
+                        {i + 1}
+                      </span>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex justify-between gap-2">
+                          <span className="truncate text-gray-200">{row.company_name}</span>
+                          <span className="shrink-0 tabular-nums text-white">{row.booking_count}</span>
+                        </div>
+                        <div className="h-1 w-full overflow-hidden rounded-full bg-gray-700">
+                          <div
+                            className="h-full rounded-full bg-emerald-500"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
           </div>
 
-          <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4 xl:col-span-1">
-            <h3 className="text-sm font-semibold text-white mb-3">Низкая загруженность (&lt;20%)</h3>
-            <div className="space-y-2 text-sm">
-              {data.low_utilization.map((row) => (
-                <div key={row.resource_id} className="flex items-center justify-between text-gray-200">
-                  <span className="truncate pr-3">{row.name}</span>
-                  <span className="tabular-nums">{row.utilization_percent}%</span>
-                </div>
-              ))}
-            </div>
+          <div className="rounded-2xl border border-gray-700 bg-gray-800 p-5 xl:col-span-1">
+            <h3 className="mb-4 text-sm font-semibold text-white">Низкая загруженность</h3>
+            <p className="mb-3 text-xs text-gray-500">Ресурсы с загруженностью менее 20%</p>
+            {data.low_utilization.length === 0 ? (
+              <p className="text-sm text-gray-500">Таких ресурсов нет</p>
+            ) : (
+              <ul className="space-y-3">
+                {data.low_utilization.map((row) => (
+                  <li key={row.resource_id} className="space-y-1 text-sm">
+                    <div className="flex justify-between gap-2">
+                      <span className="truncate text-gray-200">{row.name}</span>
+                      <span className="shrink-0 tabular-nums text-amber-300">
+                        {row.utilization_percent}%
+                      </span>
+                    </div>
+                    <div className="h-1 w-full overflow-hidden rounded-full bg-gray-700">
+                      <div
+                        className="h-full rounded-full bg-amber-500"
+                        style={{ width: `${row.utilization_percent}%` }}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </section>
       )}
