@@ -986,6 +986,18 @@ export interface CrmTask {
   checklists: CrmChecklist[];
 }
 
+export interface MyTaskGroup {
+  board_id: number;
+  board_name: string;
+  tasks: CrmTask[];
+  total: number;
+  has_more: boolean;
+}
+
+export interface MyTasksGroupedResponse {
+  groups: MyTaskGroup[];
+}
+
 // ── Dashboard API (GET /api/v1/dashboard/) ────────────────────────────────
 
 export interface DashboardUserInfo {
