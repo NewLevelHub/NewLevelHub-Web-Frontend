@@ -35,12 +35,12 @@ export default function PassListPage() {
     <main className="mx-auto max-w-5xl space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Гостевые пропуска</h1>
-          <p className="text-sm text-gray-400">Ваши цифровые пропуска с QR-кодом.</p>
+          <h1 className="text-2xl font-bold text-primary">Гостевые пропуска</h1>
+          <p className="text-sm text-secondary">Ваши цифровые пропуска с QR-кодом.</p>
         </div>
         <Link
           to="/passes/new"
-          className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+          className="inline-flex items-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
         >
           Создать пропуск
         </Link>
@@ -64,13 +64,13 @@ export default function PassListPage() {
       />
 
       {isLoading ? <PassSkeleton /> : null}
-      {isError ? <div className="text-sm text-rose-400">Не удалось загрузить список пропусков.</div> : null}
+      {isError ? <div className="text-sm text-danger">Не удалось загрузить список пропусков.</div> : null}
 
       {!isLoading && !isError ? (
-        <div className="overflow-hidden rounded-xl border border-gray-700 bg-gray-800">
+        <div className="overflow-hidden rounded-xl border border-default bg-raised">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] divide-y divide-gray-700 text-sm">
-              <thead className="bg-gray-900 text-left text-gray-300">
+            <table className="w-full min-w-[760px] divide-y divide-[color:var(--border)] text-sm">
+              <thead className="bg-surface text-left text-secondary">
                 <tr>
                   <th className="px-4 py-3">Гость</th>
                   <th className="px-4 py-3">Владелец</th>
@@ -80,7 +80,7 @@ export default function PassListPage() {
                   <th className="px-4 py-3 text-right">Детали</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-700">
+              <tbody className="divide-y divide-[color:var(--border)]">
                 {passes.map(pass => (
                   <PassRow key={pass.id} pass={pass} isSuperadmin={isSuperadmin} />
                 ))}
@@ -88,7 +88,7 @@ export default function PassListPage() {
             </table>
           </div>
           {totalCount === 0 ? (
-            <div className="px-4 py-8 text-center text-sm text-gray-400">Пропусков пока нет.</div>
+            <div className="px-4 py-8 text-center text-sm text-secondary">Пропусков пока нет.</div>
           ) : null}
         </div>
       ) : null}

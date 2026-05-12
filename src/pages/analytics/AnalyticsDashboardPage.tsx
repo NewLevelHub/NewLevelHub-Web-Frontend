@@ -85,7 +85,7 @@ export default function AnalyticsDashboardPage() {
   }
 
   if (isLoading) {
-    return <div className="p-6 text-sm text-gray-400">Загрузка аналитики...</div>;
+    return <div className="p-6 text-sm text-secondary">Загрузка аналитики...</div>;
   }
 
   if (isError || !data) {
@@ -118,17 +118,17 @@ export default function AnalyticsDashboardPage() {
       title: 'CRM задачи',
       value: (
         <div className="space-y-2">
-          <span className="text-2xl font-semibold text-white">{crm.total}</span>
-          <p className="text-sm font-normal leading-snug text-gray-300">Всего активных задач на досках</p>
-          <p className="text-xs font-normal leading-relaxed text-gray-400">{statusLineParts.join(' · ')}</p>
+          <span className="text-2xl font-semibold text-primary">{crm.total}</span>
+          <p className="text-sm font-normal leading-snug text-secondary">Всего активных задач на досках</p>
+          <p className="text-xs font-normal leading-relaxed text-secondary">{statusLineParts.join(' · ')}</p>
           {crm.by_column.length > 0 ? (
-            <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto text-xs text-gray-300" aria-label="Задачи по колонкам">
+            <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto text-xs text-secondary" aria-label="Задачи по колонкам">
               {crm.by_column.map((col) => (
-                <li key={col.column_id} className="flex justify-between gap-2 border-t border-gray-700/60 pt-1 first:border-t-0 first:pt-0">
+                <li key={col.column_id} className="flex justify-between gap-2 border-t border-default/60 pt-1 first:border-t-0 first:pt-0">
                   <span className="min-w-0 truncate" title={col.board_name ? `${col.board_name} — ${col.name}` : col.name}>
                     {col.board_name ? `${col.board_name}: ${col.name}` : col.name}
                   </span>
-                  <span className="shrink-0 font-medium tabular-nums text-white">{col.count}</span>
+                  <span className="shrink-0 font-medium tabular-nums text-primary">{col.count}</span>
                 </li>
               ))}
             </ul>
@@ -142,8 +142,8 @@ export default function AnalyticsDashboardPage() {
     <div className="space-y-6 p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Аналитика компании</h1>
-          <p className="mt-1 text-sm text-gray-400">Ключевые метрики и активность сотрудников.</p>
+          <h1 className="text-2xl font-bold text-primary">Аналитика компании</h1>
+          <p className="mt-1 text-sm text-secondary">Ключевые метрики и активность сотрудников.</p>
         </div>
         <button
           type="button"
@@ -152,8 +152,8 @@ export default function AnalyticsDashboardPage() {
           className={cn(
             'inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors shrink-0',
             isExporting
-              ? 'border-gray-700 bg-gray-900 text-gray-500 cursor-not-allowed'
-              : 'border-emerald-700 bg-emerald-950/50 text-emerald-100 hover:border-emerald-600',
+              ? 'border-default bg-surface text-muted cursor-not-allowed'
+              : 'border-emerald-700 bg-success-subtle text-emerald-100 hover:border-emerald-600',
           )}
         >
           <Download size={18} aria-hidden />
@@ -171,12 +171,12 @@ export default function AnalyticsDashboardPage() {
         {cards.map((card) => {
           const simple = typeof card.value === 'number' || typeof card.value === 'string';
           return (
-            <div key={card.title} className="rounded-xl border border-gray-700 bg-gray-800 p-4">
-              <p className="text-xs uppercase tracking-wide text-gray-400">{card.title}</p>
+            <div key={card.title} className="rounded-xl border border-default bg-raised p-4">
+              <p className="text-xs uppercase tracking-wide text-secondary">{card.title}</p>
               <div
                 className={cn(
                   'mt-2',
-                  simple && 'text-2xl font-semibold text-white',
+                  simple && 'text-2xl font-semibold text-primary',
                 )}
               >
                 {card.value}
@@ -186,13 +186,13 @@ export default function AnalyticsDashboardPage() {
         })}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-gray-700 bg-gray-800">
-        <div className="border-b border-gray-700 px-4 py-3">
-          <h2 className="text-sm font-semibold text-white">Активность сотрудников</h2>
+      <div className="overflow-hidden rounded-xl border border-default bg-raised">
+        <div className="border-b border-default px-4 py-3">
+          <h2 className="text-sm font-semibold text-primary">Активность сотрудников</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-gray-900/40 text-xs uppercase tracking-wide text-gray-400">
+            <thead className="bg-raised text-xs uppercase tracking-wide text-secondary">
               <tr>
                 <th className="px-4 py-3">Сотрудник</th>
                 <th className="px-4 py-3">Брони (30д)</th>
@@ -202,7 +202,7 @@ export default function AnalyticsDashboardPage() {
             </thead>
             <tbody>
               {data.employee_activity.map((row) => (
-                <tr key={row.user_id} className="border-t border-gray-700/70 text-gray-200">
+                <tr key={row.user_id} className="border-t border-default/70 text-secondary">
                   <td className="px-4 py-3">{row.full_name}</td>
                   <td className="px-4 py-3">{row.booking_count_30d}</td>
                   <td className="px-4 py-3">{row.task_count_active}</td>

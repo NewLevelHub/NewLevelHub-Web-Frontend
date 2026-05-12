@@ -48,11 +48,11 @@ export default function RegisterPage() {
   return (
     <div>
       <h2 className="mb-1 text-center text-xl font-semibold">Регистрация</h2>
-      <p className="mb-6 text-center text-sm text-gray-500">Гостевой аккаунт (роль guest)</p>
+      <p className="mb-6 text-center text-sm text-muted">Гостевой аккаунт (роль guest)</p>
 
       <form onSubmit={handleSubmit} className="space-y-3">
         {error ? (
-          <div className="rounded-lg border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+          <div className="rounded-lg border border-red-200 bg-danger-subtle px-3 py-2 text-sm text-danger dark:border-red-900/40">
             {error}
           </div>
         ) : null}
@@ -139,7 +139,7 @@ export default function RegisterPage() {
           />
         </div>
 
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-muted">
           После регистрации на почту уйдёт ссылка для подтверждения (локально смотри логи бэкенда при
           console email).
         </p>

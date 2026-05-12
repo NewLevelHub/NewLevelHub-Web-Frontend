@@ -22,9 +22,7 @@ export function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
   useEffect(() => {
     if (!mobileOpen) return;
     const handleEsc = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onCloseMobile();
-      }
+      if (event.key === 'Escape') onCloseMobile();
     };
     const handleTabTrap = (event: KeyboardEvent) => {
       if (event.key !== 'Tab' || !panelRef.current) return;
@@ -35,14 +33,8 @@ export function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
       const active = document.activeElement as HTMLElement | null;
-
-      if (event.shiftKey && active === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && active === last) {
-        event.preventDefault();
-        first.focus();
-      }
+      if (event.shiftKey && active === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && active === last) { event.preventDefault(); first.focus(); }
     };
     document.addEventListener('keydown', handleEsc);
     document.addEventListener('keydown', handleTabTrap);
@@ -59,42 +51,50 @@ export function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
 
   return (
     <>
+      {/* Mobile overlay */}
       <button
         type="button"
         aria-hidden={!mobileOpen}
         tabIndex={mobileOpen ? 0 : -1}
         onClick={onCloseMobile}
         className={cn(
-          'fixed inset-0 z-40 bg-black/50 transition-opacity md:hidden',
+          'fixed inset-0 z-40 bg-black/30 backdrop-blur-sm transition-opacity md:hidden',
           mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
         )}
       />
+
       <aside
         id="app-sidebar"
         ref={panelRef}
         tabIndex={-1}
         aria-label="Боковая навигация"
         className={cn(
-          'fixed left-0 top-0 bottom-0 w-64 bg-gray-950 border-r border-gray-800 flex flex-col z-50 transition-transform duration-200',
+          'fixed left-0 top-0 bottom-0 z-50 flex w-60 flex-col transition-transform duration-200',
+          'bg-sidebar border-r border-default',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
-          'md:w-60 md:translate-x-0',
+          'md:translate-x-0',
         )}
       >
-        <div className="p-4 md:p-5 border-b border-gray-800 flex items-center justify-between">
-          <Link to="/dashboard" className="text-lg font-bold text-white tracking-tight">
+        {/* Logo */}
+        <div className="flex h-14 items-center justify-between px-4 border-b border-default">
+          <Link
+            to="/dashboard"
+            className="text-[15px] font-semibold text-primary tracking-tight"
+          >
             NewLevelHub
           </Link>
           <button
             type="button"
             onClick={onCloseMobile}
-            className="md:hidden inline-flex items-center justify-center rounded-md p-1.5 text-gray-300 hover:bg-gray-800"
+            className="md:hidden rounded-md p-1.5 text-secondary hover:bg-hover transition-colors"
             aria-label="Закрыть боковое меню"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-4">
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto py-2 px-2">
           {sections.map((section, si) => (
             <SidebarSection
               key={si}
@@ -105,24 +105,33 @@ export function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
           ))}
         </nav>
 
-        <div className="border-t border-gray-800 p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-sm text-white font-medium">
+        {/* User footer */}
+        <div className="border-t border-default p-3">
+          <div className="flex items-center gap-2.5 mb-2">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-[13px] font-semibold text-white">
               {user.first_name?.[0] ?? user.email[0]?.toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-white truncate">{user.full_name || user.email}</p>
-              <p className="text-xs text-gray-500 capitalize">{user.role.replace('_', ' ')}</p>
+              <p className="truncate text-[13px] font-medium text-primary leading-tight">
+                {user.full_name || user.email}
+              </p>
+              <p className="text-[11px] text-muted capitalize leading-tight">
+                {user.role.replace('_', ' ')}
+              </p>
             </div>
-            <Link to="/notifications" className="text-gray-400 hover:text-white transition-colors">
-              <Bell size={18} />
+            <Link
+              to="/notifications"
+              className="shrink-0 rounded-md p-1.5 text-secondary hover:bg-hover hover:text-primary transition-colors"
+              aria-label="Уведомления"
+            >
+              <Bell size={16} />
             </Link>
           </div>
           <button
             onClick={() => logout()}
-            className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors w-full"
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[13px] text-secondary hover:bg-hover hover:text-primary transition-colors"
           >
-            <LogOut size={16} />
+            <LogOut size={15} />
             Выйти
           </button>
         </div>
@@ -150,9 +159,9 @@ function SidebarSection({
   const activePath = matchedPaths.sort((a, b) => b.length - a.length)[0];
 
   return (
-    <div className="mb-2">
+    <div className="mb-1">
       {section.title && (
-        <p className="px-5 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+        <p className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-widest text-muted">
           {section.title}
         </p>
       )}
@@ -164,13 +173,13 @@ function SidebarSection({
             to={item.path}
             onClick={onItemClick}
             className={cn(
-              'flex items-center gap-3 px-5 py-2 text-sm transition-colors',
+              'flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium transition-colors',
               isActive
-                ? 'text-white bg-gray-800/60 border-r-2 border-blue-500'
-                : 'text-gray-400 hover:text-white hover:bg-gray-800/30',
+                ? 'bg-active-tint text-brand border-l-2 border-[color:var(--nav-active-border)] pl-[calc(0.75rem-2px)]'
+                : 'text-secondary hover:bg-hover hover:text-primary border-l-2 border-transparent pl-[calc(0.75rem-2px)]',
             )}
           >
-            <item.icon size={18} />
+            <item.icon size={16} className={isActive ? 'text-brand' : 'text-muted'} />
             {item.label}
           </Link>
         );

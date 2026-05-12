@@ -33,12 +33,12 @@ export default function BoardListPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div className="h-7 w-36 rounded-lg bg-gray-800 animate-pulse" />
-          <div className="h-9 w-36 rounded-lg bg-gray-800 animate-pulse" />
+          <div className="h-7 w-36 rounded-lg bg-raised animate-pulse" />
+          <div className="h-9 w-36 rounded-lg bg-raised animate-pulse" />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-28 rounded-xl bg-gray-800 animate-pulse" />
+            <div key={i} className="h-28 rounded-xl bg-raised animate-pulse" />
           ))}
         </div>
       </div>
@@ -49,7 +49,7 @@ export default function BoardListPage() {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-3">
         <AlertCircle size={40} className="text-red-400" />
-        <p className="text-gray-400">Не удалось загрузить доски. Попробуйте обновить страницу.</p>
+        <p className="text-secondary">Не удалось загрузить доски. Попробуйте обновить страницу.</p>
       </div>
     );
   }
@@ -59,8 +59,8 @@ export default function BoardListPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl font-semibold text-white">CRM — Доски</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Канбан-доски вашей компании</p>
+            <h1 className="text-xl font-semibold text-primary">CRM — Доски</h1>
+            <p className="text-sm text-muted mt-0.5">Канбан-доски вашей компании</p>
           </div>
           <div className="flex items-center gap-2">
             {canManage && (
@@ -71,7 +71,7 @@ export default function BoardListPage() {
                   'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors border',
                   showArchived
                     ? 'bg-amber-600/20 border-amber-600 text-amber-400'
-                    : 'border-gray-700 text-gray-400 hover:text-white hover:border-gray-500',
+                    : 'border-default text-secondary hover:text-primary hover:border-gray-500',
                 )}
               >
                 <Archive size={16} />
@@ -94,14 +94,14 @@ export default function BoardListPage() {
 
         {visibleBoards.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
-            <div className="rounded-full bg-gray-800 p-5">
-              <Inbox size={32} className="text-gray-500" />
+            <div className="rounded-full bg-raised p-5">
+              <Inbox size={32} className="text-muted" />
             </div>
             <div className="text-center">
-              <p className="font-medium text-gray-300">
+              <p className="font-medium text-secondary">
                 {showArchived ? 'Нет архивных досок' : 'Нет досок'}
               </p>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-muted mt-1">
                 {showArchived ? 'Архивированные доски появятся здесь.' : 'Создайте первую!'}
               </p>
             </div>

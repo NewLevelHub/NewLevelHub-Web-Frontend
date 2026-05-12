@@ -64,7 +64,7 @@ export function BoardDetailMain({ ctx }: BoardDetailMainProps) {
       {WipLimitToast}
       <Link
         to="/crm"
-        className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+        className="inline-flex items-center gap-1.5 text-sm text-secondary hover:text-primary transition-colors"
       >
         <ChevronLeft size={16} />
         Назад к доскам
@@ -75,15 +75,15 @@ export function BoardDetailMain({ ctx }: BoardDetailMainProps) {
           <LayoutGrid size={20} className="text-blue-400" />
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-semibold text-white">{board.name}</h1>
-          {board.description && <p className="text-sm text-gray-500 mt-0.5">{board.description}</p>}
+          <h1 className="text-xl font-semibold text-primary">{board.name}</h1>
+          {board.description && <p className="text-sm text-muted mt-0.5">{board.description}</p>}
         </div>
         <button
           type="button"
           onClick={() => setArchivePanelOpen(true)}
           className={cn(
-            'flex items-center gap-2 rounded-lg border border-gray-700 px-3 py-2 text-sm font-medium shrink-0',
-            'text-gray-400 hover:text-white hover:border-gray-500 transition-colors',
+            'flex items-center gap-2 rounded-lg border border-default px-3 py-2 text-sm font-medium shrink-0',
+            'text-secondary hover:text-primary hover:border-gray-500 transition-colors',
           )}
           aria-label="Открыть архив задач"
         >
@@ -94,7 +94,7 @@ export function BoardDetailMain({ ctx }: BoardDetailMainProps) {
 
       {reorderError && (
         <div
-          className="flex items-center gap-2 rounded-lg border border-red-800 bg-red-900/30 px-4 py-3 text-sm text-red-300"
+          className="flex items-center gap-2 rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-4 py-3 text-sm text-danger"
           role="alert"
           aria-live="assertive"
         >
@@ -127,8 +127,8 @@ export function BoardDetailMain({ ctx }: BoardDetailMainProps) {
         <>
           {localColumns.length === 0 && !showAddColumn ? (
             <div className="flex flex-col items-center justify-center py-24 gap-3">
-              <Inbox size={32} className="text-gray-600" />
-              <p className="text-gray-500 text-sm">В этой доске нет колонок</p>
+              <Inbox size={32} className="text-muted" />
+              <p className="text-muted text-sm">В этой доске нет колонок</p>
               <button
                 type="button"
                 onClick={() => setShowAddColumn(true)}

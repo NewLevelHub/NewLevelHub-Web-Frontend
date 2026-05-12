@@ -15,7 +15,7 @@ export const FloorMapWithImage = memo<FloorMapWithImageProps>(
   ({ imageUrl, floorMap, highlightedPointId, onPointClick }) => {
     return (
       <div
-        className="relative w-full select-none overflow-hidden rounded-xl border border-gray-200"
+        className="relative w-full select-none overflow-hidden rounded-xl border border-default"
         role="img"
         aria-label={`Карта этажа ${floorMap.floor_name}`}
       >

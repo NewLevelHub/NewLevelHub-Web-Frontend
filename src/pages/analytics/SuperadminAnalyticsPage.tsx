@@ -95,17 +95,17 @@ function StatCard({
 }) {
   return (
     <div
-      className="bg-gray-800 rounded-2xl border border-gray-700 p-5 flex items-center gap-4"
+      className="bg-raised rounded-2xl border border-default p-5 flex items-center gap-4"
       title={ariaDescription}
     >
       <div className="w-12 h-12 rounded-xl bg-blue-900/40 flex items-center justify-center shrink-0 text-blue-300">
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-2xl font-bold text-white tabular-nums">
-          {isLoading ? <span className="inline-block h-8 w-16 animate-pulse rounded bg-gray-700" /> : value}
+        <p className="text-2xl font-bold text-primary tabular-nums">
+          {isLoading ? <span className="inline-block h-8 w-16 animate-pulse rounded bg-hover" /> : value}
         </p>
-        <p className="text-sm text-gray-400">{label}</p>
+        <p className="text-sm text-secondary">{label}</p>
       </div>
     </div>
   );
@@ -134,7 +134,7 @@ function PeakHoursHeatmap({
 
   if (!activeHours.length) {
     return (
-      <p className="py-10 text-center text-sm text-gray-500">
+      <p className="py-10 text-center text-sm text-muted">
         Нет данных за выбранный период
       </p>
     );
@@ -152,9 +152,9 @@ function PeakHoursHeatmap({
         <table className="w-full border-collapse select-none text-xs">
           <thead>
             <tr>
-              <th className="w-12 pr-2 text-right font-normal text-gray-500" />
+              <th className="w-12 pr-2 text-right font-normal text-muted" />
               {WEEKDAY_LABELS.map((d) => (
-                <th key={d} className="pb-1 text-center font-normal text-gray-400">
+                <th key={d} className="pb-1 text-center font-normal text-secondary">
                   {d}
                 </th>
               ))}
@@ -163,7 +163,7 @@ function PeakHoursHeatmap({
           <tbody>
             {activeHours.map((hour) => (
               <tr key={hour}>
-                <td className="py-0.5 pr-2 text-right leading-none text-gray-500">
+                <td className="py-0.5 pr-2 text-right leading-none text-muted">
                   {String(hour).padStart(2, '0')}:00
                 </td>
                 {[0, 1, 2, 3, 4, 5, 6].map((day) => {
@@ -188,7 +188,7 @@ function PeakHoursHeatmap({
         </table>
       </div>
 
-      <div className="flex items-center gap-1.5 text-[10px] text-gray-400">
+      <div className="flex items-center gap-1.5 text-[10px] text-secondary">
         <span>0</span>
         {HEATMAP_PALETTE.slice(1).map((c) => (
           <div key={c} className="h-3 w-6 rounded-sm" style={{ backgroundColor: c }} />
@@ -303,7 +303,7 @@ export default function SuperadminAnalyticsPage() {
   if (authLoading) {
     return (
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <p className="text-sm text-gray-500">Загрузка…</p>
+        <p className="text-sm text-muted">Загрузка…</p>
       </main>
     );
   }
@@ -311,7 +311,7 @@ export default function SuperadminAnalyticsPage() {
   if (!isSuperadmin) {
     return (
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <p className="text-sm text-gray-500">Недостаточно прав для просмотра этой страницы.</p>
+        <p className="text-sm text-muted">Недостаточно прав для просмотра этой страницы.</p>
       </main>
     );
   }
@@ -320,11 +320,11 @@ export default function SuperadminAnalyticsPage() {
     <main className="max-w-7xl mx-auto px-4 py-8 space-y-8">
       <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-semibold text-primary flex items-center gap-2">
             <BarChart3 className="text-blue-400 shrink-0" size={28} aria-hidden />
             Аналитика
           </h1>
-          <p className="text-sm text-gray-400 mt-1">Обзор по платформе (суперадмин)</p>
+          <p className="text-sm text-secondary mt-1">Обзор по платформе (суперадмин)</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {PERIOD_OPTIONS.map((opt) => (
@@ -336,7 +336,7 @@ export default function SuperadminAnalyticsPage() {
                 'rounded-lg px-3 py-1.5 text-sm font-medium border transition-colors',
                 period === opt.value
                   ? 'bg-blue-600 text-white border-blue-500'
-                  : 'bg-gray-800 text-gray-300 border-gray-600 hover:border-gray-500',
+                  : 'bg-raised text-secondary border-default hover:border-gray-500',
               )}
             >
               {opt.label}
@@ -349,8 +349,8 @@ export default function SuperadminAnalyticsPage() {
             className={cn(
               'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium border transition-colors',
               !queryEnabled || isExporting
-                ? 'border-gray-700 bg-gray-900 text-gray-500 cursor-not-allowed'
-                : 'border-emerald-700 bg-emerald-950/50 text-emerald-100 hover:border-emerald-600',
+                ? 'border-default bg-surface text-muted cursor-not-allowed'
+                : 'border-emerald-700 bg-success-subtle text-emerald-100 hover:border-emerald-600',
             )}
           >
             <Download size={16} aria-hidden />
@@ -367,35 +367,35 @@ export default function SuperadminAnalyticsPage() {
 
       {period === 'custom' && (
         <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4">
-          <label className="flex flex-col gap-1 text-sm text-gray-300">
-            <span className="text-gray-400">С даты</span>
+          <label className="flex flex-col gap-1 text-sm text-secondary">
+            <span className="text-secondary">С даты</span>
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white"
+              className="rounded-lg border border-default bg-raised px-3 py-2 text-primary"
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm text-gray-300">
-            <span className="text-gray-400">По дату</span>
+          <label className="flex flex-col gap-1 text-sm text-secondary">
+            <span className="text-secondary">По дату</span>
             <input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white"
+              className="rounded-lg border border-default bg-raised px-3 py-2 text-primary"
             />
           </label>
-          {customRangeError && <p className="text-sm text-amber-300 sm:pb-2">{customRangeError}</p>}
+          {customRangeError && <p className="text-sm text-warning sm:pb-2">{customRangeError}</p>}
         </div>
       )}
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-end sm:gap-4">
-        <label className="flex flex-col gap-1 text-sm text-gray-300 min-w-[200px]">
-          <span className="text-gray-400">Компания</span>
+        <label className="flex flex-col gap-1 text-sm text-secondary min-w-[200px]">
+          <span className="text-secondary">Компания</span>
           <select
             value={companyId}
             onChange={(e) => setCompanyId(e.target.value)}
-            className="rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white"
+            className="rounded-lg border border-default bg-raised px-3 py-2 text-primary"
           >
             <option value="">Все компании</option>
             {(companiesData ?? []).map((c) => (
@@ -405,12 +405,12 @@ export default function SuperadminAnalyticsPage() {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm text-gray-300 min-w-[220px]">
-          <span className="text-gray-400">Тип ресурса (только «Бронирований сегодня»)</span>
+        <label className="flex flex-col gap-1 text-sm text-secondary min-w-[220px]">
+          <span className="text-secondary">Тип ресурса (только «Бронирований сегодня»)</span>
           <select
             value={resourceType}
             onChange={(e) => setResourceType(e.target.value)}
-            className="rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white"
+            className="rounded-lg border border-default bg-raised px-3 py-2 text-primary"
           >
             <option value="">Все типы</option>
             <option value={RESOURCE_TYPES.DESK}>{RESOURCE_TYPE_LABELS[RESOURCE_TYPES.DESK]}</option>
@@ -428,14 +428,14 @@ export default function SuperadminAnalyticsPage() {
             setDateFrom('');
             setDateTo('');
           }}
-          className="rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-300 hover:border-gray-500 self-start sm:self-end"
+          className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:border-gray-500 self-start sm:self-end"
         >
           Сбросить фильтры
         </button>
       </div>
 
       {data && (
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-muted">
           Окно отчёта: {data.date_from} — {data.date_to}
           {isFetching ? ' · обновление…' : ''}
         </p>
@@ -510,23 +510,23 @@ export default function SuperadminAnalyticsPage() {
       </section>
 
       {!queryEnabled && period === 'custom' && (
-        <p className="text-sm text-gray-500">Укажите и проверьте даты, чтобы загрузить обзор.</p>
+        <p className="text-sm text-muted">Укажите и проверьте даты, чтобы загрузить обзор.</p>
       )}
 
       {data && (
         <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4">
-            <h2 className="text-sm font-semibold text-white mb-1">Загруженность ресурсов (по дням)</h2>
-            <p className="text-xs text-gray-500 mb-3">Количество броней каждого типа за день</p>
+          <div className="rounded-2xl border border-default bg-raised p-4">
+            <h2 className="text-sm font-semibold text-primary mb-1">Загруженность ресурсов (по дням)</h2>
+            <p className="text-xs text-muted mb-3">Количество броней каждого типа за день</p>
             <div className="h-72">
               {data.resource_utilization.length === 0 ? (
                 <div className="flex h-full items-center justify-center">
-                  <p className="text-sm text-gray-500">Нет бронирований за выбранный период</p>
+                  <p className="text-sm text-muted">Нет бронирований за выбранный период</p>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                   <BarChart data={data.resource_utilization} barCategoryGap="35%">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                     <XAxis
                       dataKey="date"
                       tick={{ fill: '#9ca3af', fontSize: 11 }}
@@ -549,26 +549,26 @@ export default function SuperadminAnalyticsPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4">
-            <h2 className="text-sm font-semibold text-white mb-3">
+          <div className="rounded-2xl border border-default bg-raised p-4">
+            <h2 className="text-sm font-semibold text-primary mb-3">
               Пиковые часы{' '}
-              <span className="font-normal text-gray-400 text-xs">(бронирований по дню и часу)</span>
+              <span className="font-normal text-secondary text-xs">(бронирований по дню и часу)</span>
             </h2>
             <PeakHoursHeatmap data={data.peak_hours} />
           </div>
 
-          <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4">
-            <h2 className="text-sm font-semibold text-white mb-1">Новые регистрации</h2>
-            <p className="text-xs text-gray-500 mb-3">Пользователей зарегистрировано по неделям</p>
+          <div className="rounded-2xl border border-default bg-raised p-4">
+            <h2 className="text-sm font-semibold text-primary mb-1">Новые регистрации</h2>
+            <p className="text-xs text-muted mb-3">Пользователей зарегистрировано по неделям</p>
             <div className="h-64">
               {data.new_registrations.length === 0 ? (
                 <div className="flex h-full items-center justify-center">
-                  <p className="text-sm text-gray-500">Нет регистраций за выбранный период</p>
+                  <p className="text-sm text-muted">Нет регистраций за выбранный период</p>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                   <BarChart data={data.new_registrations} barCategoryGap="40%">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                     <XAxis
                       dataKey="week"
                       tick={{ fill: '#9ca3af', fontSize: 11 }}
@@ -587,18 +587,18 @@ export default function SuperadminAnalyticsPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4">
-            <h2 className="text-sm font-semibold text-white mb-1">Заявки по типам</h2>
-            <p className="text-xs text-gray-500 mb-3">Сервисные заявки за период</p>
+          <div className="rounded-2xl border border-default bg-raised p-4">
+            <h2 className="text-sm font-semibold text-primary mb-1">Заявки по типам</h2>
+            <p className="text-xs text-muted mb-3">Сервисные заявки за период</p>
             <div className="h-64">
               {data.service_requests_by_type.length === 0 ? (
                 <div className="flex h-full items-center justify-center">
-                  <p className="text-sm text-gray-500">Нет заявок за выбранный период</p>
+                  <p className="text-sm text-muted">Нет заявок за выбранный период</p>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 0, height: 0 }}>
                   <BarChart data={data.service_requests_by_type} barCategoryGap="40%">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                     <XAxis
                       dataKey="type"
                       tick={{ fill: '#9ca3af', fontSize: 12 }}
@@ -621,11 +621,11 @@ export default function SuperadminAnalyticsPage() {
 
       {data && (
         <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4 xl:col-span-1">
-            <h3 className="text-sm font-semibold text-white mb-3">Top-5 ресурсов</h3>
+          <div className="rounded-2xl border border-default bg-raised p-4 xl:col-span-1">
+            <h3 className="text-sm font-semibold text-primary mb-3">Top-5 ресурсов</h3>
             <div className="space-y-2 text-sm">
               {data.top_resources.map((row) => (
-                <div key={row.resource_id} className="flex items-center justify-between text-gray-200">
+                <div key={row.resource_id} className="flex items-center justify-between text-secondary">
                   <span className="truncate pr-3">{row.name}</span>
                   <span className="tabular-nums">{row.booking_count}</span>
                 </div>
@@ -633,11 +633,11 @@ export default function SuperadminAnalyticsPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4 xl:col-span-1">
-            <h3 className="text-sm font-semibold text-white mb-3">Top-5 компаний</h3>
+          <div className="rounded-2xl border border-default bg-raised p-4 xl:col-span-1">
+            <h3 className="text-sm font-semibold text-primary mb-3">Top-5 компаний</h3>
             <div className="space-y-2 text-sm">
               {data.top_companies.map((row) => (
-                <div key={row.company_id} className="flex items-center justify-between text-gray-200">
+                <div key={row.company_id} className="flex items-center justify-between text-secondary">
                   <span className="truncate pr-3">{row.company_name}</span>
                   <span className="tabular-nums">{row.booking_count}</span>
                 </div>
@@ -645,11 +645,11 @@ export default function SuperadminAnalyticsPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4 xl:col-span-1">
-            <h3 className="text-sm font-semibold text-white mb-3">Низкая загруженность (&lt;20%)</h3>
+          <div className="rounded-2xl border border-default bg-raised p-4 xl:col-span-1">
+            <h3 className="text-sm font-semibold text-primary mb-3">Низкая загруженность (&lt;20%)</h3>
             <div className="space-y-2 text-sm">
               {data.low_utilization.map((row) => (
-                <div key={row.resource_id} className="flex items-center justify-between text-gray-200">
+                <div key={row.resource_id} className="flex items-center justify-between text-secondary">
                   <span className="truncate pr-3">{row.name}</span>
                   <span className="tabular-nums">{row.utilization_percent}%</span>
                 </div>

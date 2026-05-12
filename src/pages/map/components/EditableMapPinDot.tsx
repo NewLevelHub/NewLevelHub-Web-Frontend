@@ -51,13 +51,13 @@ export const EditableMapPinDot = memo<EditableMapPinDotProps>(
           {!isMoving && (
             <div className="pt-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-30">
               <div
-                className="flex items-center gap-0.5 rounded-md bg-white border border-gray-200 shadow-lg p-0.5"
+                className="flex items-center gap-0.5 rounded-md bg-surface border border-default shadow-lg p-0.5"
                 onClick={(e) => e.stopPropagation()}
               >
                 <button
                   type="button"
                   aria-label={`Редактировать точку ${point.label}`}
-                  className="rounded p-1 text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 focus:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500 transition-colors"
+                  className="rounded p-1 text-muted hover:bg-indigo-50 hover:text-brand focus:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500 transition-colors"
                   onClick={(e) => {
                     e.stopPropagation();
                     onEdit(point);
@@ -68,7 +68,7 @@ export const EditableMapPinDot = memo<EditableMapPinDotProps>(
                 <button
                   type="button"
                   aria-label={`Переместить точку ${point.label}`}
-                  className="rounded p-1 text-gray-500 hover:bg-amber-50 hover:text-amber-600 focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-500 transition-colors"
+                  className="rounded p-1 text-muted hover:bg-amber-50 hover:text-amber-600 focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-500 transition-colors"
                   onClick={(e) => {
                     e.stopPropagation();
                     onMove(point);
@@ -79,7 +79,7 @@ export const EditableMapPinDot = memo<EditableMapPinDotProps>(
                 <button
                   type="button"
                   aria-label={`Удалить точку ${point.label}`}
-                  className="rounded p-1 text-gray-500 hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus-visible:ring-1 focus-visible:ring-rose-500 transition-colors"
+                  className="rounded p-1 text-muted hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus-visible:ring-1 focus-visible:ring-rose-500 transition-colors"
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete(point);

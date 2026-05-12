@@ -130,7 +130,7 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
 
     return (
       <div
-        className="absolute bottom-0 left-0 right-0 z-30 rounded-b-xl bg-gray-800 border-t-2 border-indigo-500 shadow-2xl"
+        className="absolute bottom-0 left-0 right-0 z-30 rounded-b-xl bg-raised border-t-2 border-blue-500 shadow-2xl"
         onClick={handlePanelClick}
         role="dialog"
         aria-modal="false"
@@ -138,15 +138,15 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
       >
         <form onSubmit={handleSubmit} noValidate>
           <div className="px-4 pt-3 pb-1 flex items-center justify-between">
-            <span className="text-sm font-semibold text-white flex items-center gap-2">
-              <MapPin className="h-3.5 w-3.5 text-indigo-400" aria-hidden="true" />
+            <span className="text-sm font-semibold text-primary flex items-center gap-2">
+              <MapPin className="h-3.5 w-3.5 text-brand" aria-hidden="true" />
               Новая точка
             </span>
             <button
               type="button"
               aria-label="Отмена"
               onClick={onCancel}
-              className="rounded p-1 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400"
+              className="rounded p-1 text-secondary hover:text-primary hover:bg-hover transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400"
             >
               <X className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -163,7 +163,7 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
 
           <div className="grid grid-cols-2 gap-x-3 gap-y-2 px-4 pb-2 sm:grid-cols-4">
             <div className="flex flex-col gap-1">
-              <label htmlFor="ap-x" className="text-xs font-medium text-gray-400">
+              <label htmlFor="ap-x" className="text-xs font-medium text-secondary">
                 X (0–100)
               </label>
               <input
@@ -176,12 +176,12 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
                 max={100}
                 step={0.1}
                 required
-                className="rounded-md border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-white outline-none placeholder:text-gray-500 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/40 transition [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                className="rounded-md border border-default bg-hover px-2 py-1.5 text-sm text-primary outline-none placeholder:text-muted focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/40 transition [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
             </div>
 
             <div className="flex flex-col gap-1">
-              <label htmlFor="ap-y" className="text-xs font-medium text-gray-400">
+              <label htmlFor="ap-y" className="text-xs font-medium text-secondary">
                 Y (0–100)
               </label>
               <input
@@ -194,16 +194,16 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
                 max={100}
                 step={0.1}
                 required
-                className="rounded-md border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-white outline-none placeholder:text-gray-500 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/40 transition [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                className="rounded-md border border-default bg-hover px-2 py-1.5 text-sm text-primary outline-none placeholder:text-muted focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/40 transition [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
             </div>
 
             <div className="flex flex-col gap-1">
-              <label htmlFor="ap-resource" className="text-xs font-medium text-gray-400">
-                Ресурс {requiresResource(form.point_type) ? <span className="text-rose-400">*</span> : null}
+              <label htmlFor="ap-resource" className="text-xs font-medium text-secondary">
+                Ресурс {requiresResource(form.point_type) ? <span className="text-danger">*</span> : null}
               </label>
               {resourcesLoading ? (
-                <div className="flex items-center gap-1.5 rounded-md border border-gray-600 bg-gray-700 px-2 py-1.5 text-xs text-gray-400">
+                <div className="flex items-center gap-1.5 rounded-md border border-default bg-hover px-2 py-1.5 text-xs text-secondary">
                   <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
                   Загрузка...
                 </div>
@@ -213,7 +213,7 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
                   name="resource"
                   value={form.resource}
                   onChange={handleResourceChangeWithAutoLabel}
-                  className="rounded-md border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-white outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/40 transition"
+                  className="rounded-md border border-default bg-hover px-2 py-1.5 text-sm text-primary outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/40 transition"
                 >
                   <option value="">— Выбрать —</option>
                   {resourcesData?.results.map((r) => (
@@ -226,8 +226,8 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
             </div>
 
             <div className="flex flex-col gap-1">
-              <label htmlFor="ap-label" className="text-xs font-medium text-gray-400">
-                Метка <span className="text-rose-400">*</span>
+              <label htmlFor="ap-label" className="text-xs font-medium text-secondary">
+                Метка <span className="text-danger">*</span>
               </label>
               <input
                 id="ap-label"
@@ -237,12 +237,12 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
                 onChange={handleInputChange}
                 required
                 placeholder="Desk A1"
-                className="rounded-md border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-white outline-none placeholder:text-gray-500 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/40 transition"
+                className="rounded-md border border-default bg-hover px-2 py-1.5 text-sm text-primary outline-none placeholder:text-muted focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/40 transition"
               />
             </div>
 
             <div className="flex flex-col gap-1">
-              <label htmlFor="ap-point_type" className="text-xs font-medium text-gray-400">
+              <label htmlFor="ap-point_type" className="text-xs font-medium text-secondary">
                 Тип точки
               </label>
               <select
@@ -252,7 +252,7 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
                 disabled
                 aria-disabled="true"
                 title="Выберите ресурс — тип точки возьмётся из ресурса"
-                className="cursor-not-allowed rounded-md border border-gray-600 bg-gray-600/40 px-2 py-1.5 text-sm text-gray-400 outline-none"
+                className="cursor-not-allowed rounded-md border border-default bg-gray-600/40 px-2 py-1.5 text-sm text-secondary outline-none"
               >
                 {POINT_TYPES.map((t) => (
                   <option key={t} value={t}>
@@ -260,15 +260,15 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
                   </option>
                 ))}
               </select>
-              <p className="text-[11px] leading-snug text-gray-500">
+              <p className="text-[11px] leading-snug text-muted">
                 Меняется при выборе ресурса (тип берётся из ресурса).
               </p>
             </div>
 
             {form.point_type === 'office' ? (
               <div className="flex flex-col gap-1">
-                <label htmlFor="ap-company" className="text-xs font-medium text-gray-400">
-                  ID компании <span className="text-rose-400">*</span>
+                <label htmlFor="ap-company" className="text-xs font-medium text-secondary">
+                  ID компании <span className="text-danger">*</span>
                 </label>
                 <input
                   id="ap-company"
@@ -279,25 +279,25 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
                   required
                   min={1}
                   placeholder="3"
-                  className="rounded-md border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-white outline-none placeholder:text-gray-500 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/40 transition [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  className="rounded-md border border-default bg-hover px-2 py-1.5 text-sm text-primary outline-none placeholder:text-muted focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/40 transition [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 />
               </div>
             ) : null}
           </div>
 
-          <div className="flex items-center justify-end gap-2 border-t border-gray-700 px-4 py-2.5">
+          <div className="flex items-center justify-end gap-2 border-t border-default px-4 py-2.5">
             <button
               type="button"
               onClick={onCancel}
               disabled={createMutation.isPending}
-              className="rounded-lg border border-gray-600 bg-transparent px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-gray-700 hover:text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400 disabled:opacity-50 transition-colors"
+              className="rounded-lg border border-default bg-transparent px-3 py-1.5 text-xs font-medium text-secondary hover:bg-hover hover:text-primary focus:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400 disabled:opacity-50 transition-colors"
             >
               Отмена
             </button>
             <button
               type="submit"
               disabled={createMutation.isPending}
-              className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 focus:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-hover focus:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400 disabled:opacity-50 transition-colors"
             >
               {createMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" /> : null}
               Создать точку

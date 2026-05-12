@@ -24,7 +24,7 @@ const ListTaskRow = memo(function ListTaskRow({
   const overdue = task.deadline ? isOverdue(task.deadline) : false;
   return (
     <tr
-      className="bg-gray-900 hover:bg-gray-800/60 transition-colors cursor-pointer"
+      className="bg-surface hover:bg-hover transition-colors cursor-pointer"
       onClick={() => onTaskClick(task.id)}
       role="row"
       tabIndex={0}
@@ -37,7 +37,7 @@ const ListTaskRow = memo(function ListTaskRow({
       aria-label={`Задача: ${task.title}`}
     >
       <td className="px-4 py-3">
-        <span className="font-medium text-white line-clamp-1">{task.title}</span>
+        <span className="font-medium text-primary line-clamp-1">{task.title}</span>
       </td>
       <td className="px-4 py-3">
         <span
@@ -52,29 +52,29 @@ const ListTaskRow = memo(function ListTaskRow({
       <td className="px-4 py-3">
         {task.deadline ? (
           <span
-            className={cn('flex items-center gap-1 text-xs', overdue ? 'text-red-400' : 'text-gray-400')}
+            className={cn('flex items-center gap-1 text-xs', overdue ? 'text-red-400' : 'text-secondary')}
           >
             <Calendar size={11} className="shrink-0" />
             {formatDeadline(task.deadline)}
           </span>
         ) : (
-          <span className="text-xs text-gray-600">—</span>
+          <span className="text-xs text-muted">—</span>
         )}
       </td>
       <td className="px-4 py-3">
         {task.assignee ? (
           <div className="flex items-center gap-2">
             <CrmAssigneeAvatar assignee={task.assignee} size="sm" />
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-secondary">
               {task.assignee.first_name} {task.assignee.last_name}
             </span>
           </div>
         ) : (
-          <span className="text-xs text-gray-600">—</span>
+          <span className="text-xs text-muted">—</span>
         )}
       </td>
       <td className="px-4 py-3">
-        <span className="text-xs text-gray-400">{columnName}</span>
+        <span className="text-xs text-secondary">{columnName}</span>
       </td>
     </tr>
   );
@@ -87,7 +87,7 @@ export function BoardTaskListView({ tasks, columns, isLoading, onTaskClick }: Bo
     return (
       <div className="space-y-2 animate-pulse">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-12 rounded-lg bg-gray-800" />
+          <div key={i} className="h-12 rounded-lg bg-raised" />
         ))}
       </div>
     );
@@ -96,35 +96,35 @@ export function BoardTaskListView({ tasks, columns, isLoading, onTaskClick }: Bo
   if (tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-3">
-        <Inbox size={32} className="text-gray-600" />
-        <p className="text-gray-500 text-sm">Задачи не найдены</p>
+        <Inbox size={32} className="text-muted" />
+        <p className="text-muted text-sm">Задачи не найдены</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-800">
+    <div className="overflow-x-auto rounded-xl border border-default">
       <table className="w-full text-sm" role="table" aria-label="Задачи доски">
         <thead>
-          <tr className="border-b border-gray-800 bg-gray-900/60">
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+          <tr className="border-b border-default bg-surface/60">
+            <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase tracking-wide">
               Название
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase tracking-wide">
               Приоритет
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase tracking-wide">
               Дедлайн
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase tracking-wide">
               Исполнитель
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase tracking-wide">
               Колонка
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-800">
+        <tbody className="divide-y divide-[color:var(--border)]">
           {tasks.map((task) => (
             <ListTaskRow
               key={task.id}

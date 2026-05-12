@@ -16,16 +16,16 @@ export default function BoardDetailPage() {
       <div className="space-y-4">
         <Link
           to="/crm"
-          className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-secondary hover:text-primary transition-colors"
         >
           <ChevronLeft size={16} />
           Назад к доскам
         </Link>
         <div className="flex flex-col items-center justify-center py-24 gap-3">
           <AlertCircle size={40} className="text-red-400" />
-          <p className="text-gray-400">Не удалось загрузить доску. Попробуйте обновить страницу.</p>
+          <p className="text-secondary">Не удалось загрузить доску. Попробуйте обновить страницу.</p>
           {ctx.isError && (
-            <p className="text-xs text-gray-600 mt-1">{(ctx.boardError as { message?: string })?.message}</p>
+            <p className="text-xs text-muted mt-1">{(ctx.boardError as { message?: string })?.message}</p>
           )}
         </div>
       </div>

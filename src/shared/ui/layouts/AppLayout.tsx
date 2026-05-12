@@ -70,7 +70,7 @@ export function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-page text-primary">
       <Sidebar mobileOpen={mobileNavOpen} onCloseMobile={() => setMobileNavOpen(false)} />
       <div className="ml-0 md:ml-60">
         <ImpersonationBanner />

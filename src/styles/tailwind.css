@@ -1,2 +1,5 @@
 @import 'tailwindcss' source(none);
 @source '../**/*.{js,ts,jsx,tsx}';
+
+/* Class-based dark mode: add `.dark` to <html> */
+@variant dark (&:where(.dark, .dark *));

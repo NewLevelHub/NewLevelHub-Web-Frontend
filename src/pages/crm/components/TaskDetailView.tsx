@@ -48,16 +48,16 @@ export function TaskDetailView(props: TaskDetailViewProps) {
   if (isLoading) {
     return (
       <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-4xl mx-auto space-y-6">
-        <div className="h-4 w-28 rounded bg-gray-700 animate-pulse" />
+        <div className="h-4 w-28 rounded bg-hover animate-pulse" />
         <div className="animate-pulse space-y-5">
-          <div className="h-8 w-2/3 rounded bg-gray-700" />
+          <div className="h-8 w-2/3 rounded bg-hover" />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-4">
-              <div className="h-32 rounded-xl bg-gray-800" />
-              <div className="h-48 rounded-xl bg-gray-800" />
+              <div className="h-32 rounded-xl bg-raised" />
+              <div className="h-48 rounded-xl bg-raised" />
             </div>
             <div className="space-y-4">
-              <div className="h-40 rounded-xl bg-gray-800" />
+              <div className="h-40 rounded-xl bg-raised" />
             </div>
           </div>
         </div>
@@ -68,7 +68,7 @@ export function TaskDetailView(props: TaskDetailViewProps) {
   if (isError || !task) {
     return (
       <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-4xl mx-auto space-y-4">
-        <div className="flex items-center gap-2 rounded-lg border border-amber-800 bg-amber-900/30 px-4 py-3 text-sm text-amber-300">
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-warning-subtle px-4 py-3 text-sm text-warning">
           <AlertCircle size={16} className="shrink-0" />
           <span>Задача не найдена или была архивирована.</span>
         </div>
@@ -100,7 +100,7 @@ export function TaskDetailView(props: TaskDetailViewProps) {
       </Link>
 
       <div className="space-y-1">
-        <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Задача #{task.id}</p>
+        <p className="text-xs text-muted uppercase tracking-wide font-medium">Задача #{task.id}</p>
         <input
           id="page-task-title"
           type="text"
@@ -109,7 +109,7 @@ export function TaskDetailView(props: TaskDetailViewProps) {
           maxLength={255}
           disabled={patchMutation.isPending}
           className={cn(
-            'w-full bg-transparent text-2xl font-bold text-white outline-none',
+            'w-full bg-transparent text-2xl font-bold text-primary outline-none',
             'border-b-2 border-transparent focus:border-blue-500 transition-colors py-1',
             'disabled:opacity-60',
           )}
@@ -118,8 +118,8 @@ export function TaskDetailView(props: TaskDetailViewProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <section className="rounded-2xl border border-gray-700 bg-gray-900 p-5 space-y-2">
-            <label htmlFor="page-task-description" className="block text-sm font-semibold text-gray-300">
+          <section className="rounded-2xl border border-default bg-surface p-5 space-y-2">
+            <label htmlFor="page-task-description" className="block text-sm font-semibold text-secondary">
               Описание
             </label>
             <textarea
@@ -130,7 +130,7 @@ export function TaskDetailView(props: TaskDetailViewProps) {
               placeholder="Добавьте описание задачи..."
               disabled={patchMutation.isPending}
               className={cn(
-                'w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2.5 text-sm text-white',
+                'w-full rounded-lg border border-default bg-raised px-3 py-2.5 text-sm text-primary',
                 'placeholder-gray-600 resize-none',
                 'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors',
                 'disabled:opacity-60',
@@ -139,28 +139,28 @@ export function TaskDetailView(props: TaskDetailViewProps) {
           </section>
 
           {boardId && (
-            <section className="rounded-2xl border border-gray-700 bg-gray-900 p-5">
+            <section className="rounded-2xl border border-default bg-surface p-5">
               <ChecklistSection taskId={taskId} boardId={boardId} checklists={task.checklists ?? []} />
             </section>
           )}
 
-          <section className="rounded-2xl border border-gray-700 bg-gray-900 p-5">
+          <section className="rounded-2xl border border-default bg-surface p-5">
             <CommentSection taskId={taskId} boardId={boardId} />
           </section>
 
-          <section className="rounded-2xl border border-gray-700 bg-gray-900 p-5">
+          <section className="rounded-2xl border border-default bg-surface p-5">
             <HistorySection taskId={taskId} />
           </section>
         </div>
 
         <div className="space-y-5">
-          <section className="rounded-2xl border border-gray-700 bg-gray-900 p-5 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-300">Детали</h2>
+          <section className="rounded-2xl border border-default bg-surface p-5 space-y-4">
+            <h2 className="text-sm font-semibold text-secondary">Детали</h2>
 
             <div className="space-y-1.5">
               <label
                 htmlFor="page-task-priority"
-                className="flex items-center gap-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide"
+                className="flex items-center gap-1.5 text-xs font-medium text-muted uppercase tracking-wide"
               >
                 <Flag size={12} />
                 Приоритет
@@ -171,7 +171,7 @@ export function TaskDetailView(props: TaskDetailViewProps) {
                 onChange={(e) => setPriority(e.target.value as CrmTask['priority'])}
                 disabled={patchMutation.isPending}
                 className={cn(
-                  'w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white',
+                  'w-full rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary',
                   'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors',
                   'disabled:opacity-60',
                 )}
@@ -195,7 +195,7 @@ export function TaskDetailView(props: TaskDetailViewProps) {
             <div className="space-y-1.5">
               <label
                 htmlFor="page-task-deadline"
-                className="flex items-center gap-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide"
+                className="flex items-center gap-1.5 text-xs font-medium text-muted uppercase tracking-wide"
               >
                 <Calendar size={12} />
                 Дедлайн
@@ -207,7 +207,7 @@ export function TaskDetailView(props: TaskDetailViewProps) {
                 onChange={(e) => setDeadline(e.target.value)}
                 disabled={patchMutation.isPending}
                 className={cn(
-                  'w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white [color-scheme:dark]',
+                  'w-full rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary [color-scheme:dark]',
                   'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors',
                   'disabled:opacity-60',
                 )}
@@ -217,7 +217,7 @@ export function TaskDetailView(props: TaskDetailViewProps) {
             <div className="space-y-1.5">
               <label
                 htmlFor="page-task-assignee"
-                className="flex items-center gap-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide"
+                className="flex items-center gap-1.5 text-xs font-medium text-muted uppercase tracking-wide"
               >
                 <User size={12} />
                 Исполнитель
@@ -228,7 +228,7 @@ export function TaskDetailView(props: TaskDetailViewProps) {
                 onChange={(e) => setAssigneeId(e.target.value)}
                 disabled={patchMutation.isPending}
                 className={cn(
-                  'w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white',
+                  'w-full rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary',
                   'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors',
                   'disabled:opacity-60 disabled:cursor-not-allowed',
                 )}
@@ -245,15 +245,15 @@ export function TaskDetailView(props: TaskDetailViewProps) {
             </div>
 
             <div className="space-y-1">
-              <span className="flex items-center gap-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide">
+              <span className="flex items-center gap-1.5 text-xs font-medium text-muted uppercase tracking-wide">
                 <Clock size={12} />
                 Создана
               </span>
-              <p className="text-sm text-gray-400">{createdDate}</p>
+              <p className="text-sm text-secondary">{createdDate}</p>
             </div>
 
             {task.attachments_count > 0 && (
-              <div className="flex items-center gap-1.5 text-sm text-gray-500 pt-1 border-t border-gray-700">
+              <div className="flex items-center gap-1.5 text-sm text-muted pt-1 border-t border-default">
                 <Paperclip size={14} />
                 {task.attachments_count} {task.attachments_count === 1 ? 'файл' : 'файлов'}
               </div>
@@ -261,13 +261,13 @@ export function TaskDetailView(props: TaskDetailViewProps) {
           </section>
 
           {boardId && (
-            <section className="rounded-2xl border border-gray-700 bg-gray-900 p-5">
+            <section className="rounded-2xl border border-default bg-surface p-5">
               <TaskLabelsSection taskId={taskId} boardId={boardId} taskLabels={task.labels ?? []} />
             </section>
           )}
 
-          <section className="rounded-2xl border border-gray-700 bg-gray-900 p-5 space-y-3">
-            <h2 className="text-sm font-semibold text-gray-300">Действия</h2>
+          <section className="rounded-2xl border border-default bg-surface p-5 space-y-3">
+            <h2 className="text-sm font-semibold text-secondary">Действия</h2>
 
             <div className="flex flex-col gap-2">
               <button
@@ -288,7 +288,7 @@ export function TaskDetailView(props: TaskDetailViewProps) {
                 disabled={patchMutation.isPending}
                 className={cn(
                   'flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-                  'border border-gray-700 text-gray-400 hover:text-white hover:bg-gray-800',
+                  'border border-default text-secondary hover:text-primary hover:bg-hover',
                   'disabled:opacity-50 disabled:cursor-not-allowed',
                 )}
               >
@@ -324,7 +324,7 @@ export function TaskDetailView(props: TaskDetailViewProps) {
                 disabled={archiveMutation.isPending}
                 className={cn(
                   'flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-                  'border border-red-800 text-red-400 bg-red-900/30 hover:bg-red-900/50',
+                  'border border-red-200 dark:border-red-800 text-red-400 bg-danger-subtle hover:bg-danger-subtle',
                   'disabled:opacity-50 disabled:cursor-not-allowed',
                 )}
               >

@@ -128,19 +128,19 @@ function SlotDetailPanel({ isoDay, slots, onClose }: SlotDetailPanelProps) {
   const dateStr = `${d}.${m}`;
 
   return (
-    <div className="mt-1 rounded-lg border border-gray-600 bg-gray-850 shadow-lg text-xs overflow-hidden"
+    <div className="mt-1 rounded-lg border border-default bg-gray-850 shadow-lg text-xs overflow-hidden"
          style={{ background: 'rgb(17 24 39)' }}>
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700">
-        <span className="font-medium text-gray-200">Занятость {dateStr}</span>
+      <div className="flex items-center justify-between px-3 py-2 border-b border-default">
+        <span className="font-medium text-secondary">Занятость {dateStr}</span>
         <button
           type="button"
           onClick={onClose}
-          className="text-gray-500 hover:text-gray-300 transition-colors"
+          className="text-muted hover:text-secondary transition-colors"
         >
           <X size={13} />
         </button>
       </div>
-      <ul className="divide-y divide-gray-800">
+      <ul className="divide-y divide-[color:var(--border)]">
         {slots.map((sl, i) => {
           const startMs = new Date(sl.start).getTime();
           const endMs   = new Date(sl.end).getTime();
@@ -154,10 +154,10 @@ function SlotDetailPanel({ isoDay, slots, onClose }: SlotDetailPanelProps) {
                 )}
               />
               <div className="min-w-0">
-                <p className="font-medium text-gray-200 truncate">
+                <p className="font-medium text-secondary truncate">
                   {isBlock ? 'Блокировка' : (sl.user_name?.trim() || `Бронь #${sl.booking_id}`)}
                 </p>
-                <p className="text-gray-500 tabular-nums">
+                <p className="text-muted tabular-nums">
                   {fmtTime(startMs)} – {fmtTime(endMs)}
                 </p>
               </div>
@@ -203,11 +203,11 @@ function DayRow({ slots, isLoading, isoDay, label, dateLabel, isToday, nowPct, c
                 title={STATUS_LABEL_SHORT[currentStatus]}
               />
             )}
-            <span className={cn('text-[11px] font-semibold leading-tight', isToday ? 'text-indigo-400' : 'text-gray-400')}>
+            <span className={cn('text-[11px] font-semibold leading-tight', isToday ? 'text-brand' : 'text-secondary')}>
               {label}
             </span>
           </div>
-          <span className={cn('text-[10px] leading-tight tabular-nums', isToday ? 'text-indigo-400/70' : 'text-gray-600')}>
+          <span className={cn('text-[10px] leading-tight tabular-nums', isToday ? 'text-brand/70' : 'text-muted')}>
             {dateLabel}
           </span>
         </div>
@@ -216,19 +216,19 @@ function DayRow({ slots, isLoading, isoDay, label, dateLabel, isToday, nowPct, c
         <div
           className={cn(
             'relative h-6 flex-1 overflow-hidden rounded',
-            isToday ? 'bg-gray-800 ring-1 ring-indigo-500/30' : 'bg-gray-900/80',
+            isToday ? 'bg-raised ring-1 ring-blue-500/30' : 'bg-surface',
             hasBusy && 'cursor-pointer',
           )}
           onClick={() => hasBusy && setDetailOpen((v) => !v)}
           title={hasBusy ? 'Нажмите, чтобы посмотреть детали' : undefined}
         >
           {isLoading ? (
-            <div className="h-full w-full animate-pulse bg-gray-700/50 rounded" />
+            <div className="h-full w-full animate-pulse bg-hover/50 rounded" />
           ) : (
             <>
               {/* Free background */}
               {isCompletelyFree && (
-                <div className="absolute inset-0 bg-emerald-900/20 rounded" />
+                <div className="absolute inset-0 bg-success-subtle rounded" />
               )}
 
               {/* Busy segments */}
@@ -317,7 +317,7 @@ export function ResourceWeekMiniTimeline({ resourceId, currentStatus, className 
         <div className="w-16 shrink-0" />
         <div className="flex flex-1 justify-between">
           {HOUR_TICKS.map((h) => (
-            <span key={h} className="text-[9px] text-gray-600 tabular-nums">
+            <span key={h} className="text-[9px] text-muted tabular-nums">
               {String(h).padStart(2, '0')}:00
             </span>
           ))}
@@ -342,24 +342,24 @@ export function ResourceWeekMiniTimeline({ resourceId, currentStatus, className 
       <div className="flex items-center gap-3 pt-1">
         <div className="w-16 shrink-0" />
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="flex items-center gap-1 text-[10px] text-gray-500">
+          <span className="flex items-center gap-1 text-[10px] text-muted">
             <span className="inline-block h-2 w-3 rounded-sm bg-rose-500/80" />
             Бронь
           </span>
-          <span className="flex items-center gap-1 text-[9px] text-gray-500">
+          <span className="flex items-center gap-1 text-[9px] text-muted">
             <span className="inline-block h-2 w-3 rounded-sm bg-amber-400/90" />
             Скоро свободен
           </span>
-          <span className="flex items-center gap-1 text-[9px] text-gray-500">
+          <span className="flex items-center gap-1 text-[9px] text-muted">
             <span className="inline-block h-2 w-3 rounded-sm bg-amber-600/80" />
             Блок
           </span>
-          <span className="flex items-center gap-1 text-[10px] text-gray-500">
-            <span className="inline-block h-2 w-3 rounded-sm bg-emerald-900/40 border border-emerald-700/40" />
+          <span className="flex items-center gap-1 text-[10px] text-muted">
+            <span className="inline-block h-2 w-3 rounded-sm bg-success-subtle border border-emerald-700/40" />
             Свободно
           </span>
           {currentStatus && (
-            <span className="flex items-center gap-1 text-[10px] text-gray-500">
+            <span className="flex items-center gap-1 text-[10px] text-muted">
               <span className={cn('inline-block h-2 w-2 rounded-full', STATUS_DOT[currentStatus])} />
               Сейчас: {STATUS_LABEL_SHORT[currentStatus]}
             </span>
@@ -368,7 +368,7 @@ export function ResourceWeekMiniTimeline({ resourceId, currentStatus, className 
       </div>
       <div className="flex items-center gap-2 pt-0.5">
         <div className="w-16 shrink-0" />
-        <p className="text-[9px] text-gray-600">Нажмите на занятый день, чтобы увидеть детали</p>
+        <p className="text-[9px] text-muted">Нажмите на занятый день, чтобы увидеть детали</p>
       </div>
     </div>
   );

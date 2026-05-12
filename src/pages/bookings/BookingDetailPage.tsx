@@ -21,8 +21,8 @@ const STATUS_LABEL: Record<string, string> = {
 const STATUS_BADGE_CLASS: Record<string, string> = {
   [BOOKING_STATUSES.CONFIRMED]: 'bg-blue-100 text-blue-800',
   [BOOKING_STATUSES.CHECKED_IN]: 'bg-emerald-100 text-emerald-800',
-  [BOOKING_STATUSES.COMPLETED]: 'bg-gray-100 text-gray-600',
-  [BOOKING_STATUSES.CANCELLED]: 'bg-gray-100 text-gray-600',
+  [BOOKING_STATUSES.COMPLETED]: 'bg-gray-100 text-muted',
+  [BOOKING_STATUSES.CANCELLED]: 'bg-gray-100 text-muted',
   [BOOKING_STATUSES.NO_SHOW]: 'bg-red-100 text-red-800',
 };
 
@@ -203,7 +203,7 @@ export default function BookingDetailPage() {
   if (isLoading) {
     return (
       <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto">
-        <p className="text-sm text-gray-500">Загрузка...</p>
+        <p className="text-sm text-muted">Загрузка...</p>
       </main>
     );
   }
@@ -250,37 +250,37 @@ export default function BookingDetailPage() {
         </Link>
       ) : null}
 
-      <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm space-y-3">
-        <h1 className="text-xl font-bold text-gray-900">{data.resource_name}</h1>
-        <p className="text-sm text-gray-600">
+      <section className="rounded-2xl border border-default bg-surface p-6 shadow-sm space-y-3">
+        <h1 className="text-xl font-bold text-primary">{data.resource_name}</h1>
+        <p className="text-sm text-muted">
           {start.toLocaleString()} — {end.toLocaleString()}
         </p>
         <p className="text-sm">
-          <span className="font-medium text-gray-700">Статус: </span>
-          <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE_CLASS[data.status] ?? 'bg-gray-100 text-gray-600')}>
+          <span className="font-medium text-secondary">Статус: </span>
+          <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE_CLASS[data.status] ?? 'bg-gray-100 text-muted')}>
             {STATUS_LABEL[data.status] ?? data.status}
           </span>
         </p>
         {data.status === BOOKING_STATUSES.CANCELLED && data.cancel_reason?.trim() ? (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-gray-900">
+          <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-primary">
             <p className="font-medium text-rose-900">
               {data.cancelled_by != null && data.cancelled_by !== data.user
                 ? 'Комментарий администратора'
                 : 'Причина отмены'}
             </p>
-            <p className="mt-1 whitespace-pre-wrap text-gray-800">{data.cancel_reason.trim()}</p>
+            <p className="mt-1 whitespace-pre-wrap text-primary">{data.cancel_reason.trim()}</p>
           </div>
         ) : null}
         {data.checked_in_at ? (
-          <p className="text-sm text-gray-600">
-            <span className="font-medium text-gray-700">Чек-ин: </span>
+          <p className="text-sm text-muted">
+            <span className="font-medium text-secondary">Чек-ин: </span>
             {new Date(data.checked_in_at).toLocaleString('ru-RU')}
           </p>
         ) : null}
-        {data.description ? <p className="text-sm text-gray-600">{data.description}</p> : null}
+        {data.description ? <p className="text-sm text-muted">{data.description}</p> : null}
         {data.user_name ? (
-          <p className="text-sm text-gray-600">
-            <span className="font-medium text-gray-700">Забронировал: </span>
+          <p className="text-sm text-muted">
+            <span className="font-medium text-secondary">Забронировал: </span>
             {data.user_name}
           </p>
         ) : null}
@@ -326,25 +326,25 @@ export default function BookingDetailPage() {
       ) : null}
 
       {canEditTime ? (
-        <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Изменить время</h2>
+        <section className="rounded-2xl border border-default bg-surface p-6 shadow-sm space-y-4">
+          <h2 className="text-lg font-semibold text-primary">Изменить время</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="text-sm text-gray-700">
+            <label className="text-sm text-secondary">
               Начало
               <input
                 type="datetime-local"
                 value={startInput}
                 onChange={(event) => setStartInput(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               />
             </label>
-            <label className="text-sm text-gray-700">
+            <label className="text-sm text-secondary">
               Конец
               <input
                 type="datetime-local"
                 value={endInput}
                 onChange={(event) => setEndInput(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               />
             </label>
           </div>
@@ -368,13 +368,13 @@ export default function BookingDetailPage() {
       ) : null}
 
       {isMeetingRoom ? (
-        <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Участники встречи</h2>
+        <section className="rounded-2xl border border-default bg-surface p-6 shadow-sm space-y-4">
+          <h2 className="text-lg font-semibold text-primary">Участники встречи</h2>
           <ul className="space-y-2">
             {data.participants.length > 0 ? (
               data.participants.map((participant) => (
-                <li key={participant.id} className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
-                  <span className="text-sm text-gray-700">{participant.full_name || participant.email}</span>
+                <li key={participant.id} className="flex items-center justify-between rounded-lg border border-default px-3 py-2">
+                  <span className="text-sm text-secondary">{participant.full_name || participant.email}</span>
                   {canManageParticipants ? (
                     <button
                       type="button"
@@ -392,18 +392,18 @@ export default function BookingDetailPage() {
                 </li>
               ))
             ) : (
-              <li className="text-sm text-gray-500">Пока нет участников.</li>
+              <li className="text-sm text-muted">Пока нет участников.</li>
             )}
           </ul>
 
           {canManageParticipants ? (
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-              <label className="text-sm text-gray-700 sm:min-w-72">
+              <label className="text-sm text-secondary sm:min-w-72">
                 Добавить участника
                 <select
                   value={selectedUserId}
                   onChange={(event) => setSelectedUserId(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                  className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
                 >
                   <option value="">Выберите пользователя</option>
                   {candidateMembers.map((member) => (
@@ -427,7 +427,7 @@ export default function BookingDetailPage() {
               </button>
             </div>
           ) : (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted">
               Управление участниками доступно только администраторам компании.
             </p>
           )}

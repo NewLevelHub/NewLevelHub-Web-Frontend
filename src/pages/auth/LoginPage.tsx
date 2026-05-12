@@ -32,16 +32,16 @@ export default function LoginPage() {
   return (
     <div>
       <h2 className="mb-1 text-center text-xl font-semibold">Вход</h2>
-      <p className="mb-6 text-center text-sm text-gray-500">NewLevelHub — тест с бэкендом</p>
+      <p className="mb-6 text-center text-sm text-muted">NewLevelHub — тест с бэкендом</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {notice ? (
-          <div className="rounded-lg border border-green-900/60 bg-green-950/40 px-3 py-2 text-sm text-green-300">
+          <div className="rounded-lg border border-green-200 bg-success-subtle px-3 py-2 text-sm text-success dark:border-green-900/40">
             {notice}
           </div>
         ) : null}
         {error ? (
-          <div className="rounded-lg border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+          <div className="rounded-lg border border-red-200 bg-danger-subtle px-3 py-2 text-sm text-danger dark:border-red-900/40">
             {error}
           </div>
         ) : null}
@@ -85,7 +85,7 @@ export default function LoginPage() {
             type="checkbox"
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
-            className="h-4 w-4 rounded border-gray-600"
+            className="h-4 w-4 rounded border-default"
           />
           Запомнить меня
         </label>

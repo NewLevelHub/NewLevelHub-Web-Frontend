@@ -62,8 +62,8 @@ function ChecklistItemRow({ item, onToggle, onDelete, onUpdateText, isPending }:
           onBlur={commitEdit}
           onKeyDown={handleKeyDown}
           className={cn(
-            'flex-1 rounded border bg-gray-700 px-2 py-0.5 text-sm text-white',
-            'focus:outline-none focus:ring-1 focus:ring-blue-500 border-gray-600',
+            'flex-1 rounded border bg-hover px-2 py-0.5 text-sm text-primary',
+            'focus:outline-none focus:ring-1 focus:ring-blue-500 border-default',
           )}
           maxLength={500}
         />
@@ -72,7 +72,7 @@ function ChecklistItemRow({ item, onToggle, onDelete, onUpdateText, isPending }:
           onDoubleClick={() => setEditing(true)}
           className={cn(
             'flex-1 text-sm cursor-default select-none break-all',
-            item.is_completed ? 'line-through text-gray-500' : 'text-gray-200',
+            item.is_completed ? 'line-through text-muted' : 'text-secondary',
           )}
           title="Двойной клик для редактирования"
         >
@@ -84,7 +84,7 @@ function ChecklistItemRow({ item, onToggle, onDelete, onUpdateText, isPending }:
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="p-0.5 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-colors"
+            className="p-0.5 rounded text-muted hover:text-secondary hover:bg-hover transition-colors"
             aria-label="Редактировать пункт"
           >
             <Pencil size={11} />
@@ -94,7 +94,7 @@ function ChecklistItemRow({ item, onToggle, onDelete, onUpdateText, isPending }:
           type="button"
           onClick={() => onDelete(item.id)}
           disabled={isPending}
-          className="p-0.5 rounded text-gray-500 hover:text-red-400 hover:bg-gray-700 transition-colors disabled:opacity-50"
+          className="p-0.5 rounded text-muted hover:text-red-400 hover:bg-hover transition-colors disabled:opacity-50"
           aria-label="Удалить пункт"
         >
           <X size={11} />
@@ -212,7 +212,7 @@ function ChecklistBlock({ checklist, taskId, boardId }: ChecklistBlockProps) {
   const anyItemPending = updateItemMutation.isPending || deleteItemMutation.isPending;
 
   return (
-    <div className="rounded-lg border border-gray-700 bg-gray-800/50">
+    <div className="rounded-lg border border-default bg-raised">
       {/* Checklist header */}
       <div className="flex items-center gap-2 px-3 py-2.5 group/header">
         <button
@@ -223,8 +223,8 @@ function ChecklistBlock({ checklist, taskId, boardId }: ChecklistBlockProps) {
           aria-label={collapsed ? 'Развернуть чеклист' : 'Свернуть чеклист'}
         >
           {collapsed
-            ? <ChevronRight size={14} className="text-gray-500 shrink-0" />
-            : <ChevronDown size={14} className="text-gray-500 shrink-0" />
+            ? <ChevronRight size={14} className="text-muted shrink-0" />
+            : <ChevronDown size={14} className="text-muted shrink-0" />
           }
           {editingTitle ? (
             <input
@@ -236,24 +236,24 @@ function ChecklistBlock({ checklist, taskId, boardId }: ChecklistBlockProps) {
               onKeyDown={handleTitleKeyDown}
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                'flex-1 rounded border bg-gray-700 px-2 py-0.5 text-sm font-medium text-white',
-                'focus:outline-none focus:ring-1 focus:ring-blue-500 border-gray-600',
+                'flex-1 rounded border bg-hover px-2 py-0.5 text-sm font-medium text-primary',
+                'focus:outline-none focus:ring-1 focus:ring-blue-500 border-default',
               )}
               maxLength={200}
             />
           ) : (
-            <span className="text-sm font-medium text-white truncate">{checklist.title}</span>
+            <span className="text-sm font-medium text-primary truncate">{checklist.title}</span>
           )}
         </button>
 
         <div className="flex items-center gap-1 shrink-0">
-          <span className="text-xs text-gray-500 tabular-nums">
+          <span className="text-xs text-muted tabular-nums">
             {completed}/{total}
           </span>
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); setEditingTitle(true); }}
-            className="p-1 rounded text-gray-600 hover:text-gray-300 hover:bg-gray-700 transition-colors opacity-0 group-hover/header:opacity-100"
+            className="p-1 rounded text-muted hover:text-secondary hover:bg-hover transition-colors opacity-0 group-hover/header:opacity-100"
             aria-label="Переименовать чеклист"
           >
             <Pencil size={12} />
@@ -262,7 +262,7 @@ function ChecklistBlock({ checklist, taskId, boardId }: ChecklistBlockProps) {
             type="button"
             onClick={(e) => { e.stopPropagation(); handleDelete(); }}
             disabled={deleteMutation.isPending}
-            className="p-1 rounded text-gray-600 hover:text-red-400 hover:bg-gray-700 transition-colors opacity-0 group-hover/header:opacity-100 disabled:opacity-30"
+            className="p-1 rounded text-muted hover:text-red-400 hover:bg-hover transition-colors opacity-0 group-hover/header:opacity-100 disabled:opacity-30"
             aria-label="Удалить чеклист"
           >
             <Trash2 size={12} />
@@ -274,7 +274,7 @@ function ChecklistBlock({ checklist, taskId, boardId }: ChecklistBlockProps) {
       {total > 0 && (
         <div className="px-3 pb-2">
           <div
-            className="h-1.5 w-full rounded-full bg-gray-700 overflow-hidden"
+            className="h-1.5 w-full rounded-full bg-hover overflow-hidden"
             role="progressbar"
             aria-valuenow={progressPct}
             aria-valuemin={0}
@@ -318,8 +318,8 @@ function ChecklistBlock({ checklist, taskId, boardId }: ChecklistBlockProps) {
                 placeholder="Новый пункт..."
                 maxLength={500}
                 className={cn(
-                  'flex-1 rounded border bg-gray-700 px-2 py-1 text-sm text-white placeholder-gray-500',
-                  'focus:outline-none focus:ring-1 focus:ring-blue-500 border-gray-600',
+                  'flex-1 rounded border bg-hover px-2 py-1 text-sm text-primary placeholder-gray-500',
+                  'focus:outline-none focus:ring-1 focus:ring-blue-500 border-default',
                 )}
               />
               <button
@@ -335,7 +335,7 @@ function ChecklistBlock({ checklist, taskId, boardId }: ChecklistBlockProps) {
               <button
                 type="button"
                 onClick={() => { setAddingItem(false); setNewItemText(''); }}
-                className="shrink-0 rounded p-1 text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-colors"
+                className="shrink-0 rounded p-1 text-muted hover:text-secondary hover:bg-hover transition-colors"
                 aria-label="Отмена"
               >
                 <X size={12} />
@@ -345,7 +345,7 @@ function ChecklistBlock({ checklist, taskId, boardId }: ChecklistBlockProps) {
             <button
               type="button"
               onClick={() => setAddingItem(true)}
-              className="flex items-center gap-1.5 mt-1 text-xs text-gray-500 hover:text-gray-300 transition-colors rounded px-1 py-0.5 hover:bg-gray-700"
+              className="flex items-center gap-1.5 mt-1 text-xs text-muted hover:text-secondary transition-colors rounded px-1 py-0.5 hover:bg-hover"
             >
               <Plus size={12} />
               Добавить пункт
@@ -399,7 +399,7 @@ export function ChecklistSection({ taskId, boardId, checklists }: ChecklistSecti
     <div className="space-y-2">
       {/* Section header */}
       <div className="flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide">
+        <span className="flex items-center gap-1.5 text-xs font-medium text-muted uppercase tracking-wide">
           <ListChecks size={13} />
           Чеклисты
         </span>
@@ -407,7 +407,7 @@ export function ChecklistSection({ taskId, boardId, checklists }: ChecklistSecti
           <button
             type="button"
             onClick={() => setAddingChecklist(true)}
-            className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors rounded px-1.5 py-0.5 hover:bg-gray-800"
+            className="flex items-center gap-1 text-xs text-muted hover:text-secondary transition-colors rounded px-1.5 py-0.5 hover:bg-hover"
           >
             <Plus size={12} />
             Добавить чеклист
@@ -429,7 +429,7 @@ export function ChecklistSection({ taskId, boardId, checklists }: ChecklistSecti
       {addingChecklist && (
         <form
           onSubmit={handleCreate}
-          className="flex items-center gap-2 rounded-lg border border-blue-600/40 bg-gray-800/50 px-3 py-2"
+          className="flex items-center gap-2 rounded-lg border border-blue-600/40 bg-raised px-3 py-2"
         >
           <input
             ref={addInputRef}
@@ -445,8 +445,8 @@ export function ChecklistSection({ taskId, boardId, checklists }: ChecklistSecti
             placeholder="Название чеклиста..."
             maxLength={200}
             className={cn(
-              'flex-1 rounded border bg-gray-700 px-2 py-1 text-sm text-white placeholder-gray-500',
-              'focus:outline-none focus:ring-1 focus:ring-blue-500 border-gray-600',
+              'flex-1 rounded border bg-hover px-2 py-1 text-sm text-primary placeholder-gray-500',
+              'focus:outline-none focus:ring-1 focus:ring-blue-500 border-default',
             )}
           />
           <button
@@ -462,7 +462,7 @@ export function ChecklistSection({ taskId, boardId, checklists }: ChecklistSecti
           <button
             type="button"
             onClick={() => { setAddingChecklist(false); setNewChecklistTitle(''); }}
-            className="shrink-0 rounded p-1 text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-colors"
+            className="shrink-0 rounded p-1 text-muted hover:text-secondary hover:bg-hover transition-colors"
             aria-label="Отмена"
           >
             <X size={13} />

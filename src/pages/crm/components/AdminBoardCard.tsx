@@ -33,9 +33,9 @@ export const AdminBoardCard = memo(function AdminBoardCard({
         }
       }}
       className={cn(
-        'group relative flex flex-col rounded-xl border border-gray-800 bg-gray-900',
+        'group relative flex flex-col rounded-xl border border-default bg-surface',
         'p-5 cursor-pointer transition-all duration-200',
-        'hover:border-gray-600 hover:bg-gray-800/60 hover:shadow-lg',
+        'hover:border-strong hover:bg-hover hover:shadow-lg',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
       )}
     >
@@ -44,21 +44,21 @@ export const AdminBoardCard = memo(function AdminBoardCard({
           <LayoutGrid size={18} className="text-blue-400" />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="font-semibold text-white text-sm leading-tight truncate">{board.name}</h3>
+          <h3 className="font-semibold text-primary text-sm leading-tight truncate">{board.name}</h3>
           {board.description && (
-            <p className="mt-1 text-xs text-gray-400 line-clamp-2">{board.description}</p>
+            <p className="mt-1 text-xs text-secondary line-clamp-2">{board.description}</p>
           )}
         </div>
       </div>
 
       {companyName && (
         <div className="mb-2 flex items-center gap-1.5">
-          <Building2 size={11} className="text-gray-500 shrink-0" />
-          <span className="text-xs text-gray-500 truncate">{companyName}</span>
+          <Building2 size={11} className="text-muted shrink-0" />
+          <span className="text-xs text-muted truncate">{companyName}</span>
         </div>
       )}
 
-      <div className="mt-auto flex items-center gap-1.5 text-xs text-gray-500">
+      <div className="mt-auto flex items-center gap-1.5 text-xs text-muted">
         <Calendar size={12} />
         <span>{formattedDate}</span>
       </div>

@@ -35,10 +35,10 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_BADGE_CLASS: Record<string, string> = {
-  [BOOKING_STATUSES.CONFIRMED]: 'bg-emerald-900/60 text-emerald-300 border-emerald-700',
+  [BOOKING_STATUSES.CONFIRMED]: 'bg-success-subtle text-success border-emerald-700',
   [BOOKING_STATUSES.CANCELLED]: 'bg-rose-900/60 text-rose-300 border-rose-700',
   [BOOKING_STATUSES.COMPLETED]: 'bg-blue-900/60 text-blue-300 border-blue-700',
-  [BOOKING_STATUSES.NO_SHOW]: 'bg-amber-900/60 text-amber-300 border-amber-700',
+  [BOOKING_STATUSES.NO_SHOW]: 'bg-warning-subtle text-warning border-amber-700',
 };
 
 const RESOURCE_TYPE_OPTIONS = [
@@ -375,30 +375,30 @@ export default function ManageBookingsPage() {
     <main className="mx-auto max-w-7xl space-y-4 sm:space-y-6 px-3 py-4 sm:px-4 sm:py-6 md:py-8">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Управление бронированиями</h1>
-          <p className="mt-1 text-sm text-gray-400">
+          <h1 className="text-2xl font-bold text-primary">Управление бронированиями</h1>
+          <p className="mt-1 text-sm text-secondary">
             Фильтрация всех бронирований и административная отмена с обязательной причиной.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <Link
             to="/bookings/catalog"
-            className="inline-flex items-center rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-200 hover:bg-gray-700"
+            className="inline-flex items-center rounded-lg border border-default bg-raised px-3 py-2 text-sm font-medium text-secondary hover:bg-hover"
           >
             Каталог ресурсов
           </Link>
           <Link
             to="/bookings/my"
-            className="inline-flex items-center rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-200 hover:bg-gray-700"
+            className="inline-flex items-center rounded-lg border border-default bg-raised px-3 py-2 text-sm font-medium text-secondary hover:bg-hover"
           >
             Мои бронирования
           </Link>
         </div>
       </div>
 
-      <section className="grid gap-3 rounded-2xl border border-gray-700 bg-gray-800 p-3 sm:p-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-3 rounded-2xl border border-default bg-raised p-3 sm:p-4 sm:grid-cols-2 lg:grid-cols-4">
         {isSuperadmin && (
-          <label className="text-sm text-gray-300">
+          <label className="text-sm text-secondary">
             Компания
             <select
               value={companyId}
@@ -406,7 +406,7 @@ export default function ManageBookingsPage() {
                 setCompanyId(e.target.value);
                 setPage(1);
               }}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             >
               <option value="">Все компании</option>
               {companyOptions.map((option) => (
@@ -417,7 +417,7 @@ export default function ManageBookingsPage() {
             </select>
           </label>
         )}
-        <label className="text-sm text-gray-300">
+        <label className="text-sm text-secondary">
           Пользователь
           <select
             value={userId}
@@ -425,7 +425,7 @@ export default function ManageBookingsPage() {
               setUserId(e.target.value);
               setPage(1);
             }}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           >
             <option value="">Все пользователи</option>
             {userOptions.map((option) => (
@@ -435,7 +435,7 @@ export default function ManageBookingsPage() {
             ))}
           </select>
         </label>
-        <label className="text-sm text-gray-300">
+        <label className="text-sm text-secondary">
           Ресурс
           <select
             value={resourceId}
@@ -443,7 +443,7 @@ export default function ManageBookingsPage() {
               setResourceId(e.target.value);
               setPage(1);
             }}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           >
             <option value="">Все ресурсы</option>
             {resourceOptions.map((option) => (
@@ -453,7 +453,7 @@ export default function ManageBookingsPage() {
             ))}
           </select>
         </label>
-        <label className="text-sm text-gray-300">
+        <label className="text-sm text-secondary">
           Тип ресурса
           <select
             value={resourceType}
@@ -461,7 +461,7 @@ export default function ManageBookingsPage() {
               setResourceType(e.target.value);
               setPage(1);
             }}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           >
             {RESOURCE_TYPE_OPTIONS.map((option) => (
               <option key={option.value || 'all'} value={option.value}>
@@ -470,7 +470,7 @@ export default function ManageBookingsPage() {
             ))}
           </select>
         </label>
-        <label className="text-sm text-gray-300">
+        <label className="text-sm text-secondary">
           Статус
           <select
             value={statusFilter}
@@ -478,7 +478,7 @@ export default function ManageBookingsPage() {
               setStatusFilter(e.target.value);
               setPage(1);
             }}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           >
             {STATUS_OPTIONS.map((option) => (
               <option key={option.value || 'all'} value={option.value}>
@@ -487,7 +487,7 @@ export default function ManageBookingsPage() {
             ))}
           </select>
         </label>
-        <label className="text-sm text-gray-300">
+        <label className="text-sm text-secondary">
           Date from
           <input
             type="datetime-local"
@@ -496,10 +496,10 @@ export default function ManageBookingsPage() {
               setDateFrom(e.target.value);
               setPage(1);
             }}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           />
         </label>
-        <label className="text-sm text-gray-300">
+        <label className="text-sm text-secondary">
           Date to
           <input
             type="datetime-local"
@@ -508,14 +508,14 @@ export default function ManageBookingsPage() {
               setDateTo(e.target.value);
               setPage(1);
             }}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           />
         </label>
         <div className="flex items-end">
           <button
             type="button"
             onClick={resetFilters}
-            className="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm font-medium text-gray-200 hover:bg-gray-700"
+            className="w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm font-medium text-secondary hover:bg-hover"
           >
             Сбросить фильтры
           </button>
@@ -528,19 +528,19 @@ export default function ManageBookingsPage() {
         </div>
       )}
 
-      <section className="overflow-hidden rounded-2xl border border-gray-700 bg-gray-800">
-        <div className="border-b border-gray-700 px-4 py-3 text-sm text-gray-400">
-          Найдено: <span className="font-semibold text-white">{totalCount}</span>
+      <section className="overflow-hidden rounded-2xl border border-default bg-raised">
+        <div className="border-b border-default px-4 py-3 text-sm text-secondary">
+          Найдено: <span className="font-semibold text-primary">{totalCount}</span>
         </div>
         {isLoading ? (
-          <div className="px-4 py-10 text-sm text-gray-400">Загрузка бронирований…</div>
+          <div className="px-4 py-10 text-sm text-secondary">Загрузка бронирований…</div>
         ) : rows.length === 0 ? (
-          <div className="px-4 py-10 text-sm text-gray-400">Ничего не найдено по текущим фильтрам.</div>
+          <div className="px-4 py-10 text-sm text-secondary">Ничего не найдено по текущим фильтрам.</div>
         ) : (
-          <ul className="divide-y divide-gray-700/60">
+          <ul className="divide-y divide-[color:var(--border)]/60">
             {rows.map((booking) => {
               const statusClass =
-                STATUS_BADGE_CLASS[booking.status] ?? 'bg-gray-100 text-gray-700 border-gray-200';
+                STATUS_BADGE_CLASS[booking.status] ?? 'bg-gray-100 text-secondary border-default';
               const canAdminCancel = booking.status === BOOKING_STATUSES.CONFIRMED;
               const canEdit = booking.status === BOOKING_STATUSES.CONFIRMED;
 
@@ -553,7 +553,7 @@ export default function ManageBookingsPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <Link
                         to={`${STAFF_UI_PREFIX}/bookings/${booking.id}`}
-                        className="text-sm font-semibold text-white hover:text-indigo-300"
+                        className="text-sm font-semibold text-primary hover:text-brand"
                       >
                         {booking.resource_name}
                       </Link>
@@ -561,7 +561,7 @@ export default function ManageBookingsPage() {
                         {STATUS_LABEL[booking.status] ?? booking.status}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-gray-400">
+                    <p className="mt-1 text-xs text-secondary">
                       Бронирование #{booking.id} · Пользователь: {booking.user_name} · Компания:{' '}
                       {booking.company
                         ? (companyNameById.get(booking.company) ??
@@ -569,12 +569,12 @@ export default function ManageBookingsPage() {
                           `Компания #${booking.company}`)
                         : '—'}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-secondary">
                       {new Date(booking.start_time).toLocaleString()} —{' '}
                       {new Date(booking.end_time).toLocaleString()}
                     </p>
                     {booking.checked_in_at && (
-                      <p className="text-xs text-green-300">
+                      <p className="text-xs text-success">
                         Check-in: {new Date(booking.checked_in_at).toLocaleString()}
                       </p>
                     )}
@@ -588,7 +588,7 @@ export default function ManageBookingsPage() {
                         <button
                           type="button"
                           onClick={() => openEditModal(booking)}
-                          className="rounded-lg border border-indigo-700 px-3 py-2 text-xs font-medium text-indigo-300 hover:bg-indigo-900/30"
+                          className="rounded-lg border border-default px-3 py-2 text-xs font-medium text-brand hover:bg-brand-subtle"
                         >
                           Изменить
                         </button>
@@ -602,7 +602,7 @@ export default function ManageBookingsPage() {
                           Админ-отмена
                         </button>
                       ) : (
-                        <span className="text-xs text-gray-500">Недоступно для статуса {booking.status}</span>
+                        <span className="text-xs text-muted">Недоступно для статуса {booking.status}</span>
                       )}
                     </div>
                   </div>
@@ -619,18 +619,18 @@ export default function ManageBookingsPage() {
             type="button"
             disabled={page <= 1}
             onClick={() => setPage((current) => Math.max(1, current - 1))}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-lg border border-default px-4 py-2 text-sm text-secondary disabled:cursor-not-allowed disabled:opacity-40"
           >
             Назад
           </button>
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-muted">
             Страница {page} из {totalPages}
           </span>
           <button
             type="button"
             disabled={page >= totalPages}
             onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-lg border border-default px-4 py-2 text-sm text-secondary disabled:cursor-not-allowed disabled:opacity-40"
           >
             Вперёд
           </button>
@@ -646,15 +646,15 @@ export default function ManageBookingsPage() {
           onClick={closeCancelModal}
         >
           <div
-            className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 shadow-xl"
+            className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-default bg-surface p-4 sm:p-5 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold text-gray-900">Административная отмена</h2>
-            <p className="mt-1 text-sm text-gray-600">
+            <h2 className="text-lg font-semibold text-primary">Административная отмена</h2>
+            <p className="mt-1 text-sm text-muted">
               Бронирование #{cancelTarget.id} ({cancelTarget.resource_name}, {cancelTarget.user_name})
             </p>
 
-            <label className="mt-4 block text-sm text-gray-700">
+            <label className="mt-4 block text-sm text-secondary">
               Причина отмены
               <textarea
                 rows={3}
@@ -664,7 +664,7 @@ export default function ManageBookingsPage() {
                   if (cancelFormError) setCancelFormError(null);
                 }}
                 placeholder="Укажите причину для пользователя"
-                className="mt-1 w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                className="mt-1 w-full resize-none rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               />
             </label>
 
@@ -679,7 +679,7 @@ export default function ManageBookingsPage() {
                 type="button"
                 onClick={closeCancelModal}
                 disabled={adminCancelMutation.isPending}
-                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="rounded-lg border border-default bg-surface px-4 py-2 text-sm font-medium text-secondary hover:bg-raised disabled:opacity-50"
               >
                 Закрыть
               </button>
@@ -704,43 +704,43 @@ export default function ManageBookingsPage() {
           onClick={closeEditModal}
         >
           <div
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 shadow-xl"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-default bg-surface p-4 sm:p-5 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold text-gray-900">Изменение бронирования #{modalBooking?.id ?? editTarget.id}</h2>
-            <p className="mt-1 text-sm text-gray-600">
+            <h2 className="text-lg font-semibold text-primary">Изменение бронирования #{modalBooking?.id ?? editTarget.id}</h2>
+            <p className="mt-1 text-sm text-muted">
               {modalBooking?.resource_name ?? editTarget.resource_name} · {modalBooking?.user_name ?? editTarget.user_name}
             </p>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="text-sm text-gray-700">
+              <label className="text-sm text-secondary">
                 Начало
                 <input
                   type="datetime-local"
                   value={editStart}
                   onChange={(event) => setEditStart(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                  className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
                 />
               </label>
-              <label className="text-sm text-gray-700">
+              <label className="text-sm text-secondary">
                 Конец
                 <input
                   type="datetime-local"
                   value={editEnd}
                   onChange={(event) => setEditEnd(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                  className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
                 />
               </label>
             </div>
 
             {editResourceData?.type === RESOURCE_TYPES.MEETING_ROOM ? (
               <div className="mt-4 space-y-3">
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-secondary">
                   Добавить участника
                   <select
                     value={selectedParticipantId}
                     onChange={(event) => setSelectedParticipantId(event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                    className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
                   >
                     <option value="">Выберите пользователя</option>
                     {userOptions
@@ -778,9 +778,9 @@ export default function ManageBookingsPage() {
                   {(modalBooking?.participants ?? []).map((participant) => (
                     <li
                       key={participant.id}
-                      className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2"
+                      className="flex items-center justify-between rounded-lg border border-default px-3 py-2"
                     >
-                      <span className="text-sm text-gray-700">{participant.full_name || participant.email}</span>
+                      <span className="text-sm text-secondary">{participant.full_name || participant.email}</span>
                       <button
                         type="button"
                         disabled={removeParticipantMutation.isPending}
@@ -799,7 +799,7 @@ export default function ManageBookingsPage() {
                 </ul>
               </div>
             ) : (
-              <p className="mt-4 text-sm text-gray-500">
+              <p className="mt-4 text-sm text-muted">
                 Управление участниками доступно только для бронирований переговорок.
               </p>
             )}
@@ -815,7 +815,7 @@ export default function ManageBookingsPage() {
                 type="button"
                 onClick={closeEditModal}
                 disabled={updateTimeMutation.isPending}
-                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="rounded-lg border border-default bg-surface px-4 py-2 text-sm font-medium text-secondary hover:bg-raised disabled:opacity-50"
               >
                 Закрыть
               </button>

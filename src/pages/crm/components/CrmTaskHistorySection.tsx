@@ -30,8 +30,8 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 const HISTORY_PRIORITY_BADGE: Record<string, string> = {
-  low: 'bg-gray-700 text-gray-300 border-gray-600',
-  medium: 'bg-amber-900/60 text-amber-300 border-amber-700',
+  low: 'bg-hover text-secondary border-default',
+  medium: 'bg-warning-subtle text-warning border-amber-700',
   high: 'bg-orange-900/60 text-orange-300 border-orange-700',
 };
 
@@ -65,7 +65,7 @@ function truncate(text: string, max: number): string {
 
 function PriorityBadge({ value }: { value: string }) {
   const label = HISTORY_PRIORITY_LABELS[value] ?? value;
-  const cls = HISTORY_PRIORITY_BADGE[value] ?? 'bg-gray-700 text-gray-300 border-gray-600';
+  const cls = HISTORY_PRIORITY_BADGE[value] ?? 'bg-hover text-secondary border-default';
   return (
     <span className={cn('inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-medium', cls)}>
       {label}
@@ -92,7 +92,7 @@ function HistoryValueChange({ entry }: { entry: CrmTaskHistory }) {
       <div className="flex items-center gap-1.5 mt-1">
         {old_value && old_value !== 'null' && <PriorityBadge value={old_value} />}
         {old_value && old_value !== 'null' && new_value && new_value !== 'null' && (
-          <span className="text-gray-600 text-xs">→</span>
+          <span className="text-muted text-xs">→</span>
         )}
         {new_value && new_value !== 'null' && <PriorityBadge value={new_value} />}
       </div>
@@ -103,12 +103,12 @@ function HistoryValueChange({ entry }: { entry: CrmTaskHistory }) {
     const oldLabel = formatHistoryDeadline(old_value);
     const newLabel = formatHistoryDeadline(new_value);
     return (
-      <p className="text-xs text-gray-500 mt-1">
-        <span className={cn(old_value && old_value !== 'null' ? 'line-through text-gray-600' : 'text-gray-600')}>
+      <p className="text-xs text-muted mt-1">
+        <span className={cn(old_value && old_value !== 'null' ? 'line-through text-muted' : 'text-muted')}>
           {oldLabel}
         </span>
-        <span className="text-gray-600 mx-1.5">→</span>
-        <span className="text-gray-300">{newLabel}</span>
+        <span className="text-muted mx-1.5">→</span>
+        <span className="text-secondary">{newLabel}</span>
       </p>
     );
   }
@@ -117,10 +117,10 @@ function HistoryValueChange({ entry }: { entry: CrmTaskHistory }) {
     const oldName = !old_value || old_value === 'null' ? 'не назначен' : old_value;
     const newName = !new_value || new_value === 'null' ? 'не назначен' : new_value;
     return (
-      <p className="text-xs text-gray-500 mt-1">
-        <span className="text-gray-600">{oldName}</span>
-        <span className="text-gray-600 mx-1.5">→</span>
-        <span className="text-gray-300">{newName}</span>
+      <p className="text-xs text-muted mt-1">
+        <span className="text-muted">{oldName}</span>
+        <span className="text-muted mx-1.5">→</span>
+        <span className="text-secondary">{newName}</span>
       </p>
     );
   }
@@ -129,10 +129,10 @@ function HistoryValueChange({ entry }: { entry: CrmTaskHistory }) {
     const oldTitle = old_value ? truncate(old_value, 40) : null;
     const newTitle = new_value ? truncate(new_value, 40) : null;
     return (
-      <p className="text-xs text-gray-500 mt-1 italic">
-        {oldTitle && <span className="text-gray-600">«{oldTitle}»</span>}
-        {oldTitle && newTitle && <span className="text-gray-600 mx-1.5">→</span>}
-        {newTitle && <span className="text-gray-300">«{newTitle}»</span>}
+      <p className="text-xs text-muted mt-1 italic">
+        {oldTitle && <span className="text-muted">«{oldTitle}»</span>}
+        {oldTitle && newTitle && <span className="text-muted mx-1.5">→</span>}
+        {newTitle && <span className="text-secondary">«{newTitle}»</span>}
       </p>
     );
   }
@@ -141,18 +141,18 @@ function HistoryValueChange({ entry }: { entry: CrmTaskHistory }) {
     const oldCol = old_value && old_value !== 'null' ? old_value : null;
     const newCol = new_value && new_value !== 'null' ? new_value : null;
     return (
-      <p className="text-xs text-gray-500 mt-1">
+      <p className="text-xs text-muted mt-1">
         {oldCol && (
           <>
             <span>из </span>
-            <span className="font-semibold text-gray-300">"{oldCol}"</span>
+            <span className="font-semibold text-secondary">"{oldCol}"</span>
           </>
         )}
         {newCol && (
           <>
             <span className="mx-1.5">→</span>
             <span>в </span>
-            <span className="font-semibold text-gray-300">"{newCol}"</span>
+            <span className="font-semibold text-secondary">"{newCol}"</span>
           </>
         )}
       </p>
@@ -196,7 +196,7 @@ function HistoryValueChange({ entry }: { entry: CrmTaskHistory }) {
 
     return (
       <div className="mt-1">
-        <span className="inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-medium bg-indigo-900/60 text-indigo-300 border-indigo-700">
+        <span className="inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-medium bg-brand-subtle text-brand border-default">
           {rawValue}
         </span>
       </div>
@@ -206,8 +206,8 @@ function HistoryValueChange({ entry }: { entry: CrmTaskHistory }) {
   if (action === 'moved') {
     if (!new_value || new_value === 'null') return null;
     return (
-      <p className="text-xs text-gray-500 mt-1">
-        <span className="text-gray-400">{new_value}</span>
+      <p className="text-xs text-muted mt-1">
+        <span className="text-secondary">{new_value}</span>
       </p>
     );
   }
@@ -215,15 +215,15 @@ function HistoryValueChange({ entry }: { entry: CrmTaskHistory }) {
   // Generic fallback
   if (old_value && new_value) {
     return (
-      <p className="text-xs text-gray-500 mt-1">
-        <span className="text-gray-600">«{old_value}»</span>
-        <span className="text-gray-600 mx-1.5">→</span>
-        <span className="text-gray-300">«{new_value}»</span>
+      <p className="text-xs text-muted mt-1">
+        <span className="text-muted">«{old_value}»</span>
+        <span className="text-muted mx-1.5">→</span>
+        <span className="text-secondary">«{new_value}»</span>
       </p>
     );
   }
   if (!old_value && new_value) {
-    return <p className="text-xs text-gray-500 mt-1">«{new_value}»</p>;
+    return <p className="text-xs text-muted mt-1">«{new_value}»</p>;
   }
   return null;
 }
@@ -272,7 +272,7 @@ export function HistorySection({ taskId }: HistorySectionProps) {
   };
 
   return (
-    <div className="space-y-3 pt-2 border-t border-gray-800">
+    <div className="space-y-3 pt-2 border-t border-default">
       {/* Collapsible header */}
       <button
         type="button"
@@ -283,14 +283,14 @@ export function HistorySection({ taskId }: HistorySectionProps) {
         )}
         aria-expanded={isOpen}
       >
-        <Clock size={14} className="text-gray-500 shrink-0" />
-        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide flex-1">
+        <Clock size={14} className="text-muted shrink-0" />
+        <h3 className="text-xs font-medium text-muted uppercase tracking-wide flex-1">
           История изменений
         </h3>
         {isOpen ? (
-          <ChevronDown size={14} className="text-gray-500 shrink-0" />
+          <ChevronDown size={14} className="text-muted shrink-0" />
         ) : (
-          <ChevronRight size={14} className="text-gray-500 shrink-0" />
+          <ChevronRight size={14} className="text-muted shrink-0" />
         )}
       </button>
 
@@ -301,10 +301,10 @@ export function HistorySection({ taskId }: HistorySectionProps) {
             <div className="space-y-4 animate-pulse pl-3">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="flex gap-3 items-start">
-                  <div className="w-6 h-6 rounded-full bg-gray-700 shrink-0" />
+                  <div className="w-6 h-6 rounded-full bg-hover shrink-0" />
                   <div className="flex-1 space-y-1.5">
-                    <div className="h-3 w-48 rounded bg-gray-700" />
-                    <div className="h-3 w-32 rounded bg-gray-700" />
+                    <div className="h-3 w-48 rounded bg-hover" />
+                    <div className="h-3 w-32 rounded bg-hover" />
                   </div>
                 </div>
               ))}
@@ -316,11 +316,11 @@ export function HistorySection({ taskId }: HistorySectionProps) {
           )}
 
           {!isLoading && !isError && allEntries.length === 0 && (
-            <p className="text-xs text-gray-600 pl-3">История изменений пуста.</p>
+            <p className="text-xs text-muted pl-3">История изменений пуста.</p>
           )}
 
           {!isLoading && !isError && allEntries.length > 0 && (
-            <ol className="relative border-l border-gray-700 ml-3 space-y-4">
+            <ol className="relative border-l border-default ml-3 space-y-4">
               {allEntries.map((entry) => {
                 const actionLabel =
                   entry.action === 'updated' && entry.field_name
@@ -361,15 +361,15 @@ export function HistorySection({ taskId }: HistorySectionProps) {
                       <div className="min-w-0 flex-1">
                         {/* Action line */}
                         <div className="flex items-baseline justify-between gap-2">
-                          <p className="text-xs text-gray-300 leading-snug">
-                            <span className="font-medium text-gray-200">{entry.user.full_name}</span>
+                          <p className="text-xs text-secondary leading-snug">
+                            <span className="font-medium text-secondary">{entry.user.full_name}</span>
                             {' '}
-                            <span className="text-gray-400">{actionLabel}</span>
+                            <span className="text-secondary">{actionLabel}</span>
                             {(entry.action === 'archived' || entry.action === 'unarchived') && (
-                              <Archive size={11} className="inline ml-1 text-gray-500 align-middle" aria-hidden="true" />
+                              <Archive size={11} className="inline ml-1 text-muted align-middle" aria-hidden="true" />
                             )}
                           </p>
-                          <span className="text-xs text-gray-600 shrink-0 whitespace-nowrap">
+                          <span className="text-xs text-muted shrink-0 whitespace-nowrap">
                             {formatHistoryDate(entry.created_at)}
                           </span>
                         </div>

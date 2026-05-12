@@ -138,15 +138,15 @@ export const MapPointEditModal = memo<MapPointEditModalProps>(
         aria-modal="true"
         aria-labelledby="map-point-edit-modal-title"
       >
-        <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
-          <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-            <h2 id="map-point-edit-modal-title" className="text-base font-semibold text-gray-900">
+        <div className="w-full max-w-md rounded-2xl bg-surface shadow-2xl">
+          <div className="flex items-center justify-between border-b border-default px-6 py-4">
+            <h2 id="map-point-edit-modal-title" className="text-base font-semibold text-primary">
               Редактировать точку
             </h2>
             <button
               type="button"
               aria-label="Закрыть"
-              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors"
+              className="rounded-lg p-1.5 text-secondary hover:bg-gray-100 hover:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors"
               onClick={onClose}
             >
               <X className="h-4 w-4" aria-hidden="true" />
@@ -175,7 +175,7 @@ export const MapPointEditModal = memo<MapPointEditModalProps>(
                   disabled
                   aria-disabled="true"
                   title="Тип точки определяется типом выбранного ресурса"
-                  className="cursor-not-allowed rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-600 outline-none"
+                  className="cursor-not-allowed rounded-lg border border-default bg-gray-100 px-3 py-2 text-sm text-muted outline-none"
                 >
                   {POINT_TYPES.map((t) => (
                     <option key={t} value={t}>
@@ -183,7 +183,7 @@ export const MapPointEditModal = memo<MapPointEditModalProps>(
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500">Меняется при смене ресурса: тип берётся из ресурса.</p>
+                <p className="text-xs text-muted">Меняется при смене ресурса: тип берётся из ресурса.</p>
               </div>
 
               <div className="flex flex-col gap-1">
@@ -198,7 +198,7 @@ export const MapPointEditModal = memo<MapPointEditModalProps>(
                   onChange={handleChange}
                   required
                   placeholder="Desk A1"
-                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition"
+                  className="rounded-lg border border-gray-300 bg-surface px-3 py-2 text-sm text-primary outline-none placeholder:text-secondary focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20/20 transition"
                 />
               </div>
 
@@ -218,7 +218,7 @@ export const MapPointEditModal = memo<MapPointEditModalProps>(
                     max={100}
                     step="any"
                     placeholder="45.5"
-                    className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition"
+                    className="rounded-lg border border-gray-300 bg-surface px-3 py-2 text-sm text-primary outline-none placeholder:text-secondary focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20/20 transition"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
@@ -236,7 +236,7 @@ export const MapPointEditModal = memo<MapPointEditModalProps>(
                     max={100}
                     step="any"
                     placeholder="30.2"
-                    className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition"
+                    className="rounded-lg border border-gray-300 bg-surface px-3 py-2 text-sm text-primary outline-none placeholder:text-secondary focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20/20 transition"
                   />
                 </div>
               </div>
@@ -247,7 +247,7 @@ export const MapPointEditModal = memo<MapPointEditModalProps>(
                     Ресурс <span className="text-rose-500">*</span>
                   </label>
                   {resourcesLoading ? (
-                    <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">
+                    <div className="flex items-center gap-2 rounded-lg border border-default bg-gray-50 px-3 py-2 text-sm text-muted">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                       Загрузка ресурсов...
                     </div>
@@ -259,8 +259,8 @@ export const MapPointEditModal = memo<MapPointEditModalProps>(
                       onChange={handleResourceChange}
                       required
                       className={cn(
-                        'rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition',
-                        !form.resource && 'text-gray-400',
+                        'rounded-lg border border-gray-300 bg-surface px-3 py-2 text-sm text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20/20 transition',
+                        !form.resource && 'text-secondary',
                       )}
                     >
                       <option value="">— Выберите ресурс —</option>
@@ -288,25 +288,25 @@ export const MapPointEditModal = memo<MapPointEditModalProps>(
                     required
                     min={1}
                     placeholder="3"
-                    className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition"
+                    className="rounded-lg border border-gray-300 bg-surface px-3 py-2 text-sm text-primary outline-none placeholder:text-secondary focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20/20 transition"
                   />
                 </div>
               ) : null}
             </div>
 
-            <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-6 py-4">
+            <div className="flex items-center justify-end gap-3 border-t border-default px-6 py-4">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={updateMutation.isPending}
-                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50 transition-colors"
+                className="rounded-lg border border-gray-300 bg-surface px-4 py-2 text-sm font-medium text-gray-700 hover:bg-raised focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50 transition-colors"
               >
                 Отмена
               </button>
               <button
                 type="submit"
                 disabled={updateMutation.isPending}
-                className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50 transition-colors"
               >
                 {updateMutation.isPending ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />

@@ -152,15 +152,15 @@ export function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalPro
       aria-modal="true"
       aria-labelledby="task-detail-title"
     >
-      <div className="w-full max-w-xl rounded-xl border border-gray-700 bg-gray-900 shadow-2xl mb-8">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
-          <h2 id="task-detail-title" className="text-sm font-semibold text-gray-400 uppercase tracking-wide">
+      <div className="w-full max-w-xl rounded-xl border border-default bg-surface shadow-2xl mb-8">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-default">
+          <h2 id="task-detail-title" className="text-sm font-semibold text-secondary uppercase tracking-wide">
             Задача
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors rounded-md p-1 hover:bg-gray-800"
+            className="text-secondary hover:text-primary transition-colors rounded-md p-1 hover:bg-hover"
             aria-label="Закрыть"
           >
             <X size={18} />
@@ -170,16 +170,16 @@ export function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalPro
         <div className="px-6 py-5 space-y-5">
           {isLoading && (
             <div className="animate-pulse space-y-4">
-              <div className="h-6 w-3/4 rounded bg-gray-700" />
-              <div className="h-4 w-1/2 rounded bg-gray-700" />
-              <div className="h-4 w-2/3 rounded bg-gray-700" />
-              <div className="h-20 w-full rounded bg-gray-700" />
-              <div className="h-4 w-1/3 rounded bg-gray-700" />
+              <div className="h-6 w-3/4 rounded bg-hover" />
+              <div className="h-4 w-1/2 rounded bg-hover" />
+              <div className="h-4 w-2/3 rounded bg-hover" />
+              <div className="h-20 w-full rounded bg-hover" />
+              <div className="h-4 w-1/3 rounded bg-hover" />
             </div>
           )}
 
           {isError && (
-            <div className="flex items-center gap-2 rounded-lg border border-red-800 bg-red-900/30 px-4 py-3 text-sm text-red-300">
+            <div className="flex items-center gap-2 rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-4 py-3 text-sm text-danger">
               <AlertCircle size={16} className="shrink-0" />
               <span>Не удалось загрузить задачу. Возможно, она архивирована или была удалена.</span>
             </div>
@@ -188,7 +188,7 @@ export function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalPro
           {task && !isLoading && (
             <>
               <div className="space-y-1.5">
-                <label htmlFor="task-title" className="block text-xs font-medium text-gray-500 uppercase tracking-wide">
+                <label htmlFor="task-title" className="block text-xs font-medium text-muted uppercase tracking-wide">
                   Название
                 </label>
                 <input
@@ -199,8 +199,8 @@ export function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalPro
                   maxLength={255}
                   disabled={patchMutation.isPending}
                   className={cn(
-                    'w-full rounded-lg border bg-gray-800 px-3 py-2 text-base font-medium text-white',
-                    'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-gray-700',
+                    'w-full rounded-lg border bg-raised px-3 py-2 text-base font-medium text-primary',
+                    'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-default',
                     'disabled:opacity-60',
                   )}
                 />
@@ -208,7 +208,7 @@ export function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalPro
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label htmlFor="task-priority" className="block text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <label htmlFor="task-priority" className="block text-xs font-medium text-muted uppercase tracking-wide">
                     Приоритет
                   </label>
                   <select
@@ -217,8 +217,8 @@ export function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalPro
                     onChange={(e) => setPriority(e.target.value as TaskPriorityValue)}
                     disabled={patchMutation.isPending}
                     className={cn(
-                      'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white',
-                      'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-gray-700',
+                      'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary',
+                      'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-default',
                       'disabled:opacity-60',
                     )}
                   >
@@ -229,7 +229,7 @@ export function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalPro
                 </div>
 
                 <div className="space-y-1.5">
-                  <label htmlFor="task-deadline" className="block text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <label htmlFor="task-deadline" className="block text-xs font-medium text-muted uppercase tracking-wide">
                     Дедлайн
                   </label>
                   <input
@@ -239,8 +239,8 @@ export function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalPro
                     onChange={(e) => setDeadline(e.target.value)}
                     disabled={patchMutation.isPending}
                     className={cn(
-                      'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white',
-                      'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-gray-700',
+                      'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary',
+                      'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-default',
                       '[color-scheme:dark] disabled:opacity-60',
                     )}
                   />
@@ -250,20 +250,20 @@ export function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalPro
               <div className="space-y-1.5">
                 <label
                   htmlFor="task-assignee"
-                  className="block text-xs font-medium text-gray-500 uppercase tracking-wide"
+                  className="block text-xs font-medium text-muted uppercase tracking-wide"
                 >
                   Исполнитель
                 </label>
                 <div className="relative">
-                  <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                  <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
                   <select
                     id="task-assignee"
                     value={assigneeId}
                     onChange={(e) => setAssigneeId(e.target.value)}
                     disabled={patchMutation.isPending}
                     className={cn(
-                      'w-full rounded-lg border bg-gray-800 pl-8 pr-3 py-2 text-sm text-white',
-                      'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-gray-700',
+                      'w-full rounded-lg border bg-raised pl-8 pr-3 py-2 text-sm text-primary',
+                      'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-default',
                       'disabled:opacity-60 disabled:cursor-not-allowed',
                     )}
                   >
@@ -282,7 +282,7 @@ export function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalPro
               <TaskLabelsSection taskId={taskId} boardId={boardId} taskLabels={task.labels ?? []} />
 
               <div className="space-y-1.5">
-                <label htmlFor="task-description" className="block text-xs font-medium text-gray-500 uppercase tracking-wide">
+                <label htmlFor="task-description" className="block text-xs font-medium text-muted uppercase tracking-wide">
                   Описание
                 </label>
                 <textarea
@@ -293,8 +293,8 @@ export function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalPro
                   placeholder="Добавьте описание..."
                   disabled={patchMutation.isPending}
                   className={cn(
-                    'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-600',
-                    'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-gray-700 resize-none',
+                    'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary placeholder-gray-600',
+                    'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-default resize-none',
                     'disabled:opacity-60',
                   )}
                 />
@@ -319,7 +319,7 @@ export function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalPro
                   disabled={patchMutation.isPending}
                   className={cn(
                     'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-                    'text-gray-400 hover:text-white hover:bg-gray-800',
+                    'text-secondary hover:text-primary hover:bg-hover',
                     'disabled:opacity-50 disabled:cursor-not-allowed',
                   )}
                 >
@@ -336,7 +336,7 @@ export function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalPro
 
               <HistorySection taskId={taskId} />
 
-              <div className="pt-2 border-t border-gray-800">
+              <div className="pt-2 border-t border-default">
                 {archiveMutation.isError && (
                   <p className="text-xs text-red-400 mb-2">Не удалось архивировать задачу.</p>
                 )}
@@ -364,7 +364,7 @@ export function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalPro
                     disabled={archiveMutation.isPending}
                     className={cn(
                       'flex items-center gap-1.5 text-sm transition-colors',
-                      'text-red-400 hover:text-red-300',
+                      'text-red-400 hover:text-danger',
                       'disabled:opacity-50 disabled:cursor-not-allowed',
                     )}
                   >

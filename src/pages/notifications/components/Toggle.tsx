@@ -23,7 +23,7 @@ export function Toggle({ checked, onChange, disabled }: ToggleProps) {
     >
       <span
         className={cn(
-          'pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow ring-0 transition-transform',
+          'pointer-events-none inline-block h-4 w-4 rounded-full bg-surface shadow ring-0 transition-transform',
           checked ? 'translate-x-4' : 'translate-x-0',
         )}
       />

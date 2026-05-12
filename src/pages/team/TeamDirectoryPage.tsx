@@ -17,10 +17,10 @@ import type {
 } from '@/shared/types';
 
 const inputClass =
-  'w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500';
+  'w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20';
 
 const selectClass =
-  'rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500';
+  'rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20';
 
 const PAGE_SIZE = 12;
 const SEARCH_DEBOUNCE_MS = 350;
@@ -54,10 +54,10 @@ function roleLabel(role: string) {
 }
 
 function roleBadgeClass(role: string) {
-  if (role === USER_ROLES.COMPANY_ADMIN) return 'bg-indigo-900/60 text-indigo-300';
+  if (role === USER_ROLES.COMPANY_ADMIN) return 'bg-brand-subtle text-brand';
   if (role === USER_ROLES.SUPERADMIN) return 'bg-purple-900/60 text-purple-300';
-  if (role === USER_ROLES.GUEST) return 'bg-amber-900/50 text-amber-300';
-  return 'bg-gray-700 text-gray-300';
+  if (role === USER_ROLES.GUEST) return 'bg-warning-subtle text-warning';
+  return 'bg-hover text-secondary';
 }
 
 function MemberAvatar({ src, fullName }: { src: string | null; fullName: string }) {
@@ -79,7 +79,7 @@ function MemberAvatar({ src, fullName }: { src: string | null; fullName: string 
     );
   }
   return (
-    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold text-white">
+    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-brand text-xs font-semibold text-white">
       {getInitials(fullName)}
     </div>
   );
@@ -177,8 +177,8 @@ export default function TeamDirectoryPage() {
   if (!companyId && !isSuperadmin) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-center">
-        <User className="h-12 w-12 text-gray-600" aria-hidden="true" />
-        <p className="text-sm text-gray-400">Компания не найдена.</p>
+        <User className="h-12 w-12 text-muted" aria-hidden="true" />
+        <p className="text-sm text-secondary">Компания не найдена.</p>
       </div>
     );
   }
@@ -186,15 +186,15 @@ export default function TeamDirectoryPage() {
   return (
     <div className="space-y-6 p-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Команда</h1>
-        <p className="mt-1 text-sm text-gray-400">
+        <h1 className="text-2xl font-bold text-primary">Команда</h1>
+        <p className="mt-1 text-sm text-secondary">
           Карточки сотрудников компании с быстрым переходом в профиль.
         </p>
       </div>
 
       {isSuperadmin && (
-        <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
-          <label htmlFor="company-select" className="mb-1 block text-xs font-medium text-gray-400">
+        <div className="rounded-xl border border-default bg-raised p-4">
+          <label htmlFor="company-select" className="mb-1 block text-xs font-medium text-secondary">
             Компания
           </label>
           <select
@@ -218,15 +218,15 @@ export default function TeamDirectoryPage() {
 
       {companyId && (
         <>
-          <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+          <div className="rounded-xl border border-default bg-raised p-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-end">
               <div className="flex-1">
-                <label htmlFor="directory-search" className="mb-1 block text-xs font-medium text-gray-400">
+                <label htmlFor="directory-search" className="mb-1 block text-xs font-medium text-secondary">
                   Поиск
                 </label>
                 <div className="relative">
                   <Search
-                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"
+                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
                     aria-hidden="true"
                   />
                   <input
@@ -241,7 +241,7 @@ export default function TeamDirectoryPage() {
               </div>
 
               <div>
-                <label htmlFor="directory-position" className="mb-1 block text-xs font-medium text-gray-400">
+                <label htmlFor="directory-position" className="mb-1 block text-xs font-medium text-secondary">
                   Должность
                 </label>
                 <input
@@ -258,7 +258,7 @@ export default function TeamDirectoryPage() {
               </div>
 
               <div>
-                <label htmlFor="directory-role" className="mb-1 block text-xs font-medium text-gray-400">
+                <label htmlFor="directory-role" className="mb-1 block text-xs font-medium text-secondary">
                   Роль
                 </label>
                 <select
@@ -279,7 +279,7 @@ export default function TeamDirectoryPage() {
               </div>
 
               <div>
-                <label htmlFor="directory-ordering" className="mb-1 block text-xs font-medium text-gray-400">
+                <label htmlFor="directory-ordering" className="mb-1 block text-xs font-medium text-secondary">
                   Сортировка
                 </label>
                 <select
@@ -304,16 +304,16 @@ export default function TeamDirectoryPage() {
 
           <div className={cn('transition-opacity', isDirectoryFetching && 'opacity-70')}>
             {isDirectoryLoading ? (
-              <div className="flex items-center gap-2 rounded-xl border border-gray-700 bg-gray-800 p-6 text-gray-400">
+              <div className="flex items-center gap-2 rounded-xl border border-default bg-raised p-6 text-secondary">
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                 Загрузка сотрудников...
               </div>
             ) : isDirectoryError ? (
-              <div className="rounded-xl border border-red-800 bg-red-950/30 p-6 text-sm text-red-300">
+              <div className="rounded-xl border border-red-200 dark:border-red-800 bg-danger-subtle p-6 text-sm text-danger">
                 Не удалось загрузить справочник сотрудников.
               </div>
             ) : members.length === 0 ? (
-              <div className="rounded-xl border border-gray-700 bg-gray-800 p-6 text-sm text-gray-400">
+              <div className="rounded-xl border border-default bg-raised p-6 text-sm text-secondary">
                 По текущим фильтрам сотрудники не найдены.
               </div>
             ) : (
@@ -324,29 +324,29 @@ export default function TeamDirectoryPage() {
                     type="button"
                     onClick={() => setSelectedMemberId(member.id)}
                     className={cn(
-                      'rounded-xl border bg-gray-800 p-4 text-left transition-colors',
+                      'rounded-xl border bg-raised p-4 text-left transition-colors',
                       selectedMemberId === member.id
-                        ? 'border-indigo-500'
-                        : 'border-gray-700 hover:border-gray-500',
+                        ? 'border-blue-500'
+                        : 'border-default hover:border-gray-500',
                     )}
                   >
                     <div className="mb-3 flex items-start gap-3">
                       <MemberAvatar src={member.avatar} fullName={member.full_name} />
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-white">{member.full_name}</p>
+                        <p className="truncate text-sm font-semibold text-primary">{member.full_name}</p>
                         {member.position && (
-                          <p className="truncate text-xs text-gray-400">{member.position}</p>
+                          <p className="truncate text-xs text-secondary">{member.position}</p>
                         )}
                       </div>
                     </div>
 
-                    <div className="space-y-2 text-xs text-gray-300">
+                    <div className="space-y-2 text-xs text-secondary">
                       <div className="flex items-center gap-2">
-                        <Mail className="h-3.5 w-3.5 text-gray-500" aria-hidden="true" />
+                        <Mail className="h-3.5 w-3.5 text-muted" aria-hidden="true" />
                         <span className="truncate">{member.email}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Phone className="h-3.5 w-3.5 text-gray-500" aria-hidden="true" />
+                        <Phone className="h-3.5 w-3.5 text-muted" aria-hidden="true" />
                         <span>{member.phone || '—'}</span>
                       </div>
                       <div className="flex items-center justify-between pt-2">
@@ -362,8 +362,8 @@ export default function TeamDirectoryPage() {
                           className={cn(
                             'rounded-full px-2 py-0.5 text-[11px] font-medium',
                             member.is_active
-                              ? 'bg-emerald-900/50 text-emerald-400'
-                              : 'bg-red-900/50 text-red-400',
+                              ? 'bg-success-subtle text-emerald-400'
+                              : 'bg-danger-subtle text-red-400',
                           )}
                         >
                           {member.is_active ? 'Активен' : 'Неактивен'}
@@ -377,7 +377,7 @@ export default function TeamDirectoryPage() {
           </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between text-sm text-gray-400">
+            <div className="flex items-center justify-between text-sm text-secondary">
               <span>
                 Страница {page} из {totalPages} ({directoryData?.count ?? 0} сотрудников)
               </span>
@@ -387,8 +387,8 @@ export default function TeamDirectoryPage() {
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
                   className={cn(
-                    'rounded-lg border border-gray-700 px-3 py-1.5',
-                    page <= 1 ? 'cursor-not-allowed opacity-50' : 'hover:bg-gray-700 text-white',
+                    'rounded-lg border border-default px-3 py-1.5',
+                    page <= 1 ? 'cursor-not-allowed opacity-50' : 'hover:bg-hover text-primary',
                   )}
                 >
                   Назад
@@ -398,8 +398,8 @@ export default function TeamDirectoryPage() {
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => p + 1)}
                   className={cn(
-                    'rounded-lg border border-gray-700 px-3 py-1.5',
-                    page >= totalPages ? 'cursor-not-allowed opacity-50' : 'hover:bg-gray-700 text-white',
+                    'rounded-lg border border-default px-3 py-1.5',
+                    page >= totalPages ? 'cursor-not-allowed opacity-50' : 'hover:bg-hover text-primary',
                   )}
                 >
                   Вперед
@@ -409,47 +409,47 @@ export default function TeamDirectoryPage() {
           )}
 
           {selectedMemberId && (
-            <section className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-              <h2 className="text-lg font-semibold text-white">Профиль сотрудника</h2>
+            <section className="rounded-xl border border-default bg-raised p-5">
+              <h2 className="text-lg font-semibold text-primary">Профиль сотрудника</h2>
               {isProfileLoading ? (
-                <div className="mt-3 flex items-center gap-2 text-sm text-gray-400">
+                <div className="mt-3 flex items-center gap-2 text-sm text-secondary">
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                   Загрузка профиля...
                 </div>
               ) : isProfileError || !profileData ? (
-                <p className="mt-3 text-sm text-red-300">Не удалось загрузить профиль сотрудника.</p>
+                <p className="mt-3 text-sm text-danger">Не удалось загрузить профиль сотрудника.</p>
               ) : (
                 <div className="mt-4 space-y-4">
                   <div className="flex items-start gap-3">
                     <MemberAvatar src={profileData.avatar} fullName={profileData.full_name} />
                     <div>
-                      <p className="text-base font-semibold text-white">{profileData.full_name}</p>
+                      <p className="text-base font-semibold text-primary">{profileData.full_name}</p>
                       {profileData.position && (
-                        <p className="text-sm text-gray-400">{profileData.position}</p>
+                        <p className="text-sm text-secondary">{profileData.position}</p>
                       )}
                     </div>
                   </div>
 
                   <div className="grid gap-3 md:grid-cols-2">
-                    <div className="rounded-lg border border-gray-700 bg-gray-900/50 p-3">
-                      <p className="mb-1 text-xs text-gray-500">Email</p>
-                      <p className="text-sm text-gray-200">{profileData.email}</p>
+                    <div className="rounded-lg border border-default bg-surface/50 p-3">
+                      <p className="mb-1 text-xs text-muted">Email</p>
+                      <p className="text-sm text-secondary">{profileData.email}</p>
                     </div>
-                    <div className="rounded-lg border border-gray-700 bg-gray-900/50 p-3">
-                      <p className="mb-1 text-xs text-gray-500">Телефон</p>
-                      <p className="text-sm text-gray-200">{profileData.phone || '—'}</p>
+                    <div className="rounded-lg border border-default bg-surface/50 p-3">
+                      <p className="mb-1 text-xs text-muted">Телефон</p>
+                      <p className="text-sm text-secondary">{profileData.phone || '—'}</p>
                     </div>
-                    <div className="rounded-lg border border-gray-700 bg-gray-900/50 p-3">
-                      <p className="mb-1 text-xs text-gray-500">Задачи</p>
-                      <p className="text-sm text-gray-200">{profileData.tasks_count}</p>
+                    <div className="rounded-lg border border-default bg-surface/50 p-3">
+                      <p className="mb-1 text-xs text-muted">Задачи</p>
+                      <p className="text-sm text-secondary">{profileData.tasks_count}</p>
                     </div>
-                    <div className="rounded-lg border border-gray-700 bg-gray-900/50 p-3">
-                      <p className="mb-1 text-xs text-gray-500">Бронирования за 30 дней</p>
-                      <p className="text-sm text-gray-200">{profileData.bookings_last_30_days}</p>
+                    <div className="rounded-lg border border-default bg-surface/50 p-3">
+                      <p className="mb-1 text-xs text-muted">Бронирования за 30 дней</p>
+                      <p className="text-sm text-secondary">{profileData.bookings_last_30_days}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                  <div className="flex items-center gap-2 text-xs text-secondary">
                     <CalendarClock className="h-4 w-4" aria-hidden="true" />
                     Последний вход: {formatDate(profileData.last_login)}
                   </div>

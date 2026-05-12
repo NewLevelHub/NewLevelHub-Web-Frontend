@@ -41,7 +41,7 @@ interface FormData {
 
 function inputClass(hasError: boolean) {
   return cn(
-    'w-full px-3 py-2 text-sm rounded-lg border text-gray-900 focus:outline-none focus:ring-2 focus:border-transparent',
+    'w-full px-3 py-2 text-sm rounded-lg border text-primary focus:outline-none focus:ring-2 focus:border-transparent',
     hasError
       ? 'border-red-400 focus:ring-red-500'
       : 'border-gray-300 focus:ring-blue-500',
@@ -178,19 +178,19 @@ export default function CompanyCreatePage() {
         <button
           type="button"
           onClick={() => navigate(companiesBasePath)}
-          className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 mb-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+          className="inline-flex items-center gap-2 text-sm font-medium text-muted hover:text-primary mb-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
           aria-label="Назад к списку компаний"
         >
           <ArrowLeft size={16} aria-hidden="true" />
           Назад к списку
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">Создать компанию</h1>
-        <p className="mt-1 text-sm text-gray-500">Заполните данные новой компании-арендатора</p>
+        <h1 className="text-2xl font-bold text-primary">Создать компанию</h1>
+        <p className="mt-1 text-sm text-muted">Заполните данные новой компании-арендатора</p>
       </div>
 
       {/* Form card */}
       <section
-        className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6"
+        className="bg-surface rounded-2xl border border-default shadow-sm p-6"
         aria-label="Форма создания компании"
       >
         <form onSubmit={handleSubmit} noValidate className="space-y-5">
@@ -212,11 +212,11 @@ export default function CompanyCreatePage() {
                 <img
                   src={logoPreview}
                   alt="Превью логотипа"
-                  className="w-16 h-16 rounded-xl object-cover border border-gray-200"
+                  className="w-16 h-16 rounded-xl object-cover border border-default"
                 />
               ) : (
                 <div
-                  className="w-16 h-16 rounded-xl bg-blue-50 flex items-center justify-center border border-gray-200 border-dashed"
+                  className="w-16 h-16 rounded-xl bg-blue-50 flex items-center justify-center border border-default border-dashed"
                   aria-hidden="true"
                 >
                   <Building2 className="w-7 h-7 text-blue-300" />
@@ -226,12 +226,12 @@ export default function CompanyCreatePage() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors"
+                  className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-surface border border-gray-300 rounded-lg hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors"
                 >
                   <Upload size={14} aria-hidden="true" />
                   Выбрать изображение
                 </button>
-                <p className="text-xs text-gray-400">PNG, JPG, WebP до 5 МБ</p>
+                <p className="text-xs text-secondary">PNG, JPG, WebP до 5 МБ</p>
               </div>
               <input
                 ref={fileInputRef}
@@ -244,7 +244,7 @@ export default function CompanyCreatePage() {
             </div>
           </div>
 
-          <hr className="border-gray-100" />
+          <hr className="border-default" />
 
           {/* Name */}
           <div>
@@ -283,7 +283,7 @@ export default function CompanyCreatePage() {
             />
           </div>
 
-          <hr className="border-gray-100" />
+          <hr className="border-default" />
           <p className="text-sm font-semibold text-gray-700">Расположение</p>
 
           <div className="grid grid-cols-2 gap-4">
@@ -322,7 +322,7 @@ export default function CompanyCreatePage() {
             </div>
           </div>
 
-          <hr className="border-gray-100" />
+          <hr className="border-default" />
           <p className="text-sm font-semibold text-gray-700">Контакты</p>
 
           {/* Contact email */}
@@ -361,7 +361,7 @@ export default function CompanyCreatePage() {
             />
           </div>
 
-          <hr className="border-gray-100" />
+          <hr className="border-default" />
           <p className="text-sm font-semibold text-gray-700">Тариф и лимиты</p>
 
           {/* Plan */}
@@ -433,7 +433,7 @@ export default function CompanyCreatePage() {
               className={cn(
                 'inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
                 isPending
-                  ? 'bg-blue-300 text-white cursor-not-allowed'
+                  ? 'bg-blue-300 text-primary cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-700 text-white',
               )}
             >

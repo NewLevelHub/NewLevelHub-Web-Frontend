@@ -44,7 +44,7 @@ export function InlineAddColumn({ boardId, onDone }: InlineAddColumnProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col rounded-xl border border-blue-600/50 bg-gray-900 w-72 shrink-0 px-4 py-3 gap-2"
+      className="flex flex-col rounded-xl border border-blue-600/50 bg-surface w-72 shrink-0 px-4 py-3 gap-2"
       aria-label="Создание новой колонки"
     >
       <input
@@ -57,8 +57,8 @@ export function InlineAddColumn({ boardId, onDone }: InlineAddColumnProps) {
         maxLength={100}
         required
         className={cn(
-          'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500',
-          'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-gray-700',
+          'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary placeholder-gray-500',
+          'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-default',
         )}
       />
       <div className="flex items-center gap-2">
@@ -76,7 +76,7 @@ export function InlineAddColumn({ boardId, onDone }: InlineAddColumnProps) {
         <button
           type="button"
           onClick={onDone}
-          className="rounded-lg p-1.5 text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-colors"
+          className="rounded-lg p-1.5 text-muted hover:text-secondary hover:bg-hover transition-colors"
           aria-label="Отмена"
         >
           <X size={15} />

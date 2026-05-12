@@ -42,10 +42,10 @@ import type {
 // Styles (matching CompanyMembersPage dark theme)
 // ---------------------------------------------------------------------------
 const inputClass =
-  'w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500';
+  'w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20';
 
 const selectClass =
-  'rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500';
+  'rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -118,7 +118,7 @@ const Avatar = memo<AvatarProps>(({ src, fullName }) => {
   }
   return (
     <div
-      className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold text-white select-none"
+      className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-xs font-semibold text-white select-none"
       aria-hidden="true"
     >
       {getInitials(fullName)}
@@ -142,10 +142,10 @@ const RoleBadge = memo<RoleBadgeProps>(({ role }) => {
 
   const colorClass =
     role === USER_ROLES.COMPANY_ADMIN
-      ? 'bg-indigo-900/60 text-indigo-300'
+      ? 'bg-brand-subtle text-brand'
       : role === USER_ROLES.SUPERADMIN
         ? 'bg-purple-900/60 text-purple-300'
-        : 'bg-gray-700 text-gray-300';
+        : 'bg-hover text-secondary';
 
   return (
     <span
@@ -164,7 +164,7 @@ const StatusBadge = memo<StatusBadgeProps>(({ isActive }) => (
   <span
     className={cn(
       'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium',
-      isActive ? 'bg-emerald-900/50 text-emerald-400' : 'bg-red-900/50 text-red-400',
+      isActive ? 'bg-success-subtle text-emerald-400' : 'bg-danger-subtle text-red-400',
     )}
     aria-label={isActive ? 'Активен' : 'Неактивен'}
   >
@@ -198,7 +198,7 @@ const ActivityPanel = memo<ActivityPanelProps>(({ companyId, memberId }) => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 py-4 text-sm text-gray-400">
+      <div className="flex items-center gap-2 py-4 text-sm text-secondary">
         <Activity className="h-4 w-4 animate-pulse" aria-hidden="true" />
         Загрузка активности…
       </div>
@@ -213,7 +213,7 @@ const ActivityPanel = memo<ActivityPanelProps>(({ companyId, memberId }) => {
 
   const stats: { icon: React.ReactNode; label: string; value: string | number }[] = [
     {
-      icon: <LogIn className="h-4 w-4 text-indigo-400" aria-hidden="true" />,
+      icon: <LogIn className="h-4 w-4 text-brand" aria-hidden="true" />,
       label: 'Последний вход',
       value: formatDate(data.last_login),
     },
@@ -243,13 +243,13 @@ const ActivityPanel = memo<ActivityPanelProps>(({ companyId, memberId }) => {
       {stats.map((s) => (
         <div
           key={s.label}
-          className="flex flex-col gap-1.5 rounded-lg bg-gray-900 px-4 py-3 border border-gray-700"
+          className="flex flex-col gap-1.5 rounded-lg bg-surface px-4 py-3 border border-default"
         >
-          <div className="flex items-center gap-1.5 text-xs text-gray-400">
+          <div className="flex items-center gap-1.5 text-xs text-secondary">
             {s.icon}
             {s.label}
           </div>
-          <span className="text-base font-semibold text-white">{s.value}</span>
+          <span className="text-base font-semibold text-primary">{s.value}</span>
         </div>
       ))}
     </div>
@@ -298,7 +298,7 @@ const MemberRow = memo<MemberRowProps>(({
       <tr
         className={cn(
           'cursor-pointer transition-colors',
-          isExpanded ? 'bg-gray-700/60' : 'hover:bg-gray-700/40',
+          isExpanded ? 'bg-hover/60' : 'hover:bg-hover/40',
         )}
         onClick={() => onToggle(member.id)}
         onKeyDown={handleKeyDown}
@@ -311,37 +311,37 @@ const MemberRow = memo<MemberRowProps>(({
           <div className="flex items-center gap-3">
             <Avatar src={member.avatar} fullName={member.full_name} />
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-white">{member.full_name}</p>
-              <p className="truncate text-xs text-gray-400">{member.email}</p>
+              <p className="truncate text-sm font-medium text-primary">{member.full_name}</p>
+              <p className="truncate text-xs text-secondary">{member.email}</p>
             </div>
           </div>
         </td>
         <td className="hidden px-4 py-3 sm:table-cell">
           <RoleBadge role={member.role} />
         </td>
-        <td className="hidden px-4 py-3 text-sm text-gray-300 md:table-cell">
-          {member.position || <span className="text-gray-600">—</span>}
+        <td className="hidden px-4 py-3 text-sm text-secondary md:table-cell">
+          {member.position || <span className="text-muted">—</span>}
         </td>
         <td className="hidden px-4 py-3 lg:table-cell">
           <StatusBadge isActive={member.is_active} />
         </td>
-        <td className="hidden px-4 py-3 text-xs text-gray-400 xl:table-cell">
+        <td className="hidden px-4 py-3 text-xs text-secondary xl:table-cell">
           {formatDate(member.date_joined)}
         </td>
-        <td className="hidden px-4 py-3 text-xs text-gray-400 xl:table-cell">
+        <td className="hidden px-4 py-3 text-xs text-secondary xl:table-cell">
           {formatDate(member.last_login)}
         </td>
         <td className="px-4 py-3 text-right">
           {isExpanded ? (
-            <ChevronUp className="ml-auto h-4 w-4 text-gray-400" aria-hidden="true" />
+            <ChevronUp className="ml-auto h-4 w-4 text-secondary" aria-hidden="true" />
           ) : (
-            <ChevronDown className="ml-auto h-4 w-4 text-gray-400" aria-hidden="true" />
+            <ChevronDown className="ml-auto h-4 w-4 text-secondary" aria-hidden="true" />
           )}
         </td>
       </tr>
       {isExpanded && (
         <tr role="row">
-          <td colSpan={7} className="bg-gray-800/60 px-4 pb-4 pt-2">
+          <td colSpan={7} className="bg-raised px-4 pb-4 pt-2">
             <div className="space-y-3">
               <ActivityPanel companyId={companyId} memberId={member.id} />
               {canManageMembers && (
@@ -351,7 +351,7 @@ const MemberRow = memo<MemberRowProps>(({
                       type="button"
                       disabled={isUpdating}
                       onClick={() => onDeactivate(member)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-amber-700 bg-amber-900/40 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-900/60 disabled:opacity-60"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-amber-700 bg-warning-subtle px-3 py-1.5 text-xs font-medium text-warning hover:bg-warning-subtle disabled:opacity-60"
                     >
                       <UserX className="h-3.5 w-3.5" aria-hidden="true" />
                       Деактивировать
@@ -361,7 +361,7 @@ const MemberRow = memo<MemberRowProps>(({
                       type="button"
                       disabled={isUpdating}
                       onClick={() => onActivate(member)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-700 bg-emerald-900/30 px-3 py-1.5 text-xs font-medium text-emerald-300 hover:bg-emerald-900/50 disabled:opacity-60"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-700 bg-success-subtle px-3 py-1.5 text-xs font-medium text-success hover:bg-success-subtle disabled:opacity-60"
                     >
                       <UserCheck className="h-3.5 w-3.5" aria-hidden="true" />
                       Активировать
@@ -371,7 +371,7 @@ const MemberRow = memo<MemberRowProps>(({
                     type="button"
                     disabled={isUpdating}
                     onClick={() => onRemove(member)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-red-800 bg-red-900/30 px-3 py-1.5 text-xs font-medium text-red-300 hover:bg-red-900/50 disabled:opacity-60"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger-subtle disabled:opacity-60"
                   >
                     <UserMinus className="h-3.5 w-3.5" aria-hidden="true" />
                     Удалить из компании
@@ -412,8 +412,8 @@ const OrderingButton = memo<OrderingButtonProps>(({ field, label, current, onCha
       className={cn(
         'inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm transition-colors',
         isActive
-          ? 'bg-indigo-600 text-white'
-          : 'border border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700',
+          ? 'bg-brand text-white'
+          : 'border border-default bg-raised text-secondary hover:bg-hover',
       )}
       aria-pressed={isActive}
       aria-label={`Сортировка по ${label}`}
@@ -610,8 +610,8 @@ export default function TeamManagePage() {
   if (!companyId && !isSuperadmin) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-center">
-        <User className="h-12 w-12 text-gray-600" aria-hidden="true" />
-        <p className="text-sm text-gray-400">Компания не найдена.</p>
+        <User className="h-12 w-12 text-muted" aria-hidden="true" />
+        <p className="text-sm text-secondary">Компания не найдена.</p>
       </div>
     );
   }
@@ -623,18 +623,18 @@ export default function TeamManagePage() {
     <div className="space-y-6 p-6">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Управление сотрудниками</h1>
-        <p className="mt-1 text-sm text-gray-400">
+        <h1 className="text-2xl font-bold text-primary">Управление сотрудниками</h1>
+        <p className="mt-1 text-sm text-secondary">
           {companyId && data ? `Всего: ${data.count} сотрудников` : isSuperadmin && !companyId ? 'Выберите компанию для просмотра сотрудников' : 'Загрузка…'}
         </p>
       </div>
 
       {/* Company selector — superadmin only */}
       {isSuperadmin && (
-        <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+        <div className="rounded-xl border border-default bg-raised p-4">
           <label
             htmlFor="company-select"
-            className="mb-1 block text-xs font-medium text-gray-400"
+            className="mb-1 block text-xs font-medium text-secondary"
           >
             Компания
           </label>
@@ -660,26 +660,26 @@ export default function TeamManagePage() {
       )}
 
       {/* Filters, table and pagination — only shown once a company is available */}
-      {companyId && <><div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+      {companyId && <><div className="rounded-xl border border-default bg-raised p-4">
         {actionError && (
-          <div className="mb-3 rounded-lg border border-red-800 bg-red-950/50 px-3 py-2 text-sm text-red-300">
+          <div className="mb-3 rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-3 py-2 text-sm text-danger">
             {actionError}
           </div>
         )}
         {actionSuccess && (
-          <div className="mb-3 rounded-lg border border-emerald-800 bg-emerald-950/40 px-3 py-2 text-sm text-emerald-300">
+          <div className="mb-3 rounded-lg border border-emerald-800 bg-success-subtle px-3 py-2 text-sm text-success">
             {actionSuccess}
           </div>
         )}
         <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
           {/* Search */}
           <div className="flex-1 min-w-48">
-            <label htmlFor="member-search" className="mb-1 block text-xs font-medium text-gray-400">
+            <label htmlFor="member-search" className="mb-1 block text-xs font-medium text-secondary">
               Поиск
             </label>
             <div className="relative">
               <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
                 aria-hidden="true"
               />
               <input
@@ -696,7 +696,7 @@ export default function TeamManagePage() {
 
           {/* Role filter */}
           <div>
-            <label htmlFor="role-filter" className="mb-1 block text-xs font-medium text-gray-400">
+            <label htmlFor="role-filter" className="mb-1 block text-xs font-medium text-secondary">
               Роль
             </label>
             <select
@@ -720,7 +720,7 @@ export default function TeamManagePage() {
 
           {/* Active status filter */}
           <div>
-            <label htmlFor="status-filter" className="mb-1 block text-xs font-medium text-gray-400">
+            <label htmlFor="status-filter" className="mb-1 block text-xs font-medium text-secondary">
               Статус
             </label>
             <select
@@ -745,7 +745,7 @@ export default function TeamManagePage() {
 
         {/* Ordering */}
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-gray-400">Сортировка:</span>
+          <span className="text-xs font-medium text-secondary">Сортировка:</span>
           <OrderingButton
             field="full_name"
             label="По имени"
@@ -770,12 +770,12 @@ export default function TeamManagePage() {
       {/* Table */}
       <div
         className={cn(
-          'overflow-hidden rounded-xl border border-gray-700 bg-gray-800 transition-opacity',
+          'overflow-hidden rounded-xl border border-default bg-raised transition-opacity',
           isFetching && 'opacity-70',
         )}
       >
         {isLoading ? (
-          <div className="flex items-center justify-center py-16 text-sm text-gray-400">
+          <div className="flex items-center justify-center py-16 text-sm text-secondary">
             <Activity className="mr-2 h-5 w-5 animate-pulse" aria-hidden="true" />
             Загрузка сотрудников…
           </div>
@@ -784,48 +784,48 @@ export default function TeamManagePage() {
             Не удалось загрузить список сотрудников. Попробуйте снова.
           </div>
         ) : !data?.results.length ? (
-          <div className="flex flex-col items-center justify-center gap-2 py-16 text-sm text-gray-400">
-            <User className="h-10 w-10 text-gray-600" aria-hidden="true" />
+          <div className="flex flex-col items-center justify-center gap-2 py-16 text-sm text-secondary">
+            <User className="h-10 w-10 text-muted" aria-hidden="true" />
             <p>Сотрудники не найдены.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left" role="table" aria-label="Список сотрудников">
               <thead>
-                <tr className="border-b border-gray-700">
+                <tr className="border-b border-default">
                   <th
                     scope="col"
-                    className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400"
+                    className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary"
                   >
                     Сотрудник
                   </th>
                   <th
                     scope="col"
-                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 sm:table-cell"
+                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary sm:table-cell"
                   >
                     Роль
                   </th>
                   <th
                     scope="col"
-                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 md:table-cell"
+                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary md:table-cell"
                   >
                     Должность
                   </th>
                   <th
                     scope="col"
-                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 lg:table-cell"
+                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary lg:table-cell"
                   >
                     Статус
                   </th>
                   <th
                     scope="col"
-                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 xl:table-cell"
+                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary xl:table-cell"
                   >
                     Дата вступления
                   </th>
                   <th
                     scope="col"
-                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 xl:table-cell"
+                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary xl:table-cell"
                   >
                     Последний вход
                   </th>
@@ -834,7 +834,7 @@ export default function TeamManagePage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-700/50">
+              <tbody className="divide-y divide-[color:var(--border)]/50">
                 {data.results.map((member) => (
                   <MemberRow
                     key={member.id}
@@ -858,7 +858,7 @@ export default function TeamManagePage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div
-          className="flex items-center justify-between text-sm text-gray-400"
+          className="flex items-center justify-between text-sm text-secondary"
           role="navigation"
           aria-label="Пагинация"
         >
@@ -871,10 +871,10 @@ export default function TeamManagePage() {
               disabled={filters.page <= 1}
               onClick={() => setFilters((prev) => ({ ...prev, page: prev.page - 1 }))}
               className={cn(
-                'inline-flex items-center gap-1 rounded-lg border border-gray-700 px-3 py-1.5 text-sm transition-colors',
+                'inline-flex items-center gap-1 rounded-lg border border-default px-3 py-1.5 text-sm transition-colors',
                 filters.page <= 1
                   ? 'cursor-not-allowed opacity-40'
-                  : 'hover:bg-gray-700 text-white',
+                  : 'hover:bg-hover text-primary',
               )}
               aria-label="Предыдущая страница"
             >
@@ -886,10 +886,10 @@ export default function TeamManagePage() {
               disabled={filters.page >= totalPages}
               onClick={() => setFilters((prev) => ({ ...prev, page: prev.page + 1 }))}
               className={cn(
-                'inline-flex items-center gap-1 rounded-lg border border-gray-700 px-3 py-1.5 text-sm transition-colors',
+                'inline-flex items-center gap-1 rounded-lg border border-default px-3 py-1.5 text-sm transition-colors',
                 filters.page >= totalPages
                   ? 'cursor-not-allowed opacity-40'
-                  : 'hover:bg-gray-700 text-white',
+                  : 'hover:bg-hover text-primary',
               )}
               aria-label="Следующая страница"
             >

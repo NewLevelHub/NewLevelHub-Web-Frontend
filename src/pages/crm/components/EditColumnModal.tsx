@@ -72,15 +72,15 @@ export function EditColumnModal({ boardId, column, taskCount, onClose }: EditCol
       aria-modal="true"
       aria-labelledby="edit-column-title"
     >
-      <div className="w-full max-w-md rounded-xl bg-gray-900 border border-gray-800 shadow-2xl">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
-          <h2 id="edit-column-title" className="text-lg font-semibold text-white">
+      <div className="w-full max-w-md rounded-xl bg-surface border border-default shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-default">
+          <h2 id="edit-column-title" className="text-lg font-semibold text-primary">
             Редактировать колонку
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors rounded-md p-1 hover:bg-gray-800"
+            className="text-secondary hover:text-primary transition-colors rounded-md p-1 hover:bg-hover"
             aria-label="Закрыть"
           >
             <X size={18} />
@@ -89,7 +89,7 @@ export function EditColumnModal({ boardId, column, taskCount, onClose }: EditCol
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           <div className="space-y-1.5">
-            <label htmlFor="edit-column-name" className="block text-sm font-medium text-gray-300">
+            <label htmlFor="edit-column-name" className="block text-sm font-medium text-secondary">
               Название <span className="text-red-400">*</span>
             </label>
             <input
@@ -101,16 +101,16 @@ export function EditColumnModal({ boardId, column, taskCount, onClose }: EditCol
               required
               maxLength={100}
               className={cn(
-                'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500',
+                'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary placeholder-gray-500',
                 'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
-                'border-gray-700 focus:border-blue-500',
+                'border-default focus:border-blue-500',
               )}
             />
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="edit-column-wip" className="block text-sm font-medium text-gray-300">
-              Лимит WIP <span className="text-gray-500 font-normal">(необязательно)</span>
+            <label htmlFor="edit-column-wip" className="block text-sm font-medium text-secondary">
+              Лимит WIP <span className="text-muted font-normal">(необязательно)</span>
             </label>
             <input
               id="edit-column-wip"
@@ -122,11 +122,11 @@ export function EditColumnModal({ boardId, column, taskCount, onClose }: EditCol
               aria-describedby={wipLimitError ? 'edit-column-wip-error' : undefined}
               aria-invalid={wipLimitError ? true : undefined}
               className={cn(
-                'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500',
+                'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary placeholder-gray-500',
                 'focus:outline-none focus:ring-2 transition-colors',
                 wipLimitError
                   ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                  : 'border-gray-700 focus:ring-blue-500 focus:border-blue-500',
+                  : 'border-default focus:ring-blue-500 focus:border-blue-500',
               )}
             />
             {wipLimitError && (
@@ -137,7 +137,7 @@ export function EditColumnModal({ boardId, column, taskCount, onClose }: EditCol
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="edit-column-position" className="block text-sm font-medium text-gray-300">
+            <label htmlFor="edit-column-position" className="block text-sm font-medium text-secondary">
               Позиция
             </label>
             <input
@@ -147,9 +147,9 @@ export function EditColumnModal({ boardId, column, taskCount, onClose }: EditCol
               value={position}
               onChange={(e) => setPosition(e.target.value)}
               className={cn(
-                'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500',
+                'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary placeholder-gray-500',
                 'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
-                'border-gray-700 focus:border-blue-500',
+                'border-default focus:border-blue-500',
               )}
             />
           </div>
@@ -158,7 +158,7 @@ export function EditColumnModal({ boardId, column, taskCount, onClose }: EditCol
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+              className="rounded-lg px-4 py-2 text-sm font-medium text-secondary hover:text-primary hover:bg-hover transition-colors"
             >
               Отмена
             </button>

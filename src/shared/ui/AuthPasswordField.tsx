@@ -20,8 +20,8 @@ export function AuthPasswordField({ inputClassName, className, ...props }: AuthP
       <button
         type="button"
         className={cn(
-          'absolute right-1 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-gray-500',
-          'hover:bg-gray-800 hover:text-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500',
+          'absolute right-1 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted',
+          'hover:bg-raised hover:text-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500',
         )}
         onClick={() => setVisible((v) => !v)}
         aria-label={visible ? 'Скрыть пароль' : 'Показать пароль'}

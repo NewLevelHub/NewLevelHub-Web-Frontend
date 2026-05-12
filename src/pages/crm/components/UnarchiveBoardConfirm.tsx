@@ -29,21 +29,21 @@ export function UnarchiveBoardConfirm({
       aria-modal="true"
       aria-labelledby="unarchive-confirm-title"
     >
-      <div className="w-full max-w-sm rounded-xl bg-gray-900 border border-gray-800 shadow-2xl px-6 py-5 space-y-4">
+      <div className="w-full max-w-sm rounded-xl bg-surface border border-default shadow-2xl px-6 py-5 space-y-4">
         <div className="flex items-center gap-3">
           <div className="rounded-full bg-blue-900/40 p-2">
             <ArchiveRestore size={18} className="text-blue-400" />
           </div>
-          <h2 id="unarchive-confirm-title" className="text-base font-semibold text-white">
+          <h2 id="unarchive-confirm-title" className="text-base font-semibold text-primary">
             Разархивировать доску?
           </h2>
         </div>
-        <p className="text-sm text-gray-400">
-          Доска <span className="font-medium text-gray-200">«{board.name}»</span> будет восстановлена и снова станет
+        <p className="text-sm text-secondary">
+          Доска <span className="font-medium text-secondary">«{board.name}»</span> будет восстановлена и снова станет
           активной.
         </p>
         {error && (
-          <div className="flex items-start gap-2 rounded-lg bg-red-900/30 border border-red-800 px-4 py-3 text-sm text-red-300">
+          <div className="flex items-start gap-2 rounded-lg bg-danger-subtle border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-danger">
             <AlertCircle size={16} className="mt-0.5 shrink-0" />
             <span>{error}</span>
           </div>
@@ -52,7 +52,7 @@ export function UnarchiveBoardConfirm({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+            className="rounded-lg px-4 py-2 text-sm font-medium text-secondary hover:text-primary hover:bg-hover transition-colors"
           >
             Отмена
           </button>

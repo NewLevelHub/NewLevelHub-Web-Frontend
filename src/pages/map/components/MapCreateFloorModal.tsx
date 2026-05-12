@@ -83,13 +83,13 @@ export const MapCreateFloorModal = memo<MapCreateFloorModalProps>(({ open, onClo
       aria-labelledby="create-floor-title"
       onClick={handleBackdrop}
     >
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-md rounded-2xl bg-surface shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <form onSubmit={handleSubmit}>
           <div className="px-6 py-5 space-y-4">
-            <h2 id="create-floor-title" className="text-base font-semibold text-gray-900">
+            <h2 id="create-floor-title" className="text-base font-semibold text-primary">
               Новый этаж
             </h2>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted">
               Глобальный этаж для карты здания. После создания он появится у всех пользователей в списке этажей.
             </p>
 
@@ -105,13 +105,13 @@ export const MapCreateFloorModal = memo<MapCreateFloorModalProps>(({ open, onClo
                 required
                 value={numberStr}
                 onChange={(e) => setNumberStr(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-primary focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20"
               />
             </div>
 
             <div>
               <label htmlFor="create-floor-name" className="mb-1 block text-sm font-medium text-gray-700">
-                Название <span className="font-normal text-gray-500">(необязательно)</span>
+                Название <span className="font-normal text-muted">(необязательно)</span>
               </label>
               <input
                 id="create-floor-name"
@@ -120,20 +120,20 @@ export const MapCreateFloorModal = memo<MapCreateFloorModalProps>(({ open, onClo
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Например, Rooftop"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-primary placeholder:text-secondary focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20"
               />
             </div>
 
             <div>
               <label htmlFor="create-floor-plan" className="mb-1 block text-sm font-medium text-gray-700">
-                Схема этажа <span className="font-normal text-gray-500">(необязательно)</span>
+                Схема этажа <span className="font-normal text-muted">(необязательно)</span>
               </label>
               <input
                 id="create-floor-plan"
                 type="file"
                 accept="image/*"
                 onChange={(e) => setPlanFile(e.target.files?.[0] ?? null)}
-                className="w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-gray-800 hover:file:bg-gray-200"
+                className="w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary hover:file:bg-gray-200"
               />
             </div>
 
@@ -147,19 +147,19 @@ export const MapCreateFloorModal = memo<MapCreateFloorModalProps>(({ open, onClo
             ) : null}
           </div>
 
-          <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-6 py-4">
+          <div className="flex items-center justify-end gap-3 border-t border-default px-6 py-4">
             <button
               type="button"
               onClick={onClose}
               disabled={createMutation.isPending}
-              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 disabled:opacity-50 transition-colors"
+              className="rounded-lg border border-gray-300 bg-surface px-4 py-2 text-sm font-medium text-gray-700 hover:bg-raised focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 disabled:opacity-50 transition-colors"
             >
               Отмена
             </button>
             <button
               type="submit"
               disabled={createMutation.isPending}
-              className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50 transition-colors"
             >
               {createMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : null}
               Создать

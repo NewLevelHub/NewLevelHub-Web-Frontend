@@ -116,13 +116,13 @@ interface StatCardProps {
 
 function StatCard({ icon, label, value }: StatCardProps) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+    <div className="bg-surface rounded-2xl border border-default shadow-sm p-5 flex items-center gap-4">
       <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center shrink-0 text-blue-600">
         {icon}
       </div>
       <div>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
-        <p className="text-sm text-gray-500">{label}</p>
+        <p className="text-2xl font-bold text-primary">{value}</p>
+        <p className="text-sm text-muted">{label}</p>
       </div>
     </div>
   );
@@ -137,10 +137,10 @@ interface InfoRowProps {
 function InfoRow({ icon, label, value }: InfoRowProps) {
   return (
     <div className="flex items-start gap-3">
-      <div className="mt-0.5 text-gray-400 shrink-0">{icon}</div>
+      <div className="mt-0.5 text-secondary shrink-0">{icon}</div>
       <div className="min-w-0">
-        <p className="text-xs text-gray-500 mb-0.5">{label}</p>
-        <p className="text-sm font-medium text-gray-900 break-words">{value}</p>
+        <p className="text-xs text-muted mb-0.5">{label}</p>
+        <p className="text-sm font-medium text-primary break-words">{value}</p>
       </div>
     </div>
   );
@@ -159,7 +159,7 @@ function DetailSkeleton() {
       </div>
       <div className="w-56 h-7 rounded bg-gray-200" />
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div className="bg-surface rounded-2xl border border-default shadow-sm p-6">
         <div className="flex items-start gap-6">
           <div className="w-24 h-24 rounded-full bg-gray-200 shrink-0" />
           <div className="flex-1 space-y-3 pt-2">
@@ -180,7 +180,7 @@ function DetailSkeleton() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {Array.from({ length: 2 }).map((_, i) => (
-          <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div key={i} className="bg-surface rounded-2xl border border-default shadow-sm p-5">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-gray-200" />
               <div className="space-y-2">
@@ -369,7 +369,7 @@ export default function UserDetailPage() {
         <button
           type="button"
           onClick={() => navigate(`${SUPERADMIN_UI_PREFIX}/users`)}
-          className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 mb-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+          className="inline-flex items-center gap-2 text-sm font-medium text-muted hover:text-primary mb-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
         >
           <ArrowLeft size={16} aria-hidden="true" />
           Назад к списку
@@ -392,13 +392,13 @@ export default function UserDetailPage() {
           <button
             type="button"
           onClick={() => navigate(`${SUPERADMIN_UI_PREFIX}/users`)}
-            className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 mb-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+            className="inline-flex items-center gap-2 text-sm font-medium text-muted hover:text-primary mb-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
             aria-label="Назад к списку пользователей"
           >
             <ArrowLeft size={16} aria-hidden="true" />
             Назад к списку
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-primary">
             {user.first_name} {user.last_name}
           </h1>
         </div>
@@ -444,7 +444,7 @@ export default function UserDetailPage() {
 
       {/* Profile card */}
       <section
-        className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-6"
+        className="bg-surface rounded-2xl border border-default shadow-sm p-6 space-y-6"
         aria-label="Профиль пользователя"
       >
         {/* Avatar + name row */}
@@ -455,10 +455,10 @@ export default function UserDetailPage() {
             lastName={user.last_name}
           />
           <div className="space-y-2">
-            <p className="text-xl font-semibold text-gray-900">
+            <p className="text-xl font-semibold text-primary">
               {user.first_name} {user.last_name}
             </p>
-            <p className="text-sm text-gray-500">{user.email}</p>
+            <p className="text-sm text-muted">{user.email}</p>
             <span
               className={cn(
                 'inline-block text-xs font-medium px-2.5 py-0.5 rounded-full',
@@ -577,7 +577,7 @@ export default function UserDetailPage() {
       </section>
 
       {/* Date details */}
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-secondary">
         Зарегистрирован: {formatDate(user.date_joined)} · Последний вход:{' '}
         {formatDate(user.last_login)}
       </p>

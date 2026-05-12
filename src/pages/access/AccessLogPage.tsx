@@ -126,8 +126,8 @@ export default function AccessLogPage() {
     <main className="mx-auto max-w-7xl space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Лог доступа</h1>
-          <p className="text-sm text-gray-400">
+          <h1 className="text-2xl font-bold text-primary">Лог доступа</h1>
+          <p className="text-sm text-secondary">
             История валидаций QR-пропусков и ручных проверок доступа.
           </p>
         </div>
@@ -135,15 +135,15 @@ export default function AccessLogPage() {
           type="button"
           onClick={handleExport}
           disabled={isExporting}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isExporting ? 'Экспорт...' : 'Экспорт CSV'}
         </button>
       </div>
 
-      <section className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+      <section className="rounded-xl border border-default bg-raised p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <label className="text-sm text-gray-300">
+          <label className="text-sm text-secondary">
             Поиск
             <input
               type="search"
@@ -152,12 +152,12 @@ export default function AccessLogPage() {
                 setSearch(event.target.value);
                 setPage(1);
               }}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               placeholder="Имя или email гостя"
             />
           </label>
 
-          <label className="text-sm text-gray-300">
+          <label className="text-sm text-secondary">
             Дата от
             <input
               type="date"
@@ -166,11 +166,11 @@ export default function AccessLogPage() {
                 setDateFrom(event.target.value);
                 setPage(1);
               }}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             />
           </label>
 
-          <label className="text-sm text-gray-300">
+          <label className="text-sm text-secondary">
             Дата до
             <input
               type="date"
@@ -179,12 +179,12 @@ export default function AccessLogPage() {
                 setDateTo(event.target.value);
                 setPage(1);
               }}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             />
           </label>
 
           {isSuperadmin ? (
-            <label className="text-sm text-gray-300">
+            <label className="text-sm text-secondary">
               Компания
               <select
                 value={companyId}
@@ -192,7 +192,7 @@ export default function AccessLogPage() {
                   setCompanyId(event.target.value);
                   setPage(1);
                 }}
-                className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               >
                 <option value="">{isCompaniesLoading ? 'Загрузка компаний...' : 'Все компании'}</option>
                 {(companiesData?.results ?? []).map((company) => (
@@ -206,13 +206,13 @@ export default function AccessLogPage() {
         </div>
       </section>
 
-      {exportError ? <p className="text-sm text-rose-400">{exportError}</p> : null}
-      {isError ? <p className="text-sm text-rose-400">{getApiErrorMessage(error, 'Не удалось загрузить лог доступа.')}</p> : null}
+      {exportError ? <p className="text-sm text-danger">{exportError}</p> : null}
+      {isError ? <p className="text-sm text-danger">{getApiErrorMessage(error, 'Не удалось загрузить лог доступа.')}</p> : null}
 
-      <div className="overflow-hidden rounded-xl border border-gray-700 bg-gray-800">
+      <div className="overflow-hidden rounded-xl border border-default bg-raised">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] divide-y divide-gray-700 text-sm">
-            <thead className="bg-gray-900 text-left text-gray-300">
+          <table className="w-full min-w-[900px] divide-y divide-[color:var(--border)] text-sm">
+            <thead className="bg-surface text-left text-secondary">
               <tr>
                 <th className="px-4 py-3">Гость</th>
                 <th className="px-4 py-3">Пригласил</th>
@@ -221,27 +221,27 @@ export default function AccessLogPage() {
                 <th className="px-4 py-3">Метод</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700">
+            <tbody className="divide-y divide-[color:var(--border)]">
               {isLoading ? (
                 <tr>
-                  <td className="px-4 py-6 text-center text-gray-400" colSpan={5}>
+                  <td className="px-4 py-6 text-center text-secondary" colSpan={5}>
                     Загрузка лога...
                   </td>
                 </tr>
               ) : (data?.results?.length ?? 0) === 0 ? (
                 <tr>
-                  <td className="px-4 py-6 text-center text-gray-400" colSpan={5}>
+                  <td className="px-4 py-6 text-center text-secondary" colSpan={5}>
                     По выбранным фильтрам ничего не найдено.
                   </td>
                 </tr>
               ) : (
                 data?.results.map((log) => (
-                  <tr key={log.id} className="text-gray-200">
+                  <tr key={log.id} className="text-secondary">
                     <td className="px-4 py-3 align-top">
                       {typeof log.guest_pass === 'number' && guestPassMap?.[log.guest_pass] ? (
                         <div>
-                          <div className="font-medium text-white">{guestPassMap[log.guest_pass].guest_name}</div>
-                          <div className="text-xs text-gray-400">{guestPassMap[log.guest_pass].guest_email}</div>
+                          <div className="font-medium text-primary">{guestPassMap[log.guest_pass].guest_name}</div>
+                          <div className="text-xs text-secondary">{guestPassMap[log.guest_pass].guest_email}</div>
                         </div>
                       ) : (
                         '—'
@@ -259,7 +259,7 @@ export default function AccessLogPage() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 text-sm text-gray-400 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 text-sm text-secondary sm:flex-row sm:items-center sm:justify-between">
         <span>
           Всего записей: {totalCount}
         </span>
@@ -268,18 +268,18 @@ export default function AccessLogPage() {
             type="button"
             disabled={page <= 1 || isLoading}
             onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-            className="rounded-lg border border-gray-700 px-3 py-2 text-gray-300 hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg border border-default px-3 py-2 text-secondary hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             Назад
           </button>
-          <span className="text-gray-300">
+          <span className="text-secondary">
             Страница {page} из {totalPages}
           </span>
           <button
             type="button"
             disabled={page >= totalPages || isLoading}
             onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-            className="rounded-lg border border-gray-700 px-3 py-2 text-gray-300 hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg border border-default px-3 py-2 text-secondary hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             Вперед
           </button>

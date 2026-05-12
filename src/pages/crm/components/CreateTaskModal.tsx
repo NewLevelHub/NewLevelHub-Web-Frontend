@@ -112,15 +112,15 @@ export function CreateTaskModal({ boardId, columnId, onClose, wipBlocked }: Crea
       aria-modal="true"
       aria-labelledby="create-task-title"
     >
-      <div className="w-full max-w-md rounded-xl bg-gray-900 border border-gray-800 shadow-2xl">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
-          <h2 id="create-task-title" className="text-lg font-semibold text-white">
+      <div className="w-full max-w-md rounded-xl bg-surface border border-default shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-default">
+          <h2 id="create-task-title" className="text-lg font-semibold text-primary">
             Новая задача
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors rounded-md p-1 hover:bg-gray-800"
+            className="text-secondary hover:text-primary transition-colors rounded-md p-1 hover:bg-hover"
             aria-label="Закрыть"
           >
             <X size={18} />
@@ -129,7 +129,7 @@ export function CreateTaskModal({ boardId, columnId, onClose, wipBlocked }: Crea
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           <div className="space-y-1.5">
-            <label htmlFor="new-task-title" className="block text-sm font-medium text-gray-300">
+            <label htmlFor="new-task-title" className="block text-sm font-medium text-secondary">
               Название <span className="text-red-400">*</span>
             </label>
             <input
@@ -142,16 +142,16 @@ export function CreateTaskModal({ boardId, columnId, onClose, wipBlocked }: Crea
               required
               maxLength={255}
               className={cn(
-                'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500',
+                'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary placeholder-gray-500',
                 'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
-                'border-gray-700 focus:border-blue-500',
+                'border-default focus:border-blue-500',
               )}
             />
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="new-task-description" className="block text-sm font-medium text-gray-300">
-              Описание <span className="text-gray-500 font-normal">(необязательно)</span>
+            <label htmlFor="new-task-description" className="block text-sm font-medium text-secondary">
+              Описание <span className="text-muted font-normal">(необязательно)</span>
             </label>
             <textarea
               id="new-task-description"
@@ -160,16 +160,16 @@ export function CreateTaskModal({ boardId, columnId, onClose, wipBlocked }: Crea
               placeholder="Добавьте описание..."
               rows={3}
               className={cn(
-                'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500',
+                'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary placeholder-gray-500',
                 'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
-                'border-gray-700 focus:border-blue-500 resize-none',
+                'border-default focus:border-blue-500 resize-none',
               )}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label htmlFor="new-task-priority" className="block text-sm font-medium text-gray-300">
+              <label htmlFor="new-task-priority" className="block text-sm font-medium text-secondary">
                 Приоритет <span className="text-red-400">*</span>
               </label>
               <select
@@ -177,9 +177,9 @@ export function CreateTaskModal({ boardId, columnId, onClose, wipBlocked }: Crea
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as TaskPriorityValue)}
                 className={cn(
-                  'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white',
+                  'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary',
                   'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
-                  'border-gray-700 focus:border-blue-500',
+                  'border-default focus:border-blue-500',
                 )}
               >
                 <option value="low">Низкий</option>
@@ -189,20 +189,20 @@ export function CreateTaskModal({ boardId, columnId, onClose, wipBlocked }: Crea
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="new-task-deadline" className="block text-sm font-medium text-gray-300">
-                Дедлайн <span className="text-gray-500 font-normal">(необяз.)</span>
+              <label htmlFor="new-task-deadline" className="block text-sm font-medium text-secondary">
+                Дедлайн <span className="text-muted font-normal">(необяз.)</span>
               </label>
               <div className="relative">
-                <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
                 <input
                   id="new-task-deadline"
                   type="date"
                   value={deadline}
                   onChange={(e) => setDeadline(e.target.value)}
                   className={cn(
-                    'w-full rounded-lg border bg-gray-800 pl-8 pr-3 py-2 text-sm text-white',
+                    'w-full rounded-lg border bg-raised pl-8 pr-3 py-2 text-sm text-primary',
                     'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
-                    'border-gray-700 focus:border-blue-500 [color-scheme:dark]',
+                    'border-default focus:border-blue-500 [color-scheme:dark]',
                   )}
                 />
               </div>
@@ -210,19 +210,19 @@ export function CreateTaskModal({ boardId, columnId, onClose, wipBlocked }: Crea
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="new-task-assignee" className="block text-sm font-medium text-gray-300">
-              Исполнитель <span className="text-gray-500 font-normal">(необязательно)</span>
+            <label htmlFor="new-task-assignee" className="block text-sm font-medium text-secondary">
+              Исполнитель <span className="text-muted font-normal">(необязательно)</span>
             </label>
             <div className="relative">
-              <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
               <select
                 id="new-task-assignee"
                 value={assigneeId}
                 onChange={(e) => setAssigneeId(e.target.value)}
                 className={cn(
-                  'w-full rounded-lg border bg-gray-800 pl-8 pr-3 py-2 text-sm text-white',
+                  'w-full rounded-lg border bg-raised pl-8 pr-3 py-2 text-sm text-primary',
                   'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
-                  'border-gray-700 focus:border-blue-500',
+                  'border-default focus:border-blue-500',
                 )}
               >
                 <option value="">— Не назначен —</option>
@@ -241,7 +241,7 @@ export function CreateTaskModal({ boardId, columnId, onClose, wipBlocked }: Crea
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+              className="rounded-lg px-4 py-2 text-sm font-medium text-secondary hover:text-primary hover:bg-hover transition-colors"
             >
               Отмена
             </button>

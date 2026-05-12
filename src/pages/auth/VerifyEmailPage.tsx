@@ -74,7 +74,7 @@ export default function VerifyEmailPage() {
     <div className="text-center">
       {status === 'loading' && (
         <div className="space-y-4">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-700 border-t-white" />
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-default border-t-brand" />
           <p className="text-gray-400">Подтверждаем ваш email...</p>
         </div>
       )}
@@ -104,7 +104,7 @@ export default function VerifyEmailPage() {
             onClick={() => navigate('/login', { replace: true })}
             className={cn(
               'mt-4 rounded-lg px-6 py-2 text-sm font-medium',
-              'bg-white text-gray-950 hover:bg-gray-200 transition-colors',
+              'bg-surface text-primary hover:bg-gray-200 transition-colors',
             )}
           >
             Войти

@@ -104,20 +104,20 @@ export function PromptModal({
 
       <div
         ref={dialogRef}
-        className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl"
+        className="relative w-full max-w-md rounded-2xl bg-surface shadow-2xl"
       >
         <form onSubmit={handleSubmit}>
           <div className="flex items-start gap-4 p-6 pb-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100">
-              <MessageSquare className="h-5 w-5 text-indigo-600" aria-hidden="true" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-subtle">
+              <MessageSquare className="h-5 w-5 text-brand" aria-hidden="true" />
             </div>
 
             <div className="min-w-0 flex-1 pt-0.5">
-              <h2 id="prompt-modal-title" className="text-base font-semibold text-gray-900">
+              <h2 id="prompt-modal-title" className="text-base font-semibold text-primary">
                 {title}
               </h2>
               {description ? (
-                <p id="prompt-modal-description" className="mt-1 text-sm text-gray-500">
+                <p id="prompt-modal-description" className="mt-1 text-sm text-muted">
                   {description}
                 </p>
               ) : null}
@@ -133,9 +133,9 @@ export function PromptModal({
                 placeholder={placeholder}
                 disabled={isLoading}
                 className={cn(
-                  'mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900',
-                  'placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500',
-                  'disabled:bg-gray-50 disabled:text-gray-500',
+                  'mt-1 w-full rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary',
+                  'placeholder:text-placeholder focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20',
+                  'disabled:opacity-50 disabled:text-muted',
                 )}
                 autoComplete="off"
               />
@@ -145,7 +145,7 @@ export function PromptModal({
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="shrink-0 rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:pointer-events-none disabled:opacity-50"
+              className="shrink-0 rounded-lg p-1 text-secondary transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:pointer-events-none disabled:opacity-50"
               aria-label="Закрыть"
             >
               <X className="h-4 w-4" aria-hidden="true" />
@@ -157,14 +157,14 @@ export function PromptModal({
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50"
+              className="rounded-lg border border-default bg-surface px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-raised disabled:pointer-events-none disabled:opacity-50"
             >
               {cancelLabel}
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:pointer-events-none disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-indigo-700 disabled:pointer-events-none disabled:opacity-50"
             >
               {isLoading && (
                 <span

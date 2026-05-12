@@ -94,14 +94,14 @@ export default function CompanySettingsPage() {
   if (!companyId) {
     return (
       <div className="max-w-3xl space-y-2">
-        <h1 className="text-2xl font-semibold text-white">Настройки компании</h1>
-        <p className="text-sm text-gray-400">Профиль пользователя не привязан к компании.</p>
+        <h1 className="text-2xl font-semibold text-primary">Настройки компании</h1>
+        <p className="text-sm text-secondary">Профиль пользователя не привязан к компании.</p>
       </div>
     );
   }
 
   if (isLoading) {
-    return <p className="text-sm text-gray-400">Загрузка настроек...</p>;
+    return <p className="text-sm text-secondary">Загрузка настроек...</p>;
   }
 
   if (isError || !data) {
@@ -111,111 +111,111 @@ export default function CompanySettingsPage() {
   return (
     <div className="max-w-4xl space-y-6">
       <div className="flex items-center gap-2">
-        <Settings2 className="h-5 w-5 text-indigo-400" aria-hidden="true" />
-        <h1 className="text-2xl font-semibold text-white">Настройки компании</h1>
+        <Settings2 className="h-5 w-5 text-brand" aria-hidden="true" />
+        <h1 className="text-2xl font-semibold text-primary">Настройки компании</h1>
       </div>
       <div className="flex flex-wrap gap-2">
         <Link
           to="/company/settings/members"
-          className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-800"
+          className="rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:bg-hover"
         >
           Перейти к инвайтам сотрудников
         </Link>
         <Link
           to="/company/settings/onboarding"
-          className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-800"
+          className="rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:bg-hover"
         >
           Шаблоны онбординга
         </Link>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-900/70 bg-red-950/40 px-4 py-3 text-sm text-red-300">
+        <div className="rounded-lg border border-red-200 dark:border-red-900/40 bg-danger-subtle px-4 py-3 text-sm text-danger">
           {error}
         </div>
       )}
       {success && (
-        <div className="rounded-lg border border-emerald-900/70 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-300">
+        <div className="rounded-lg border border-emerald-900/70 bg-success-subtle px-4 py-3 text-sm text-success">
           {success}
         </div>
       )}
 
-      <section className="space-y-5 rounded-xl border border-gray-800 bg-gray-900/50 p-6">
-        <h2 className="text-base font-semibold text-white">HR и бренд</h2>
+      <section className="space-y-5 rounded-xl border border-default bg-surface/50 p-6">
+        <h2 className="text-base font-semibold text-primary">HR и бренд</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block text-sm text-gray-300">
+          <label className="block text-sm text-secondary">
             Отпускных дней в год
             <input
               type="number"
               min={0}
               value={vacationDays}
               onChange={(e) => setVacationDays(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-primary"
             />
           </label>
-          <label className="block text-sm text-gray-300">
+          <label className="block text-sm text-secondary">
             Бренд-цвет
             <input
               type="text"
               value={brandColor}
               onChange={(e) => setBrandColor(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-primary"
               placeholder="#6366F1"
             />
           </label>
         </div>
-        <label className="inline-flex items-center gap-2 text-sm text-gray-300">
+        <label className="inline-flex items-center gap-2 text-sm text-secondary">
           <input
             type="checkbox"
             checked={onboardingEnabled}
             onChange={(e) => setOnboardingEnabled(e.target.checked)}
-            className="h-4 w-4 rounded border-gray-600 bg-gray-900 text-indigo-500"
+            className="h-4 w-4 rounded border-default bg-surface text-brand"
           />
           Включить onboarding-процесс
         </label>
       </section>
 
-      <section className="space-y-5 rounded-xl border border-gray-800 bg-gray-900/50 p-6">
-        <h2 className="text-base font-semibold text-white">Рабочие часы и категории</h2>
+      <section className="space-y-5 rounded-xl border border-default bg-surface/50 p-6">
+        <h2 className="text-base font-semibold text-primary">Рабочие часы и категории</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block text-sm text-gray-300">
+          <label className="block text-sm text-secondary">
             Начало рабочего дня
             <input
               type="time"
               value={workStart}
               onChange={(e) => setWorkStart(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-primary"
             />
           </label>
-          <label className="block text-sm text-gray-300">
+          <label className="block text-sm text-secondary">
             Конец рабочего дня
             <input
               type="time"
               value={workEnd}
               onChange={(e) => setWorkEnd(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-primary"
             />
           </label>
         </div>
-        <label className="block text-sm text-gray-300">
+        <label className="block text-sm text-secondary">
           Кастомные категории задач (каждая с новой строки)
           <textarea
             rows={5}
             value={categoriesText}
             onChange={(e) => setCategoriesText(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-primary"
             placeholder={'Продажи\nРазработка\nПоддержка'}
           />
         </label>
       </section>
 
-      <section className="space-y-4 rounded-xl border border-gray-800 bg-gray-900/50 p-6">
+      <section className="space-y-4 rounded-xl border border-default bg-surface/50 p-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-white">Кастомные лейблы CRM</h2>
+          <h2 className="text-base font-semibold text-primary">Кастомные лейблы CRM</h2>
           <button
             type="button"
             onClick={() => setLabels((prev) => [...prev, { name: '', color: '#6366F1' }])}
-            className="inline-flex items-center gap-1 rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-800"
+            className="inline-flex items-center gap-1 rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:bg-hover"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden="true" />
             Добавить лейбл
@@ -234,7 +234,7 @@ export default function CompanySettingsPage() {
                     ),
                   )
                 }
-                className="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                className="rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
                 placeholder="Название лейбла"
               />
               <input
@@ -247,19 +247,19 @@ export default function CompanySettingsPage() {
                     ),
                   )
                 }
-                className="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                className="rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
                 placeholder="#10B981"
               />
               <button
                 type="button"
                 onClick={() => setLabels((prev) => prev.filter((_, index) => index !== idx))}
-                className="inline-flex items-center justify-center rounded-lg border border-red-800 bg-red-900/30 px-3 py-2 text-red-300 hover:bg-red-900/50"
+                className="inline-flex items-center justify-center rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-3 py-2 text-danger hover:bg-danger-subtle"
               >
                 <Trash2 className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
           ))}
-          {!labels.length && <p className="text-sm text-gray-500">Лейблы пока не добавлены.</p>}
+          {!labels.length && <p className="text-sm text-muted">Лейблы пока не добавлены.</p>}
         </div>
       </section>
 
@@ -271,7 +271,7 @@ export default function CompanySettingsPage() {
           saveMutation.mutate();
         }}
         disabled={saveMutation.isPending}
-        className="inline-flex items-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-60"
+        className="inline-flex items-center rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-60"
       >
         {saveMutation.isPending ? 'Сохранение...' : 'Сохранить настройки'}
       </button>

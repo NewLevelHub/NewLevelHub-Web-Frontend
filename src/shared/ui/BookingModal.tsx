@@ -271,7 +271,7 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
     .join(' · ');
 
   const fieldClass =
-    'w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500';
+    'w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-surface text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-blue-500';
 
   // Determine if current user is admin/superadmin for display logic
   const isAdmin =
@@ -289,24 +289,24 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
       aria-label={`Бронирование: ${resource.name}`}
     >
       <div
-        className="relative w-full max-w-md rounded-2xl border border-gray-200 bg-white shadow-xl overflow-y-auto max-h-[90vh]"
+        className="relative w-full max-w-md rounded-2xl border border-default bg-surface shadow-xl overflow-y-auto max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-start justify-between border-b border-gray-100 px-6 py-4">
+        <div className="flex items-start justify-between border-b border-default px-6 py-4">
           <div className="min-w-0 pr-4">
             <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">
               {RESOURCE_TYPE_LABELS[resource.type]}
             </p>
-            <h2 className="mt-0.5 text-lg font-bold text-gray-900 leading-snug">
+            <h2 className="mt-0.5 text-lg font-bold text-primary leading-snug">
               {resource.name}
             </h2>
-            <p className="mt-0.5 text-xs text-gray-500">{floorZoneInfo}</p>
+            <p className="mt-0.5 text-xs text-muted">{floorZoneInfo}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="shrink-0 rounded-lg p-1.5 text-secondary hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-label="Закрыть"
           >
             <X className="h-5 w-5" />
@@ -337,7 +337,7 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
           {isParking ? (
             <div>
               <label
-                className="mb-1 block text-sm font-semibold text-gray-900"
+                className="mb-1 block text-sm font-semibold text-primary"
                 htmlFor="modal-booking-date"
               >
                 Дата бронирования
@@ -353,7 +353,7 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className={fieldClass}
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-muted">
                 Парковка бронируется на весь день (00:00 — 23:59)
               </p>
             </div>
@@ -378,7 +378,7 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
 
               <div>
                 <label
-                  className="mb-1 block text-sm font-semibold text-gray-900"
+                  className="mb-1 block text-sm font-semibold text-primary"
                   htmlFor="modal-booking-start"
                 >
                   Начало
@@ -398,7 +398,7 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
 
               <div>
                 <label
-                  className="mb-1 block text-sm font-semibold text-gray-900"
+                  className="mb-1 block text-sm font-semibold text-primary"
                   htmlFor="modal-booking-end"
                 >
                   Окончание
@@ -420,19 +420,19 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
           {/* Participants multi-select for meeting rooms */}
           {isMeetingRoom && (
             <div>
-              <p className="mb-2 text-sm font-semibold text-gray-900">
+              <p className="mb-2 text-sm font-semibold text-primary">
                 Участники{' '}
-                <span className="font-normal text-gray-500">(необязательно)</span>
+                <span className="font-normal text-muted">(необязательно)</span>
               </p>
 
               {loadingMembers ? (
-                <p className="text-sm text-gray-500">Загрузка участников…</p>
+                <p className="text-sm text-muted">Загрузка участников…</p>
               ) : userOptions.filter((u) => u.id !== user?.id).length === 0 ? (
-                <p className="text-sm text-gray-400">Нет доступных участников</p>
+                <p className="text-sm text-secondary">Нет доступных участников</p>
               ) : (
                 <>
                   <div
-                    className="max-h-40 overflow-y-auto rounded-lg border border-gray-300 bg-white divide-y divide-gray-100"
+                    className="max-h-40 overflow-y-auto rounded-lg border border-gray-300 bg-surface divide-y divide-[color:var(--border)]"
                     role="listbox"
                     aria-multiselectable="true"
                     aria-label="Выберите участников"
@@ -449,7 +449,7 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
                             aria-selected={selected}
                             onClick={() => toggleParticipant(u.id)}
                             className={cn(
-                              'flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors',
+                              'flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-raised transition-colors',
                               selected && 'bg-blue-50',
                             )}
                           >
@@ -464,8 +464,8 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
                             >
                               ✓
                             </span>
-                            <span className="text-gray-900">{u.full_name || u.email}</span>
-                            <span className="ml-auto text-xs text-gray-400">{u.email}</span>
+                            <span className="text-primary">{u.full_name || u.email}</span>
+                            <span className="ml-auto text-xs text-secondary">{u.email}</span>
                           </button>
                         );
                       })}
@@ -482,11 +482,11 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
 
           <div>
             <label
-              className="mb-1 block text-sm font-semibold text-gray-900"
+              className="mb-1 block text-sm font-semibold text-primary"
               htmlFor="modal-booking-desc"
             >
               Комментарий{' '}
-              <span className="font-normal text-gray-500">(необязательно)</span>
+              <span className="font-normal text-muted">(необязательно)</span>
             </label>
             <textarea
               id="modal-booking-desc"
@@ -499,7 +499,7 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
           </div>
 
           {!isAdmin && (
-            <p className="text-xs text-gray-500 leading-relaxed">
+            <p className="text-xs text-muted leading-relaxed">
               Требуется подтверждённый email. Время отправляется с часовым поясом Asia/Almaty (+05:00).
             </p>
           )}
@@ -516,7 +516,7 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
               type="submit"
               disabled={createMutation.isPending || successMsg !== null}
               className={cn(
-                'flex-1 rounded-lg py-2.5 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-blue-500',
+                'flex-1 rounded-lg py-2.5 text-sm font-medium text-primary focus:outline-none focus:ring-2 focus:ring-blue-500',
                 createMutation.isPending || successMsg !== null
                   ? 'bg-blue-400 cursor-not-allowed opacity-70'
                   : 'bg-blue-600 hover:bg-blue-700',

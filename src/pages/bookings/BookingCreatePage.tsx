@@ -199,12 +199,12 @@ export default function BookingCreatePage() {
   };
 
   const fieldClass =
-    'w-full px-3 py-2 text-sm rounded-lg border border-gray-400 bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500';
+    'w-full px-3 py-2 text-sm rounded-lg border border-gray-400 bg-surface text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-blue-500';
 
   if (validResourceId === null) {
     return (
       <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto space-y-4 text-zinc-100">
-        <h1 className="text-xl font-bold text-white">Новое бронирование</h1>
+        <h1 className="text-xl font-bold text-primary">Новое бронирование</h1>
         <p className="text-sm text-zinc-400">
           Сначала выберите ресурс в{' '}
           <Link to="/bookings/catalog" className="text-blue-400 hover:text-blue-300 underline-offset-2 hover:underline">
@@ -242,7 +242,7 @@ export default function BookingCreatePage() {
     <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto space-y-6 text-zinc-100">
       <Link
         to="/bookings/catalog"
-        className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-white"
+        className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-primary"
       >
         <ArrowLeft className="h-4 w-4" />
         Каталог
@@ -257,7 +257,7 @@ export default function BookingCreatePage() {
           />
         )}
         <div>
-          <h1 className="text-xl font-bold text-white">{resource.name}</h1>
+          <h1 className="text-xl font-bold text-primary">{resource.name}</h1>
           <p className="text-sm text-zinc-400">
             {RESOURCE_TYPE_LABELS[resource.type]} · этаж {resource.floor}
             {resource.zone ? ` · ${resource.zone}` : ''}
@@ -268,14 +268,14 @@ export default function BookingCreatePage() {
       {errorMsg && (
         <div
           role="alert"
-          className="rounded-lg border border-red-400/50 bg-red-950/40 px-4 py-3 text-sm text-red-200"
+          className="rounded-lg border border-red-400/50 bg-danger-subtle px-4 py-3 text-sm text-danger-badge"
         >
           {errorMsg}
         </div>
       )}
 
       <form
-        className="space-y-4 rounded-2xl border border-gray-200 bg-white p-6 text-gray-900 shadow-md"
+        className="space-y-4 rounded-2xl border border-default bg-surface p-6 text-primary shadow-md"
         onSubmit={(e) => {
           e.preventDefault();
           setErrorMsg(null);
@@ -290,7 +290,7 @@ export default function BookingCreatePage() {
         {/* Parking: date-only */}
         {isParking ? (
           <div>
-            <label className="mb-1 block text-sm font-semibold text-gray-900" htmlFor="booking-date">
+            <label className="mb-1 block text-sm font-semibold text-primary" htmlFor="booking-date">
               Дата бронирования
             </label>
             <input
@@ -303,7 +303,7 @@ export default function BookingCreatePage() {
               onChange={(e) => setSelectedDate(e.target.value)}
               className={fieldClass}
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-muted">
               Парковка бронируется на весь день (00:00 — 23:59)
             </p>
           </div>
@@ -326,7 +326,7 @@ export default function BookingCreatePage() {
             )}
 
             <div>
-              <label className="mb-1 block text-sm font-semibold text-gray-900" htmlFor="booking-start">
+              <label className="mb-1 block text-sm font-semibold text-primary" htmlFor="booking-start">
                 Начало
               </label>
               <input
@@ -341,7 +341,7 @@ export default function BookingCreatePage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-semibold text-gray-900" htmlFor="booking-end">
+              <label className="mb-1 block text-sm font-semibold text-primary" htmlFor="booking-end">
                 Окончание
               </label>
               <input
@@ -361,19 +361,19 @@ export default function BookingCreatePage() {
         {/* Participants for meeting rooms */}
         {isMeetingRoom && (
           <div>
-            <p className="mb-2 text-sm font-semibold text-gray-900">
+            <p className="mb-2 text-sm font-semibold text-primary">
               Участники{' '}
-              <span className="font-normal text-gray-500">(необязательно)</span>
+              <span className="font-normal text-muted">(необязательно)</span>
             </p>
 
             {loadingMembers ? (
-              <p className="text-sm text-gray-500">Загрузка участников…</p>
+              <p className="text-sm text-muted">Загрузка участников…</p>
             ) : userOptions.filter((u) => u.id !== user?.id).length === 0 ? (
-              <p className="text-sm text-gray-400">Нет доступных участников</p>
+              <p className="text-sm text-secondary">Нет доступных участников</p>
             ) : (
               <>
                 <div
-                  className="max-h-40 overflow-y-auto rounded-lg border border-gray-300 bg-white divide-y divide-gray-100"
+                  className="max-h-40 overflow-y-auto rounded-lg border border-default bg-surface divide-y divide-[color:var(--border)]"
                   role="listbox"
                   aria-multiselectable="true"
                   aria-label="Выберите участников"
@@ -390,7 +390,7 @@ export default function BookingCreatePage() {
                           aria-selected={selected}
                           onClick={() => toggleParticipant(u.id)}
                           className={cn(
-                            'flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors',
+                            'flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-raised transition-colors',
                             selected && 'bg-blue-50',
                           )}
                         >
@@ -399,14 +399,14 @@ export default function BookingCreatePage() {
                               'flex h-4 w-4 shrink-0 items-center justify-center rounded border text-xs font-bold',
                               selected
                                 ? 'border-blue-600 bg-blue-600 text-white'
-                                : 'border-gray-300 text-transparent',
+                                : 'border-default text-transparent',
                             )}
                             aria-hidden="true"
                           >
                             ✓
                           </span>
-                          <span className="text-gray-900">{u.full_name || u.email}</span>
-                          <span className="ml-auto text-xs text-gray-400">{u.email}</span>
+                          <span className="text-primary">{u.full_name || u.email}</span>
+                          <span className="ml-auto text-xs text-secondary">{u.email}</span>
                         </button>
                       );
                     })}
@@ -422,7 +422,7 @@ export default function BookingCreatePage() {
         )}
 
         <div>
-          <label className="mb-1 block text-sm font-semibold text-gray-900" htmlFor="booking-note">
+          <label className="mb-1 block text-sm font-semibold text-primary" htmlFor="booking-note">
             Комментарий
           </label>
           <textarea
@@ -434,7 +434,7 @@ export default function BookingCreatePage() {
             placeholder="Необязательно"
           />
         </div>
-        <p className="text-xs leading-relaxed text-gray-700">
+        <p className="text-xs leading-relaxed text-secondary">
           Время отправляется с часовым поясом Asia/Almaty (+05:00). Требуется подтверждённый email (кроме superadmin).
         </p>
         <button

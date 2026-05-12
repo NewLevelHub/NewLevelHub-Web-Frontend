@@ -51,7 +51,7 @@ export const NotificationItem = memo<NotificationItemProps>(
         className={cn(
           'flex items-start gap-3 rounded-xl border px-4 py-3 cursor-pointer transition-colors',
           n.is_read
-            ? 'bg-white border-gray-100 hover:bg-gray-50'
+            ? 'bg-surface border-default hover:bg-raised'
             : 'bg-blue-50 border-blue-100 hover:bg-blue-100',
         )}
       >
@@ -59,9 +59,9 @@ export const NotificationItem = memo<NotificationItemProps>(
           <Bell size={16} className="mt-0.5 shrink-0 text-blue-500" aria-hidden="true" />
         )}
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm text-gray-900">{n.title}</p>
-          <p className="text-sm text-gray-600 mt-0.5 whitespace-pre-line">{n.message ?? n.body}</p>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="font-medium text-sm text-primary">{n.title}</p>
+          <p className="text-sm text-muted mt-0.5 whitespace-pre-line">{n.message ?? n.body}</p>
+          <p className="text-xs text-secondary mt-1">
             {new Date(n.created_at).toLocaleString()}
           </p>
         </div>
@@ -70,7 +70,7 @@ export const NotificationItem = memo<NotificationItemProps>(
           type="button"
           onClick={e => onDelete(e, n.id)}
           disabled={isDeleting}
-          className="shrink-0 mt-0.5 p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+          className="shrink-0 mt-0.5 p-1 rounded text-secondary hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
           aria-label="Удалить уведомление"
         >
           <Trash2 size={15} aria-hidden="true" />
