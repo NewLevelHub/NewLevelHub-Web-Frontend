@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
@@ -32,6 +32,22 @@ export function useMyTasks() {
   if (debouncedSearch) params.search = debouncedSearch;
   if (filters.priority) params.priority = filters.priority;
   if (filters.deadline) params.deadline = filters.deadline;
+
+  const paramsKey = JSON.stringify(params);
+
+  const prevParamsKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (prevParamsKeyRef.current === null) {
+      prevParamsKeyRef.current = paramsKey;
+      return;
+    }
+    if (prevParamsKeyRef.current === paramsKey) return;
+    prevParamsKeyRef.current = paramsKey;
+    setExtraTasksByBoard({});
+    setExhaustedBoards(new Set());
+    setLoadingMoreBoard(null);
+  }, [paramsKey]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['crm', 'my-tasks', params],
