@@ -955,6 +955,7 @@ export interface CrmTaskHistory {
   id: number;
   user: CrmHistoryUser;
   action: string;
+  field_name: string | null;
   old_value: string | null;
   new_value: string | null;
   created_at: string;
@@ -983,6 +984,18 @@ export interface CrmTask {
   is_archived: boolean;
   created_at: string;
   checklists: CrmChecklist[];
+}
+
+export interface MyTaskGroup {
+  board_id: number;
+  board_name: string;
+  tasks: CrmTask[];
+  total: number;
+  has_more: boolean;
+}
+
+export interface MyTasksGroupedResponse {
+  groups: MyTaskGroup[];
 }
 
 // ── Dashboard API (GET /api/v1/dashboard/) ────────────────────────────────

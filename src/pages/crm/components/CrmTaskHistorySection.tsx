@@ -8,18 +8,25 @@ import type { CrmTaskHistory } from '@/shared/types';
 
 // ─── History Section ──────────────────────────────────────────────────────────
 
+// Labels for non-field actions (action is not "updated")
 const ACTION_LABELS: Record<string, string> = {
-  updated_title: 'изменил(а) название',
-  updated_description: 'обновил(а) описание задачи',
-  updated_priority: 'изменил(а) приоритет',
-  updated_deadline: 'изменил(а) дедлайн',
-  updated_assignee: 'изменил(а) исполнителя',
-  updated_column: 'переместил(а) задачу',
-  label_added: 'добавил(а) метку',
-  label_removed: 'удалил(а) метку',
+  created: 'создал(а) задачу',
   archived: 'архивировал(а) задачу',
   unarchived: 'восстановил(а) задачу из архива',
   moved: 'переместил(а) задачу',
+  label_added: 'добавил(а) метку',
+  label_removed: 'удалил(а) метку',
+};
+
+// Labels for action="updated" — keyed by field_name
+const FIELD_LABELS: Record<string, string> = {
+  title: 'изменил(а) название',
+  description: 'обновил(а) описание задачи',
+  priority: 'изменил(а) приоритет',
+  deadline: 'изменил(а) дедлайн',
+  assignee: 'изменил(а) исполнителя',
+  column: 'переместил(а) задачу',
+  column_id: 'переместил(а) задачу',
 };
 
 const HISTORY_PRIORITY_BADGE: Record<string, string> = {
@@ -67,9 +74,12 @@ function PriorityBadge({ value }: { value: string }) {
 }
 
 function HistoryValueChange({ entry }: { entry: CrmTaskHistory }) {
-  const { action, old_value, new_value } = entry;
+  const { action, field_name, old_value, new_value } = entry;
 
-  if (action === 'updated_description') {
+  // Determine effective field: new API uses field_name, old API encoded it in action
+  const field = field_name ?? action.replace('updated_', '');
+
+  if (field === 'description') {
     return null;
   }
 
@@ -77,7 +87,7 @@ function HistoryValueChange({ entry }: { entry: CrmTaskHistory }) {
     return null;
   }
 
-  if (action === 'updated_priority') {
+  if (field === 'priority') {
     return (
       <div className="flex items-center gap-1.5 mt-1">
         {old_value && old_value !== 'null' && <PriorityBadge value={old_value} />}
@@ -89,7 +99,7 @@ function HistoryValueChange({ entry }: { entry: CrmTaskHistory }) {
     );
   }
 
-  if (action === 'updated_deadline') {
+  if (field === 'deadline') {
     const oldLabel = formatHistoryDeadline(old_value);
     const newLabel = formatHistoryDeadline(new_value);
     return (
@@ -103,7 +113,7 @@ function HistoryValueChange({ entry }: { entry: CrmTaskHistory }) {
     );
   }
 
-  if (action === 'updated_assignee') {
+  if (field === 'assignee') {
     const oldName = !old_value || old_value === 'null' ? 'не назначен' : old_value;
     const newName = !new_value || new_value === 'null' ? 'не назначен' : new_value;
     return (
@@ -115,7 +125,7 @@ function HistoryValueChange({ entry }: { entry: CrmTaskHistory }) {
     );
   }
 
-  if (action === 'updated_title') {
+  if (field === 'title') {
     const oldTitle = old_value ? truncate(old_value, 40) : null;
     const newTitle = new_value ? truncate(new_value, 40) : null;
     return (
@@ -127,7 +137,7 @@ function HistoryValueChange({ entry }: { entry: CrmTaskHistory }) {
     );
   }
 
-  if (action === 'updated_column') {
+  if (field === 'column' || field === 'column_id') {
     const oldCol = old_value && old_value !== 'null' ? old_value : null;
     const newCol = new_value && new_value !== 'null' ? new_value : null;
     return (
@@ -224,24 +234,49 @@ interface HistorySectionProps {
 
 export function HistorySection({ taskId }: HistorySectionProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [allEntries, setAllEntries] = useState<CrmTaskHistory[]>([]);
+  const [hasMore, setHasMore] = useState(false);
 
-  const { data: history, isLoading, isError } = useQuery({
-    queryKey: ['crm', 'task', taskId, 'history'],
+  const { isLoading, isError, isFetching } = useQuery({
+    queryKey: ['crm', 'task', taskId, 'history', page],
     queryFn: async () => {
-      const { data } = await apiClient.get<CrmTaskHistory[] | { results: CrmTaskHistory[] }>(
-        API.crm.taskHistory(taskId),
-      );
-      return Array.isArray(data) ? data : data.results;
+      const { data } = await apiClient.get<
+        | CrmTaskHistory[]
+        | { count: number; next: string | null; previous: string | null; results: CrmTaskHistory[] }
+      >(API.crm.taskHistory(taskId), { params: { page } });
+
+      const results = Array.isArray(data) ? data : data.results;
+      const next = Array.isArray(data) ? null : data.next;
+
+      if (page === 1) {
+        setAllEntries(results);
+      } else {
+        setAllEntries((prev) => [...prev, ...results]);
+      }
+      setHasMore(Boolean(next));
+      return results;
     },
     enabled: isOpen,
   });
+
+  const handleToggle = () => {
+    setIsOpen((prev) => {
+      if (prev) {
+        setPage(1);
+        setAllEntries([]);
+        setHasMore(false);
+      }
+      return !prev;
+    });
+  };
 
   return (
     <div className="space-y-3 pt-2 border-t border-default">
       {/* Collapsible header */}
       <button
         type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
+        onClick={handleToggle}
         className={cn(
           'flex items-center gap-2 w-full text-left',
           'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded',
@@ -280,14 +315,17 @@ export function HistorySection({ taskId }: HistorySectionProps) {
             <p className="text-xs text-red-400 pl-3">Не удалось загрузить историю изменений.</p>
           )}
 
-          {!isLoading && !isError && history && history.length === 0 && (
+          {!isLoading && !isError && allEntries.length === 0 && (
             <p className="text-xs text-muted pl-3">История изменений пуста.</p>
           )}
 
-          {!isLoading && !isError && history && history.length > 0 && (
+          {!isLoading && !isError && allEntries.length > 0 && (
             <ol className="relative border-l border-default ml-3 space-y-4">
-              {history.map((entry) => {
-                const actionLabel = ACTION_LABELS[entry.action] ?? entry.action;
+              {allEntries.map((entry) => {
+                const actionLabel =
+                  entry.action === 'updated' && entry.field_name
+                    ? (FIELD_LABELS[entry.field_name] ?? `изменил(а) ${entry.field_name}`)
+                    : (ACTION_LABELS[entry.action] ?? entry.action);
                 const initials = entry.user.full_name
                   .split(' ')
                   .slice(0, 2)
@@ -344,6 +382,17 @@ export function HistorySection({ taskId }: HistorySectionProps) {
                 );
               })}
             </ol>
+          )}
+
+          {hasMore && (
+            <button
+              type="button"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={isFetching}
+              className="mt-3 ml-3 text-xs text-gray-400 hover:text-gray-200 transition-colors disabled:opacity-50"
+            >
+              {isFetching ? 'Загрузка...' : 'Загрузить ещё'}
+            </button>
           )}
         </div>
       )}
