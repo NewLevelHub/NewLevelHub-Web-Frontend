@@ -9,15 +9,15 @@ function LoadingSkeleton() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="h-7 w-48 rounded-lg bg-gray-800 animate-pulse" />
+        <div className="h-7 w-48 rounded-lg bg-raised animate-pulse" />
       </div>
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="h-9 w-full sm:w-56 rounded-lg bg-gray-800 animate-pulse" />
-        <div className="h-9 w-full sm:w-64 rounded-lg bg-gray-800 animate-pulse" />
+        <div className="h-9 w-full sm:w-56 rounded-lg bg-raised animate-pulse" />
+        <div className="h-9 w-full sm:w-64 rounded-lg bg-raised animate-pulse" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="h-32 rounded-xl bg-gray-800 animate-pulse" />
+          <div key={i} className="h-32 rounded-xl bg-raised animate-pulse" />
         ))}
       </div>
     </div>
@@ -44,7 +44,7 @@ export function AdminBoardsView(props: AdminBoardsViewProps) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-3">
         <AlertCircle size={40} className="text-red-400" />
-        <p className="text-gray-400">Не удалось загрузить доски. Попробуйте обновить страницу.</p>
+        <p className="text-secondary">Не удалось загрузить доски. Попробуйте обновить страницу.</p>
       </div>
     );
   }
@@ -52,25 +52,25 @@ export function AdminBoardsView(props: AdminBoardsViewProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-white">CRM — Все доски</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Просмотр канбан-досок всех компаний</p>
+        <h1 className="text-xl font-semibold text-primary">CRM — Все доски</h1>
+        <p className="text-sm text-muted mt-0.5">Просмотр канбан-досок всех компаний</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative">
           <Building2
             size={15}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
           />
           <select
             value={selectedCompanyId ?? ''}
             onChange={(e) => setSelectedCompanyId(e.target.value || null)}
             aria-label="Фильтр по компании"
             className={cn(
-              'h-9 rounded-lg border border-gray-700 bg-gray-800 pl-9 pr-8 text-sm text-white',
+              'h-9 rounded-lg border border-default bg-raised pl-9 pr-8 text-sm text-primary',
               'appearance-none cursor-pointer transition-colors',
               'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
-              'hover:border-gray-600',
+              'hover:border-strong',
             )}
           >
             <option value="">Все компании</option>
@@ -81,7 +81,7 @@ export function AdminBoardsView(props: AdminBoardsViewProps) {
             ))}
           </select>
           <svg
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-muted"
             width="12"
             height="12"
             viewBox="0 0 12 12"
@@ -101,7 +101,7 @@ export function AdminBoardsView(props: AdminBoardsViewProps) {
         <div className="relative flex-1 sm:max-w-xs">
           <Search
             size={15}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
           />
           <input
             type="text"
@@ -110,17 +110,17 @@ export function AdminBoardsView(props: AdminBoardsViewProps) {
             placeholder="Поиск по названию доски..."
             aria-label="Поиск по названию доски"
             className={cn(
-              'h-9 w-full rounded-lg border border-gray-700 bg-gray-800 pl-9 pr-3 text-sm text-white',
+              'h-9 w-full rounded-lg border border-default bg-raised pl-9 pr-3 text-sm text-primary',
               'placeholder-gray-500 transition-colors',
               'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
-              'hover:border-gray-600',
+              'hover:border-strong',
             )}
           />
         </div>
 
         {filtered !== undefined && (
           <div className="flex items-center self-center sm:self-auto">
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-muted">
               {filtered.length}{' '}
               {filtered.length === 1
                 ? 'доска'
@@ -134,12 +134,12 @@ export function AdminBoardsView(props: AdminBoardsViewProps) {
 
       {filtered?.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 gap-4">
-          <div className="rounded-full bg-gray-800 p-5">
-            <Inbox size={32} className="text-gray-500" />
+          <div className="rounded-full bg-raised p-5">
+            <Inbox size={32} className="text-muted" />
           </div>
           <div className="text-center">
-            <p className="font-medium text-gray-300">Нет досок</p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="font-medium text-secondary">Нет досок</p>
+            <p className="text-sm text-muted mt-1">
               {searchQuery
                 ? 'Нет досок, совпадающих с поисковым запросом.'
                 : selectedCompanyId

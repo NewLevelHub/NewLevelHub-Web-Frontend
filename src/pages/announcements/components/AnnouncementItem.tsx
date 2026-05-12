@@ -36,9 +36,9 @@ export const AnnouncementItem = memo<AnnouncementItemProps>(function Announcemen
   return (
     <li
       className={cn(
-        'rounded-xl border bg-gray-900/80 px-4 py-4 shadow-sm transition-colors',
-        a.is_pinned ? 'border-indigo-700/70' : 'border-gray-800',
-        !a.is_read && 'ring-1 ring-indigo-500/30',
+        'rounded-xl border bg-surface px-4 py-4 shadow-sm transition-colors',
+        a.is_pinned ? 'border-blue-200 dark:border-default/50' : 'border-default',
+        !a.is_read && 'ring-1 ring-blue-500/30',
       )}
     >
       <div className="flex items-start gap-3">
@@ -46,7 +46,7 @@ export const AnnouncementItem = memo<AnnouncementItemProps>(function Announcemen
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             {a.is_pinned ? (
-              <Pin size={14} aria-hidden="true" className="text-indigo-300" />
+              <Pin size={14} aria-hidden="true" className="text-brand" />
             ) : null}
             {!a.is_read ? (
               <span
@@ -54,32 +54,32 @@ export const AnnouncementItem = memo<AnnouncementItemProps>(function Announcemen
                 aria-label="Непрочитано"
               />
             ) : null}
-            <h2 className={cn('font-semibold', a.is_read ? 'text-gray-300' : 'text-white')}>
+            <h2 className={cn('font-semibold', a.is_read ? 'text-secondary' : 'text-white')}>
               {a.title}
             </h2>
             {isBuilding ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-gray-700 px-2 py-0.5 text-xs text-gray-300">
+              <span className="inline-flex items-center gap-1 rounded-full border border-default px-2 py-0.5 text-xs text-secondary">
                 <Building2 size={12} aria-hidden="true" />
                 БЦ
               </span>
             ) : null}
           </div>
-          <p className="mt-2 whitespace-pre-line text-sm text-gray-200">{a.text}</p>
+          <p className="mt-2 whitespace-pre-line text-sm text-secondary">{a.text}</p>
           {a.image ? (
             <img
               src={a.image}
               alt=""
-              className="mt-3 max-h-80 w-full rounded-lg border border-gray-800 object-cover"
+              className="mt-3 max-h-80 w-full rounded-lg border border-default object-cover"
             />
           ) : null}
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted">
               {a.author_name ? `${a.author_name} · ` : ''}
               {new Date(a.created_at).toLocaleString()}
             </p>
             <div className="flex items-center gap-3">
               {isAuthor ? (
-                <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                <span className="inline-flex items-center gap-1 text-xs text-muted">
                   <Eye size={12} aria-hidden="true" />
                   {a.read_count}
                 </span>
@@ -89,12 +89,12 @@ export const AnnouncementItem = memo<AnnouncementItemProps>(function Announcemen
                   type="button"
                   onClick={() => onMarkRead(a)}
                   disabled={isMarkingRead}
-                  className="text-xs text-indigo-400 hover:text-indigo-300 disabled:opacity-40"
+                  className="text-xs text-brand hover:text-brand disabled:opacity-40"
                 >
                   Отметить прочитанным
                 </button>
               ) : (
-                <span className="text-xs text-gray-600">Прочитано</span>
+                <span className="text-xs text-muted">Прочитано</span>
               )}
             </div>
           </div>
@@ -104,7 +104,7 @@ export const AnnouncementItem = memo<AnnouncementItemProps>(function Announcemen
             type="button"
             onClick={() => onDelete(a.id)}
             disabled={isDeleting}
-            className="shrink-0 rounded p-1 text-gray-400 hover:bg-red-950/50 hover:text-red-300 disabled:opacity-40"
+            className="shrink-0 rounded p-1 text-secondary hover:bg-danger-subtle hover:text-danger disabled:opacity-40"
             aria-label="Удалить объявление"
           >
             <Trash2 size={16} aria-hidden="true" />

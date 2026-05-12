@@ -68,17 +68,17 @@ export default function LeaveRequestCreatePage() {
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-white">Подать заявку на отсутствие</h1>
-        <p className="text-sm text-gray-400">Заполните тип, даты и при необходимости добавьте комментарий.</p>
+        <h1 className="text-2xl font-bold text-primary">Подать заявку на отсутствие</h1>
+        <p className="text-sm text-secondary">Заполните тип, даты и при необходимости добавьте комментарий.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-gray-700 bg-gray-800 p-5">
-        <label className="block text-sm text-gray-300">
+      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-default bg-raised p-5">
+        <label className="block text-sm text-secondary">
           Тип отсутствия
           <select
             value={leaveType}
             onChange={(event) => setLeaveType(event.target.value as LeaveType)}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           >
             {TYPE_OPTIONS.map(option => (
               <option key={option.value} value={option.value}>
@@ -89,35 +89,35 @@ export default function LeaveRequestCreatePage() {
         </label>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block text-sm text-gray-300">
+          <label className="block text-sm text-secondary">
             Дата начала
             <input
               type="date"
               value={startDate}
               onChange={(event) => setStartDate(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               required
             />
           </label>
-          <label className="block text-sm text-gray-300">
+          <label className="block text-sm text-secondary">
             Дата окончания
             <input
               type="date"
               value={endDate}
               onChange={(event) => setEndDate(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               required
             />
           </label>
         </div>
 
-        <label className="block text-sm text-gray-300">
+        <label className="block text-sm text-secondary">
           Комментарий
           <textarea
             value={comment}
             onChange={(event) => setComment(event.target.value)}
             rows={4}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             placeholder="Например: поездка к врачу"
           />
         </label>
@@ -131,14 +131,14 @@ export default function LeaveRequestCreatePage() {
         <div className="flex items-center justify-end gap-2">
           <Link
             to="/leave"
-            className="inline-flex items-center rounded-lg border border-gray-700 bg-transparent px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700"
+            className="inline-flex items-center rounded-lg border border-default bg-transparent px-4 py-2 text-sm font-medium text-secondary hover:bg-hover"
           >
             Отмена
           </Link>
           <button
             type="submit"
             disabled={createLeaveMutation.isPending}
-            className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+            className="inline-flex items-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
           >
             {createLeaveMutation.isPending ? 'Отправка...' : 'Подать заявку'}
           </button>

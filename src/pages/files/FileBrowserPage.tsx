@@ -474,7 +474,7 @@ export default function FileBrowserPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-white">Файловый менеджер</h1>
+        <h1 className="text-2xl font-semibold text-primary">Файловый менеджер</h1>
         <p className="mt-1 text-sm text-slate-400">Личное и общее хранилище с навигацией по папкам.</p>
       </div>
 
@@ -491,7 +491,7 @@ export default function FileBrowserPage() {
           }}
           className={`rounded-md border px-3 py-1.5 text-sm ${
             scope === 'personal'
-              ? 'border-indigo-600 bg-indigo-600 text-white'
+              ? 'border-default bg-brand text-white'
               : 'border-slate-700 text-slate-300 bg-slate-800'
           }`}
         >
@@ -509,7 +509,7 @@ export default function FileBrowserPage() {
           }}
           className={`rounded-md border px-3 py-1.5 text-sm ${
             scope === 'company'
-              ? 'border-indigo-600 bg-indigo-600 text-white'
+              ? 'border-default bg-brand text-white'
               : 'border-slate-700 text-slate-300 bg-slate-800'
           }`}
         >
@@ -518,13 +518,13 @@ export default function FileBrowserPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-sm text-slate-400">
-        <button type="button" onClick={resetToRoot} className="text-indigo-300 hover:underline">
+        <button type="button" onClick={resetToRoot} className="text-brand hover:underline">
           Корень
         </button>
         {trail.map((folder, idx) => (
           <span key={folder.id} className="flex items-center gap-2">
             <span>/</span>
-            <button type="button" onClick={() => goToTrailIndex(idx)} className="text-indigo-300 hover:underline">
+            <button type="button" onClick={() => goToTrailIndex(idx)} className="text-brand hover:underline">
               {folder.name}
             </button>
           </span>
@@ -536,13 +536,13 @@ export default function FileBrowserPage() {
           value={newFolderName}
           onChange={(e) => setNewFolderName(e.target.value)}
           placeholder="Название новой папки"
-          className="w-full max-w-sm rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white"
+          className="w-full max-w-sm rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-primary"
         />
         <button
           type="button"
           disabled={!newFolderName.trim() || createFolderMutation.isPending}
           onClick={() => createFolderMutation.mutate()}
-          className="rounded-md bg-indigo-600 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-md bg-brand px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           Создать папку
         </button>
@@ -553,7 +553,7 @@ export default function FileBrowserPage() {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Поиск файлов по имени"
-          className="w-full max-w-sm rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white"
+          className="w-full max-w-sm rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-primary"
         />
         {isSearching ? (
           <p className="text-xs text-slate-400">Поиск по всем доступным файлам ({files.length} найдено)</p>
@@ -577,7 +577,7 @@ export default function FileBrowserPage() {
               <div
                 className={cn(
                   'h-full rounded-full transition-all',
-                  usedPercent >= 95 ? 'bg-red-500' : usedPercent >= 80 ? 'bg-amber-500' : 'bg-indigo-500',
+                  usedPercent >= 95 ? 'bg-red-500' : usedPercent >= 80 ? 'bg-amber-500' : 'bg-brand-hover',
                 )}
                 style={{ width: `${Math.max(0, Math.min(100, usedPercent))}%` }}
               />
@@ -608,7 +608,7 @@ export default function FileBrowserPage() {
           Загрузить файл
         </button>
         <p className="text-xs text-slate-400">Максимальный размер файла: 100 MB</p>
-        {uploadSuccess ? <p className="w-full text-xs text-emerald-300">{uploadSuccess}</p> : null}
+        {uploadSuccess ? <p className="w-full text-xs text-success">{uploadSuccess}</p> : null}
         {uploadError ? <p className="w-full text-xs text-rose-300">{uploadError}</p> : null}
       </div>
 
@@ -634,7 +634,7 @@ export default function FileBrowserPage() {
                       <button
                         type="button"
                         onClick={() => openFolder(folder)}
-                        className="text-left text-sm font-medium text-indigo-300 hover:underline"
+                        className="text-left text-sm font-medium text-brand hover:underline"
                       >
                         {folder.name}
                       </button>
@@ -683,7 +683,7 @@ export default function FileBrowserPage() {
                         <button
                           type="button"
                           onClick={() => handleSelectShareFile(file)}
-                          className="rounded border border-indigo-700 px-2 py-1 text-indigo-300"
+                          className="rounded border border-default px-2 py-1 text-brand"
                         >
                           Доступ
                         </button>
@@ -727,13 +727,13 @@ export default function FileBrowserPage() {
             {selectedShareFile ? (
               <>
                 <p className="mb-3 text-sm text-slate-300">
-                  Выбран файл: <span className="font-medium text-white">{selectedShareFile.name}</span>
+                  Выбран файл: <span className="font-medium text-primary">{selectedShareFile.name}</span>
                 </p>
                 <div className="mb-3 grid gap-2 md:grid-cols-[1fr_200px_auto]">
                   <select
                     value={shareTargetUserId}
                     onChange={(event) => setShareTargetUserId(event.target.value)}
-                    className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+                    className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-primary"
                   >
                     <option value="">Выберите сотрудника</option>
                     {recipientOptions.map((member) => (
@@ -745,7 +745,7 @@ export default function FileBrowserPage() {
                   <select
                     value={sharePermission}
                     onChange={(event) => setSharePermission(event.target.value as StorageSharePermission)}
-                    className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+                    className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-primary"
                   >
                     {STORAGE_SHARE_PERMISSIONS.map((permission) => (
                       <option key={permission} value={permission}>
@@ -757,7 +757,7 @@ export default function FileBrowserPage() {
                     type="button"
                     onClick={handleCreateShare}
                     disabled={!shareTargetUserId || createShareMutation.isPending}
-                    className="rounded-md bg-indigo-600 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-md bg-brand px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Выдать доступ
                   </button>
@@ -783,7 +783,7 @@ export default function FileBrowserPage() {
                             onChange={(event) =>
                               handleSharePermissionChange(share.id, event.target.value as StorageSharePermission)
                             }
-                            className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-white"
+                            className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-primary"
                           >
                             {STORAGE_SHARE_PERMISSIONS.map((permission) => (
                               <option key={permission} value={permission}>
@@ -835,7 +835,7 @@ export default function FileBrowserPage() {
                       <button
                         type="button"
                         onClick={() => openSharedFileMutation.mutate(share.file_id)}
-                        className="rounded border border-indigo-700 px-2 py-1 text-xs text-indigo-300"
+                        className="rounded border border-default px-2 py-1 text-xs text-brand"
                       >
                         Открыть
                       </button>

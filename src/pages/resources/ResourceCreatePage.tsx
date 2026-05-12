@@ -136,8 +136,8 @@ function parseError(error: unknown): { fieldErrors: Record<string, string>; mess
 
 function inputClass(hasError: boolean) {
   return cn(
-    'w-full rounded-lg border px-3 py-2 text-sm text-gray-900 focus:border-transparent focus:outline-none focus:ring-2',
-    hasError ? 'border-red-400 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500',
+    'w-full rounded-lg border px-3 py-2 text-sm text-primary focus:border-transparent focus:outline-none focus:ring-2',
+    hasError ? 'border-red-400 focus:ring-red-500' : 'border-default focus:ring-blue-500',
   );
 }
 
@@ -440,22 +440,22 @@ export default function ResourceCreatePage() {
         <button
           type="button"
           onClick={() => navigate('/resources')}
-          className="text-sm font-medium text-gray-500 transition-colors hover:text-gray-900"
+          className="text-sm font-medium text-muted transition-colors hover:text-primary"
         >
           Назад к ресурсам
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">Добавление ресурсов</h1>
-        <p className="text-sm text-gray-500">Создайте один ресурс или сразу пачку через bulk-create.</p>
+        <h1 className="text-2xl font-bold text-primary">Добавление ресурсов</h1>
+        <p className="text-sm text-muted">Создайте один ресурс или сразу пачку через bulk-create.</p>
       </div>
 
-      <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-        <div className="mb-5 inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
+      <section className="rounded-2xl border border-default bg-surface p-6 shadow-sm">
+        <div className="mb-5 inline-flex rounded-lg border border-default bg-gray-50 p-1">
           <button
             type="button"
             onClick={() => setIsBulkMode(false)}
             className={cn(
               'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-              !isBulkMode ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700',
+              !isBulkMode ? 'bg-surface text-primary shadow-sm' : 'text-muted hover:text-secondary',
             )}
           >
             Один ресурс
@@ -465,7 +465,7 @@ export default function ResourceCreatePage() {
             onClick={() => setIsBulkMode(true)}
             className={cn(
               'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-              isBulkMode ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700',
+              isBulkMode ? 'bg-surface text-primary shadow-sm' : 'text-muted hover:text-secondary',
             )}
           >
             Bulk-create
@@ -481,7 +481,7 @@ export default function ResourceCreatePage() {
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label htmlFor="type" className="mb-1 block text-sm font-medium text-gray-700">
+              <label htmlFor="type" className="mb-1 block text-sm font-medium text-secondary">
                 Тип ресурса
               </label>
               <select
@@ -498,7 +498,7 @@ export default function ResourceCreatePage() {
             </div>
 
             <div>
-              <label htmlFor="floor" className="mb-1 block text-sm font-medium text-gray-700">
+              <label htmlFor="floor" className="mb-1 block text-sm font-medium text-secondary">
                 Этаж
               </label>
               <input
@@ -515,7 +515,7 @@ export default function ResourceCreatePage() {
 
           {!isBulkMode && (
             <div>
-              <label htmlFor="name" className="mb-1 block text-sm font-medium text-gray-700">
+              <label htmlFor="name" className="mb-1 block text-sm font-medium text-secondary">
                 Название ресурса
               </label>
               <input
@@ -533,7 +533,7 @@ export default function ResourceCreatePage() {
           {isBulkMode && (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <label htmlFor="name_prefix" className="mb-1 block text-sm font-medium text-gray-700">
+                <label htmlFor="name_prefix" className="mb-1 block text-sm font-medium text-secondary">
                   Префикс имени
                 </label>
                 <input
@@ -552,7 +552,7 @@ export default function ResourceCreatePage() {
                 )}
               </div>
               <div>
-                <label htmlFor="count" className="mb-1 block text-sm font-medium text-gray-700">
+                <label htmlFor="count" className="mb-1 block text-sm font-medium text-secondary">
                   Количество
                 </label>
                 <input
@@ -573,7 +573,7 @@ export default function ResourceCreatePage() {
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label htmlFor="zone" className="mb-1 block text-sm font-medium text-gray-700">
+              <label htmlFor="zone" className="mb-1 block text-sm font-medium text-secondary">
                 Зона
               </label>
               <input
@@ -587,7 +587,7 @@ export default function ResourceCreatePage() {
             </div>
             {requiresCapacity && (
               <div>
-                <label htmlFor="capacity" className="mb-1 block text-sm font-medium text-gray-700">
+                <label htmlFor="capacity" className="mb-1 block text-sm font-medium text-secondary">
                   Вместимость
                 </label>
                 <input
@@ -606,7 +606,7 @@ export default function ResourceCreatePage() {
           </div>
 
           <div>
-            <label htmlFor="description" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="description" className="mb-1 block text-sm font-medium text-secondary">
               Описание
             </label>
             <textarea
@@ -621,7 +621,7 @@ export default function ResourceCreatePage() {
 
           {!isBulkMode && (
             <div>
-              <label htmlFor="photo" className="mb-1 block text-sm font-medium text-gray-700">
+              <label htmlFor="photo" className="mb-1 block text-sm font-medium text-secondary">
                 Фото
               </label>
               <input
@@ -634,59 +634,59 @@ export default function ResourceCreatePage() {
             </div>
           )}
 
-          <label className="flex items-center gap-2 text-sm text-gray-700">
+          <label className="flex items-center gap-2 text-sm text-secondary">
             <input
               type="checkbox"
               checked={form.is_active}
               onChange={(e) => updateForm('is_active', e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600"
+              className="h-4 w-4 rounded border-default text-blue-600"
             />
             Активен (в каталоге)
           </label>
 
           {isDesk && (
-            <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50 p-4">
-              <p className="text-sm font-semibold text-gray-700">Настройки стола</p>
+            <div className="space-y-3 rounded-xl border border-default bg-gray-50 p-4">
+              <p className="text-sm font-semibold text-secondary">Настройки стола</p>
               <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                <label className="flex items-center gap-2 text-sm text-gray-700">
+                <label className="flex items-center gap-2 text-sm text-secondary">
                   <input
                     type="checkbox"
                     checked={form.has_monitor}
                     onChange={(e) => updateForm('has_monitor', e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                    className="h-4 w-4 rounded border-default text-blue-600"
                   />
                   Монитор
                 </label>
-                <label className="flex items-center gap-2 text-sm text-gray-700">
+                <label className="flex items-center gap-2 text-sm text-secondary">
                   <input
                     type="checkbox"
                     checked={form.has_dock}
                     onChange={(e) => updateForm('has_dock', e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                    className="h-4 w-4 rounded border-default text-blue-600"
                   />
                   Док-станция
                 </label>
-                <label className="flex items-center gap-2 text-sm text-gray-700">
+                <label className="flex items-center gap-2 text-sm text-secondary">
                   <input
                     type="checkbox"
                     checked={form.has_power_outlet}
                     onChange={(e) => updateForm('has_power_outlet', e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                    className="h-4 w-4 rounded border-default text-blue-600"
                   />
                   Розетка
                 </label>
-                <label className="flex items-center gap-2 text-sm text-gray-700">
+                <label className="flex items-center gap-2 text-sm text-secondary">
                   <input
                     type="checkbox"
                     checked={form.is_hot_desk}
                     onChange={(e) => updateForm('is_hot_desk', e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                    className="h-4 w-4 rounded border-default text-blue-600"
                   />
                   Hot desk
                 </label>
               </div>
               <div>
-                <label htmlFor="desk_assigned_company" className="mb-1 block text-sm font-medium text-gray-700">
+                <label htmlFor="desk_assigned_company" className="mb-1 block text-sm font-medium text-secondary">
                   Закрепить за компанией (необязательно)
                 </label>
                 <select
@@ -707,16 +707,16 @@ export default function ResourceCreatePage() {
           )}
 
           {requiresCapacity && (
-            <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50 p-4">
-              <p className="text-sm font-semibold text-gray-700">Настройки переговорной</p>
+            <div className="space-y-3 rounded-xl border border-default bg-gray-50 p-4">
+              <p className="text-sm font-semibold text-secondary">Настройки переговорной</p>
               <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                 {RESOURCE_EQUIPMENT_KEYS.map((key) => (
-                  <label key={key} className="flex items-center gap-2 text-sm text-gray-700">
+                  <label key={key} className="flex items-center gap-2 text-sm text-secondary">
                     <input
                       type="checkbox"
                       checked={form.equipment[key]}
                       onChange={() => toggleEquipment(key)}
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                      className="h-4 w-4 rounded border-default text-blue-600"
                     />
                     {RESOURCE_EQUIPMENT_LABELS[key]}
                   </label>
@@ -724,7 +724,7 @@ export default function ResourceCreatePage() {
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label htmlFor="min_duration_minutes" className="mb-1 block text-sm font-medium text-gray-700">
+                  <label htmlFor="min_duration_minutes" className="mb-1 block text-sm font-medium text-secondary">
                     Мин. длительность (мин)
                   </label>
                   <input
@@ -740,7 +740,7 @@ export default function ResourceCreatePage() {
                   )}
                 </div>
                 <div>
-                  <label htmlFor="max_duration_minutes" className="mb-1 block text-sm font-medium text-gray-700">
+                  <label htmlFor="max_duration_minutes" className="mb-1 block text-sm font-medium text-secondary">
                     Макс. длительность (мин)
                   </label>
                   <input
@@ -760,10 +760,10 @@ export default function ResourceCreatePage() {
           )}
 
           {isParking && (
-            <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50 p-4">
-              <p className="text-sm font-semibold text-gray-700">Настройки парковки</p>
+            <div className="space-y-3 rounded-xl border border-default bg-gray-50 p-4">
+              <p className="text-sm font-semibold text-secondary">Настройки парковки</p>
               <div>
-                <label htmlFor="parking_type" className="mb-1 block text-sm font-medium text-gray-700">
+                <label htmlFor="parking_type" className="mb-1 block text-sm font-medium text-secondary">
                   Тип парковки
                 </label>
                 <select
@@ -780,7 +780,7 @@ export default function ResourceCreatePage() {
                 )}
               </div>
               <div>
-                <label htmlFor="parking_assigned_company" className="mb-1 block text-sm font-medium text-gray-700">
+                <label htmlFor="parking_assigned_company" className="mb-1 block text-sm font-medium text-secondary">
                   Закрепить за компанией (необязательно)
                 </label>
                 <select
@@ -801,10 +801,10 @@ export default function ResourceCreatePage() {
           )}
 
           {isCapsule && (
-            <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50 p-4">
-              <p className="text-sm font-semibold text-gray-700">Настройки капсулы</p>
+            <div className="space-y-3 rounded-xl border border-default bg-gray-50 p-4">
+              <p className="text-sm font-semibold text-secondary">Настройки капсулы</p>
               <div>
-                <label htmlFor="capsule_zone" className="mb-1 block text-sm font-medium text-gray-700">
+                <label htmlFor="capsule_zone" className="mb-1 block text-sm font-medium text-secondary">
                   Зона капсулы
                 </label>
                 <select
@@ -823,12 +823,12 @@ export default function ResourceCreatePage() {
             </div>
           )}
 
-          <hr className="border-gray-100" />
-          <p className="text-sm font-semibold text-gray-700">Доступность ресурса</p>
+          <hr className="border-default" />
+          <p className="text-sm font-semibold text-secondary">Доступность ресурса</p>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label htmlFor="availability_start" className="mb-1 block text-sm font-medium text-gray-700">
+              <label htmlFor="availability_start" className="mb-1 block text-sm font-medium text-secondary">
                 Начало
               </label>
               <input
@@ -840,7 +840,7 @@ export default function ResourceCreatePage() {
               />
             </div>
             <div>
-              <label htmlFor="availability_end" className="mb-1 block text-sm font-medium text-gray-700">
+              <label htmlFor="availability_end" className="mb-1 block text-sm font-medium text-secondary">
                 Конец
               </label>
               <input
@@ -859,7 +859,7 @@ export default function ResourceCreatePage() {
           )}
 
           <div>
-            <p className="mb-2 text-sm font-medium text-gray-700">Дни доступности</p>
+            <p className="mb-2 text-sm font-medium text-secondary">Дни доступности</p>
             <div className="flex flex-wrap gap-2">
               {DAY_OPTIONS.map((day) => {
                 const active = form.availability_days.includes(day.value);
@@ -872,7 +872,7 @@ export default function ResourceCreatePage() {
                       'rounded-md border px-3 py-1.5 text-sm transition-colors',
                       active
                         ? 'border-blue-600 bg-blue-50 text-blue-700'
-                        : 'border-gray-300 text-gray-700 hover:bg-gray-50',
+                        : 'border-default text-secondary hover:bg-raised',
                     )}
                   >
                     {day.label}
@@ -890,7 +890,7 @@ export default function ResourceCreatePage() {
               type="submit"
               disabled={isPending}
               className={cn(
-                'rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-colors',
+                'rounded-lg px-5 py-2.5 text-sm font-semibold text-primary transition-colors',
                 isPending ? 'cursor-not-allowed bg-blue-300' : 'bg-blue-600 hover:bg-blue-700',
               )}
             >
@@ -899,7 +899,7 @@ export default function ResourceCreatePage() {
             <button
               type="button"
               onClick={() => navigate('/resources')}
-              className="rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+              className="rounded-lg px-4 py-2.5 text-sm font-medium text-secondary transition-colors hover:bg-gray-100"
             >
               Отмена
             </button>

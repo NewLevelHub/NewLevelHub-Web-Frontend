@@ -6,8 +6,8 @@ export function RequireGuest() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen grid place-items-center bg-gray-950 text-white">
-        <p className="text-gray-400">Загрузка...</p>
+      <div className="min-h-screen grid place-items-center bg-page text-primary">
+        <p className="text-secondary">Загрузка...</p>
       </div>
     );
   }

@@ -160,27 +160,27 @@ export default function PassValidatePage() {
   return (
     <main className="mx-auto max-w-3xl space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Проверка QR-пропуска</h1>
-        <p className="mt-1 text-sm text-gray-400">Введите QR-код вручную или отсканируйте его камерой.</p>
+        <h1 className="text-2xl font-bold text-primary">Проверка QR-пропуска</h1>
+        <p className="mt-1 text-sm text-secondary">Введите QR-код вручную или отсканируйте его камерой.</p>
       </div>
 
-      <section className="rounded-xl border border-gray-700 bg-gray-800 p-4 sm:p-5">
+      <section className="rounded-xl border border-default bg-raised p-4 sm:p-5">
         <form onSubmit={(event) => void handleSubmit(event)} className="space-y-3">
-          <label className="block text-sm text-gray-300">
+          <label className="block text-sm text-secondary">
             QR-код (UUID)
             <input
               type="text"
               value={qrCode}
               onChange={(event) => setQrCode(event.target.value)}
               placeholder="например, 64fdbf4f-465e-40e6-8ef4-3f3c96d34ac6"
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             />
           </label>
           <div className="flex flex-wrap gap-2">
             <button
               type="submit"
               disabled={isSubmitting}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-60"
+              className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-60"
             >
               {isSubmitting ? 'Проверка...' : 'Проверить'}
             </button>
@@ -188,7 +188,7 @@ export default function PassValidatePage() {
               <button
                 type="button"
                 onClick={stopCamera}
-                className="rounded-lg border border-amber-700 bg-amber-900/30 px-4 py-2 text-sm font-medium text-amber-200 hover:bg-amber-900/50"
+                className="rounded-lg border border-amber-700 bg-warning-subtle px-4 py-2 text-sm font-medium text-warning-badge hover:bg-warning-subtle"
               >
                 Остановить камеру
               </button>
@@ -196,23 +196,23 @@ export default function PassValidatePage() {
               <button
                 type="button"
                 onClick={startCamera}
-                className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
+                className="rounded-lg border border-default px-4 py-2 text-sm font-medium text-primary hover:bg-hover"
               >
                 Сканировать камерой
               </button>
             )}
           </div>
         </form>
-        {error ? <p className="mt-3 text-sm text-rose-400">{error}</p> : null}
-        {cameraError ? <p className="mt-3 text-sm text-amber-300">{cameraError}</p> : null}
+        {error ? <p className="mt-3 text-sm text-danger">{error}</p> : null}
+        {cameraError ? <p className="mt-3 text-sm text-warning">{cameraError}</p> : null}
       </section>
 
       {isCameraActive ? (
-        <section className="rounded-xl border border-gray-700 bg-gray-800 p-4 sm:p-5">
-          <p className="mb-3 text-sm text-gray-300">Наведите камеру на QR-код пропуска.</p>
+        <section className="rounded-xl border border-default bg-raised p-4 sm:p-5">
+          <p className="mb-3 text-sm text-secondary">Наведите камеру на QR-код пропуска.</p>
           <video
             ref={videoRef}
-            className="aspect-video w-full rounded-lg border border-gray-700 bg-black object-cover"
+            className="aspect-video w-full rounded-lg border border-default bg-black object-cover"
             autoPlay
             playsInline
             muted
@@ -221,28 +221,28 @@ export default function PassValidatePage() {
       ) : null}
 
       {result ? (
-        <section className="rounded-xl border border-gray-700 bg-gray-800 p-4 sm:p-5">
+        <section className="rounded-xl border border-default bg-raised p-4 sm:p-5">
           {result.valid ? (
-            <div className="space-y-2 text-sm text-gray-200">
-              <p className="font-semibold text-emerald-300">Пропуск валиден</p>
+            <div className="space-y-2 text-sm text-secondary">
+              <p className="font-semibold text-success">Пропуск валиден</p>
               <p>
-                <span className="text-gray-400">Гость:</span> {result.guest_name}
+                <span className="text-secondary">Гость:</span> {result.guest_name}
               </p>
               <p>
-                <span className="text-gray-400">Цель:</span> {result.purpose || '—'}
+                <span className="text-secondary">Цель:</span> {result.purpose || '—'}
               </p>
               <p>
-                <span className="text-gray-400">Пригласил:</span> {result.invited_by}
+                <span className="text-secondary">Пригласил:</span> {result.invited_by}
               </p>
               <p>
-                <span className="text-gray-400">Период:</span>{' '}
+                <span className="text-secondary">Период:</span>{' '}
                 {new Date(result.valid_from).toLocaleString()} - {new Date(result.valid_until).toLocaleString()}
               </p>
             </div>
           ) : (
             <div className="space-y-2 text-sm">
               <p className="font-semibold text-rose-300">Пропуск невалиден</p>
-              <p className="text-gray-300">{REASON_LABELS[result.reason]}</p>
+              <p className="text-secondary">{REASON_LABELS[result.reason]}</p>
             </div>
           )}
         </section>

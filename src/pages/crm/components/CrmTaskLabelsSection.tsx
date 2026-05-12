@@ -83,7 +83,7 @@ export function TaskLabelsSection({ taskId, boardId, taskLabels }: TaskLabelsSec
 
   return (
     <div className="space-y-2">
-      <span className="block text-xs font-medium text-gray-500 uppercase tracking-wide">Метки</span>
+      <span className="block text-xs font-medium text-muted uppercase tracking-wide">Метки</span>
 
       {/* Current labels */}
       <div className="flex flex-wrap gap-1.5">
@@ -123,8 +123,8 @@ export function TaskLabelsSection({ taskId, boardId, taskLabels }: TaskLabelsSec
             type="button"
             onClick={() => setDropdownOpen((v) => !v)}
             className={cn(
-              'inline-flex items-center gap-1 rounded-full border border-dashed border-gray-600',
-              'px-2.5 py-0.5 text-xs text-gray-500 hover:text-gray-300 hover:border-gray-400 transition-colors',
+              'inline-flex items-center gap-1 rounded-full border border-dashed border-default',
+              'px-2.5 py-0.5 text-xs text-muted hover:text-secondary hover:border-gray-400 transition-colors',
             )}
             aria-haspopup="listbox"
             aria-expanded={dropdownOpen}
@@ -137,15 +137,15 @@ export function TaskLabelsSection({ taskId, boardId, taskLabels }: TaskLabelsSec
             <div
               className={cn(
                 'absolute left-0 top-full mt-1 z-10',
-                'w-56 rounded-lg border border-gray-700 bg-gray-900 shadow-xl',
+                'w-56 rounded-lg border border-default bg-surface shadow-xl',
               )}
               role="listbox"
               aria-label="Выбор меток"
             >
               {/* Search */}
-              <div className="p-2 border-b border-gray-800">
+              <div className="p-2 border-b border-default">
                 <div className="relative">
-                  <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                  <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
                   <input
                     ref={searchRef}
                     type="text"
@@ -153,8 +153,8 @@ export function TaskLabelsSection({ taskId, boardId, taskLabels }: TaskLabelsSec
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Найти метку..."
                     className={cn(
-                      'w-full rounded-md border bg-gray-800 pl-7 pr-2 py-1.5 text-xs text-white placeholder-gray-500',
-                      'focus:outline-none focus:ring-1 focus:ring-blue-500 border-gray-700',
+                      'w-full rounded-md border bg-raised pl-7 pr-2 py-1.5 text-xs text-primary placeholder-gray-500',
+                      'focus:outline-none focus:ring-1 focus:ring-blue-500 border-default',
                     )}
                     aria-label="Поиск меток"
                   />
@@ -164,7 +164,7 @@ export function TaskLabelsSection({ taskId, boardId, taskLabels }: TaskLabelsSec
               {/* Label list */}
               <ul className="max-h-48 overflow-y-auto py-1">
                 {filteredLabels.length === 0 && (
-                  <li className="px-3 py-2 text-xs text-gray-500">Метки не найдены</li>
+                  <li className="px-3 py-2 text-xs text-muted">Метки не найдены</li>
                 )}
                 {filteredLabels.map((label) => {
                   const checked = taskLabels.some((l) => l.id === label.id);
@@ -177,7 +177,7 @@ export function TaskLabelsSection({ taskId, boardId, taskLabels }: TaskLabelsSec
                         aria-selected={checked}
                         className={cn(
                           'flex items-center gap-2.5 w-full px-3 py-1.5 text-xs text-left',
-                          'hover:bg-gray-800 transition-colors',
+                          'hover:bg-hover transition-colors',
                         )}
                       >
                         <span
@@ -194,7 +194,7 @@ export function TaskLabelsSection({ taskId, boardId, taskLabels }: TaskLabelsSec
                           style={{ backgroundColor: label.color }}
                           aria-hidden="true"
                         />
-                        <span className="flex-1 text-gray-200 truncate">{label.name}</span>
+                        <span className="flex-1 text-secondary truncate">{label.name}</span>
                       </button>
                     </li>
                   );
@@ -203,7 +203,7 @@ export function TaskLabelsSection({ taskId, boardId, taskLabels }: TaskLabelsSec
 
               {/* Manage labels (company_admin only) */}
               {isAdmin && (
-                <div className="border-t border-gray-800 p-1">
+                <div className="border-t border-default p-1">
                   <button
                     type="button"
                     onClick={() => {
@@ -212,7 +212,7 @@ export function TaskLabelsSection({ taskId, boardId, taskLabels }: TaskLabelsSec
                     }}
                     className={cn(
                       'flex items-center gap-2 w-full rounded-md px-3 py-1.5 text-xs',
-                      'text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors',
+                      'text-secondary hover:text-secondary hover:bg-hover transition-colors',
                     )}
                   >
                     <Settings size={12} />

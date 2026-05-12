@@ -7,8 +7,8 @@ export default function UnsubscribeSuccessPage() {
     <div className={cn('flex flex-col items-center text-center gap-6')}>
       <CheckCircle className="w-16 h-16 text-green-400" aria-hidden="true" />
       <div className="flex flex-col gap-2">
-        <h2 className="text-xl font-semibold text-white">Вы успешно отписались</h2>
-        <p className="text-gray-400 text-sm leading-relaxed">
+        <h2 className="text-xl font-semibold text-primary">Вы успешно отписались</h2>
+        <p className="text-secondary text-sm leading-relaxed">
           Вы больше не будете получать email-уведомления. Вы можете изменить настройки
           уведомлений в личном кабинете.
         </p>
@@ -17,7 +17,7 @@ export default function UnsubscribeSuccessPage() {
         to="/"
         className={cn(
           'inline-flex items-center justify-center px-6 py-2.5 rounded-lg',
-          'bg-white text-gray-900 font-medium text-sm',
+          'bg-surface text-primary font-medium text-sm',
           'hover:bg-gray-100 transition-colors',
           'focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-950'
         )}

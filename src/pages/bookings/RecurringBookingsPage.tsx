@@ -166,30 +166,30 @@ export default function RecurringBookingsPage() {
   return (
     <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-5xl mx-auto space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-white">Рекуррентные бронирования</h1>
+        <h1 className="text-2xl font-bold text-primary">Рекуррентные бронирования</h1>
         <Link
           to="/bookings/catalog"
-          className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-200 hover:bg-gray-700"
+          className="rounded-lg border border-default bg-raised px-3 py-2 text-sm font-medium text-secondary hover:bg-hover"
         >
           В каталог
         </Link>
       </div>
 
       {errorMessage && (
-        <div className="rounded-lg border border-red-800 bg-red-950/30 px-4 py-3 text-sm text-red-300">
+        <div className="rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-4 py-3 text-sm text-danger">
           {errorMessage}
         </div>
       )}
 
       {lastSkippedDates.length > 0 && (
-        <div className="rounded-lg border border-red-800 bg-red-950/30 px-4 py-3 text-sm text-red-300">
+        <div className="rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-4 py-3 text-sm text-danger">
           <p className="font-medium">Конфликты на датах:</p>
           <p className="mt-1">{lastSkippedDates.join(', ')}</p>
         </div>
       )}
 
-      <section className="rounded-2xl border border-gray-700 bg-gray-800 p-5">
-        <h2 className="text-lg font-semibold text-white">Создать серию</h2>
+      <section className="rounded-2xl border border-default bg-raised p-5">
+        <h2 className="text-lg font-semibold text-primary">Создать серию</h2>
         <form
           className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
           onSubmit={(event) => {
@@ -205,13 +205,13 @@ export default function RecurringBookingsPage() {
             });
           }}
         >
-          <label className="text-sm text-gray-300">
+          <label className="text-sm text-secondary">
             Ресурс
             <select
               required
               value={resourceId}
               onChange={(event) => setResourceId(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               disabled={resourcesLoading}
             >
               <option value="">Выберите ресурс</option>
@@ -223,13 +223,13 @@ export default function RecurringBookingsPage() {
             </select>
           </label>
 
-          <label className="text-sm text-gray-300">
+          <label className="text-sm text-secondary">
             День недели
             <select
               required
               value={dayOfWeek}
               onChange={(event) => setDayOfWeek(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               disabled={allowedWeekdayOptions.length === 0}
             >
               {allowedWeekdayOptions.map((option) => (
@@ -240,7 +240,7 @@ export default function RecurringBookingsPage() {
             </select>
           </label>
 
-          <label className="text-sm text-gray-300">
+          <label className="text-sm text-secondary">
             Повторять до
             <input
               type="date"
@@ -248,29 +248,29 @@ export default function RecurringBookingsPage() {
               min={todayIsoDate()}
               value={repeatUntil}
               onChange={(event) => setRepeatUntil(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             />
           </label>
 
-          <label className="text-sm text-gray-300">
+          <label className="text-sm text-secondary">
             Начало
             <input
               type="time"
               required
               value={startTime}
               onChange={(event) => setStartTime(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             />
           </label>
 
-          <label className="text-sm text-gray-300">
+          <label className="text-sm text-secondary">
             Окончание
             <input
               type="time"
               required
               value={endTime}
               onChange={(event) => setEndTime(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             />
           </label>
 
@@ -278,14 +278,14 @@ export default function RecurringBookingsPage() {
             <button
               type="submit"
               disabled={createMutation.isPending || !resourceId || allowedWeekdayOptions.length === 0}
-              className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+              className="w-full rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
             >
               {createMutation.isPending ? 'Создание…' : 'Создать серию'}
             </button>
           </div>
 
           {resourceId && (
-            <p className="sm:col-span-2 lg:col-span-3 text-xs text-gray-400">
+            <p className="sm:col-span-2 lg:col-span-3 text-xs text-secondary">
               Доступные дни ресурса:{' '}
               {allowedWeekdayOptions.length > 0
                 ? allowedWeekdayOptions.map((option) => option.label).join(', ')
@@ -295,36 +295,36 @@ export default function RecurringBookingsPage() {
         </form>
       </section>
 
-      <section className="rounded-2xl border border-gray-700 bg-gray-800 p-5">
-        <h2 className="text-lg font-semibold text-white">
+      <section className="rounded-2xl border border-default bg-raised p-5">
+        <h2 className="text-lg font-semibold text-primary">
           {user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN
             ? 'Доступные серии'
             : 'Мои серии'}
         </h2>
 
         {recurringError ? (
-          <p className="mt-3 text-sm text-red-300">Не удалось загрузить список серий.</p>
+          <p className="mt-3 text-sm text-danger">Не удалось загрузить список серий.</p>
         ) : recurringLoading ? (
-          <p className="mt-3 text-sm text-gray-400">Загрузка…</p>
+          <p className="mt-3 text-sm text-secondary">Загрузка…</p>
         ) : visibleRecurringRows.length === 0 ? (
-          <p className="mt-3 text-sm text-gray-400">Серий пока нет.</p>
+          <p className="mt-3 text-sm text-secondary">Серий пока нет.</p>
         ) : (
-          <ul className="mt-4 divide-y divide-gray-700 rounded-xl border border-gray-700">
+          <ul className="mt-4 divide-y divide-[color:var(--border)] rounded-xl border border-default">
             {visibleRecurringRows.map((row) => (
               <li
                 key={row.id}
                 className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
-                    <p className="font-medium text-white">
+                    <p className="font-medium text-primary">
                     {resourceNameById.get(row.resource_id) ?? `Ресурс #${row.resource_id}`}
                   </p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-secondary">
                     {WEEKDAY_OPTIONS[row.day_of_week]?.label ?? `День ${row.day_of_week}`},{' '}
                     {row.start_time.slice(0, 5)}-{row.end_time.slice(0, 5)} · до {row.valid_until ?? 'без даты'}
                   </p>
                   {user?.role === USER_ROLES.COMPANY_ADMIN && row.user_name && (
-                    <p className="text-xs text-gray-400">Сотрудник: {row.user_name}</p>
+                    <p className="text-xs text-secondary">Сотрудник: {row.user_name}</p>
                   )}
                 </div>
                 {canCancelSeries(row) ? (
@@ -332,12 +332,12 @@ export default function RecurringBookingsPage() {
                     type="button"
                     onClick={() => deleteMutation.mutate(row.id)}
                     disabled={deleteMutation.isPending}
-                    className="rounded-lg border border-red-800 px-3 py-2 text-xs font-medium text-red-300 hover:bg-red-900/30 disabled:opacity-50"
+                    className="rounded-lg border border-red-200 dark:border-red-800 px-3 py-2 text-xs font-medium text-danger hover:bg-danger-subtle disabled:opacity-50"
                   >
                     Отменить серию
                   </button>
                 ) : (
-                  <span className="rounded-lg border border-gray-700 px-3 py-2 text-xs text-gray-400">
+                  <span className="rounded-lg border border-default px-3 py-2 text-xs text-secondary">
                     Нет доступа к отмене
                   </span>
                 )}

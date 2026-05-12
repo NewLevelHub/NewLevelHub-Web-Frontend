@@ -4,7 +4,7 @@ export function AnnouncementSkeleton() {
       {Array.from({ length: 3 }).map((_, i) => (
         <div
           key={i}
-          className="h-32 animate-pulse rounded-xl border border-gray-800 bg-gray-900/80"
+          className="h-32 animate-pulse rounded-xl border border-default bg-surface"
         />
       ))}
     </div>

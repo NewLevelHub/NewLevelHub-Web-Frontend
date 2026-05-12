@@ -43,7 +43,7 @@ const PLAN_LABELS: Record<string, string> = {
 };
 
 const PLAN_BADGE_COLORS: Record<string, string> = {
-  [COMPANY_TIERS.BASIC]: 'bg-gray-700 text-gray-200',
+  [COMPANY_TIERS.BASIC]: 'bg-hover text-secondary',
   [COMPANY_TIERS.STANDARD]: 'bg-blue-900/60 text-blue-300',
   [COMPANY_TIERS.PREMIUM]: 'bg-purple-900/60 text-purple-300',
 };
@@ -103,10 +103,10 @@ interface InfoRowProps {
 function InfoRow({ icon, label, value }: InfoRowProps) {
   return (
     <div className="flex items-start gap-3">
-      <div className="mt-0.5 text-gray-500 shrink-0">{icon}</div>
+      <div className="mt-0.5 text-muted shrink-0">{icon}</div>
       <div className="min-w-0">
-        <p className="text-xs text-gray-400 mb-0.5">{label}</p>
-        <p className="text-sm font-medium text-gray-100 break-words">{value}</p>
+        <p className="text-xs text-secondary mb-0.5">{label}</p>
+        <p className="text-sm font-medium text-primary break-words">{value}</p>
       </div>
     </div>
   );
@@ -120,13 +120,13 @@ interface StatCardProps {
 
 function StatCard({ icon, label, value }: StatCardProps) {
   return (
-    <div className="bg-gray-800 rounded-2xl border border-gray-700 p-5 flex items-center gap-4">
+    <div className="bg-raised rounded-2xl border border-default p-5 flex items-center gap-4">
       <div className="w-12 h-12 rounded-xl bg-blue-900/40 flex items-center justify-center shrink-0 text-blue-300">
         {icon}
       </div>
       <div>
-        <p className="text-2xl font-bold text-white">{value}</p>
-        <p className="text-sm text-gray-400">{label}</p>
+        <p className="text-2xl font-bold text-primary">{value}</p>
+        <p className="text-sm text-secondary">{label}</p>
       </div>
     </div>
   );
@@ -151,13 +151,13 @@ function LimitBar({ label, current, max, unit = '', unlimited, currentFormatted,
     return (
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-gray-300">{label}</p>
-          <p className="text-sm font-semibold text-gray-100">{percent}%</p>
+          <p className="text-sm font-medium text-secondary">{label}</p>
+          <p className="text-sm font-semibold text-primary">{percent}%</p>
         </div>
-        <div className="w-full h-2.5 bg-gray-700 rounded-full overflow-hidden">
-          <div className="h-full rounded-full bg-indigo-500 transition-all duration-500" style={{ width: '0%' }} />
+        <div className="w-full h-2.5 bg-hover rounded-full overflow-hidden">
+          <div className="h-full rounded-full bg-brand-hover transition-all duration-500" style={{ width: '0%' }} />
         </div>
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-secondary">
           {currentFormatted ?? `${safeCurrent}${unit}`} — без ограничений
         </p>
       </div>
@@ -166,9 +166,9 @@ function LimitBar({ label, current, max, unit = '', unlimited, currentFormatted,
 
   const tone = usageTone(percent);
   const barColor =
-    tone === 'danger' ? 'bg-red-500' : tone === 'warning' ? 'bg-amber-500' : 'bg-indigo-500';
+    tone === 'danger' ? 'bg-red-500' : tone === 'warning' ? 'bg-amber-500' : 'bg-brand-hover';
   const textColor =
-    tone === 'danger' ? 'text-red-300' : tone === 'warning' ? 'text-amber-300' : 'text-gray-100';
+    tone === 'danger' ? 'text-danger' : tone === 'warning' ? 'text-warning' : 'text-primary';
 
   const valueLabel = currentFormatted ?? `${safeCurrent.toFixed(1).replace('.0', '')}${unit}`;
   const maxLabel = maxFormatted ?? (safeMax <= 0 ? '—' : `${safeMax.toFixed(1).replace('.0', '')}${unit}`);
@@ -176,11 +176,11 @@ function LimitBar({ label, current, max, unit = '', unlimited, currentFormatted,
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-gray-300">{label}</p>
+        <p className="text-sm font-medium text-secondary">{label}</p>
         <p className={cn('text-sm font-semibold', textColor)}>{percent}%</p>
       </div>
       <div
-        className="w-full h-2.5 bg-gray-700 rounded-full overflow-hidden"
+        className="w-full h-2.5 bg-hover rounded-full overflow-hidden"
         role="progressbar"
         aria-valuenow={percent}
         aria-valuemin={0}
@@ -189,7 +189,7 @@ function LimitBar({ label, current, max, unit = '', unlimited, currentFormatted,
       >
         <div className={cn('h-full rounded-full transition-all duration-500', barColor)} style={{ width: `${percent}%` }} />
       </div>
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-secondary">
         {valueLabel} из {maxLabel}
       </p>
     </div>
@@ -207,7 +207,7 @@ function DetailSkeleton() {
       </div>
       <div className="w-56 h-7 rounded bg-gray-200" />
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div className="bg-surface rounded-2xl border border-default shadow-sm p-6">
         <div className="flex items-start gap-6">
           <div className="w-24 h-24 rounded-2xl bg-gray-200 shrink-0" />
           <div className="flex-1 space-y-3 pt-2">
@@ -231,7 +231,7 @@ function DetailSkeleton() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {Array.from({ length: 2 }).map((_, i) => (
-          <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div key={i} className="bg-surface rounded-2xl border border-default shadow-sm p-5">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-gray-200" />
               <div className="space-y-2">
@@ -413,11 +413,11 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
 
   const inputClass = (field: string) =>
     cn(
-      'w-full px-3 py-2 text-sm rounded-lg border bg-gray-900 text-white placeholder:text-gray-500',
+      'w-full px-3 py-2 text-sm rounded-lg border bg-surface text-primary placeholder:text-muted',
       'focus:outline-none focus:ring-2 focus:border-transparent',
       fieldErrors[field]
         ? 'border-red-500 focus:ring-red-500'
-        : 'border-gray-600 focus:ring-indigo-500',
+        : 'border-default focus:ring-blue-500/20',
     );
 
   return (
@@ -426,7 +426,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
         {generalError && (
           <div
             role="alert"
-            className="flex items-center gap-2 px-4 py-3 rounded-xl border border-red-800 bg-red-950/50 text-red-200 text-sm"
+            className="flex items-center gap-2 px-4 py-3 rounded-xl border border-red-200 dark:border-red-800 bg-danger-subtle text-danger-badge text-sm"
           >
             <AlertTriangle size={15} className="shrink-0" aria-hidden="true" />
             {generalError}
@@ -435,16 +435,16 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
 
         {/* Logo upload */}
         <div>
-          <p className="text-xs text-gray-500 mb-2">Логотип</p>
+          <p className="text-xs text-muted mb-2">Логотип</p>
           <div className="flex items-center gap-4">
             {company.logo ? (
               <img
                 src={company.logo}
                 alt="Текущий логотип компании"
-                className="w-16 h-16 rounded-xl object-cover border border-gray-200"
+                className="w-16 h-16 rounded-xl object-cover border border-default"
               />
             ) : (
-              <div className="w-16 h-16 rounded-xl bg-blue-50 flex items-center justify-center border border-gray-200">
+              <div className="w-16 h-16 rounded-xl bg-blue-50 flex items-center justify-center border border-default">
                 <Building2 className="w-7 h-7 text-blue-400" aria-hidden="true" />
               </div>
             )}
@@ -458,7 +458,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-200 bg-gray-700 border border-gray-600 rounded-lg hover:bg-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-secondary bg-hover border border-default rounded-lg hover:bg-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors"
             >
               <Upload size={14} aria-hidden="true" />
               Загрузить логотип
@@ -473,7 +473,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
             />
           </div>
           {logoPreview ? (
-            <p className="mt-1 text-xs text-indigo-300">
+            <p className="mt-1 text-xs text-brand">
               Новый логотип применится только после нажатия «Сохранить».
             </p>
           ) : null}
@@ -484,7 +484,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
 
         {/* Name */}
         <div>
-          <label htmlFor="edit-name" className="block text-xs text-gray-500 mb-1">
+          <label htmlFor="edit-name" className="block text-xs text-muted mb-1">
             Название <span className="text-red-500" aria-hidden="true">*</span>
           </label>
           <input
@@ -502,7 +502,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
 
         {/* Description */}
         <div>
-          <label htmlFor="edit-description" className="block text-xs text-gray-500 mb-1">
+          <label htmlFor="edit-description" className="block text-xs text-muted mb-1">
             Описание
           </label>
           <textarea
@@ -516,7 +516,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
 
         {/* Contact email */}
         <div>
-          <label htmlFor="edit-contact-email" className="block text-xs text-gray-500 mb-1">
+          <label htmlFor="edit-contact-email" className="block text-xs text-muted mb-1">
             Контактный email
           </label>
           <input
@@ -533,7 +533,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
 
         {/* Contact phone */}
         <div>
-          <label htmlFor="edit-contact-phone" className="block text-xs text-gray-500 mb-1">
+          <label htmlFor="edit-contact-phone" className="block text-xs text-muted mb-1">
             Контактный телефон
           </label>
           <input
@@ -554,7 +554,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
             <div className="grid grid-cols-2 gap-4">
               {/* Floor */}
               <div>
-                <label htmlFor="edit-floor" className="block text-xs text-gray-500 mb-1">
+                <label htmlFor="edit-floor" className="block text-xs text-muted mb-1">
                   Этаж
                 </label>
                 <input
@@ -569,7 +569,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
 
               {/* Office number */}
               <div>
-                <label htmlFor="edit-office-number" className="block text-xs text-gray-500 mb-1">
+                <label htmlFor="edit-office-number" className="block text-xs text-muted mb-1">
                   Номер офиса
                 </label>
                 <input
@@ -584,7 +584,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
 
             {/* Plan */}
             <div>
-              <label htmlFor="edit-plan" className="block text-xs text-gray-500 mb-1">
+              <label htmlFor="edit-plan" className="block text-xs text-muted mb-1">
                 Тариф
               </label>
               <select
@@ -602,7 +602,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Max employees */}
               <div>
-                <label htmlFor="edit-max-employees" className="block text-xs text-gray-500 mb-1">
+                <label htmlFor="edit-max-employees" className="block text-xs text-muted mb-1">
                   Макс. сотрудников
                 </label>
                 <input
@@ -617,7 +617,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
 
               {/* Max boards */}
               <div>
-                <label htmlFor="edit-max-boards" className="block text-xs text-gray-500 mb-1">
+                <label htmlFor="edit-max-boards" className="block text-xs text-muted mb-1">
                   Макс. досок
                 </label>
                 <input
@@ -632,7 +632,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
 
               {/* Storage limit */}
               <div>
-                <label htmlFor="edit-storage" className="block text-xs text-gray-500 mb-1">
+                <label htmlFor="edit-storage" className="block text-xs text-muted mb-1">
                   Хранилище (ГБ)
                 </label>
                 <input
@@ -656,7 +656,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
             className={cn(
               'inline-flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
               isPending
-                ? 'bg-blue-300 text-white cursor-not-allowed'
+                ? 'bg-blue-300 text-primary cursor-not-allowed'
                 : 'bg-blue-600 hover:bg-blue-700 text-white',
             )}
           >
@@ -679,7 +679,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-300 border border-gray-600 hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-secondary border border-default hover:bg-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:opacity-50"
           >
             <X size={15} aria-hidden="true" />
             Отмена
@@ -733,7 +733,7 @@ export default function CompanyDetailPage() {
           <button
             type="button"
             onClick={() => navigate(companiesBasePath)}
-            className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 mb-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+            className="inline-flex items-center gap-2 text-sm font-medium text-muted hover:text-primary mb-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
           >
             <ArrowLeft size={16} aria-hidden="true" />
             Назад к списку
@@ -769,14 +769,14 @@ export default function CompanyDetailPage() {
             <button
               type="button"
               onClick={() => navigate(companiesBasePath)}
-              className="inline-flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-gray-200 mb-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
+              className="inline-flex items-center gap-2 text-sm font-medium text-secondary hover:text-secondary mb-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
               aria-label="Назад к списку компаний"
             >
               <ArrowLeft size={16} aria-hidden="true" />
               Назад к списку
             </button>
           )}
-          <h1 className="text-2xl font-bold text-white">{company.name}</h1>
+          <h1 className="text-2xl font-bold text-primary">{company.name}</h1>
         </div>
 
         {!isEditing && (
@@ -784,7 +784,7 @@ export default function CompanyDetailPage() {
             {isSuperadmin && (
               <Link
                 to={`/company/settings?company=${company.id}`}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-gray-700 text-gray-300 hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 shrink-0"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-default text-secondary hover:bg-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 shrink-0"
                 aria-label="Настройки компании"
               >
                 <Settings size={15} aria-hidden="true" />
@@ -795,7 +795,7 @@ export default function CompanyDetailPage() {
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 shrink-0"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-brand hover:bg-brand-hover text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 shrink-0"
                 aria-label="Редактировать компанию"
               >
                 <Pencil size={15} aria-hidden="true" />
@@ -808,7 +808,7 @@ export default function CompanyDetailPage() {
 
       {/* Profile card */}
       <section
-        className="bg-gray-800 rounded-2xl border border-gray-700 p-6 space-y-6"
+        className="bg-raised rounded-2xl border border-default p-6 space-y-6"
         aria-label="Информация о компании"
       >
         {/* Logo + name row */}
@@ -829,9 +829,9 @@ export default function CompanyDetailPage() {
           )}
 
           <div className="space-y-2">
-            <p className="text-xl font-semibold text-white">{company.name}</p>
+            <p className="text-xl font-semibold text-primary">{company.name}</p>
             {company.description && (
-              <p className="text-sm text-gray-400 max-w-lg">{company.description}</p>
+              <p className="text-sm text-secondary max-w-lg">{company.description}</p>
             )}
             <div className="flex flex-wrap gap-2 pt-1">
               <span
@@ -846,8 +846,8 @@ export default function CompanyDetailPage() {
                 className={cn(
                   'inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full',
                   company.is_active
-                    ? 'bg-green-900/30 text-green-300 border border-green-800'
-                    : 'bg-red-900/30 text-red-300 border border-red-800',
+                    ? 'bg-success-subtle text-success border border-green-800'
+                    : 'bg-danger-subtle text-danger border border-red-200 dark:border-red-800',
                 )}
               >
                 {company.is_active ? 'Активна' : 'Неактивна'}
@@ -929,7 +929,7 @@ export default function CompanyDetailPage() {
             <span>
               {storageUsedFormatted}{' '}
               {!storageUnlimited && (
-                <span className="text-base font-semibold text-gray-400">/ {storageMaxFormatted}</span>
+                <span className="text-base font-semibold text-secondary">/ {storageMaxFormatted}</span>
               )}
             </span>
           }
@@ -938,12 +938,12 @@ export default function CompanyDetailPage() {
 
       {/* Limits widget */}
       <section
-        className="bg-gray-800 rounded-2xl border border-gray-700 p-5"
+        className="bg-raised rounded-2xl border border-default p-5"
         aria-label="Лимиты компании"
       >
         <div className="mb-4">
-          <p className="text-base font-semibold text-white">Лимиты тарифа</p>
-          <p className="text-sm text-gray-400">Индикаторы меняют цвет с 80% и 95% использования.</p>
+          <p className="text-base font-semibold text-primary">Лимиты тарифа</p>
+          <p className="text-sm text-secondary">Индикаторы меняют цвет с 80% и 95% использования.</p>
         </div>
         <div className="space-y-5">
           <LimitBar label="Сотрудники" current={limitEmployeesCurrent} max={limitEmployeesMax} />

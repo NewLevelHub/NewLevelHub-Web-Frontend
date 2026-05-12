@@ -77,7 +77,7 @@ export default function BookingResourceSchedulePage() {
   if (detailLoading) {
     return (
       <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-3xl mx-auto">
-        <p className="text-sm text-gray-500">Загрузка…</p>
+        <p className="text-sm text-muted">Загрузка…</p>
       </main>
     );
   }
@@ -99,7 +99,7 @@ export default function BookingResourceSchedulePage() {
     <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-3xl mx-auto space-y-6">
       <Link
         to="/bookings/catalog"
-        className="inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+        className="inline-flex items-center gap-2 text-sm font-medium text-secondary hover:text-primary"
       >
         <ArrowLeft className="h-4 w-4" />
         Каталог
@@ -110,17 +110,17 @@ export default function BookingResourceSchedulePage() {
           <img
             src={imgSrc}
             alt=""
-            className="w-full sm:w-48 rounded-xl object-cover aspect-[4/3] border border-gray-100"
+            className="w-full sm:w-48 rounded-xl object-cover aspect-[4/3] border border-default"
           />
         ) : null}
         <div className="min-w-0 flex-1 space-y-1">
-          <h1 className="text-2xl font-bold text-gray-900">{detail.name}</h1>
-          <p className="text-sm text-gray-600">
+          <h1 className="text-2xl font-bold text-primary">{detail.name}</h1>
+          <p className="text-sm text-muted">
             {RESOURCE_TYPE_LABELS[detail.type as ResourceType]} · этаж {detail.floor}
             {detail.zone ? ` · ${detail.zone}` : ''}
           </p>
           {detail.description ? (
-            <p className="text-sm text-gray-600 pt-1">{detail.description}</p>
+            <p className="text-sm text-muted pt-1">{detail.description}</p>
           ) : null}
         </div>
       </div>
@@ -137,16 +137,16 @@ export default function BookingResourceSchedulePage() {
         </div>
       )}
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-default bg-surface p-4 shadow-sm space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold text-gray-900">Расписание</h2>
+          <h2 className="text-lg font-semibold text-primary">Расписание</h2>
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => setSelectedDay((d) => addDays(d, -1))}
               className={cn(
-                'p-2 rounded-lg border border-gray-300 bg-white text-gray-700 shadow-sm',
-                'hover:bg-gray-50 hover:text-gray-900',
+                'p-2 rounded-lg border border-default bg-surface text-secondary shadow-sm',
+                'hover:bg-raised hover:text-primary',
                 'focus:outline-none focus:ring-2 focus:ring-blue-500',
               )}
               aria-label="Предыдущий день"
@@ -158,7 +158,7 @@ export default function BookingResourceSchedulePage() {
               value={selectedDay}
               onChange={(e) => setSelectedDay(e.target.value)}
               className={cn(
-                'rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900',
+                'rounded-lg border border-default bg-surface px-2 py-1.5 text-sm text-primary',
                 'focus:outline-none focus:ring-2 focus:ring-blue-500',
               )}
             />
@@ -166,8 +166,8 @@ export default function BookingResourceSchedulePage() {
               type="button"
               onClick={() => setSelectedDay((d) => addDays(d, 1))}
               className={cn(
-                'p-2 rounded-lg border border-gray-300 bg-white text-gray-700 shadow-sm',
-                'hover:bg-gray-50 hover:text-gray-900',
+                'p-2 rounded-lg border border-default bg-surface text-secondary shadow-sm',
+                'hover:bg-raised hover:text-primary',
                 'focus:outline-none focus:ring-2 focus:ring-blue-500',
               )}
               aria-label="Следующий день"
@@ -190,7 +190,7 @@ export default function BookingResourceSchedulePage() {
                   'rounded-lg px-2 py-1 text-xs font-medium border',
                   active
                     ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50',
+                    : 'bg-surface text-secondary border-default hover:bg-raised',
                 )}
               >
                 {dd}.{mm}
@@ -211,7 +211,7 @@ export default function BookingResourceSchedulePage() {
         ) : (
           <>
             <ResourceDayTimeline dayDate={selectedDay} slots={daySlots} />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted">
               Красным — бронирования, янтарным — блокировки. Свободное время — светлая полоса.
             </p>
           </>

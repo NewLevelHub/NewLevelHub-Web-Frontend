@@ -40,8 +40,8 @@ export const CrmTaskCard = memo(function CrmTaskCard({ task, onClick, onArchive 
     <div
       aria-label={`Задача: ${task.title}`}
       className={cn(
-        'group relative rounded-lg border border-gray-700 bg-gray-800 px-3 py-2.5',
-        'hover:border-gray-600 hover:bg-gray-750 transition-colors',
+        'group relative rounded-lg border border-default bg-raised px-3 py-2.5',
+        'hover:border-strong hover:bg-hover transition-colors',
         'space-y-2',
       )}
     >
@@ -55,7 +55,7 @@ export const CrmTaskCard = memo(function CrmTaskCard({ task, onClick, onArchive 
           onPointerDown={(e) => e.stopPropagation()}
           className={cn(
             'p-1 rounded transition-opacity',
-            menuOpen ? 'opacity-100 text-gray-200 bg-gray-700' : 'opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-200 hover:bg-gray-700',
+            menuOpen ? 'opacity-100 text-secondary bg-hover' : 'opacity-0 group-hover:opacity-100 text-muted hover:text-secondary hover:bg-hover',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:opacity-100',
           )}
           aria-label={`Действия для задачи: ${task.title}`}
@@ -67,7 +67,7 @@ export const CrmTaskCard = memo(function CrmTaskCard({ task, onClick, onArchive 
 
         {menuOpen && (
           <div
-            className="absolute right-0 top-full mt-1 w-44 rounded-lg border border-gray-700 bg-gray-900 shadow-xl py-1"
+            className="absolute right-0 top-full mt-1 w-44 rounded-lg border border-default bg-surface shadow-xl py-1"
             onPointerDown={(e) => e.stopPropagation()}
           >
             <Link
@@ -76,7 +76,7 @@ export const CrmTaskCard = memo(function CrmTaskCard({ task, onClick, onArchive 
                 e.stopPropagation();
                 setMenuOpen(false);
               }}
-              className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+              className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-secondary hover:bg-hover hover:text-primary transition-colors"
             >
               <ExternalLink size={13} />
               Открыть задачу
@@ -88,7 +88,7 @@ export const CrmTaskCard = memo(function CrmTaskCard({ task, onClick, onArchive 
                 setMenuOpen(false);
                 onClick();
               }}
-              className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+              className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-secondary hover:bg-hover hover:text-primary transition-colors"
             >
               <Pencil size={13} />
               Редактировать
@@ -101,7 +101,7 @@ export const CrmTaskCard = memo(function CrmTaskCard({ task, onClick, onArchive 
                   setMenuOpen(false);
                   onArchive();
                 }}
-                className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-red-400 hover:bg-gray-800 hover:text-red-300 transition-colors"
+                className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-red-400 hover:bg-hover hover:text-danger transition-colors"
                 title="Архивировать"
               >
                 <Archive size={13} />
@@ -126,7 +126,7 @@ export const CrmTaskCard = memo(function CrmTaskCard({ task, onClick, onArchive 
         </div>
       )}
 
-      <p className="text-sm text-white leading-snug line-clamp-2 pr-6">{task.title}</p>
+      <p className="text-sm text-primary leading-snug line-clamp-2 pr-6">{task.title}</p>
 
       <span
         className={cn(
@@ -143,7 +143,7 @@ export const CrmTaskCard = memo(function CrmTaskCard({ task, onClick, onArchive 
             <span
               className={cn(
                 'flex items-center gap-1 text-xs',
-                overdue ? 'text-red-400' : 'text-gray-400',
+                overdue ? 'text-red-400' : 'text-secondary',
               )}
               title={overdue ? 'Просрочено' : undefined}
             >
@@ -155,13 +155,13 @@ export const CrmTaskCard = memo(function CrmTaskCard({ task, onClick, onArchive 
 
         <div className="flex items-center gap-2 shrink-0">
           {task.comments_count > 0 && (
-            <span className="flex items-center gap-1 text-xs text-gray-500">
+            <span className="flex items-center gap-1 text-xs text-muted">
               <MessageSquare size={11} />
               {task.comments_count}
             </span>
           )}
           {task.attachments_count > 0 && (
-            <span className="flex items-center gap-1 text-xs text-gray-500">
+            <span className="flex items-center gap-1 text-xs text-muted">
               <Paperclip size={11} />
               {task.attachments_count}
             </span>

@@ -44,12 +44,12 @@ export const MapDeletePointDialog = memo<MapDeletePointDialogProps>(
         aria-modal="true"
         aria-labelledby="delete-confirm-title"
       >
-        <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl">
+        <div className="w-full max-w-sm rounded-2xl bg-surface shadow-2xl">
           <div className="px-6 py-5">
-            <h2 id="delete-confirm-title" className="text-base font-semibold text-gray-900">
+            <h2 id="delete-confirm-title" className="text-base font-semibold text-primary">
               Удалить точку?
             </h2>
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-muted">
               Точка <span className="font-medium text-gray-700">«{point.label}»</span> будет безвозвратно удалена с
               карты.
             </p>
@@ -64,12 +64,12 @@ export const MapDeletePointDialog = memo<MapDeletePointDialogProps>(
             ) : null}
           </div>
 
-          <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-6 py-4">
+          <div className="flex items-center justify-end gap-3 border-t border-default px-6 py-4">
             <button
               type="button"
               onClick={onClose}
               disabled={deleteMutation.isPending}
-              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 disabled:opacity-50 transition-colors"
+              className="rounded-lg border border-gray-300 bg-surface px-4 py-2 text-sm font-medium text-gray-700 hover:bg-raised focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 disabled:opacity-50 transition-colors"
             >
               Отмена
             </button>

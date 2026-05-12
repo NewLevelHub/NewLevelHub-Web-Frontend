@@ -47,7 +47,7 @@ export default function ResetPasswordPage() {
     return (
       <div>
         <h2 className="mb-1 text-center text-xl font-semibold">Недействительная ссылка</h2>
-        <p className="mb-6 text-center text-sm text-gray-500">
+        <p className="mb-6 text-center text-sm text-muted">
           Ссылка для сброса пароля повреждена или устарела. Запросите новую.
         </p>
         <p className="mt-4 text-center">
@@ -68,13 +68,13 @@ export default function ResetPasswordPage() {
   return (
     <div>
       <h2 className="mb-1 text-center text-xl font-semibold">Новый пароль</h2>
-      <p className="mb-6 text-center text-sm text-gray-500">
+      <p className="mb-6 text-center text-sm text-muted">
         Придумайте новый пароль для вашего аккаунта
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {errorMessage ? (
-          <div className="rounded-lg border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+          <div className="rounded-lg border border-red-200 bg-danger-subtle px-3 py-2 text-sm text-danger dark:border-red-900/40">
             <p>{errorMessage}</p>
             {showNewLinkPrompt ? (
               <p className="mt-1">

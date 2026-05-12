@@ -97,7 +97,7 @@ function CommentItem({
         />
       ) : (
         <span
-          className="w-7 h-7 rounded-full bg-gray-700 text-gray-300 text-xs font-medium flex items-center justify-center shrink-0 mt-0.5"
+          className="w-7 h-7 rounded-full bg-hover text-secondary text-xs font-medium flex items-center justify-center shrink-0 mt-0.5"
           aria-label={comment.author.full_name}
         >
           {initials}
@@ -107,8 +107,8 @@ function CommentItem({
       <div className="flex-1 min-w-0 space-y-1">
         {/* Author + date row */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-medium text-gray-300">{comment.author.full_name}</span>
-          <span className="text-xs text-gray-600">{formatCommentDate(comment.created_at)}</span>
+          <span className="text-xs font-medium text-secondary">{comment.author.full_name}</span>
+          <span className="text-xs text-muted">{formatCommentDate(comment.created_at)}</span>
         </div>
 
         {/* Text or edit form */}
@@ -121,9 +121,9 @@ function CommentItem({
               onKeyDown={handleKeyDown}
               rows={3}
               className={cn(
-                'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white',
+                'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary',
                 'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
-                'border-gray-700 resize-none',
+                'border-default resize-none',
               )}
               aria-label="Редактировать комментарий"
             />
@@ -143,14 +143,14 @@ function CommentItem({
               <button
                 type="button"
                 onClick={handleEditCancel}
-                className="rounded-md px-3 py-1 text-xs font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+                className="rounded-md px-3 py-1 text-xs font-medium text-secondary hover:text-primary hover:bg-hover transition-colors"
               >
                 Отмена
               </button>
             </div>
           </div>
         ) : (
-          <p className="text-sm text-gray-300 whitespace-pre-wrap break-words">{comment.text}</p>
+          <p className="text-sm text-secondary whitespace-pre-wrap break-words">{comment.text}</p>
         )}
 
         {/* Actions */}
@@ -160,7 +160,7 @@ function CommentItem({
               <button
                 type="button"
                 onClick={handleEditStart}
-                className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
+                className="text-xs text-muted hover:text-secondary transition-colors"
               >
                 Редактировать
               </button>
@@ -263,11 +263,11 @@ export function CommentSection({ taskId, boardId }: CommentSectionProps) {
   };
 
   return (
-    <div className="space-y-4 pt-2 border-t border-gray-800">
+    <div className="space-y-4 pt-2 border-t border-default">
       {/* Section heading */}
       <div className="flex items-center gap-2">
-        <MessageSquare size={14} className="text-gray-500 shrink-0" />
-        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">Комментарии</h3>
+        <MessageSquare size={14} className="text-muted shrink-0" />
+        <h3 className="text-xs font-medium text-muted uppercase tracking-wide">Комментарии</h3>
       </div>
 
       {/* Comment list */}
@@ -275,10 +275,10 @@ export function CommentSection({ taskId, boardId }: CommentSectionProps) {
         <div className="space-y-3 animate-pulse">
           {[1, 2].map((i) => (
             <div key={i} className="flex gap-3">
-              <div className="w-7 h-7 rounded-full bg-gray-700 shrink-0" />
+              <div className="w-7 h-7 rounded-full bg-hover shrink-0" />
               <div className="flex-1 space-y-1.5">
-                <div className="h-3 w-24 rounded bg-gray-700" />
-                <div className="h-4 w-full rounded bg-gray-700" />
+                <div className="h-3 w-24 rounded bg-hover" />
+                <div className="h-4 w-full rounded bg-hover" />
               </div>
             </div>
           ))}
@@ -290,7 +290,7 @@ export function CommentSection({ taskId, boardId }: CommentSectionProps) {
       )}
 
       {!isLoading && !isError && comments && comments.length === 0 && (
-        <p className="text-xs text-gray-600">Комментариев пока нет.</p>
+        <p className="text-xs text-muted">Комментариев пока нет.</p>
       )}
 
       {!isLoading && !isError && comments && comments.length > 0 && (
@@ -319,9 +319,9 @@ export function CommentSection({ taskId, boardId }: CommentSectionProps) {
           placeholder="Написать комментарий..."
           rows={3}
           className={cn(
-            'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-600',
+            'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary placeholder-gray-600',
             'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
-            'border-gray-700 resize-none',
+            'border-default resize-none',
           )}
           aria-label="Текст нового комментария"
         />

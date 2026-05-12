@@ -28,7 +28,7 @@ export function ColumnHeaderMenu({ column, onEdit, onDelete }: ColumnHeaderMenuP
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="p-1 rounded text-gray-600 hover:text-gray-400 hover:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-gray-600 transition-colors"
+        className="p-1 rounded text-muted hover:text-secondary hover:bg-hover focus:outline-none focus:ring-1 focus:ring-gray-600 transition-colors"
         aria-label={`Действия с колонкой ${column.name}`}
         aria-haspopup="true"
         aria-expanded={open}
@@ -38,7 +38,7 @@ export function ColumnHeaderMenu({ column, onEdit, onDelete }: ColumnHeaderMenuP
 
       {open && (
         <div
-          className="absolute right-0 top-full mt-1 w-40 rounded-lg border border-gray-700 bg-gray-900 shadow-xl z-20 py-1"
+          className="absolute right-0 top-full mt-1 w-40 rounded-lg border border-default bg-surface shadow-xl z-20 py-1"
           role="menu"
         >
           <button
@@ -48,7 +48,7 @@ export function ColumnHeaderMenu({ column, onEdit, onDelete }: ColumnHeaderMenuP
               setOpen(false);
               onEdit();
             }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-secondary hover:text-primary hover:bg-hover transition-colors"
           >
             <Pencil size={13} />
             Редактировать
@@ -60,7 +60,7 @@ export function ColumnHeaderMenu({ column, onEdit, onDelete }: ColumnHeaderMenuP
               setOpen(false);
               onDelete();
             }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-900/20 transition-colors"
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-400 hover:text-danger hover:bg-danger-subtle transition-colors"
           >
             <Trash2 size={13} />
             Удалить

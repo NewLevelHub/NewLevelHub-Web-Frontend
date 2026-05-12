@@ -93,7 +93,7 @@ export function ConfirmModal({
       {/* Dialog panel */}
       <div
         ref={dialogRef}
-        className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl"
+        className="relative w-full max-w-md rounded-2xl bg-surface shadow-2xl"
       >
         {/* Header */}
         <div className="flex items-start gap-4 p-6 pb-4">
@@ -119,13 +119,13 @@ export function ConfirmModal({
           <div className="flex-1 pt-0.5">
             <h2
               id="confirm-modal-title"
-              className="text-base font-semibold text-gray-900"
+              className="text-base font-semibold text-primary"
             >
               {title}
             </h2>
             <p
               id="confirm-modal-description"
-              className="mt-1 text-sm text-gray-500"
+              className="mt-1 text-sm text-muted"
             >
               {description}
             </p>
@@ -135,7 +135,7 @@ export function ConfirmModal({
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="shrink-0 rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:pointer-events-none disabled:opacity-50"
+            className="shrink-0 rounded-lg p-1 text-secondary transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:pointer-events-none disabled:opacity-50"
             aria-label="Закрыть"
           >
             <X className="h-4 w-4" aria-hidden="true" />
@@ -148,7 +148,7 @@ export function ConfirmModal({
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50"
+            className="rounded-lg border border-default bg-surface px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-raised disabled:pointer-events-none disabled:opacity-50"
           >
             {cancelLabel}
           </button>

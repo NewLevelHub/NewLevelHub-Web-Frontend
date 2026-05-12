@@ -36,10 +36,10 @@ export default function ForgotPasswordPage() {
     return (
       <div>
         <h2 className="mb-1 text-center text-xl font-semibold">Письмо отправлено</h2>
-        <p className="mb-6 text-center text-sm text-gray-500">
+        <p className="mb-6 text-center text-sm text-muted">
           Если аккаунт с таким email существует, мы отправили ссылку для сброса пароля.
         </p>
-        <p className="text-center text-sm text-gray-400">
+        <p className="text-center text-sm text-secondary">
           Проверьте папку «Входящие» и «Спам».
         </p>
         <p className="mt-6 text-center">
@@ -54,13 +54,13 @@ export default function ForgotPasswordPage() {
   return (
     <div>
       <h2 className="mb-1 text-center text-xl font-semibold">Восстановление пароля</h2>
-      <p className="mb-6 text-center text-sm text-gray-500">
+      <p className="mb-6 text-center text-sm text-muted">
         Введите email — мы отправим ссылку для сброса пароля
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {mutation.isError ? (
-          <div className="rounded-lg border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+          <div className="rounded-lg border border-red-200 bg-danger-subtle px-3 py-2 text-sm text-danger dark:border-red-900/40">
             {getForgotPasswordError(mutation.error)}
           </div>
         ) : null}

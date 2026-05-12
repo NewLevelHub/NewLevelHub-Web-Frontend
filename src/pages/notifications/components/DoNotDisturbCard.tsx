@@ -66,16 +66,16 @@ export function DoNotDisturbCard({ initialEnabled, initialUntil, onSaved }: DoNo
 
   return (
     <section
-      className="rounded-xl border border-gray-700 bg-gray-800 p-6"
+      className="rounded-xl border border-default bg-raised p-6"
       aria-labelledby="dnd-heading"
     >
       <div className="flex items-center gap-3 mb-4">
         {enabled ? (
           <BellOff className="h-5 w-5 text-blue-400" aria-hidden="true" />
         ) : (
-          <Bell className="h-5 w-5 text-gray-400" aria-hidden="true" />
+          <Bell className="h-5 w-5 text-secondary" aria-hidden="true" />
         )}
-        <h2 id="dnd-heading" className="text-base font-semibold text-white">
+        <h2 id="dnd-heading" className="text-base font-semibold text-primary">
           Режим «Не беспокоить»
         </h2>
       </div>
@@ -91,7 +91,7 @@ export function DoNotDisturbCard({ initialEnabled, initialUntil, onSaved }: DoNo
           }}
           disabled={mutation.isPending}
         />
-        <span className="text-sm text-gray-300">
+        <span className="text-sm text-secondary">
           {enabled ? 'Включён' : 'Выключен'}
         </span>
       </div>
@@ -108,7 +108,7 @@ export function DoNotDisturbCard({ initialEnabled, initialUntil, onSaved }: DoNo
         <div className="mb-4">
           <label
             htmlFor="dnd-until"
-            className="block text-sm text-gray-400 mb-1"
+            className="block text-sm text-secondary mb-1"
           >
             До (необязательно)
           </label>
@@ -123,9 +123,9 @@ export function DoNotDisturbCard({ initialEnabled, initialUntil, onSaved }: DoNo
                   min={nowLocal}
                   onChange={(e) => { setUntil(e.target.value); setFieldError(null); }}
                   className={cn(
-                    'rounded-lg border bg-gray-700 px-3 py-2 text-sm text-white [color-scheme:dark]',
+                    'rounded-lg border bg-hover px-3 py-2 text-sm text-primary [color-scheme:dark]',
                     'focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50',
-                    fieldError ? 'border-red-500' : 'border-gray-600',
+                    fieldError ? 'border-red-500' : 'border-default',
                   )}
                   disabled={mutation.isPending}
                 />

@@ -120,12 +120,12 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
   };
 
   return (
-    <div className="space-y-3 pt-2 border-t border-gray-800">
+    <div className="space-y-3 pt-2 border-t border-default">
       {/* Section heading */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Paperclip size={14} className="text-gray-500 shrink-0" />
-          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">Вложения</h3>
+          <Paperclip size={14} className="text-muted shrink-0" />
+          <h3 className="text-xs font-medium text-muted uppercase tracking-wide">Вложения</h3>
         </div>
         <button
           type="button"
@@ -133,7 +133,7 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
           disabled={uploadMutation.isPending}
           aria-label="Прикрепить файл"
           className={cn(
-            'flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-200 transition-colors',
+            'flex items-center gap-1.5 text-xs text-secondary hover:text-secondary transition-colors',
             'disabled:opacity-50 disabled:cursor-not-allowed',
           )}
         >
@@ -160,11 +160,11 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
       {isLoading && (
         <div className="space-y-2 animate-pulse">
           {[1, 2].map((i) => (
-            <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-gray-800/40">
-              <div className="w-7 h-7 rounded bg-gray-700 shrink-0" />
+            <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-raised">
+              <div className="w-7 h-7 rounded bg-hover shrink-0" />
               <div className="flex-1 space-y-1.5">
-                <div className="h-3 w-40 rounded bg-gray-700" />
-                <div className="h-3 w-24 rounded bg-gray-700" />
+                <div className="h-3 w-40 rounded bg-hover" />
+                <div className="h-3 w-24 rounded bg-hover" />
               </div>
             </div>
           ))}
@@ -176,7 +176,7 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
       )}
 
       {!isLoading && !isError && attachments && attachments.length === 0 && (
-        <p className="text-xs text-gray-600">Нет вложений.</p>
+        <p className="text-xs text-muted">Нет вложений.</p>
       )}
 
       {!isLoading && !isError && attachments && attachments.length > 0 && (
@@ -193,19 +193,19 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
             return (
               <li
                 key={attachment.id}
-                className="flex items-center gap-3 p-2 rounded-lg bg-gray-800/40 hover:bg-gray-800/70 transition-colors group"
+                className="flex items-center gap-3 p-2 rounded-lg bg-raised hover:bg-hover transition-colors group"
               >
-                <IconComponent size={18} className="text-gray-400 shrink-0" />
+                <IconComponent size={18} className="text-secondary shrink-0" />
                 <div className="flex-1 min-w-0">
                   <a
                     href={attachment.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-gray-200 hover:text-white truncate block max-w-full"
+                    className="text-sm text-secondary hover:text-primary truncate block max-w-full"
                   >
                     {attachment.filename}
                   </a>
-                  <p className="text-xs text-gray-500 truncate">
+                  <p className="text-xs text-muted truncate">
                     {formatFileSize(attachment.size)} · {attachment.uploaded_by.full_name} · {formattedDate}
                   </p>
                 </div>
@@ -216,7 +216,7 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
                     disabled={isDeleting}
                     aria-label={`Удалить ${attachment.filename}`}
                     className={cn(
-                      'shrink-0 p-1 rounded text-gray-600 hover:text-red-400 transition-colors',
+                      'shrink-0 p-1 rounded text-muted hover:text-red-400 transition-colors',
                       'opacity-0 group-hover:opacity-100 focus:opacity-100',
                       'disabled:opacity-50 disabled:cursor-not-allowed',
                     )}

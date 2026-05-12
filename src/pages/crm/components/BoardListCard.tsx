@@ -55,16 +55,16 @@ export const BoardListCard = memo(function BoardListCard({
       onClick={handleCardClick}
       onKeyDown={handleKeyDown}
       className={cn(
-        'group relative flex flex-col rounded-xl border border-gray-800 bg-gray-900',
+        'group relative flex flex-col rounded-xl border border-default bg-surface',
         'p-5 transition-all duration-200',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
         board.is_archived
           ? 'opacity-60 cursor-default'
-          : 'cursor-pointer hover:border-gray-600 hover:bg-gray-800/60 hover:shadow-lg',
+          : 'cursor-pointer hover:border-strong hover:bg-hover hover:shadow-lg',
       )}
     >
       {board.is_archived && (
-        <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-md bg-amber-900/40 border border-amber-800/60 px-2 py-0.5 text-xs font-medium text-amber-400">
+        <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-md bg-warning-subtle border border-amber-200 dark:border-amber-900/40 px-2 py-0.5 text-xs font-medium text-amber-400">
           <Archive size={10} />
           Архив
         </span>
@@ -75,12 +75,12 @@ export const BoardListCard = memo(function BoardListCard({
           <LayoutGrid size={18} className="text-blue-400" />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="font-semibold text-white text-sm leading-tight truncate">{board.name}</h3>
-          {board.description && <p className="mt-1 text-xs text-gray-400 line-clamp-2">{board.description}</p>}
+          <h3 className="font-semibold text-primary text-sm leading-tight truncate">{board.name}</h3>
+          {board.description && <p className="mt-1 text-xs text-secondary line-clamp-2">{board.description}</p>}
         </div>
       </div>
 
-      <div className="mt-auto flex items-center gap-1.5 text-xs text-gray-500">
+      <div className="mt-auto flex items-center gap-1.5 text-xs text-muted">
         <Calendar size={12} />
         <span>{formattedDate}</span>
       </div>
@@ -93,7 +93,7 @@ export const BoardListCard = memo(function BoardListCard({
             aria-label={`Разархивировать доску ${board.name}`}
             className={cn(
               'absolute top-3 right-3 rounded-md p-1.5 transition-all duration-150',
-              'text-gray-600 hover:text-blue-400 hover:bg-blue-900/30',
+              'text-muted hover:text-blue-400 hover:bg-blue-900/30',
               'opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
             )}
@@ -107,7 +107,7 @@ export const BoardListCard = memo(function BoardListCard({
             aria-label={`Архивировать доску ${board.name}`}
             className={cn(
               'absolute top-3 right-3 rounded-md p-1.5 transition-all duration-150',
-              'text-gray-600 hover:text-amber-400 hover:bg-amber-900/30',
+              'text-muted hover:text-amber-400 hover:bg-warning-subtle',
               'opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500',
             )}

@@ -12,18 +12,18 @@ export function QRCodeView({ qrImage, validFrom }: QRCodeViewProps) {
   const isNotYetActive = !isNowActive && activatesAt > new Date();
 
   return (
-    <section className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-      <h2 className="mb-3 text-lg font-semibold text-white">QR-код</h2>
+    <section className="rounded-xl border border-default bg-raised p-5">
+      <h2 className="mb-3 text-lg font-semibold text-primary">QR-код</h2>
       {qrImage ? (
         <div className="relative inline-block">
-          <img src={qrImage} alt="QR guest pass" className="max-h-80 rounded-lg border border-gray-700 bg-white p-3" />
+          <img src={qrImage} alt="QR guest pass" className="max-h-80 rounded-lg border border-default bg-surface p-3" />
           {isNotYetActive ? (
             <div className={cn(
               'absolute inset-0 flex flex-col items-center justify-center gap-1',
               'bg-black/60 backdrop-blur-sm rounded-lg'
             )}>
-              <span className="text-sm text-gray-300">Будет активен в</span>
-              <span className="font-semibold text-white">
+              <span className="text-sm text-secondary">Будет активен в</span>
+              <span className="font-semibold text-primary">
                 {activatesAt.toLocaleString('ru-RU')}
               </span>
               <span className="font-mono text-xs text-blue-400">
@@ -33,7 +33,7 @@ export function QRCodeView({ qrImage, validFrom }: QRCodeViewProps) {
           ) : null}
         </div>
       ) : (
-        <div className="text-sm text-gray-400">QR изображение недоступно.</div>
+        <div className="text-sm text-secondary">QR изображение недоступно.</div>
       )}
     </section>
   );

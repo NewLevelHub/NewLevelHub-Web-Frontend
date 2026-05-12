@@ -94,17 +94,17 @@ export function CrmLabelsManagerModal({ onClose }: LabelsManagerModalProps) {
       aria-modal="true"
       aria-labelledby="labels-manager-title"
     >
-      <div className="w-full max-w-md rounded-xl border border-gray-700 bg-gray-900 shadow-2xl">
+      <div className="w-full max-w-md rounded-xl border border-default bg-surface shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
-          <h2 id="labels-manager-title" className="text-base font-semibold text-white flex items-center gap-2">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-default">
+          <h2 id="labels-manager-title" className="text-base font-semibold text-primary flex items-center gap-2">
             <Tag size={16} />
             Управление метками
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors rounded-md p-1 hover:bg-gray-800"
+            className="text-secondary hover:text-primary transition-colors rounded-md p-1 hover:bg-hover"
             aria-label="Закрыть"
           >
             <X size={18} />
@@ -117,13 +117,13 @@ export function CrmLabelsManagerModal({ onClose }: LabelsManagerModalProps) {
           {isLoading && (
             <div className="space-y-2 animate-pulse">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-9 rounded-lg bg-gray-800" />
+                <div key={i} className="h-9 rounded-lg bg-raised" />
               ))}
             </div>
           )}
 
           {!isLoading && labels && labels.length === 0 && (
-            <p className="text-sm text-gray-500">Меток пока нет. Создайте первую.</p>
+            <p className="text-sm text-muted">Меток пока нет. Создайте первую.</p>
           )}
 
           {!isLoading && labels && labels.length > 0 && (
@@ -131,7 +131,7 @@ export function CrmLabelsManagerModal({ onClose }: LabelsManagerModalProps) {
               {labels.map((label) => (
                 <li key={label.id}>
                   {editingId === label.id ? (
-                    <div className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2">
+                    <div className="flex items-center gap-2 rounded-lg border border-default bg-raised px-3 py-2">
                       <input
                         type="color"
                         value={editColor}
@@ -145,8 +145,8 @@ export function CrmLabelsManagerModal({ onClose }: LabelsManagerModalProps) {
                         onChange={(e) => setEditName(e.target.value)}
                         maxLength={50}
                         className={cn(
-                          'flex-1 rounded border bg-gray-700 px-2 py-1 text-sm text-white',
-                          'focus:outline-none focus:ring-1 focus:ring-blue-500 border-gray-600',
+                          'flex-1 rounded border bg-hover px-2 py-1 text-sm text-primary',
+                          'focus:outline-none focus:ring-1 focus:ring-blue-500 border-default',
                         )}
                         aria-label="Название метки"
                         onKeyDown={(e) => {
@@ -169,25 +169,25 @@ export function CrmLabelsManagerModal({ onClose }: LabelsManagerModalProps) {
                       <button
                         type="button"
                         onClick={cancelEdit}
-                        className="rounded p-1 text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-colors"
+                        className="rounded p-1 text-muted hover:text-secondary hover:bg-hover transition-colors"
                         aria-label="Отмена"
                       >
                         <X size={14} />
                       </button>
                     </div>
                   ) : (
-                    <div className="group flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2">
+                    <div className="group flex items-center gap-2 rounded-lg border border-default bg-raised px-3 py-2">
                       <span
                         className="w-4 h-4 rounded shrink-0"
                         style={{ backgroundColor: label.color }}
                         aria-hidden="true"
                       />
-                      <span className="flex-1 text-sm text-gray-200 truncate">{label.name}</span>
+                      <span className="flex-1 text-sm text-secondary truncate">{label.name}</span>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           type="button"
                           onClick={() => startEdit(label)}
-                          className="rounded p-1 text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-colors"
+                          className="rounded p-1 text-muted hover:text-secondary hover:bg-hover transition-colors"
                           aria-label={`Редактировать метку ${label.name}`}
                         >
                           <Pencil size={13} />
@@ -196,7 +196,7 @@ export function CrmLabelsManagerModal({ onClose }: LabelsManagerModalProps) {
                           type="button"
                           onClick={() => handleDeleteRequest(label.id)}
                           disabled={deleteMutation.isPending}
-                          className="rounded p-1 text-gray-500 hover:text-red-400 hover:bg-gray-700 transition-colors disabled:opacity-50"
+                          className="rounded p-1 text-muted hover:text-red-400 hover:bg-hover transition-colors disabled:opacity-50"
                           aria-label={`Удалить метку ${label.name}`}
                         >
                           <Trash2 size={13} />
@@ -210,14 +210,14 @@ export function CrmLabelsManagerModal({ onClose }: LabelsManagerModalProps) {
           )}
 
           {/* Create new label */}
-          <div className="border-t border-gray-800 pt-4">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Новая метка</p>
+          <div className="border-t border-default pt-4">
+            <p className="text-xs font-medium text-muted uppercase tracking-wide mb-3">Новая метка</p>
             <form onSubmit={handleCreate} className="flex items-center gap-2">
               <input
                 type="color"
                 value={newColor}
                 onChange={(e) => setNewColor(e.target.value)}
-                className="w-9 h-9 rounded cursor-pointer border border-gray-700 bg-gray-800 p-0.5"
+                className="w-9 h-9 rounded cursor-pointer border border-default bg-raised p-0.5"
                 aria-label="Выбрать цвет"
               />
               <input
@@ -227,8 +227,8 @@ export function CrmLabelsManagerModal({ onClose }: LabelsManagerModalProps) {
                 placeholder="Название метки"
                 maxLength={50}
                 className={cn(
-                  'flex-1 rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500',
-                  'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-gray-700',
+                  'flex-1 rounded-lg border bg-raised px-3 py-2 text-sm text-primary placeholder-gray-500',
+                  'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-default',
                 )}
                 aria-label="Название новой метки"
               />

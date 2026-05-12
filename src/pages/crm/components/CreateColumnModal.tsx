@@ -55,15 +55,15 @@ export function CreateColumnModal({ boardId, onClose }: CreateColumnModalProps) 
       aria-modal="true"
       aria-labelledby="create-column-title"
     >
-      <div className="w-full max-w-md rounded-xl bg-gray-900 border border-gray-800 shadow-2xl">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
-          <h2 id="create-column-title" className="text-lg font-semibold text-white">
+      <div className="w-full max-w-md rounded-xl bg-surface border border-default shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-default">
+          <h2 id="create-column-title" className="text-lg font-semibold text-primary">
             Добавить колонку
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors rounded-md p-1 hover:bg-gray-800"
+            className="text-secondary hover:text-primary transition-colors rounded-md p-1 hover:bg-hover"
             aria-label="Закрыть"
           >
             <X size={18} />
@@ -72,7 +72,7 @@ export function CreateColumnModal({ boardId, onClose }: CreateColumnModalProps) 
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           <div className="space-y-1.5">
-            <label htmlFor="column-name" className="block text-sm font-medium text-gray-300">
+            <label htmlFor="column-name" className="block text-sm font-medium text-secondary">
               Название <span className="text-red-400">*</span>
             </label>
             <input
@@ -85,16 +85,16 @@ export function CreateColumnModal({ boardId, onClose }: CreateColumnModalProps) 
               required
               maxLength={100}
               className={cn(
-                'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500',
+                'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary placeholder-gray-500',
                 'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
-                'border-gray-700 focus:border-blue-500',
+                'border-default focus:border-blue-500',
               )}
             />
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="column-wip" className="block text-sm font-medium text-gray-300">
-              Лимит WIP <span className="text-gray-500 font-normal">(необязательно)</span>
+            <label htmlFor="column-wip" className="block text-sm font-medium text-secondary">
+              Лимит WIP <span className="text-muted font-normal">(необязательно)</span>
             </label>
             <input
               id="column-wip"
@@ -104,9 +104,9 @@ export function CreateColumnModal({ boardId, onClose }: CreateColumnModalProps) 
               onChange={(e) => setWipLimit(e.target.value)}
               placeholder="Максимум задач в колонке"
               className={cn(
-                'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500',
+                'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary placeholder-gray-500',
                 'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
-                'border-gray-700 focus:border-blue-500',
+                'border-default focus:border-blue-500',
               )}
             />
           </div>
@@ -115,7 +115,7 @@ export function CreateColumnModal({ boardId, onClose }: CreateColumnModalProps) 
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+              className="rounded-lg px-4 py-2 text-sm font-medium text-secondary hover:text-primary hover:bg-hover transition-colors"
             >
               Отмена
             </button>

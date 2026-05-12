@@ -159,24 +159,24 @@ export default function CompanyOnboardingTemplatesPage() {
   return (
     <div className="max-w-5xl space-y-6">
       <div className="flex items-center gap-2">
-        <ListChecks className="h-5 w-5 text-indigo-400" aria-hidden="true" />
-        <h1 className="text-2xl font-semibold text-white">Шаблоны онбординга</h1>
+        <ListChecks className="h-5 w-5 text-brand" aria-hidden="true" />
+        <h1 className="text-2xl font-semibold text-primary">Шаблоны онбординга</h1>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-900/70 bg-red-950/40 px-4 py-3 text-sm text-red-300">
+        <div className="rounded-lg border border-red-200 dark:border-red-900/40 bg-danger-subtle px-4 py-3 text-sm text-danger">
           {error}
         </div>
       )}
       {success && (
-        <div className="rounded-lg border border-emerald-900/70 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-300">
+        <div className="rounded-lg border border-emerald-900/70 bg-success-subtle px-4 py-3 text-sm text-success">
           {success}
         </div>
       )}
 
-      <section className="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
+      <section className="rounded-xl border border-default bg-surface/50 p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-white">
+          <h2 className="text-base font-semibold text-primary">
             {editingTemplateId ? 'Редактирование шаблона' : 'Новый шаблон'}
           </h2>
           {editingTemplateId && (
@@ -188,7 +188,7 @@ export default function CompanyOnboardingTemplatesPage() {
                 setError(null);
                 setSuccess(null);
               }}
-              className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-800"
+              className="rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:bg-hover"
             >
               Сбросить
             </button>
@@ -196,34 +196,34 @@ export default function CompanyOnboardingTemplatesPage() {
         </div>
 
         <div className="space-y-4">
-          <label className="block text-sm text-gray-300">
+          <label className="block text-sm text-secondary">
             Название шаблона
             <input
               type="text"
               value={form.name}
               onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-primary"
               placeholder="Employee onboarding"
             />
           </label>
 
           <div className="space-y-3">
             {form.steps.map((step, index) => (
-              <div key={index} className="rounded-lg border border-gray-800 bg-gray-900 p-4">
-                <p className="mb-2 text-xs uppercase tracking-wide text-gray-500">Шаг {index + 1}</p>
+              <div key={index} className="rounded-lg border border-default bg-surface p-4">
+                <p className="mb-2 text-xs uppercase tracking-wide text-muted">Шаг {index + 1}</p>
                 <div className="grid gap-3">
                   <input
                     type="text"
                     value={step.title}
                     onChange={(event) => updateStep(index, { title: event.target.value })}
-                    className="rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-white"
+                    className="rounded-lg border border-default bg-page px-3 py-2 text-sm text-primary"
                     placeholder="Название шага"
                   />
                   <textarea
                     value={step.description}
                     onChange={(event) => updateStep(index, { description: event.target.value })}
                     rows={3}
-                    className="rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-white"
+                    className="rounded-lg border border-default bg-page px-3 py-2 text-sm text-primary"
                     placeholder="Описание шага"
                   />
                   <div className="flex justify-end">
@@ -231,7 +231,7 @@ export default function CompanyOnboardingTemplatesPage() {
                       type="button"
                       onClick={() => removeStep(index)}
                       disabled={form.steps.length === 1}
-                      className="rounded-lg border border-red-800 bg-red-900/30 px-3 py-1.5 text-xs text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-3 py-1.5 text-xs text-danger disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Удалить шаг
                     </button>
@@ -245,7 +245,7 @@ export default function CompanyOnboardingTemplatesPage() {
             <button
               type="button"
               onClick={addStep}
-              className="inline-flex items-center gap-1 rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-200 hover:bg-gray-800"
+              className="inline-flex items-center gap-1 rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover"
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
               Добавить шаг
@@ -258,7 +258,7 @@ export default function CompanyOnboardingTemplatesPage() {
                 saveMutation.mutate();
               }}
               disabled={saveMutation.isPending}
-              className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-60"
+              className="inline-flex items-center gap-1 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-60"
             >
               <Save className="h-4 w-4" aria-hidden="true" />
               {saveMutation.isPending ? 'Сохранение...' : editingTemplateId ? 'Сохранить' : 'Создать'}
@@ -267,22 +267,22 @@ export default function CompanyOnboardingTemplatesPage() {
         </div>
       </section>
 
-      <section className="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
-        <h2 className="mb-4 text-base font-semibold text-white">Существующие шаблоны</h2>
-        {templatesQuery.isLoading && <p className="text-sm text-gray-400">Загрузка шаблонов...</p>}
+      <section className="rounded-xl border border-default bg-surface/50 p-6">
+        <h2 className="mb-4 text-base font-semibold text-primary">Существующие шаблоны</h2>
+        {templatesQuery.isLoading && <p className="text-sm text-secondary">Загрузка шаблонов...</p>}
         {templatesQuery.isError && (
           <p className="text-sm text-red-400">Не удалось загрузить шаблоны онбординга.</p>
         )}
         {!templatesQuery.isLoading && !templates.length && (
-          <p className="text-sm text-gray-500">Шаблоны пока не созданы.</p>
+          <p className="text-sm text-muted">Шаблоны пока не созданы.</p>
         )}
         <div className="space-y-3">
           {templates.map((template) => (
-            <div key={template.id} className="rounded-lg border border-gray-800 bg-gray-900 p-4">
+            <div key={template.id} className="rounded-lg border border-default bg-surface p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="font-medium text-white">{template.name}</p>
-                  <p className="mt-1 text-xs text-gray-400">
+                  <p className="font-medium text-primary">{template.name}</p>
+                  <p className="mt-1 text-xs text-secondary">
                     {template.steps.length} шагов
                     {template.is_active ? ' · активный' : ' · неактивный'}
                     {activeTemplate?.id === template.id ? ' (используется по умолчанию)' : ''}
@@ -292,7 +292,7 @@ export default function CompanyOnboardingTemplatesPage() {
                   <button
                     type="button"
                     onClick={() => startEditing(template)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-800"
+                    className="inline-flex items-center gap-1 rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:bg-hover"
                   >
                     <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                     Изменить
@@ -301,7 +301,7 @@ export default function CompanyOnboardingTemplatesPage() {
                     type="button"
                     disabled={deleteMutation.isPending}
                     onClick={() => setTemplatePendingDelete({ id: template.id, name: template.name })}
-                    className="inline-flex items-center gap-1 rounded-lg border border-red-800 bg-red-900/30 px-3 py-1.5 text-xs text-red-300 hover:bg-red-900/50 disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-3 py-1.5 text-xs text-danger hover:bg-danger-subtle disabled:opacity-50"
                   >
                     <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                     Удалить

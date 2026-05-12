@@ -67,75 +67,75 @@ export default function PassCreatePage() {
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-white">Создание гостевого пропуска</h1>
-        <p className="text-sm text-gray-400">Можно отправить инвайт на любой email гостя.</p>
+        <h1 className="text-2xl font-bold text-primary">Создание гостевого пропуска</h1>
+        <p className="text-sm text-secondary">Можно отправить инвайт на любой email гостя.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-gray-700 bg-gray-800 p-5">
-        <label className="block text-sm text-gray-300">
+      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-default bg-raised p-5">
+        <label className="block text-sm text-secondary">
           Имя гостя
           <input
             value={guestName}
             onChange={(event) => setGuestName(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             required
           />
         </label>
-        <label className="block text-sm text-gray-300">
+        <label className="block text-sm text-secondary">
           Email гостя
           <input
             type="email"
             value={guestEmail}
             onChange={(event) => setGuestEmail(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             required
           />
         </label>
-        <label className="block text-sm text-gray-300">
+        <label className="block text-sm text-secondary">
           Телефон (необязательно)
           <input
             value={guestPhone}
             onChange={(event) => setGuestPhone(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           />
         </label>
-        <label className="block text-sm text-gray-300">
+        <label className="block text-sm text-secondary">
           Цель визита
           <textarea
             value={purpose}
             onChange={(event) => setPurpose(event.target.value)}
             rows={3}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             required
           />
         </label>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block text-sm text-gray-300">
+          <label className="block text-sm text-secondary">
             Начало действия
             <input
               type="datetime-local"
               value={validFrom}
               onChange={(event) => setValidFrom(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               required
             />
-            <p className="mt-1 text-xs text-gray-500">Код станет активным начиная с этого момента</p>
+            <p className="mt-1 text-xs text-muted">Код станет активным начиная с этого момента</p>
           </label>
-          <div className="block text-sm text-gray-300">
+          <div className="block text-sm text-secondary">
             Действует до
-            <div className="mt-1 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-200">
+            <div className="mt-1 rounded-lg border border-default bg-surface px-3 py-2 text-sm text-secondary">
               Автоматически: +30 дней от даты начала
             </div>
           </div>
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-gray-300">
+        <label className="flex items-center gap-2 text-sm text-secondary">
           <input
             type="checkbox"
             checked={isSingleUse}
             onChange={(event) => setIsSingleUse(event.target.checked)}
-            className="h-4 w-4 rounded border-gray-700 bg-gray-900 text-indigo-500"
+            className="h-4 w-4 rounded border-default bg-surface text-brand"
           />
           Одноразовый пропуск
         </label>
@@ -147,14 +147,14 @@ export default function PassCreatePage() {
         <div className="flex justify-end gap-2">
           <Link
             to="/passes"
-            className="inline-flex items-center rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700"
+            className="inline-flex items-center rounded-lg border border-default px-4 py-2 text-sm font-medium text-secondary hover:bg-hover"
           >
             Отмена
           </Link>
           <button
             type="submit"
             disabled={createPassMutation.isPending}
-            className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+            className="inline-flex items-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
           >
             {createPassMutation.isPending ? 'Создание...' : 'Создать пропуск'}
           </button>

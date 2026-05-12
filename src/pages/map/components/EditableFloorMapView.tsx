@@ -40,8 +40,8 @@ export const EditableFloorMapView = memo<EditableFloorMapViewProps>(
             {floorMap.points.length === 0 && !ghostPin && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="text-center">
-                  <MapPin className="mx-auto mb-2 h-10 w-10 text-indigo-200" />
-                  <p className="text-sm text-indigo-300">Нажмите на карту, чтобы разместить точку</p>
+                  <MapPin className="mx-auto mb-2 h-10 w-10 text-brand" />
+                  <p className="text-sm text-brand">Нажмите на карту, чтобы разместить точку</p>
                 </div>
               </div>
             )}

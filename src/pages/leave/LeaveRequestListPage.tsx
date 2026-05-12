@@ -34,8 +34,8 @@ const TYPE_OPTIONS: Array<{ value: ''; label: string } | { value: LeaveType; lab
 ];
 
 const STATUS_BADGE_CLASS: Record<LeaveStatus, string> = {
-  [LEAVE_STATUSES.PENDING]: 'bg-amber-900/60 text-amber-300',
-  [LEAVE_STATUSES.APPROVED]: 'bg-emerald-900/60 text-emerald-300',
+  [LEAVE_STATUSES.PENDING]: 'bg-warning-subtle text-warning',
+  [LEAVE_STATUSES.APPROVED]: 'bg-success-subtle text-success',
   [LEAVE_STATUSES.REJECTED]: 'bg-rose-900/60 text-rose-300',
 };
 const LIVE_REFETCH_MS = 15000;
@@ -152,22 +152,22 @@ export default function LeaveRequestListPage() {
   return (
     <main className="mx-auto max-w-6xl space-y-6 p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-white">Заявки на отсутствие</h1>
+        <h1 className="text-2xl font-bold text-primary">Заявки на отсутствие</h1>
         <Link
           to="/leave/new"
-          className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+          className="inline-flex items-center justify-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
         >
           Подать заявку
         </Link>
       </div>
 
-      <section className="grid gap-3 rounded-xl border border-gray-700 bg-gray-800 p-4 sm:grid-cols-2">
-        <label className="text-sm text-gray-300">
+      <section className="grid gap-3 rounded-xl border border-default bg-raised p-4 sm:grid-cols-2">
+        <label className="text-sm text-secondary">
           Статус
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value as LeaveStatus | '')}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           >
             {STATUS_OPTIONS.map(option => (
               <option key={option.value || 'all'} value={option.value}>
@@ -176,12 +176,12 @@ export default function LeaveRequestListPage() {
             ))}
           </select>
         </label>
-        <label className="text-sm text-gray-300">
+        <label className="text-sm text-secondary">
           Тип отсутствия
           <select
             value={typeFilter}
             onChange={(event) => setTypeFilter(event.target.value as LeaveType | '')}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           >
             {TYPE_OPTIONS.map(option => (
               <option key={option.value || 'all'} value={option.value}>
@@ -192,8 +192,8 @@ export default function LeaveRequestListPage() {
         </label>
       </section>
 
-      <section className="grid gap-3 rounded-xl border border-gray-700 bg-gray-800 p-4 sm:grid-cols-4">
-        <label className="text-sm text-gray-300">
+      <section className="grid gap-3 rounded-xl border border-default bg-raised p-4 sm:grid-cols-4">
+        <label className="text-sm text-secondary">
           Год
           <input
             type="number"
@@ -201,19 +201,19 @@ export default function LeaveRequestListPage() {
             max={3000}
             value={year}
             onChange={(event) => setYear(Number(event.target.value))}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           />
         </label>
-        <div className="rounded-lg border border-gray-700 bg-gray-900 p-3">
-          <div className="text-xs text-gray-400">Всего дней</div>
-          <div className="text-lg font-semibold text-white">{balance?.total_days ?? 0}</div>
+        <div className="rounded-lg border border-default bg-surface p-3">
+          <div className="text-xs text-secondary">Всего дней</div>
+          <div className="text-lg font-semibold text-primary">{balance?.total_days ?? 0}</div>
         </div>
-        <div className="rounded-lg border border-gray-700 bg-gray-900 p-3">
-          <div className="text-xs text-gray-400">Использовано</div>
-          <div className="text-lg font-semibold text-white">{balance?.used_days ?? 0}</div>
+        <div className="rounded-lg border border-default bg-surface p-3">
+          <div className="text-xs text-secondary">Использовано</div>
+          <div className="text-lg font-semibold text-primary">{balance?.used_days ?? 0}</div>
         </div>
-        <div className="rounded-lg border border-gray-700 bg-gray-900 p-3">
-          <div className="text-xs text-gray-400">Осталось</div>
+        <div className="rounded-lg border border-default bg-surface p-3">
+          <div className="text-xs text-secondary">Осталось</div>
           <div className="text-lg font-semibold text-emerald-400">{balance?.remaining_days ?? 0}</div>
         </div>
       </section>
@@ -231,25 +231,25 @@ export default function LeaveRequestListPage() {
       ) : null}
 
       {isLoading ? (
-        <p className="text-sm text-gray-400">Загрузка...</p>
+        <p className="text-sm text-secondary">Загрузка...</p>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-gray-400">Заявок пока нет.</p>
+        <p className="text-sm text-secondary">Заявок пока нет.</p>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-gray-700 bg-gray-800">
-          <table className="min-w-full divide-y divide-gray-700/60">
-            <thead className="bg-gray-900/60">
+        <div className="overflow-hidden rounded-2xl border border-default bg-raised">
+          <table className="min-w-full divide-y divide-[color:var(--border)]/60">
+            <thead className="bg-surface/60">
               <tr>
-                {showUserColumn ? <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Сотрудник</th> : null}
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Тип</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Период</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Статус</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Комментарий</th>
-                {isAdmin ? <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Действия</th> : null}
+                {showUserColumn ? <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Сотрудник</th> : null}
+                <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Тип</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Период</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Статус</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Комментарий</th>
+                {isAdmin ? <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Действия</th> : null}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700/60">
+            <tbody className="divide-y divide-[color:var(--border)]/60">
               {rows.map((leave) => (
-                <tr key={leave.id} className="text-sm text-gray-200">
+                <tr key={leave.id} className="text-sm text-secondary">
                   {showUserColumn ? (
                     <td className="px-4 py-3">
                       {leave.user_name?.trim() || `ID ${leave.user}`}
@@ -268,14 +268,14 @@ export default function LeaveRequestListPage() {
                       {LEAVE_STATUS_LABELS[leave.status] ?? leave.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-300">{leave.comment || '-'}</td>
+                  <td className="px-4 py-3 text-secondary">{leave.comment || '-'}</td>
                   {isAdmin ? (
                     <td className="px-4 py-3">
                       {leave.status === LEAVE_STATUSES.PENDING ? (
                         <div className="flex gap-2">
                           <button
                             type="button"
-                            className="rounded-md border border-emerald-700 bg-emerald-900/30 px-2 py-1 text-xs text-emerald-300 hover:bg-emerald-900/50"
+                            className="rounded-md border border-emerald-700 bg-success-subtle px-2 py-1 text-xs text-success hover:bg-success-subtle"
                             disabled={reviewMutation.isPending}
                             onClick={() => openReviewDialog(leave.id, LEAVE_STATUSES.APPROVED, leave.review_comment)}
                           >
@@ -293,14 +293,14 @@ export default function LeaveRequestListPage() {
                       ) : leave.status === LEAVE_STATUSES.APPROVED ? (
                         <button
                           type="button"
-                          className="rounded-md border border-amber-800 bg-amber-900/30 px-2 py-1 text-xs text-amber-300 hover:bg-amber-900/50"
+                          className="rounded-md border border-amber-200 dark:border-amber-800 bg-warning-subtle px-2 py-1 text-xs text-warning hover:bg-warning-subtle"
                           disabled={reviewMutation.isPending}
                           onClick={() => openReviewDialog(leave.id, LEAVE_STATUSES.REJECTED, leave.review_comment)}
                         >
                           Отменить одобрение
                         </button>
                       ) : (
-                        <span className="text-xs text-gray-500">—</span>
+                        <span className="text-xs text-muted">—</span>
                       )}
                     </td>
                   ) : null}
@@ -312,32 +312,32 @@ export default function LeaveRequestListPage() {
       )}
 
       {isAdmin ? (
-        <section className="overflow-hidden rounded-2xl border border-gray-700 bg-gray-800">
-          <div className="border-b border-gray-700 px-4 py-3 text-sm font-semibold text-white">
+        <section className="overflow-hidden rounded-2xl border border-default bg-raised">
+          <div className="border-b border-default px-4 py-3 text-sm font-semibold text-primary">
             Балансы команды
           </div>
           {isTeamBalancesLoading ? (
-            <p className="px-4 py-4 text-sm text-gray-400">Загрузка балансов...</p>
+            <p className="px-4 py-4 text-sm text-secondary">Загрузка балансов...</p>
           ) : !teamBalances?.length ? (
-            <p className="px-4 py-4 text-sm text-gray-400">Сотрудники не найдены.</p>
+            <p className="px-4 py-4 text-sm text-secondary">Сотрудники не найдены.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-700/60">
-                <thead className="bg-gray-900/60">
+              <table className="min-w-full divide-y divide-[color:var(--border)]/60">
+                <thead className="bg-surface/60">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Сотрудник</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Всего</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Использовано</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Осталось</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Установить</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Сотрудник</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Всего</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Использовано</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Осталось</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Установить</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-700/60">
+                <tbody className="divide-y divide-[color:var(--border)]/60">
                   {teamBalances.map((row) => {
                     const isBalanceLocked = row.total_days > 0 && row.used_days >= row.total_days;
 
                     return (
-                      <tr key={row.user_id} className="text-sm text-gray-200">
+                      <tr key={row.user_id} className="text-sm text-secondary">
                         <td className="px-4 py-3">{row.user_name}</td>
                         <td className="px-4 py-3">{row.total_days}</td>
                         <td className="px-4 py-3">{row.used_days}</td>
@@ -352,7 +352,7 @@ export default function LeaveRequestListPage() {
                                 setTeamTotals((prev) => ({ ...prev, [row.user_id]: event.target.value }))
                               }
                               className={cn(
-                                'w-20 rounded-md border border-gray-700 bg-gray-900 px-2 py-1 text-xs text-white',
+                                'w-20 rounded-md border border-default bg-surface px-2 py-1 text-xs text-primary',
                                 isBalanceLocked && 'cursor-not-allowed opacity-60',
                               )}
                               disabled={isBalanceLocked || setBalanceMutation.isPending}
@@ -360,8 +360,8 @@ export default function LeaveRequestListPage() {
                             <button
                               type="button"
                               className={cn(
-                                'rounded-md bg-indigo-600 px-2 py-1 text-xs text-white',
-                                !isBalanceLocked && 'hover:bg-indigo-500',
+                                'rounded-md bg-brand px-2 py-1 text-xs text-white',
+                                !isBalanceLocked && 'hover:bg-brand-hover',
                                 isBalanceLocked && 'cursor-not-allowed opacity-60',
                               )}
                               disabled={isBalanceLocked || setBalanceMutation.isPending}
@@ -376,7 +376,7 @@ export default function LeaveRequestListPage() {
                               Сохранить
                             </button>
                             {isBalanceLocked ? (
-                              <span className="text-xs text-amber-300">Лимит уже израсходован</span>
+                              <span className="text-xs text-warning">Лимит уже израсходован</span>
                             ) : null}
                           </div>
                         </td>
@@ -398,13 +398,13 @@ export default function LeaveRequestListPage() {
           onClick={closeReviewDialog}
         >
           <div
-            className="w-full max-w-lg rounded-xl border border-gray-700 bg-gray-800 p-5"
+            className="w-full max-w-lg rounded-xl border border-default bg-raised p-5"
             onClick={(event) => event.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold text-white">
+            <h2 className="text-lg font-semibold text-primary">
               {reviewDialog.status === LEAVE_STATUSES.APPROVED ? 'Одобрить заявку' : 'Отклонить заявку'}
             </h2>
-            <p className="mt-2 text-sm text-gray-300">
+            <p className="mt-2 text-sm text-secondary">
               {reviewDialog.status === LEAVE_STATUSES.APPROVED
                 ? 'Комментарий к одобрению (необязательно)'
                 : 'Комментарий к отклонению (необязательно)'}
@@ -414,12 +414,12 @@ export default function LeaveRequestListPage() {
               onChange={(event) => setReviewCommentInput(event.target.value)}
               rows={4}
               placeholder="Оставьте комментарий при необходимости"
-              className="mt-3 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder:text-gray-500"
+              className="mt-3 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted"
             />
             <div className="mt-4 flex items-center justify-end gap-2">
               <button
                 type="button"
-                className="rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover"
                 onClick={closeReviewDialog}
                 disabled={reviewMutation.isPending}
               >
@@ -428,7 +428,7 @@ export default function LeaveRequestListPage() {
               <button
                 type="button"
                 className={cn(
-                  'rounded-lg px-3 py-2 text-sm font-medium text-white',
+                  'rounded-lg px-3 py-2 text-sm font-medium text-primary',
                   reviewDialog.status === LEAVE_STATUSES.APPROVED
                     ? 'bg-emerald-600 hover:bg-emerald-500'
                     : 'bg-rose-600 hover:bg-rose-500',

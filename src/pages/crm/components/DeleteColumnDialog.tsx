@@ -79,18 +79,18 @@ export function DeleteColumnDialog({
       aria-modal="true"
       aria-labelledby="delete-column-title"
     >
-      <div className="w-full max-w-sm rounded-xl bg-gray-900 border border-gray-800 shadow-2xl px-6 py-5 space-y-4">
+      <div className="w-full max-w-sm rounded-xl bg-surface border border-default shadow-2xl px-6 py-5 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="rounded-full bg-red-900/40 p-2">
+          <div className="rounded-full bg-danger-subtle p-2">
             <Trash2 size={18} className="text-red-400" />
           </div>
-          <h2 id="delete-column-title" className="text-base font-semibold text-white">
+          <h2 id="delete-column-title" className="text-base font-semibold text-primary">
             Удалить колонку?
           </h2>
         </div>
 
-        <p className="text-sm text-gray-400">
-          Колонка <span className="font-medium text-gray-200">«{column.name}»</span> будет удалена.
+        <p className="text-sm text-secondary">
+          Колонка <span className="font-medium text-secondary">«{column.name}»</span> будет удалена.
           {otherColumns.length > 0
             ? ' Выберите колонку, в которую переместятся задачи.'
             : ' В этой доске нет других колонок — удаление недоступно.'}
@@ -98,7 +98,7 @@ export function DeleteColumnDialog({
 
         {otherColumns.length > 0 ? (
           <div className="space-y-1.5">
-            <label htmlFor="move-to-select" className="block text-sm font-medium text-gray-300">
+            <label htmlFor="move-to-select" className="block text-sm font-medium text-secondary">
               Переместить задачи в:
             </label>
             <select
@@ -106,9 +106,9 @@ export function DeleteColumnDialog({
               value={moveToId}
               onChange={(e) => setMoveToId(e.target.value)}
               className={cn(
-                'w-full rounded-lg border bg-gray-800 px-3 py-2 text-sm text-white',
+                'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary',
                 'focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors',
-                wipViolation ? 'border-orange-600 focus:border-orange-500' : 'border-gray-700 focus:border-red-500',
+                wipViolation ? 'border-orange-600 focus:border-orange-500' : 'border-default focus:border-red-500',
               )}
             >
               {otherColumns.map((col) => (
@@ -128,7 +128,7 @@ export function DeleteColumnDialog({
         )}
 
         {mutation.isError && (
-          <div className="flex items-start gap-2 rounded-lg bg-red-900/30 border border-red-800 px-4 py-3 text-sm text-red-300">
+          <div className="flex items-start gap-2 rounded-lg bg-danger-subtle border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-danger">
             <AlertCircle size={16} className="mt-0.5 shrink-0" />
             <span>Не удалось удалить колонку. Попробуйте снова.</span>
           </div>
@@ -138,7 +138,7 @@ export function DeleteColumnDialog({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+            className="rounded-lg px-4 py-2 text-sm font-medium text-secondary hover:text-primary hover:bg-hover transition-colors"
           >
             Отмена
           </button>

@@ -211,21 +211,21 @@ export default function UsersListPage() {
 
   return (
     <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
-      <h1 className="text-2xl font-bold text-white">Пользователи</h1>
+      <h1 className="text-2xl font-bold text-primary">Пользователи</h1>
 
       {/* ---- Filters ---- */}
       <section
-        className="bg-gray-800 rounded-2xl border border-gray-700 p-4"
+        className="bg-raised rounded-2xl border border-default p-4"
         aria-label="Фильтры пользователей"
       >
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12">
           {/* Search */}
           <label className="flex flex-col gap-1.5 lg:col-span-4">
-            <span className="text-xs font-medium text-gray-400">Поиск</span>
+            <span className="text-xs font-medium text-secondary">Поиск</span>
             <div className="relative">
               <Search
                 size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary pointer-events-none"
                 aria-hidden="true"
               />
               <input
@@ -234,19 +234,19 @@ export default function UsersListPage() {
                 onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="По имени или email..."
                 aria-label="Поиск пользователей"
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-700 bg-gray-900 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-default bg-surface text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-transparent"
               />
             </div>
           </label>
 
           {/* Role filter */}
           <label className="flex flex-col gap-1.5 lg:col-span-2">
-            <span className="text-xs font-medium text-gray-400">Роль</span>
+            <span className="text-xs font-medium text-secondary">Роль</span>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
               aria-label="Фильтр по роли"
-              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-700 bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-default bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-transparent"
             >
               {ROLE_FILTER_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -258,13 +258,13 @@ export default function UsersListPage() {
 
           {/* Company filter */}
           <label className="flex flex-col gap-1.5 lg:col-span-2">
-            <span className="text-xs font-medium text-gray-400">Компания</span>
+            <span className="text-xs font-medium text-secondary">Компания</span>
             <select
               value={companyId}
               onChange={(e) => setCompanyId(e.target.value)}
               aria-label="Фильтр по компании"
               disabled={isCompaniesLoading}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-700 bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-800 disabled:text-gray-500"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-default bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-transparent disabled:bg-raised disabled:text-muted"
             >
               <option value="">
                 {isCompaniesLoading ? 'Загрузка компаний...' : 'Все компании'}
@@ -279,12 +279,12 @@ export default function UsersListPage() {
 
           {/* Active status filter */}
           <label className="flex flex-col gap-1.5 lg:col-span-2">
-            <span className="text-xs font-medium text-gray-400">Статус</span>
+            <span className="text-xs font-medium text-secondary">Статус</span>
             <select
               value={isActive}
               onChange={(e) => setIsActive(e.target.value)}
               aria-label="Фильтр по статусу"
-              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-700 bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-default bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-transparent"
             >
               {ACTIVE_FILTER_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -296,12 +296,12 @@ export default function UsersListPage() {
 
           {/* Ordering */}
           <label className="flex flex-col gap-1.5 lg:col-span-2">
-            <span className="text-xs font-medium text-gray-400">Сортировка</span>
+            <span className="text-xs font-medium text-secondary">Сортировка</span>
             <select
               value={ordering}
               onChange={(e) => setOrdering(e.target.value)}
               aria-label="Сортировка"
-              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-700 bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-default bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-transparent"
             >
               {ORDERING_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -314,7 +314,7 @@ export default function UsersListPage() {
       </section>
 
       {/* ---- Table ---- */}
-      <div className="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
+      <div className="bg-raised rounded-2xl border border-default overflow-hidden">
         {isError ? (
           <div className="flex items-center justify-center py-16 px-4">
             <p className="text-red-600 font-medium text-sm">
@@ -325,46 +325,46 @@ export default function UsersListPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-sm" role="table" aria-label="Список пользователей">
               <thead>
-                <tr className="border-b border-gray-700 bg-gray-900/60">
+                <tr className="border-b border-default bg-surface/60">
                   <th
                     scope="col"
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide"
+                    className="px-4 py-3 text-left text-xs font-semibold text-secondary uppercase tracking-wide"
                   >
                     Пользователь
                   </th>
                   <th
                     scope="col"
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide"
+                    className="px-4 py-3 text-left text-xs font-semibold text-secondary uppercase tracking-wide"
                   >
                     Email
                   </th>
                   <th
                     scope="col"
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide"
+                    className="px-4 py-3 text-left text-xs font-semibold text-secondary uppercase tracking-wide"
                   >
                     Роль
                   </th>
                   <th
                     scope="col"
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide"
+                    className="px-4 py-3 text-left text-xs font-semibold text-secondary uppercase tracking-wide"
                   >
                     Компания
                   </th>
                   <th
                     scope="col"
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide"
+                    className="px-4 py-3 text-left text-xs font-semibold text-secondary uppercase tracking-wide"
                   >
                     Статус
                   </th>
                   <th
                     scope="col"
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide"
+                    className="px-4 py-3 text-left text-xs font-semibold text-secondary uppercase tracking-wide"
                   >
                     Дата регистрации
                   </th>
                   <th
                     scope="col"
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide"
+                    className="px-4 py-3 text-left text-xs font-semibold text-secondary uppercase tracking-wide"
                   >
                     Последний вход
                   </th>
@@ -373,12 +373,12 @@ export default function UsersListPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-700/80">
+              <tbody className="divide-y divide-[color:var(--border)]/80">
                 {isLoading ? (
                   Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)
                 ) : data?.results.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-16 text-center text-gray-400 text-sm">
+                    <td colSpan={8} className="py-16 text-center text-secondary text-sm">
                       Пользователи не найдены
                     </td>
                   </tr>
@@ -391,7 +391,7 @@ export default function UsersListPage() {
                       tabIndex={0}
                       role="row"
                       aria-label={`Пользователь ${user.first_name} ${user.last_name}`}
-                      className="hover:bg-gray-700/40 cursor-pointer transition-colors focus-visible:outline-none focus-visible:bg-gray-700/60"
+                      className="hover:bg-hover/40 cursor-pointer transition-colors focus-visible:outline-none focus-visible:bg-hover/60"
                     >
                       {/* Avatar + Name */}
                       <td className="px-4 py-3">
@@ -401,14 +401,14 @@ export default function UsersListPage() {
                             firstName={user.first_name}
                             lastName={user.last_name}
                           />
-                          <span className="font-medium text-white whitespace-nowrap">
+                          <span className="font-medium text-primary whitespace-nowrap">
                             {user.first_name} {user.last_name}
                           </span>
                         </div>
                       </td>
 
                       {/* Email */}
-                      <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{user.email}</td>
+                      <td className="px-4 py-3 text-secondary whitespace-nowrap">{user.email}</td>
 
                       {/* Role badge */}
                       <td className="px-4 py-3">
@@ -423,7 +423,7 @@ export default function UsersListPage() {
                       </td>
 
                       {/* Company */}
-                      <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
+                      <td className="px-4 py-3 text-secondary whitespace-nowrap">
                         {user.company?.name ?? '—'}
                       </td>
 
@@ -442,12 +442,12 @@ export default function UsersListPage() {
                       </td>
 
                       {/* Date joined */}
-                      <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
+                      <td className="px-4 py-3 text-secondary whitespace-nowrap">
                         {formatDate(user.date_joined)}
                       </td>
 
                       {/* Last login */}
-                      <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
+                      <td className="px-4 py-3 text-secondary whitespace-nowrap">
                         {formatDate(user.last_login)}
                       </td>
 
@@ -460,7 +460,7 @@ export default function UsersListPage() {
                             navigate(`${SUPERADMIN_UI_PREFIX}/users/${user.id}`);
                           }}
                           aria-label={`Открыть профиль ${user.first_name} ${user.last_name}`}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-200 bg-indigo-900/40 hover:bg-indigo-900/60 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-brand bg-brand-subtle hover:bg-brand-subtle rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                         >
                           <ExternalLink size={13} aria-hidden="true" />
                           Открыть
@@ -478,13 +478,13 @@ export default function UsersListPage() {
       {/* ---- Pagination ---- */}
       {!isLoading && !isError && totalCount > 0 && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-secondary">
             Показано{' '}
-            <span className="font-medium text-white">
+            <span className="font-medium text-primary">
               {rangeStart}–{rangeEnd}
             </span>{' '}
             из{' '}
-            <span className="font-medium text-white">{totalCount}</span> пользователей
+            <span className="font-medium text-primary">{totalCount}</span> пользователей
           </p>
 
           <nav aria-label="Пагинация" className="flex flex-wrap items-center gap-1">
@@ -494,10 +494,10 @@ export default function UsersListPage() {
               disabled={page === 1}
               aria-label="Предыдущая страница"
               className={cn(
-                'p-2 rounded-lg border text-gray-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
+                'p-2 rounded-lg border text-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
                 page === 1
-                  ? 'border-gray-700 text-gray-600 cursor-not-allowed'
-                  : 'border-gray-600 hover:bg-gray-700/50',
+                  ? 'border-default text-muted cursor-not-allowed'
+                  : 'border-default hover:bg-hover/50',
               )}
             >
               <ChevronLeft size={16} aria-hidden="true" />
@@ -512,7 +512,7 @@ export default function UsersListPage() {
               }, [])
               .map((item, idx) =>
                 item === 'ellipsis' ? (
-                  <span key={`ellipsis-${idx}`} className="px-2 text-gray-500 text-sm select-none">
+                  <span key={`ellipsis-${idx}`} className="px-2 text-muted text-sm select-none">
                     …
                   </span>
                 ) : (
@@ -525,8 +525,8 @@ export default function UsersListPage() {
                     className={cn(
                       'w-9 h-9 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
                       item === page
-                        ? 'bg-indigo-600 text-white'
-                        : 'text-gray-200 hover:bg-gray-700/50 border border-gray-600',
+                        ? 'bg-brand text-white'
+                        : 'text-secondary hover:bg-hover/50 border border-default',
                     )}
                   >
                     {item}
@@ -540,10 +540,10 @@ export default function UsersListPage() {
               disabled={page === totalPages}
               aria-label="Следующая страница"
               className={cn(
-                'p-2 rounded-lg border text-gray-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
+                'p-2 rounded-lg border text-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
                 page === totalPages
-                  ? 'border-gray-700 text-gray-600 cursor-not-allowed'
-                  : 'border-gray-600 hover:bg-gray-700/50',
+                  ? 'border-default text-muted cursor-not-allowed'
+                  : 'border-default hover:bg-hover/50',
               )}
             >
               <ChevronRight size={16} aria-hidden="true" />

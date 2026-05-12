@@ -75,8 +75,8 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
   return (
     <div className="flex flex-col gap-6 p-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-gray-900">Карта здания</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-primary">Карта здания</h1>
+        <p className="text-sm text-muted">
           Интерактивная карта этажей. Нажмите на точку, чтобы открыть бронирование.
         </p>
       </div>
@@ -114,10 +114,10 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
       >
         {mapLoading ? (
           <div
-            className="flex min-h-64 items-center justify-center rounded-xl border border-gray-200 bg-gray-50"
+            className="flex min-h-64 items-center justify-center rounded-xl border border-default bg-gray-50"
             aria-live="polite"
           >
-            <div className="flex flex-col items-center gap-3 text-gray-400">
+            <div className="flex flex-col items-center gap-3 text-secondary">
               <Loader2 className="h-8 w-8 animate-spin" aria-hidden="true" />
               <p className="text-sm">Загрузка карты...</p>
             </div>
@@ -200,7 +200,7 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
             </div>
 
             {!editMode && floorMap.points.length > 0 ? (
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-secondary">
                 {floorMap.points.length}{' '}
                 {floorMap.points.length === 1
                   ? 'точка'
@@ -214,8 +214,8 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
         ) : null}
 
         {!selectedFloorId && !floorsLoading ? (
-          <div className="flex min-h-64 items-center justify-center rounded-xl border border-gray-200 bg-gray-50">
-            <p className="text-sm text-gray-400">Выберите этаж для просмотра карты</p>
+          <div className="flex min-h-64 items-center justify-center rounded-xl border border-default bg-gray-50">
+            <p className="text-sm text-secondary">Выберите этаж для просмотра карты</p>
           </div>
         ) : null}
       </div>

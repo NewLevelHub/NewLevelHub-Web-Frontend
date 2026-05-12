@@ -34,7 +34,7 @@ export function BoardFilterBar({ filters, onChange }: BoardFilterBarProps) {
       <div className="relative flex-1 min-w-48">
         <Search
           size={14}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
         />
         <input
           type="text"
@@ -42,7 +42,7 @@ export function BoardFilterBar({ filters, onChange }: BoardFilterBarProps) {
           onChange={(e) => onChange({ ...filters, search: e.target.value })}
           placeholder="Поиск по задачам..."
           className={cn(
-            'w-full rounded-lg border border-gray-700 bg-gray-800 pl-8 pr-3 py-2 text-sm text-white placeholder-gray-500',
+            'w-full rounded-lg border border-default bg-raised pl-8 pr-3 py-2 text-sm text-primary placeholder-gray-500',
             'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
           )}
           aria-label="Поиск задач"
@@ -53,7 +53,7 @@ export function BoardFilterBar({ filters, onChange }: BoardFilterBarProps) {
         value={filters.priority}
         onChange={(e) => onChange({ ...filters, priority: e.target.value })}
         className={cn(
-          'rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white',
+          'rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary',
           'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
         )}
         aria-label="Фильтр по приоритету"
@@ -69,7 +69,7 @@ export function BoardFilterBar({ filters, onChange }: BoardFilterBarProps) {
         value={filters.deadline}
         onChange={(e) => onChange({ ...filters, deadline: e.target.value })}
         className={cn(
-          'rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white',
+          'rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary',
           'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
         )}
         aria-label="Фильтр по дедлайну"
@@ -85,21 +85,21 @@ export function BoardFilterBar({ filters, onChange }: BoardFilterBarProps) {
           type="button"
           onClick={() => onChange({ ...DEFAULT_BOARD_FILTERS, view: filters.view })}
           className={cn(
-            'rounded-lg border border-gray-700 px-3 py-2 text-sm font-medium',
-            'text-gray-400 hover:text-white hover:border-gray-500 transition-colors',
+            'rounded-lg border border-default px-3 py-2 text-sm font-medium',
+            'text-secondary hover:text-primary hover:border-gray-500 transition-colors',
           )}
         >
           Сбросить
         </button>
       )}
 
-      <div className="ml-auto flex items-center rounded-lg border border-gray-700 bg-gray-800 p-0.5 gap-0.5">
+      <div className="ml-auto flex items-center rounded-lg border border-default bg-raised p-0.5 gap-0.5">
         <button
           type="button"
           onClick={() => onChange({ ...filters, view: 'kanban' })}
           className={cn(
             'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-            filters.view === 'kanban' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300',
+            filters.view === 'kanban' ? 'bg-hover text-primary' : 'text-muted hover:text-secondary',
           )}
           aria-label="Вид канбан"
           aria-pressed={filters.view === 'kanban'}
@@ -112,7 +112,7 @@ export function BoardFilterBar({ filters, onChange }: BoardFilterBarProps) {
           onClick={() => onChange({ ...filters, view: 'list' })}
           className={cn(
             'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-            filters.view === 'list' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300',
+            filters.view === 'list' ? 'bg-hover text-primary' : 'text-muted hover:text-secondary',
           )}
           aria-label="Вид список"
           aria-pressed={filters.view === 'list'}

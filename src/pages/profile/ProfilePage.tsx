@@ -285,11 +285,11 @@ export default function ProfilePage() {
 
   return (
     <main className="max-w-2xl mx-auto px-3 py-4 sm:px-4 sm:py-6 md:py-8 space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Мой профиль</h1>
+      <h1 className="text-2xl font-bold text-primary">Мой профиль</h1>
 
       {/* ---- Profile card ---- */}
       <section
-        className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5"
+        className="bg-surface rounded-2xl shadow-sm border border-default p-6 space-y-5"
         aria-label="Информация о профиле"
       >
         {/* Avatar row */}
@@ -312,10 +312,10 @@ export default function ProfilePage() {
           </div>
 
           <div className="flex-1 min-w-0 space-y-1">
-            <p className="text-xl font-semibold text-gray-900 truncate">
+            <p className="text-xl font-semibold text-primary truncate">
               {profile.first_name} {profile.last_name}
             </p>
-            <p className="text-sm text-gray-500 truncate">{profile.email}</p>
+            <p className="text-sm text-muted truncate">{profile.email}</p>
             <span className={cn('inline-block text-xs font-medium px-2.5 py-0.5 rounded-full', roleBadgeColor)}>
               {roleLabel}
             </span>
@@ -384,15 +384,15 @@ export default function ProfilePage() {
           </div>
 
           {companyName && (
-            <div className="flex items-center gap-2 text-gray-600">
-              <Building2 size={16} className="shrink-0 text-gray-400" aria-hidden="true" />
+            <div className="flex items-center gap-2 text-muted">
+              <Building2 size={16} className="shrink-0 text-secondary" aria-hidden="true" />
               <span>{companyName}</span>
             </div>
           )}
 
           {profile.position && (
-            <div className="flex items-center gap-2 text-gray-600">
-              <User size={16} className="shrink-0 text-gray-400" aria-hidden="true" />
+            <div className="flex items-center gap-2 text-muted">
+              <User size={16} className="shrink-0 text-secondary" aria-hidden="true" />
               <span>{profile.position}</span>
             </div>
           )}
@@ -401,11 +401,11 @@ export default function ProfilePage() {
 
       {/* ---- Edit form ---- */}
       <section
-        className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6"
+        className="bg-surface rounded-2xl shadow-sm border border-default p-6"
         aria-label="Редактирование профиля"
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-semibold text-gray-900">Личные данные</h2>
+          <h2 className="text-base font-semibold text-primary">Личные данные</h2>
           {!isEditing && (
             <button
               type="button"
@@ -443,7 +443,7 @@ export default function ProfilePage() {
                   onChange={handleFormChange}
                   autoComplete="given-name"
                   required
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-primary placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Имя"
                 />
               </div>
@@ -460,7 +460,7 @@ export default function ProfilePage() {
                   onChange={handleFormChange}
                   autoComplete="family-name"
                   required
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-primary placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Фамилия"
                 />
               </div>
@@ -477,7 +477,7 @@ export default function ProfilePage() {
                 value={form.phone}
                 onChange={handleFormChange}
                 autoComplete="tel"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-primary placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="+7 (___) ___-__-__"
               />
             </div>
@@ -492,16 +492,16 @@ export default function ProfilePage() {
                 type="text"
                 value={form.position}
                 onChange={handleFormChange}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-primary placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Например: Frontend Developer"
               />
             </div>
 
             {/* Read-only fields */}
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">
+              <label className="block text-sm font-medium text-muted mb-1">
                 Email
-                <span className="ml-2 text-xs font-normal text-gray-400">(нельзя изменить)</span>
+                <span className="ml-2 text-xs font-normal text-secondary">(нельзя изменить)</span>
               </label>
               <input
                 type="email"
@@ -509,7 +509,7 @@ export default function ProfilePage() {
                 readOnly
                 disabled
                 aria-readonly="true"
-                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500 cursor-not-allowed"
+                className="w-full rounded-lg border border-default bg-gray-50 px-3 py-2 text-sm text-muted cursor-not-allowed"
               />
             </div>
 
@@ -518,7 +518,7 @@ export default function ProfilePage() {
                 type="submit"
                 disabled={updateMutation.isPending}
                 className={cn(
-                  'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors',
+                  'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-primary bg-blue-600 hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors',
                   updateMutation.isPending && 'opacity-60 cursor-not-allowed',
                 )}
               >
@@ -550,31 +550,31 @@ export default function ProfilePage() {
           <dl className="space-y-4 text-sm">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <dt className="text-gray-500 mb-0.5">Имя</dt>
-                <dd className="font-medium text-gray-900">{profile.first_name || '—'}</dd>
+                <dt className="text-muted mb-0.5">Имя</dt>
+                <dd className="font-medium text-primary">{profile.first_name || '—'}</dd>
               </div>
               <div>
-                <dt className="text-gray-500 mb-0.5">Фамилия</dt>
-                <dd className="font-medium text-gray-900">{profile.last_name || '—'}</dd>
+                <dt className="text-muted mb-0.5">Фамилия</dt>
+                <dd className="font-medium text-primary">{profile.last_name || '—'}</dd>
               </div>
             </div>
 
             <div>
-              <dt className="text-gray-500 mb-0.5">
+              <dt className="text-muted mb-0.5">
                 Email
-                <span className="ml-2 text-xs text-gray-400">(нельзя изменить)</span>
+                <span className="ml-2 text-xs text-secondary">(нельзя изменить)</span>
               </dt>
-              <dd className="font-medium text-gray-900">{profile.email}</dd>
+              <dd className="font-medium text-primary">{profile.email}</dd>
             </div>
 
             <div>
-              <dt className="text-gray-500 mb-0.5">Телефон</dt>
-              <dd className="font-medium text-gray-900">{profile.phone || '—'}</dd>
+              <dt className="text-muted mb-0.5">Телефон</dt>
+              <dd className="font-medium text-primary">{profile.phone || '—'}</dd>
             </div>
 
             <div>
-              <dt className="text-gray-500 mb-0.5">Должность</dt>
-              <dd className="font-medium text-gray-900">{profile.position || '—'}</dd>
+              <dt className="text-muted mb-0.5">Должность</dt>
+              <dd className="font-medium text-primary">{profile.position || '—'}</dd>
             </div>
           </dl>
         )}

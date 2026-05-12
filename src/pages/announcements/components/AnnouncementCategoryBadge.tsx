@@ -14,8 +14,8 @@ interface AnnouncementCategoryBadgeProps {
 
 const CATEGORY_BADGE_CLASS: Record<AnnouncementCategory, string> = {
   info: 'bg-blue-900/40 text-blue-200 border-blue-800/60',
-  important: 'bg-red-900/40 text-red-200 border-red-800/60',
-  event: 'bg-emerald-900/40 text-emerald-200 border-emerald-800/60',
+  important: 'bg-danger-subtle text-danger-badge border-red-200 dark:border-red-900/40',
+  event: 'bg-success-subtle text-emerald-200 border-green-200 dark:border-emerald-800/50',
 };
 
 export function AnnouncementCategoryBadge({ category }: AnnouncementCategoryBadgeProps) {

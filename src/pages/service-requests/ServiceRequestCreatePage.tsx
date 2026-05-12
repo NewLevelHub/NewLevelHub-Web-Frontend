@@ -104,22 +104,22 @@ export default function ServiceRequestCreatePage() {
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-white">Новая сервисная заявка</h1>
-        <p className="text-sm text-gray-400">
+        <h1 className="text-2xl font-bold text-primary">Новая сервисная заявка</h1>
+        <p className="text-sm text-secondary">
           Опишите проблему или запрос — мы назначим исполнителя.
         </p>
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-4 rounded-xl border border-gray-700 bg-gray-800 p-5"
+        className="space-y-4 rounded-xl border border-default bg-raised p-5"
       >
-        <label className="block text-sm text-gray-300">
+        <label className="block text-sm text-secondary">
           Тип заявки
           <select
             value={requestType}
             onChange={(e) => setRequestType(e.target.value as ServiceRequestType)}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           >
             {TYPE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -130,9 +130,9 @@ export default function ServiceRequestCreatePage() {
         </label>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block text-sm text-gray-300">
+          <label className="block text-sm text-secondary">
             Выбор этажа
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-muted">
               Здесь только этажи из справочника здания. Поле «этаж» в профиле компании к заявкам не
               подключается — справочник настраивает супер-администратор.
             </p>
@@ -141,7 +141,7 @@ export default function ServiceRequestCreatePage() {
               onChange={(e) => setFloorId(e.target.value)}
               disabled={isFloorsLoading}
               required
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             >
               {isFloorsLoading ? (
                 <option value="">Загрузка этажей...</option>
@@ -163,54 +163,54 @@ export default function ServiceRequestCreatePage() {
               )}
             </select>
             {floorsError ? (
-              <p className="mt-1 text-xs text-amber-300">
+              <p className="mt-1 text-xs text-warning">
                 Не удалось загрузить этажи. Без этажа отправка невозможна.
               </p>
             ) : null}
           </label>
 
-          <label className="block text-sm text-gray-300">
+          <label className="block text-sm text-secondary">
             Место
             <input
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               required
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               placeholder="Переговорка A, кухня..."
             />
           </label>
         </div>
 
-        <label className="block text-sm text-gray-300">
+        <label className="block text-sm text-secondary">
           Описание
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
             required
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder:text-gray-500"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted"
             placeholder="Опишите проблему или запрос подробнее"
           />
         </label>
 
-        <label className="block text-sm text-gray-300">
+        <label className="block text-sm text-secondary">
           Фото (необязательно)
           <input
             type="file"
             accept="image/*"
             onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
-            className="mt-1 block w-full cursor-pointer rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-200 file:mr-3 file:rounded-md file:border-0 file:bg-gray-700 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-gray-100 hover:file:bg-gray-600"
+            className="mt-1 block w-full cursor-pointer rounded-lg border border-default bg-surface px-3 py-2 text-sm text-secondary file:mr-3 file:rounded-md file:border-0 file:bg-hover file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-primary hover:file:bg-gray-600"
           />
-          {photo ? <p className="mt-1 text-xs text-gray-400">Выбрано: {photo.name}</p> : null}
+          {photo ? <p className="mt-1 text-xs text-secondary">Выбрано: {photo.name}</p> : null}
         </label>
 
-        <label className="block text-sm text-gray-300">
+        <label className="block text-sm text-secondary">
           Срочность
           <select
             value={urgency}
             onChange={(e) => setUrgency(e.target.value as 'normal' | 'urgent')}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           >
             <option value="normal">Обычная</option>
             <option value="urgent">Срочная</option>
@@ -229,14 +229,14 @@ export default function ServiceRequestCreatePage() {
         <div className="flex items-center justify-end gap-2">
           <Link
             to="/service-requests"
-            className="inline-flex items-center rounded-lg border border-gray-700 bg-transparent px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700"
+            className="inline-flex items-center rounded-lg border border-default bg-transparent px-4 py-2 text-sm font-medium text-secondary hover:bg-hover"
           >
             Отмена
           </Link>
           <button
             type="submit"
             disabled={createMutation.isPending}
-            className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+            className="inline-flex items-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
           >
             {createMutation.isPending ? 'Отправка...' : 'Создать заявку'}
           </button>

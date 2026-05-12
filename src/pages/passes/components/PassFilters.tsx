@@ -42,15 +42,15 @@ export function PassFilters({
   onReset,
 }: PassFiltersProps) {
   return (
-    <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+    <div className="rounded-xl border border-default bg-raised p-4">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {isAdminView ? (
-          <label className="text-sm text-gray-300">
+          <label className="text-sm text-secondary">
             Статус
             <select
               value={statusFilter}
               onChange={(event) => onStatusChange(event.target.value as PassStatus | '')}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             >
               {STATUS_OPTIONS.map(option => (
                 <option key={option.label} value={option.value}>
@@ -62,51 +62,51 @@ export function PassFilters({
         ) : null}
 
         {isAdminView ? (
-          <label className="text-sm text-gray-300">
+          <label className="text-sm text-secondary">
             Email создателя
             <input
               type="email"
               value={createdByEmailFilter}
               onChange={(event) => onCreatedByEmailChange(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               placeholder="creator@company.com"
             />
           </label>
         ) : null}
 
         {isSuperadmin ? (
-          <label className="text-sm text-gray-300">
+          <label className="text-sm text-secondary">
             Компания
             <input
               type="text"
               value={companyNameFilter}
               onChange={(event) => onCompanyNameChange(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               placeholder="Название компании"
             />
           </label>
         ) : null}
 
         {isAdminView ? (
-          <label className="text-sm text-gray-300">
+          <label className="text-sm text-secondary">
             Дата от
             <input
               type="date"
               value={dateFromFilter}
               onChange={(event) => onDateFromChange(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             />
           </label>
         ) : null}
 
         {isAdminView ? (
-          <label className="text-sm text-gray-300">
+          <label className="text-sm text-secondary">
             Дата до
             <input
               type="date"
               value={dateToFilter}
               onChange={(event) => onDateToChange(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             />
           </label>
         ) : null}
@@ -118,7 +118,7 @@ export function PassFilters({
             type="button"
             onClick={onReset}
             disabled={!hasActiveFilters}
-            className="rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             Сбросить фильтры
           </button>

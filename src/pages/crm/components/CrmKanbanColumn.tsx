@@ -53,12 +53,12 @@ export function CrmKanbanColumn({
 
   return (
     <>
-      <div className="group flex flex-col rounded-xl border border-gray-800 bg-gray-900 w-72 shrink-0">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+      <div className="group flex flex-col rounded-xl border border-default bg-surface w-72 shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-default">
           <div className="flex items-center gap-2 min-w-0">
-            <h3 className="text-sm font-semibold text-white truncate">{column.name}</h3>
+            <h3 className="text-sm font-semibold text-primary truncate">{column.name}</h3>
             {tasks.length > 0 && (
-              <span className="shrink-0 inline-flex items-center rounded-md bg-gray-800 border border-gray-700 px-1.5 py-0.5 text-xs text-gray-400">
+              <span className="shrink-0 inline-flex items-center rounded-md bg-raised border border-default px-1.5 py-0.5 text-xs text-secondary">
                 {tasks.length}
               </span>
             )}
@@ -67,8 +67,8 @@ export function CrmKanbanColumn({
                 className={cn(
                   'shrink-0 inline-flex items-center rounded-md border px-1.5 py-0.5 text-xs',
                   tasks.length >= column.wip_limit
-                    ? 'bg-red-900/40 border-red-700 text-red-400'
-                    : 'bg-gray-800 border-gray-700 text-gray-400',
+                    ? 'bg-danger-subtle border-red-700 text-red-400'
+                    : 'bg-raised border-default text-secondary',
                 )}
                 title={`WIP-лимит: ${column.wip_limit}`}
               >
@@ -89,7 +89,7 @@ export function CrmKanbanColumn({
               tabIndex={0}
               className={cn(
                 'p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity',
-                'text-gray-400 group-hover:text-gray-600',
+                'text-secondary group-hover:text-muted',
                 'cursor-grab active:cursor-grabbing',
                 'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:opacity-100',
               )}
@@ -104,8 +104,8 @@ export function CrmKanbanColumn({
           <div className="flex flex-col flex-1 px-3 py-3 gap-2 min-h-[200px]" data-column-id={column.id}>
             {tasks.length === 0 ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8 text-center">
-                <Inbox size={20} className="text-gray-600" />
-                <p className="text-xs text-gray-600">Нет задач</p>
+                <Inbox size={20} className="text-muted" />
+                <p className="text-xs text-muted">Нет задач</p>
               </div>
             ) : (
               tasks.map((task) => (
@@ -133,9 +133,9 @@ export function CrmKanbanColumn({
               }
               className={cn(
                 'flex w-full items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium',
-                'text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-colors',
+                'text-muted hover:text-secondary hover:bg-hover transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
-                atWipLimit && 'opacity-50 cursor-not-allowed hover:bg-transparent hover:text-gray-500',
+                atWipLimit && 'opacity-50 cursor-not-allowed hover:bg-transparent hover:text-muted',
               )}
             >
               <Plus size={13} />

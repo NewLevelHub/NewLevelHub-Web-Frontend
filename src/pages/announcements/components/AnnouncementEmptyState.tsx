@@ -8,11 +8,11 @@ export function AnnouncementEmptyState({ isError, errorMessage }: AnnouncementEm
     return (
       <p
         role="alert"
-        className="rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2 text-sm text-red-200"
+        className="rounded-lg border border-red-200 dark:border-red-900/40 bg-danger-subtle px-3 py-2 text-sm text-danger-badge"
       >
         {errorMessage}
       </p>
     );
   }
-  return <p className="text-sm text-gray-500">Объявлений пока нет.</p>;
+  return <p className="text-sm text-muted">Объявлений пока нет.</p>;
 }

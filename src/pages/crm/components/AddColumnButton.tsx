@@ -11,8 +11,8 @@ export function AddColumnButton({ onClick }: AddColumnButtonProps) {
       type="button"
       onClick={onClick}
       className={cn(
-        'flex items-center gap-2 w-72 shrink-0 rounded-xl border border-dashed border-gray-700',
-        'px-4 py-3 text-sm font-medium text-gray-500 hover:text-gray-300 hover:border-gray-500',
+        'flex items-center gap-2 w-72 shrink-0 rounded-xl border border-dashed border-default',
+        'px-4 py-3 text-sm font-medium text-muted hover:text-secondary hover:border-gray-500',
         'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
         'min-h-[200px] justify-center flex-col',
       )}

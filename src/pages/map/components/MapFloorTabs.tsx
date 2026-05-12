@@ -29,7 +29,7 @@ export const MapFloorTabs = memo<MapFloorTabsProps>(
     return (
       <>
         {floorsLoading ? (
-          <div className="flex items-center gap-2 text-sm text-gray-500" aria-live="polite">
+          <div className="flex items-center gap-2 text-sm text-muted" aria-live="polite">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             Загрузка этажей...
           </div>
@@ -61,8 +61,8 @@ export const MapFloorTabs = memo<MapFloorTabsProps>(
                   className={cn(
                     'shrink-0 rounded-lg border px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
                     selectedFloorId === floor.id
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50',
+                      ? 'border-blue-500 bg-indigo-50 text-indigo-700'
+                      : 'border-default bg-surface text-gray-700 hover:border-gray-300 hover:bg-raised',
                   )}
                 >
                   {formatFloorTabLabel(floor)}
@@ -91,7 +91,7 @@ export const MapFloorTabs = memo<MapFloorTabsProps>(
               <button
                 type="button"
                 onClick={onOpenCreateFloor}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
               >
                 <Plus className="h-4 w-4" aria-hidden="true" />
                 Создать этаж

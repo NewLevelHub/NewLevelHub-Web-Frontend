@@ -114,43 +114,43 @@ export default function AnnouncementCreatePage() {
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-6">
       <header className="space-y-1">
-        <h1 className="text-2xl font-bold text-white">Новое объявление</h1>
-        <p className="text-sm text-gray-400">
+        <h1 className="text-2xl font-bold text-primary">Новое объявление</h1>
+        <p className="text-sm text-secondary">
           {isSuperadmin
             ? 'Суперадмин: для всего БЦ или для выбранной компании.'
             : 'Объявление для сотрудников вашей компании.'}
         </p>
       </header>
 
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-gray-700 bg-gray-800 p-5">
-        <label className="block text-sm text-gray-300">
+      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-default bg-raised p-5">
+        <label className="block text-sm text-secondary">
           Заголовок
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             required
             maxLength={255}
           />
         </label>
 
-        <label className="block text-sm text-gray-300">
+        <label className="block text-sm text-secondary">
           Текст
           <textarea
             value={text}
             onChange={(event) => setText(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             rows={6}
             required
           />
         </label>
 
-        <label className="block text-sm text-gray-300">
+        <label className="block text-sm text-secondary">
           Категория
           <select
             value={category}
             onChange={(event) => setCategory(event.target.value as AnnouncementCategory)}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           >
             {Object.values(ANNOUNCEMENT_CATEGORIES).map((value) => (
               <option key={value} value={value}>
@@ -161,9 +161,9 @@ export default function AnnouncementCreatePage() {
         </label>
 
         {isSuperadmin ? (
-          <fieldset className="space-y-2 rounded-lg border border-gray-700 p-3">
-            <legend className="px-1 text-xs uppercase tracking-wide text-gray-400">Получатели</legend>
-            <label className="flex items-center gap-2 text-sm text-gray-200">
+          <fieldset className="space-y-2 rounded-lg border border-default p-3">
+            <legend className="px-1 text-xs uppercase tracking-wide text-secondary">Получатели</legend>
+            <label className="flex items-center gap-2 text-sm text-secondary">
               <input
                 type="radio"
                 name="audience"
@@ -173,7 +173,7 @@ export default function AnnouncementCreatePage() {
               />
               Весь БЦ (видят все)
             </label>
-            <label className="flex items-center gap-2 text-sm text-gray-200">
+            <label className="flex items-center gap-2 text-sm text-secondary">
               <input
                 type="radio"
                 name="audience"
@@ -189,7 +189,7 @@ export default function AnnouncementCreatePage() {
                 onChange={(event) =>
                   setCompanyId(event.target.value === '' ? '' : Number(event.target.value))
                 }
-                className="mt-2 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                className="mt-2 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
                 aria-label="Компания-получатель"
               >
                 <option value="">— Выберите компанию —</option>
@@ -203,32 +203,32 @@ export default function AnnouncementCreatePage() {
           </fieldset>
         ) : null}
 
-        <label className="block text-sm text-gray-300">
+        <label className="block text-sm text-secondary">
           Изображение (необязательно)
           <input
             type="file"
             accept="image/*"
             onChange={(event) => setImage(event.target.files?.[0] ?? null)}
-            className="mt-1 block w-full text-sm text-gray-300"
+            className="mt-1 block w-full text-sm text-secondary"
           />
         </label>
 
-        <label className="flex items-center gap-2 text-sm text-gray-300">
+        <label className="flex items-center gap-2 text-sm text-secondary">
           <input
             type="checkbox"
             checked={isPinned}
             onChange={(event) => setIsPinned(event.target.checked)}
-            className="h-4 w-4 rounded border-gray-700 bg-gray-900 text-indigo-500"
+            className="h-4 w-4 rounded border-default bg-surface text-brand"
           />
           Закрепить наверху ленты
         </label>
 
-        <label className="flex items-center gap-2 text-sm text-gray-300">
+        <label className="flex items-center gap-2 text-sm text-secondary">
           <input
             type="checkbox"
             checked={notifyEmail}
             onChange={(event) => setNotifyEmail(event.target.checked)}
-            className="h-4 w-4 rounded border-gray-700 bg-gray-900 text-indigo-500"
+            className="h-4 w-4 rounded border-default bg-surface text-brand"
           />
           Отправить email-уведомление получателям
         </label>
@@ -242,14 +242,14 @@ export default function AnnouncementCreatePage() {
         <div className="flex justify-end gap-2">
           <Link
             to="/announcements"
-            className="inline-flex items-center rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700"
+            className="inline-flex items-center rounded-lg border border-default px-4 py-2 text-sm font-medium text-secondary hover:bg-hover"
           >
             Отмена
           </Link>
           <button
             type="submit"
             disabled={createMutation.isPending}
-            className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+            className="inline-flex items-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
           >
             {createMutation.isPending ? 'Публикация…' : 'Опубликовать'}
           </button>

@@ -40,35 +40,35 @@ export function PreferencesTable({ preferences, pendingKeys, onToggle }: Prefere
     <div className="overflow-x-auto">
       <table className="w-full text-sm" role="table" aria-label="Настройки уведомлений">
         <thead>
-          <tr className="border-b border-gray-700">
+          <tr className="border-b border-default">
             <th
               scope="col"
-              className="py-3 pr-6 text-left text-xs font-medium uppercase tracking-wider text-gray-400"
+              className="py-3 pr-6 text-left text-xs font-medium uppercase tracking-wider text-secondary"
             >
               Тип уведомления
             </th>
             <th
               scope="col"
-              className="py-3 px-6 text-center text-xs font-medium uppercase tracking-wider text-gray-400"
+              className="py-3 px-6 text-center text-xs font-medium uppercase tracking-wider text-secondary"
             >
               В приложении
             </th>
             <th
               scope="col"
-              className="py-3 pl-6 text-center text-xs font-medium uppercase tracking-wider text-gray-400"
+              className="py-3 pl-6 text-center text-xs font-medium uppercase tracking-wider text-secondary"
             >
               Email
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-700/50">
+        <tbody className="divide-y divide-[color:var(--border)]/50">
           {ALL_TYPES.map((type) => {
             const entry = preferences[type];
             const inAppKey = `${type}:in_app`;
             const emailKey = `${type}:email`;
             return (
-              <tr key={type} className="hover:bg-gray-700/30 transition-colors">
-                <td className="py-3 pr-6 text-gray-300">
+              <tr key={type} className="hover:bg-hover/30 transition-colors">
+                <td className="py-3 pr-6 text-secondary">
                   {NOTIFICATION_LABELS[type]}
                 </td>
                 <td className="py-3 px-6 text-center">
@@ -89,7 +89,7 @@ export function PreferencesTable({ preferences, pendingKeys, onToggle }: Prefere
                         disabled={pendingKeys.has(emailKey)}
                       />
                     ) : (
-                      <span className="text-gray-600 text-xs select-none">—</span>
+                      <span className="text-muted text-xs select-none">—</span>
                     )}
                   </div>
                 </td>

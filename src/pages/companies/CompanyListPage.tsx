@@ -38,7 +38,7 @@ const PLAN_LABELS: Record<string, string> = {
 };
 
 const PLAN_COLORS: Record<string, string> = {
-  [COMPANY_TIERS.BASIC]: 'bg-gray-700 text-gray-200',
+  [COMPANY_TIERS.BASIC]: 'bg-hover text-secondary',
   [COMPANY_TIERS.STANDARD]: 'bg-blue-900/60 text-blue-300',
   [COMPANY_TIERS.PREMIUM]: 'bg-purple-900/60 text-purple-300',
 };
@@ -240,10 +240,10 @@ export default function CompanyListPage() {
   if (isError && isCompanyNotAssignedError(error)) {
     return (
       <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-7xl mx-auto">
-        <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 rounded-2xl border border-amber-900/50 bg-amber-950/20 px-6 py-12 text-center">
+        <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 rounded-2xl border border-amber-900/50 bg-warning-subtle px-6 py-12 text-center">
           <Building2 className="h-12 w-12 text-amber-400/90" aria-hidden="true" />
-          <h1 className="text-lg font-semibold text-white">Ожидание назначения в компанию</h1>
-          <p className="max-w-md text-sm text-gray-400">
+          <h1 className="text-lg font-semibold text-primary">Ожидание назначения в компанию</h1>
+          <p className="max-w-md text-sm text-secondary">
             Ваш аккаунт ещё не привязан к организации. Когда администратор добавит вас в компанию,
             список и доступ к разделам появятся автоматически.
           </p>
@@ -256,8 +256,8 @@ export default function CompanyListPage() {
     return (
       <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-7xl mx-auto">
         <div className="flex h-64 flex-col items-center justify-center gap-2 text-center">
-          <p className="text-sm font-medium text-red-300">Ошибка загрузки компаний.</p>
-          <p className="text-xs text-gray-400">Проверьте соединение и обновите страницу.</p>
+          <p className="text-sm font-medium text-danger">Ошибка загрузки компаний.</p>
+          <p className="text-xs text-secondary">Проверьте соединение и обновите страницу.</p>
         </div>
       </main>
     );
@@ -270,9 +270,9 @@ export default function CompanyListPage() {
       {/* Page header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Компании-арендаторы</h1>
+          <h1 className="text-2xl font-bold text-primary">Компании-арендаторы</h1>
           {!showLoading && (
-            <p className="mt-1 text-sm text-gray-400">
+            <p className="mt-1 text-sm text-secondary">
               Всего: {totalCount}
             </p>
           )}
@@ -280,7 +280,7 @@ export default function CompanyListPage() {
         {isSuperadmin && (
           <Link
             to={`${companiesBasePath}/new`}
-            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
             Создать компанию
@@ -292,7 +292,7 @@ export default function CompanyListPage() {
       {mutationError && (
         <div
           role="alert"
-          className="rounded-lg border border-red-800 bg-red-950/30 px-4 py-3 text-sm text-red-300"
+          className="rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-4 py-3 text-sm text-danger"
         >
           {mutationError}
         </div>
@@ -301,7 +301,7 @@ export default function CompanyListPage() {
       {/* Filters — superadmin only */}
       {isSuperadmin && (
         <section
-          className="bg-gray-800 rounded-2xl border border-gray-700 p-4"
+          className="bg-raised rounded-2xl border border-default p-4"
           aria-label="Фильтры компаний"
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -309,7 +309,7 @@ export default function CompanyListPage() {
             <div className="relative w-full sm:flex-1 sm:min-w-52">
               <Search
                 size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary pointer-events-none"
                 aria-hidden="true"
               />
               <input
@@ -318,7 +318,7 @@ export default function CompanyListPage() {
                 onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Поиск по названию..."
                 aria-label="Поиск компаний"
-                className="w-full rounded-lg border border-gray-700 bg-gray-900 py-2 pl-9 pr-3 text-sm text-white placeholder:text-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-default bg-surface py-2 pl-9 pr-3 text-sm text-primary placeholder:text-muted focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               />
             </div>
 
@@ -327,7 +327,7 @@ export default function CompanyListPage() {
               value={planFilter}
               onChange={(e) => setPlanFilter(e.target.value)}
               aria-label="Фильтр по тарифу"
-              className="w-full sm:w-auto rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full sm:w-auto rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
               <option value="">Все тарифы</option>
               <option value={COMPANY_TIERS.BASIC}>Базовый</option>
@@ -340,7 +340,7 @@ export default function CompanyListPage() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               aria-label="Фильтр по статусу"
-              className="w-full sm:w-auto rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full sm:w-auto rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
               <option value="">Все статусы</option>
               <option value="true">Активные</option>
@@ -351,7 +351,7 @@ export default function CompanyListPage() {
       )}
 
       {/* Table */}
-      <div className="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
+      <div className="bg-raised rounded-2xl border border-default overflow-hidden">
         <div className="overflow-x-auto">
           <table
             className="w-full min-w-[820px] text-sm"
@@ -359,22 +359,22 @@ export default function CompanyListPage() {
             aria-label="Список компаний"
           >
             <thead>
-              <tr className="border-b border-gray-700 bg-gray-900/60 text-left">
+              <tr className="border-b border-default bg-surface/60 text-left">
                 <th
                   scope="col"
-                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400"
+                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-secondary"
                 >
                   Компания
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400"
+                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-secondary"
                 >
                   Тариф
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400"
+                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-secondary"
                 >
                   <span className="inline-flex items-center gap-1">
                     <Users className="h-3.5 w-3.5" aria-hidden="true" />
@@ -383,7 +383,7 @@ export default function CompanyListPage() {
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400"
+                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-secondary"
                 >
                   <span className="inline-flex items-center gap-1">
                     <HardDrive className="h-3.5 w-3.5" aria-hidden="true" />
@@ -392,7 +392,7 @@ export default function CompanyListPage() {
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-400"
+                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-secondary"
                 >
                   Статус
                 </th>
@@ -401,15 +401,15 @@ export default function CompanyListPage() {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700/60">
+            <tbody className="divide-y divide-[color:var(--border)]/60">
               {showLoading ? (
                 Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)
               ) : companies.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-16 text-center">
                     <div className="flex flex-col items-center gap-2">
-                      <Building2 className="h-8 w-8 text-gray-300" aria-hidden="true" />
-                      <p className="text-sm text-gray-400">Компании не найдены</p>
+                      <Building2 className="h-8 w-8 text-secondary" aria-hidden="true" />
+                      <p className="text-sm text-secondary">Компании не найдены</p>
                     </div>
                   </td>
                 </tr>
@@ -434,13 +434,13 @@ export default function CompanyListPage() {
       {/* Pagination */}
       {!showLoading && totalCount > 0 && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-secondary">
             Показано{' '}
-            <span className="font-medium text-white">
+            <span className="font-medium text-primary">
               {rangeStart}–{rangeEnd}
             </span>{' '}
             из{' '}
-            <span className="font-medium text-white">{totalCount}</span> компаний
+            <span className="font-medium text-primary">{totalCount}</span> компаний
           </p>
 
           <nav aria-label="Пагинация" className="flex flex-wrap items-center gap-1">
@@ -450,10 +450,10 @@ export default function CompanyListPage() {
               disabled={page === 1}
               aria-label="Предыдущая страница"
               className={cn(
-                'rounded-lg border p-2 text-gray-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
+                'rounded-lg border p-2 text-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
                 page === 1
-                  ? 'cursor-not-allowed border-gray-800 text-gray-600'
-                  : 'border-gray-700 hover:bg-gray-700',
+                  ? 'cursor-not-allowed border-default text-muted'
+                  : 'border-default hover:bg-hover',
               )}
             >
               <ChevronLeft size={16} aria-hidden="true" />
@@ -470,7 +470,7 @@ export default function CompanyListPage() {
                 item === 'ellipsis' ? (
                   <span
                     key={`ellipsis-${idx}`}
-                    className="px-2 text-gray-400 text-sm select-none"
+                    className="px-2 text-secondary text-sm select-none"
                   >
                     …
                   </span>
@@ -484,8 +484,8 @@ export default function CompanyListPage() {
                     className={cn(
                       'h-9 w-9 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
                       item === page
-                        ? 'bg-indigo-600 text-white'
-                        : 'border border-gray-700 text-gray-300 hover:bg-gray-700',
+                        ? 'bg-brand text-white'
+                        : 'border border-default text-secondary hover:bg-hover',
                     )}
                   >
                     {item}
@@ -499,10 +499,10 @@ export default function CompanyListPage() {
               disabled={page === totalPages}
               aria-label="Следующая страница"
               className={cn(
-                'rounded-lg border p-2 text-gray-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
+                'rounded-lg border p-2 text-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
                 page === totalPages
-                  ? 'cursor-not-allowed border-gray-800 text-gray-600'
-                  : 'border-gray-700 hover:bg-gray-700',
+                  ? 'cursor-not-allowed border-default text-muted'
+                  : 'border-default hover:bg-hover',
               )}
             >
               <ChevronRight size={16} aria-hidden="true" />
@@ -548,7 +548,7 @@ function CompanyRow({
   onDelete,
 }: CompanyRowProps) {
   return (
-    <tr className="group transition-colors hover:bg-gray-700/40">
+    <tr className="group transition-colors hover:bg-hover/40">
       {/* Logo + Name + office */}
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
@@ -574,7 +574,7 @@ function CompanyRow({
               {company.name}
             </Link>
             {(company.floor != null || company.office_number) && (
-              <div className="mt-0.5 text-xs text-gray-500">
+              <div className="mt-0.5 text-xs text-muted">
                 {company.floor != null && `Этаж ${company.floor}`}
                 {company.floor != null && company.office_number && ', '}
                 {company.office_number && `офис ${company.office_number}`}
@@ -589,7 +589,7 @@ function CompanyRow({
         <span
           className={cn(
             'inline-block rounded-full px-2.5 py-0.5 text-xs font-medium',
-            PLAN_COLORS[company.plan] ?? 'bg-gray-700 text-gray-200',
+            PLAN_COLORS[company.plan] ?? 'bg-hover text-secondary',
           )}
         >
           {PLAN_LABELS[company.plan] ?? company.plan}
@@ -597,20 +597,20 @@ function CompanyRow({
       </td>
 
       {/* Max employees */}
-      <td className="px-4 py-3 text-gray-300">{company.max_employees}</td>
+      <td className="px-4 py-3 text-secondary">{company.max_employees}</td>
 
       {/* Storage limit */}
-      <td className="px-4 py-3 text-gray-300">{company.storage_limit_gb} ГБ</td>
+      <td className="px-4 py-3 text-secondary">{company.storage_limit_gb} ГБ</td>
 
       {/* Status */}
       <td className="px-4 py-3">
         {company.is_active ? (
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-300">
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-success">
             <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
             Активна
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-400">
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-secondary">
             <XCircle className="h-3.5 w-3.5" aria-hidden="true" />
             Неактивна
           </span>
@@ -636,7 +636,7 @@ function CompanyRow({
                   type="button"
                   onClick={onDeactivate}
                   title="Деактивировать"
-                  className="rounded-lg p-1.5 text-amber-400 transition-colors hover:bg-amber-900/30 hover:text-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                  className="rounded-lg p-1.5 text-amber-400 transition-colors hover:bg-warning-subtle hover:text-warning focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
                 >
                   <PowerOff className="h-4 w-4" aria-hidden="true" />
                   <span className="sr-only">Деактивировать {company.name}</span>
@@ -646,7 +646,7 @@ function CompanyRow({
                   type="button"
                   onClick={onActivate}
                   title="Активировать"
-                  className="rounded-lg p-1.5 text-emerald-400 transition-colors hover:bg-emerald-900/30 hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  className="rounded-lg p-1.5 text-emerald-400 transition-colors hover:bg-success-subtle hover:text-success focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                   <Power className="h-4 w-4" aria-hidden="true" />
                   <span className="sr-only">Активировать {company.name}</span>
@@ -657,7 +657,7 @@ function CompanyRow({
                 type="button"
                 onClick={onDelete}
                 title="Удалить"
-                className="rounded-lg p-1.5 text-red-400 transition-colors hover:bg-red-900/30 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                className="rounded-lg p-1.5 text-red-400 transition-colors hover:bg-danger-subtle hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
               >
                 <Trash2 className="h-4 w-4" aria-hidden="true" />
                 <span className="sr-only">Удалить {company.name}</span>

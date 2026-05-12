@@ -69,13 +69,13 @@ export function ArchivePanel({
       aria-modal="true"
       aria-label="Архив задач"
     >
-      <div className="flex flex-col w-full max-w-md bg-gray-900 border-l border-gray-800 shadow-2xl h-full overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800 shrink-0">
+      <div className="flex flex-col w-full max-w-md bg-surface border-l border-default shadow-2xl h-full overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-default shrink-0">
           <div className="flex items-center gap-2">
-            <Archive size={16} className="text-gray-400" />
-            <h2 className="text-base font-semibold text-white">Архив задач</h2>
+            <Archive size={16} className="text-secondary" />
+            <h2 className="text-base font-semibold text-primary">Архив задач</h2>
             {archivedTasks.length > 0 && (
-              <span className="inline-flex items-center rounded-md bg-gray-800 border border-gray-700 px-1.5 py-0.5 text-xs text-gray-400">
+              <span className="inline-flex items-center rounded-md bg-raised border border-default px-1.5 py-0.5 text-xs text-secondary">
                 {archivedTasks.length}
               </span>
             )}
@@ -83,7 +83,7 @@ export function ArchivePanel({
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors rounded-md p-1 hover:bg-gray-800"
+            className="text-secondary hover:text-primary transition-colors rounded-md p-1 hover:bg-hover"
             aria-label="Закрыть архив"
           >
             <X size={18} />
@@ -93,12 +93,12 @@ export function ArchivePanel({
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {archiveLoading ? (
             <div className="flex items-center justify-center h-full py-16">
-              <p className="text-sm text-gray-500">Загрузка...</p>
+              <p className="text-sm text-muted">Загрузка...</p>
             </div>
           ) : archivedTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 py-16 text-center">
               <Archive size={36} className="text-gray-700" />
-              <p className="text-sm text-gray-500">Здесь пока нет архивных задач</p>
+              <p className="text-sm text-muted">Здесь пока нет архивных задач</p>
             </div>
           ) : (
             <ul className="space-y-2" role="list" aria-label="Архивные задачи">
@@ -112,11 +112,11 @@ export function ArchivePanel({
                 const restoreBlocked = !restoreCheck.ok;
 
                 return (
-                  <li key={task.id} className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-3 space-y-2">
+                  <li key={task.id} className="rounded-lg border border-default bg-raised px-3 py-3 space-y-2">
                     <div className="space-y-1.5">
-                      <p className="text-sm text-white leading-snug break-words">{task.title}</p>
+                      <p className="text-sm text-primary leading-snug break-words">{task.title}</p>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs text-gray-500">{columnMap.get(task.column_id) ?? '—'}</span>
+                        <span className="text-xs text-muted">{columnMap.get(task.column_id) ?? '—'}</span>
                         <span
                           className={cn(
                             'inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-medium',
@@ -146,10 +146,10 @@ export function ArchivePanel({
                             : undefined
                         }
                         className={cn(
-                          'rounded-md border border-gray-600 px-2.5 py-1.5 text-xs font-medium transition-colors',
-                          'text-gray-300 hover:text-white hover:border-gray-400 hover:bg-gray-700',
+                          'rounded-md border border-default px-2.5 py-1.5 text-xs font-medium transition-colors',
+                          'text-secondary hover:text-primary hover:border-gray-400 hover:bg-hover',
                           restoreBlocked &&
-                            'opacity-50 cursor-not-allowed hover:bg-transparent hover:text-gray-500 hover:border-gray-600',
+                            'opacity-50 cursor-not-allowed hover:bg-transparent hover:text-muted hover:border-strong',
                           'disabled:opacity-50 disabled:cursor-not-allowed',
                         )}
                         aria-label={`Разархивировать задачу: ${task.title}`}
@@ -162,7 +162,7 @@ export function ArchivePanel({
                       <Link
                         to={`/crm/tasks/${task.id}`}
                         onClick={onClose}
-                        className="rounded-md border border-gray-600 px-2.5 py-1.5 text-xs font-medium transition-colors text-gray-300 hover:text-white hover:border-gray-400 hover:bg-gray-700"
+                        className="rounded-md border border-default px-2.5 py-1.5 text-xs font-medium transition-colors text-secondary hover:text-primary hover:border-gray-400 hover:bg-hover"
                       >
                         Открыть страницу
                       </Link>
@@ -173,7 +173,7 @@ export function ArchivePanel({
                           onTaskOpen(task.id);
                           onClose();
                         }}
-                        className="rounded-md border border-gray-600 px-2.5 py-1.5 text-xs font-medium transition-colors text-gray-300 hover:text-white hover:border-gray-400 hover:bg-gray-700"
+                        className="rounded-md border border-default px-2.5 py-1.5 text-xs font-medium transition-colors text-secondary hover:text-primary hover:border-gray-400 hover:bg-hover"
                       >
                         Открыть модалку
                       </button>
@@ -186,7 +186,7 @@ export function ArchivePanel({
         </div>
 
         {unarchiveMutation.isError && (
-          <div className="px-5 py-3 border-t border-gray-800 shrink-0">
+          <div className="px-5 py-3 border-t border-default shrink-0">
             <p className="text-xs text-red-400">Не удалось восстановить задачу. Попробуйте снова.</p>
           </div>
         )}

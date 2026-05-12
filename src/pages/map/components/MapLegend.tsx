@@ -13,7 +13,7 @@ export const MapLegend = memo<MapLegendProps>(({ statusCounts }) => {
       {LEGEND_ITEMS.map((item) => (
         <div key={item.label} className="flex items-center gap-1.5">
           <span className={cn('block h-3 w-3 rounded-full', item.color)} aria-hidden="true" />
-          <span className="text-xs text-gray-600">
+          <span className="text-xs text-muted">
             {item.label}
             {statusCounts ? ` (${statusCounts[item.status]})` : ''}
           </span>

@@ -54,11 +54,11 @@ export default function PassDetailPage() {
   const { isNowActive } = usePassCountdown(data?.valid_from);
 
   if (isLoading) {
-    return <main className="p-3 sm:p-4 md:p-6 text-sm text-gray-400">Загрузка пропуска...</main>;
+    return <main className="p-3 sm:p-4 md:p-6 text-sm text-secondary">Загрузка пропуска...</main>;
   }
 
   if (isError || !data) {
-    return <main className="p-3 sm:p-4 md:p-6 text-sm text-rose-400">Не удалось загрузить детали пропуска.</main>;
+    return <main className="p-3 sm:p-4 md:p-6 text-sm text-danger">Не удалось загрузить детали пропуска.</main>;
   }
 
   const activatesAt = new Date(data.valid_from);
@@ -75,15 +75,15 @@ export default function PassDetailPage() {
   return (
     <main className="mx-auto max-w-3xl space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-white">Пропуск #{data.id}</h1>
-        <Link to="/passes" className="text-sm text-indigo-300 hover:text-indigo-200">
+        <h1 className="text-2xl font-bold text-primary">Пропуск #{data.id}</h1>
+        <Link to="/passes" className="text-sm text-brand hover:text-brand">
           Назад к списку
         </Link>
       </div>
 
       {canManagePass ? (
-        <section className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-          <h2 className="mb-3 text-lg font-semibold text-white">Действия</h2>
+        <section className="rounded-xl border border-default bg-raised p-5">
+          <h2 className="mb-3 text-lg font-semibold text-primary">Действия</h2>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -92,7 +92,7 @@ export default function PassDetailPage() {
                 resendMutation.mutate();
               }}
               disabled={resendMutation.isPending}
-              className="inline-flex items-center rounded-lg border border-indigo-600 px-4 py-2 text-sm font-medium text-indigo-300 hover:bg-indigo-600/10 disabled:opacity-50"
+              className="inline-flex items-center rounded-lg border border-default px-4 py-2 text-sm font-medium text-brand hover:bg-brand-subtle disabled:opacity-50"
             >
               {resendMutation.isPending ? 'Отправка...' : 'Повторно отправить QR'}
             </button>
@@ -127,37 +127,37 @@ export default function PassDetailPage() {
               {getApiErrorMessage(revokeMutation.error, 'Не удалось отозвать пропуск.')}
             </div>
           ) : null}
-          {successMessage ? <div className="mt-3 text-sm text-emerald-300">{successMessage}</div> : null}
+          {successMessage ? <div className="mt-3 text-sm text-success">{successMessage}</div> : null}
           {!canRevoke ? (
-            <div className="mt-3 text-xs text-gray-400">Нельзя отозвать использованный, истекший или уже отозванный пропуск.</div>
+            <div className="mt-3 text-xs text-secondary">Нельзя отозвать использованный, истекший или уже отозванный пропуск.</div>
           ) : null}
         </section>
       ) : null}
 
-      <section className="grid gap-4 rounded-xl border border-gray-700 bg-gray-800 p-5 text-sm text-gray-200 sm:grid-cols-2">
+      <section className="grid gap-4 rounded-xl border border-default bg-raised p-5 text-sm text-secondary sm:grid-cols-2">
         <div>
-          <div className="text-gray-400">Гость</div>
-          <div className="font-medium text-white">{data.guest_name}</div>
-          <div className="text-xs text-gray-400">{data.guest_email}</div>
+          <div className="text-secondary">Гость</div>
+          <div className="font-medium text-primary">{data.guest_name}</div>
+          <div className="text-xs text-secondary">{data.guest_email}</div>
         </div>
         <div>
-          <div className="text-gray-400">Статус</div>
+          <div className="text-secondary">Статус</div>
           <div><PassStatusBadge status={data.status as PassStatus} /></div>
         </div>
         <div>
-          <div className="text-gray-400">Цель</div>
+          <div className="text-secondary">Цель</div>
           <div>{data.purpose || '—'}</div>
         </div>
         <div>
-          <div className="text-gray-400">Использований</div>
+          <div className="text-secondary">Использований</div>
           <div>{data.times_used}</div>
         </div>
         <div>
-          <div className="text-gray-400">Действует с</div>
+          <div className="text-secondary">Действует с</div>
           <div>{new Date(data.valid_from).toLocaleString()}</div>
         </div>
         <div>
-          <div className="text-gray-400">Действует до</div>
+          <div className="text-secondary">Действует до</div>
           <div>{new Date(data.valid_until).toLocaleString()}</div>
         </div>
       </section>

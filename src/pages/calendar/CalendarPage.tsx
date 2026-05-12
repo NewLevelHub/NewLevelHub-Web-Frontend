@@ -109,8 +109,8 @@ function formatDateTime(value: string) {
 
 const EVENT_BADGE_CLASS: Record<CalendarEventType, string> = {
   [CALENDAR_EVENT_TYPES.BOOKING]: 'bg-blue-900/40 text-blue-300 border-blue-700',
-  [CALENDAR_EVENT_TYPES.TASK_DEADLINE]: 'bg-amber-900/40 text-amber-300 border-amber-700',
-  [CALENDAR_EVENT_TYPES.LEAVE]: 'bg-emerald-900/40 text-emerald-300 border-emerald-700',
+  [CALENDAR_EVENT_TYPES.TASK_DEADLINE]: 'bg-warning-subtle text-warning border-amber-700',
+  [CALENDAR_EVENT_TYPES.LEAVE]: 'bg-success-subtle text-success border-emerald-700',
   [CALENDAR_EVENT_TYPES.GUEST_VISIT]: 'bg-violet-900/40 text-violet-300 border-violet-700',
 };
 
@@ -250,12 +250,12 @@ export default function CalendarPage() {
     <main className="mx-auto max-w-7xl space-y-6 px-3 py-4 sm:px-4 sm:py-6 md:py-8">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Календарь компании</h1>
-          <p className="mt-1 text-sm text-gray-400">
+          <h1 className="text-2xl font-bold text-primary">Календарь компании</h1>
+          <p className="mt-1 text-sm text-secondary">
             Единый календарь по бронированиям, дедлайнам CRM, отпускам и гостевым визитам.
           </p>
         </div>
-        <div className="inline-flex rounded-lg border border-gray-700 bg-gray-800 p-1">
+        <div className="inline-flex rounded-lg border border-default bg-raised p-1">
           {Object.values(CALENDAR_VIEWS).map((mode) => (
             <button
               key={mode}
@@ -263,7 +263,7 @@ export default function CalendarPage() {
               onClick={() => setView(mode)}
               className={cn(
                 'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                view === mode ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700',
+                view === mode ? 'bg-brand text-white' : 'text-secondary hover:bg-hover',
               )}
             >
               {mode === CALENDAR_VIEWS.DAY ? 'День' : mode === CALENDAR_VIEWS.WEEK ? 'Неделя' : 'Месяц'}
@@ -272,23 +272,23 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      <section className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+      <section className="rounded-xl border border-default bg-raised p-4">
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setAnchorDate((prev) => shiftAnchor(prev, view, -1))}
-            className="rounded-lg border border-gray-700 bg-gray-900 p-2 text-gray-300 hover:bg-gray-700"
+            className="rounded-lg border border-default bg-surface p-2 text-secondary hover:bg-hover"
             aria-label="Предыдущий период"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <div className="min-w-[230px] rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white">
+          <div className="min-w-[230px] rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary">
             {formatPeriodLabel(anchorDate, view)}
           </div>
           <button
             type="button"
             onClick={() => setAnchorDate((prev) => shiftAnchor(prev, view, 1))}
-            className="rounded-lg border border-gray-700 bg-gray-900 p-2 text-gray-300 hover:bg-gray-700"
+            className="rounded-lg border border-default bg-surface p-2 text-secondary hover:bg-hover"
             aria-label="Следующий период"
           >
             <ChevronRight className="h-4 w-4" />
@@ -300,7 +300,7 @@ export default function CalendarPage() {
               today.setHours(0, 0, 0, 0);
               setAnchorDate(today);
             }}
-            className="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-200 hover:bg-gray-700"
+            className="rounded-lg border border-default bg-surface px-3 py-2 text-sm text-secondary hover:bg-hover"
           >
             Сегодня
           </button>
@@ -308,7 +308,7 @@ export default function CalendarPage() {
 
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
           {isSuperadmin && (
-            <label className="text-sm text-gray-300">
+            <label className="text-sm text-secondary">
               Компания
               <select
                 value={selectedCompanyId}
@@ -316,7 +316,7 @@ export default function CalendarPage() {
                   setSelectedCompanyId(event.target.value);
                   setSelectedUserId('');
                 }}
-                className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               >
                 <option value="">Выберите компанию</option>
                 {companyOptions.map((option) => (
@@ -328,13 +328,13 @@ export default function CalendarPage() {
             </label>
           )}
 
-          <label className="text-sm text-gray-300">
+          <label className="text-sm text-secondary">
             Сотрудник
             <select
               value={selectedUserId}
               onChange={(event) => setSelectedUserId(event.target.value)}
               disabled={companyId === null || myOnly}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white disabled:opacity-50"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary disabled:opacity-50"
             >
               <option value="">Все сотрудники</option>
               {memberOptions.map((member) => (
@@ -345,12 +345,12 @@ export default function CalendarPage() {
             </select>
           </label>
 
-          <label className="text-sm text-gray-300">
+          <label className="text-sm text-secondary">
             Тип события
             <select
               value={selectedEventType}
               onChange={(event) => setSelectedEventType(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             >
               <option value="">Все типы</option>
               {Object.entries(CALENDAR_EVENT_TYPE_LABELS).map(([value, label]) => (
@@ -361,12 +361,12 @@ export default function CalendarPage() {
             </select>
           </label>
 
-          <label className="mt-6 inline-flex items-center gap-2 text-sm text-gray-300">
+          <label className="mt-6 inline-flex items-center gap-2 text-sm text-secondary">
             <input
               type="checkbox"
               checked={myOnly}
               onChange={(event) => setMyOnly(event.target.checked)}
-              className="h-4 w-4 rounded border-gray-600 bg-gray-900 text-indigo-600 focus:ring-indigo-500"
+              className="h-4 w-4 rounded border-default bg-surface text-brand focus:ring-blue-500/20"
             />
             Только мои
           </label>
@@ -374,7 +374,7 @@ export default function CalendarPage() {
           <button
             type="button"
             onClick={resetFilters}
-            className="mt-6 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-200 hover:bg-gray-700"
+            className="mt-6 rounded-lg border border-default bg-surface px-3 py-2 text-sm text-secondary hover:bg-hover"
           >
             Сбросить фильтры
           </button>
@@ -382,7 +382,7 @@ export default function CalendarPage() {
       </section>
 
       {companyId === null && (
-        <div className="rounded-xl border border-gray-700 bg-gray-800 p-8 text-center text-sm text-gray-400">
+        <div className="rounded-xl border border-default bg-raised p-8 text-center text-sm text-secondary">
           Выберите компанию для отображения календаря.
         </div>
       )}
@@ -390,39 +390,39 @@ export default function CalendarPage() {
       {companyId !== null && (
         <section className={cn('space-y-4', isEventsFetching && 'opacity-75')}>
           {isEventsLoading ? (
-            <div className="flex items-center gap-2 rounded-xl border border-gray-700 bg-gray-800 p-6 text-sm text-gray-300">
+            <div className="flex items-center gap-2 rounded-xl border border-default bg-raised p-6 text-sm text-secondary">
               <Loader2 className="h-4 w-4 animate-spin" />
               Загрузка событий календаря...
             </div>
           ) : isEventsError ? (
-            <div className="rounded-xl border border-red-800 bg-red-950/30 p-6 text-sm text-red-300">
+            <div className="rounded-xl border border-red-200 dark:border-red-800 bg-danger-subtle p-6 text-sm text-danger">
               {getApiErrorMessage(eventsError, 'Не удалось загрузить календарь.')}
             </div>
           ) : events.length === 0 ? (
-            <div className="rounded-xl border border-gray-700 bg-gray-800 p-8 text-center text-sm text-gray-400">
-              <CalendarDays className="mx-auto mb-2 h-6 w-6 text-gray-500" />
+            <div className="rounded-xl border border-default bg-raised p-8 text-center text-sm text-secondary">
+              <CalendarDays className="mx-auto mb-2 h-6 w-6 text-muted" />
               Событий за выбранный период не найдено.
             </div>
           ) : (
             <div className="space-y-4">
               {groupedEvents.map(([day, items]) => (
-                <div key={day} className="rounded-xl border border-gray-700 bg-gray-800">
-                  <div className="border-b border-gray-700 px-4 py-3 text-sm font-semibold text-gray-200">
+                <div key={day} className="rounded-xl border border-default bg-raised">
+                  <div className="border-b border-default px-4 py-3 text-sm font-semibold text-secondary">
                     {new Date(day).toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' })}
                   </div>
-                  <ul className="divide-y divide-gray-700/70">
+                  <ul className="divide-y divide-[color:var(--border)]/70">
                     {items.map((event) => (
                       <li key={`${event.type}-${event.start}-${event.user.id}-${event.title}`} className="px-4 py-3">
                         <div className="mb-1 flex flex-wrap items-center gap-2">
                           <span className={cn('rounded-full border px-2 py-0.5 text-xs font-medium', EVENT_BADGE_CLASS[event.type])}>
                             {CALENDAR_EVENT_TYPE_LABELS[event.type]}
                           </span>
-                          <span className="text-sm font-medium text-white">{formatCalendarTitle(event)}</span>
+                          <span className="text-sm font-medium text-primary">{formatCalendarTitle(event)}</span>
                         </div>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-secondary">
                           {formatDateTime(event.start)} - {formatDateTime(event.end)}
                         </p>
-                        <p className="text-xs text-gray-400">Сотрудник: {event.user.full_name}</p>
+                        <p className="text-xs text-secondary">Сотрудник: {event.user.full_name}</p>
                       </li>
                     ))}
                   </ul>
@@ -434,21 +434,21 @@ export default function CalendarPage() {
       )}
 
       {companyId !== null && view === CALENDAR_VIEWS.DAY && busyUserId != null && (
-        <section className="rounded-xl border border-gray-700 bg-gray-800">
-          <div className="border-b border-gray-700 px-4 py-3 text-sm font-semibold text-gray-200">
+        <section className="rounded-xl border border-default bg-raised">
+          <div className="border-b border-default px-4 py-3 text-sm font-semibold text-secondary">
             Слоты занятости на день
           </div>
           {isBusyLoading ? (
-            <div className="flex items-center gap-2 px-4 py-4 text-sm text-gray-400">
+            <div className="flex items-center gap-2 px-4 py-4 text-sm text-secondary">
               <Loader2 className="h-4 w-4 animate-spin" />
               Загрузка занятости...
             </div>
           ) : busySlots.length === 0 ? (
-            <div className="px-4 py-4 text-sm text-gray-400">Свободно на весь день.</div>
+            <div className="px-4 py-4 text-sm text-secondary">Свободно на весь день.</div>
           ) : (
-            <ul className="divide-y divide-gray-700/70">
+            <ul className="divide-y divide-[color:var(--border)]/70">
               {busySlots.map((slot, index) => (
-                <li key={`${slot.start}-${slot.end}-${index}`} className="px-4 py-3 text-sm text-gray-300">
+                <li key={`${slot.start}-${slot.end}-${index}`} className="px-4 py-3 text-sm text-secondary">
                   {formatDateTime(slot.start)} - {formatDateTime(slot.end)}
                 </li>
               ))}

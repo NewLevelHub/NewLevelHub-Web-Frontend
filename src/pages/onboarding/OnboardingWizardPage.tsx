@@ -32,21 +32,21 @@ export default function OnboardingWizardPage() {
 
   if (isPending) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-950">
-        <p className="text-gray-400">Загрузка онбординга...</p>
+      <div className="flex min-h-screen items-center justify-center bg-page">
+        <p className="text-secondary">Загрузка онбординга...</p>
       </div>
     );
   }
 
   if (isError || !data) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-950">
+      <div className="flex min-h-screen items-center justify-center bg-page">
         <div className="text-center">
           <p className="text-red-400">Не удалось загрузить онбординг.</p>
           <button
             type="button"
             onClick={() => void refetch()}
-            className="mt-4 rounded-lg border border-gray-700 px-5 py-2.5 text-sm text-gray-400 transition-colors hover:border-gray-500 hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
+            className="mt-4 rounded-lg border border-default px-5 py-2.5 text-sm text-secondary transition-colors hover:border-gray-500 hover:text-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
           >
             Попробовать снова
           </button>
@@ -61,23 +61,23 @@ export default function OnboardingWizardPage() {
   const currentStepId = data.steps.find((step) => !step.is_completed)?.id ?? null;
 
   return (
-    <div className="min-h-screen bg-gray-950 px-4 py-12">
+    <div className="min-h-screen bg-page px-4 py-12">
       <div className="mx-auto max-w-2xl">
         <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold text-white">Добро пожаловать в NewLevelHub</h1>
-          <p className="mt-2 text-gray-400">Завершите шаги адаптации, чтобы начать работу</p>
+          <h1 className="text-3xl font-bold text-primary">Добро пожаловать в NewLevelHub</h1>
+          <p className="mt-2 text-secondary">Завершите шаги адаптации, чтобы начать работу</p>
         </div>
 
-        <div className="mb-8 rounded-xl border border-gray-800 bg-gray-900 p-5">
+        <div className="mb-8 rounded-xl border border-default bg-surface p-5">
           <div className="mb-3 flex items-center justify-between text-sm">
-            <span className="font-medium text-gray-300">
+            <span className="font-medium text-secondary">
               {completedCount} из {totalCount} шагов выполнено
             </span>
-            <span className="text-gray-500">{progressPercent}%</span>
+            <span className="text-muted">{progressPercent}%</span>
           </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-800">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-raised">
             <div
-              className="h-full rounded-full bg-indigo-600 transition-all duration-500"
+              className="h-full rounded-full bg-brand transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
               role="progressbar"
               aria-valuenow={progressPercent}
@@ -97,10 +97,10 @@ export default function OnboardingWizardPage() {
                 className={cn(
                   'flex items-start gap-4 rounded-xl border p-5 transition-colors',
                   step.is_completed
-                    ? 'border-green-800/50 bg-green-950/20'
+                    ? 'border-green-800/50 bg-success-subtle'
                     : isCurrent
-                      ? 'border-indigo-500/60 bg-gray-900'
-                      : 'border-gray-800 bg-gray-900',
+                      ? 'border-blue-500/60 bg-surface'
+                      : 'border-default bg-surface',
                 )}
               >
                 <div className="mt-0.5 shrink-0">
@@ -108,7 +108,7 @@ export default function OnboardingWizardPage() {
                     <CheckCircle2 className="h-7 w-7 text-green-400" aria-label="Шаг выполнен" />
                   ) : (
                     <div
-                      className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-gray-600 text-sm font-semibold text-gray-400"
+                      className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-default text-sm font-semibold text-secondary"
                       aria-label={`Шаг ${index + 1}`}
                     >
                       {index + 1}
@@ -120,7 +120,7 @@ export default function OnboardingWizardPage() {
                   <p
                     className={cn(
                       'font-medium',
-                      step.is_completed ? 'text-green-300 line-through' : 'text-white',
+                      step.is_completed ? 'text-success line-through' : 'text-white',
                     )}
                   >
                     {step.title}
@@ -132,7 +132,7 @@ export default function OnboardingWizardPage() {
                     type="button"
                     disabled={completeStepMutation.isPending}
                     onClick={() => completeStepMutation.mutate(step.id)}
-                    className="ml-2 shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                    className="ml-2 shrink-0 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
                     aria-label={`Отметить шаг выполненным: ${step.title}`}
                   >
                     {completeStepMutation.isPending ? 'Сохранение...' : 'Выполнено'}

@@ -70,7 +70,7 @@ export default function InviteAcceptPage() {
     return (
       <div>
         <h2 className="mb-2 text-center text-xl font-semibold">Инвайт недоступен</h2>
-        <p className="text-center text-sm text-gray-400">
+        <p className="text-center text-sm text-secondary">
           В ссылке отсутствует токен. Открой ссылку вида <code>/invite?token=&lt;uuid&gt;</code>.
         </p>
       </div>
@@ -78,14 +78,14 @@ export default function InviteAcceptPage() {
   }
 
   if (inviteQuery.isLoading) {
-    return <p className="text-center text-sm text-gray-400">Проверяем инвайт...</p>;
+    return <p className="text-center text-sm text-secondary">Проверяем инвайт...</p>;
   }
 
   if (inviteQuery.isError || !inviteQuery.data) {
     return (
       <div className="space-y-4">
         <h2 className="text-center text-xl font-semibold">Инвайт недействителен</h2>
-        <p className="rounded-lg border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+        <p className="rounded-lg border border-red-200 bg-danger-subtle px-3 py-2 text-sm text-danger dark:border-red-900/40">
           {getApiErrorMessage(inviteQuery.error, 'Ссылка невалидна, истекла или уже использована')}
         </p>
         <button type="button" onClick={() => inviteQuery.refetch()} className={authPrimaryBtn}>
@@ -100,13 +100,13 @@ export default function InviteAcceptPage() {
   return (
     <div>
       <h2 className="mb-1 text-center text-xl font-semibold">Принять приглашение</h2>
-      <p className="mb-6 text-center text-sm text-gray-500">
-        Компания: <span className="font-medium text-white">{invite.company_name}</span>
+      <p className="mb-6 text-center text-sm text-muted">
+        Компания: <span className="font-medium text-primary">{invite.company_name}</span>
       </p>
 
       <form onSubmit={onSubmit} className="space-y-3">
         {error ? (
-          <div className="rounded-lg border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+          <div className="rounded-lg border border-red-200 bg-danger-subtle px-3 py-2 text-sm text-danger dark:border-red-900/40">
             {error}
           </div>
         ) : null}

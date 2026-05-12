@@ -31,8 +31,8 @@ const STATUS_LABEL: Record<string, string> = {
 const STATUS_BADGE_CLASS: Record<string, string> = {
   [BOOKING_STATUSES.CONFIRMED]: 'bg-blue-100 text-blue-800',
   [BOOKING_STATUSES.CHECKED_IN]: 'bg-emerald-100 text-emerald-800',
-  [BOOKING_STATUSES.COMPLETED]: 'bg-gray-100 text-gray-600',
-  [BOOKING_STATUSES.CANCELLED]: 'bg-gray-100 text-gray-600',
+  [BOOKING_STATUSES.COMPLETED]: 'bg-gray-100 text-muted',
+  [BOOKING_STATUSES.CANCELLED]: 'bg-gray-100 text-muted',
   [BOOKING_STATUSES.NO_SHOW]: 'bg-red-100 text-red-800',
 };
 
@@ -257,12 +257,12 @@ export default function MyBookingsPage() {
   return (
     <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-3xl mx-auto space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Мои бронирования</h1>
+        <h1 className="text-2xl font-bold text-primary">Мои бронирования</h1>
         <div className="flex flex-wrap items-center gap-3">
           {(user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN) && (
             <Link
               to={`${STAFF_UI_PREFIX}/bookings`}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-default bg-surface px-3 py-2 text-sm font-medium text-primary hover:bg-raised"
             >
               <ArrowLeft className="h-4 w-4" />
               Назад в бронирования (админ)
@@ -277,7 +277,7 @@ export default function MyBookingsPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2 rounded-xl border border-gray-200 bg-white p-2">
+      <div className="flex flex-wrap gap-2 rounded-xl border border-default bg-surface p-2">
         {TAB_OPTIONS.map((tab) => (
           <button
             key={tab.value}
@@ -287,7 +287,7 @@ export default function MyBookingsPage() {
               'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
               statusTab === tab.value
                 ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
+                : 'bg-gray-100 text-secondary hover:bg-gray-200',
             ].join(' ')}
           >
             {tab.label}
@@ -295,13 +295,13 @@ export default function MyBookingsPage() {
         ))}
       </div>
 
-      <section className="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-3">
-        <label className="text-sm text-gray-700">
+      <section className="grid gap-3 rounded-xl border border-default bg-surface p-4 sm:grid-cols-3">
+        <label className="text-sm text-secondary">
           Тип ресурса
           <select
             value={resourceType}
             onChange={(e) => setResourceType(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           >
             {RESOURCE_TYPE_OPTIONS.map((option) => (
               <option key={option.value || 'all'} value={option.value}>
@@ -310,22 +310,22 @@ export default function MyBookingsPage() {
             ))}
           </select>
         </label>
-        <label className="text-sm text-gray-700">
+        <label className="text-sm text-secondary">
           С даты
           <input
             type="datetime-local"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           />
         </label>
-        <label className="text-sm text-gray-700">
+        <label className="text-sm text-secondary">
           По дату
           <input
             type="datetime-local"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           />
         </label>
       </section>
@@ -343,11 +343,11 @@ export default function MyBookingsPage() {
       ) : null}
 
       {isLoading ? (
-        <p className="text-sm text-gray-500">Загрузка…</p>
+        <p className="text-sm text-muted">Загрузка…</p>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-gray-500">Пока нет бронирований.</p>
+        <p className="text-sm text-muted">Пока нет бронирований.</p>
       ) : (
-        <ul className="divide-y divide-gray-100 rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <ul className="divide-y divide-[color:var(--border)] rounded-2xl border border-default bg-surface shadow-sm">
           {rows.map((b) => {
             const start = new Date(b.start_time);
             const end = new Date(b.end_time);
@@ -367,16 +367,16 @@ export default function MyBookingsPage() {
               <li key={b.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <Link
                   to={`/bookings/${b.id}`}
-                  className="flex-1 rounded-lg p-1 hover:bg-gray-50"
+                  className="flex-1 rounded-lg p-1 hover:bg-raised"
                 >
-                  <p className="font-medium text-gray-900">{b.resource_name}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="font-medium text-primary">{b.resource_name}</p>
+                  <p className="text-xs text-muted">
                     {RESOURCE_TYPE_LABELS[b.resource_type as ResourceType] ?? b.resource_type}
                     {' · '}
                     {start.toLocaleString()} — {end.toLocaleString()}
                   </p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE_CLASS[b.status] ?? 'bg-gray-100 text-gray-600')}>
+                    <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE_CLASS[b.status] ?? 'bg-gray-100 text-muted')}>
                       {STATUS_LABEL[b.status] ?? b.status}
                     </span>
                     {b.checked_in_at ? (
@@ -439,31 +439,31 @@ export default function MyBookingsPage() {
           onClick={closeEditModal}
         >
           <div
-            className="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-5 shadow-xl"
+            className="w-full max-w-2xl rounded-2xl border border-default bg-surface p-5 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold text-gray-900">Изменение бронирования #{modalBooking?.id ?? editTarget.id}</h2>
-            <p className="mt-1 text-sm text-gray-600">
+            <h2 className="text-lg font-semibold text-primary">Изменение бронирования #{modalBooking?.id ?? editTarget.id}</h2>
+            <p className="mt-1 text-sm text-muted">
               {modalBooking?.resource_name ?? editTarget.resource_name} · {modalBooking?.user_name ?? editTarget.user_name}
             </p>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="text-sm text-gray-700">
+              <label className="text-sm text-secondary">
                 Начало
                 <input
                   type="datetime-local"
                   value={editStart}
                   onChange={(event) => setEditStart(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                  className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
                 />
               </label>
-              <label className="text-sm text-gray-700">
+              <label className="text-sm text-secondary">
                 Конец
                 <input
                   type="datetime-local"
                   value={editEnd}
                   onChange={(event) => setEditEnd(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                  className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
                 />
               </label>
             </div>
@@ -472,12 +472,12 @@ export default function MyBookingsPage() {
               <div className="mt-4 space-y-3">
                 {canManageParticipants ? (
                   <>
-                    <label className="text-sm text-gray-700">
+                    <label className="text-sm text-secondary">
                       Добавить участника
                       <select
                         value={selectedParticipantId}
                         onChange={(event) => setSelectedParticipantId(event.target.value)}
-                        className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                        className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
                       >
                         <option value="">Выберите пользователя</option>
                         {candidateMembers.map((member) => (
@@ -504,9 +504,9 @@ export default function MyBookingsPage() {
                       {(modalBooking?.participants ?? []).map((participant) => (
                         <li
                           key={participant.id}
-                          className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2"
+                          className="flex items-center justify-between rounded-lg border border-default px-3 py-2"
                         >
-                          <span className="text-sm text-gray-700">{participant.full_name || participant.email}</span>
+                          <span className="text-sm text-secondary">{participant.full_name || participant.email}</span>
                           <button
                             type="button"
                             disabled={removeParticipantMutation.isPending}
@@ -525,13 +525,13 @@ export default function MyBookingsPage() {
                     </ul>
                   </>
                 ) : (
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted">
                     Управление участниками для этой брони доступно только администратору компании.
                   </p>
                 )}
               </div>
             ) : (
-              <p className="mt-4 text-sm text-gray-500">
+              <p className="mt-4 text-sm text-muted">
                 Управление участниками доступно только для бронирований переговорок.
               </p>
             )}
@@ -550,7 +550,7 @@ export default function MyBookingsPage() {
                 type="button"
                 onClick={closeEditModal}
                 disabled={updateTimeMutation.isPending}
-                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="rounded-lg border border-default bg-surface px-4 py-2 text-sm font-medium text-secondary hover:bg-raised disabled:opacity-50"
               >
                 Закрыть
               </button>

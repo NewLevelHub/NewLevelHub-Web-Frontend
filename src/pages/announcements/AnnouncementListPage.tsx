@@ -37,15 +37,15 @@ export default function AnnouncementListPage() {
     <section className="w-full space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white">Объявления</h1>
-          <p className="text-sm text-gray-400">
+          <h1 className="text-2xl font-bold text-primary">Объявления</h1>
+          <p className="text-sm text-secondary">
             Лента БЦ и вашей компании. Закреплённые сверху, затем по дате публикации.
           </p>
         </div>
         {isAdmin ? (
           <Link
             to="/announcements/new"
-            className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+            className="inline-flex items-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
           >
             Создать объявление
           </Link>
@@ -57,7 +57,7 @@ export default function AnnouncementListPage() {
       {deleteError ? (
         <p
           role="alert"
-          className="rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2 text-sm text-red-200"
+          className="rounded-lg border border-red-200 dark:border-red-900/40 bg-danger-subtle px-3 py-2 text-sm text-danger-badge"
         >
           {deleteError}
         </p>
@@ -93,7 +93,7 @@ export default function AnnouncementListPage() {
       <div ref={sentinelCallbackRef} />
 
       {isFetchingNextPage ? (
-        <p className="text-center text-sm text-gray-500">Загрузка…</p>
+        <p className="text-center text-sm text-muted">Загрузка…</p>
       ) : null}
 
       {!isLoading && !isFetchingNextPage && hasNextPage ? (
@@ -101,7 +101,7 @@ export default function AnnouncementListPage() {
           <button
             type="button"
             onClick={() => void fetchNextPage()}
-            className="rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-200 hover:bg-gray-800"
+            className="rounded-lg border border-default px-4 py-2 text-sm text-secondary hover:bg-hover"
           >
             Загрузить ещё
           </button>

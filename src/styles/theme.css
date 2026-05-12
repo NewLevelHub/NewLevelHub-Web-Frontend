@@ -1,10 +1,101 @@
+/* ─── Design Tokens ─── */
 :root {
   --font-size: 16px;
+
+  /* Page background */
+  --bg-page:        #f7f7f8;
+  /* Card / panel surfaces */
+  --bg-surface:     #ffffff;
+  /* Slightly elevated surface (nested panels, table heads) */
+  --bg-raised:      #f4f4f5;
+  /* Hover overlay (rows, list items) */
+  --bg-hover:       #f0f0f1;
+  /* Active / selected state */
+  --bg-active:      #eff6ff;
+  /* Sidebar */
+  --bg-sidebar:     #ffffff;
+
+  /* Borders */
+  --border:         #e4e4e7;
+  --border-strong:  #d1d1d6;
+
+  /* Text */
+  --text-primary:   #18181b;
+  --text-secondary: #52525b;
+  --text-muted:     #71717a;
+  --text-subtle:    #a1a1aa;
+  --text-placeholder: #a1a1aa;
+  --text-on-brand:  #ffffff;
+
+  /* Brand (accent) */
+  --brand:          #2563eb;
+  --brand-hover:    #1d4ed8;
+  --brand-subtle:   #eff6ff;
+  --brand-text:     #1d4ed8;
+
+  /* Status */
+  --success:        #059669;
+  --success-bg:     #ecfdf5;
+  --success-text:   #065f46;
+  --warning:        #d97706;
+  --warning-bg:     #fffbeb;
+  --warning-text:   #92400e;
+  --danger:         #dc2626;
+  --danger-bg:      #fef2f2;
+  --danger-text:    #991b1b;
+
+  /* Sidebar active item */
+  --nav-active-bg:   #eff6ff;
+  --nav-active-text: #1d4ed8;
+  --nav-active-border: #2563eb;
+  --nav-text:        #52525b;
+  --nav-hover-bg:    #f4f4f5;
 }
 
+.dark {
+  --bg-page:        #0f0f11;
+  --bg-surface:     #17171a;
+  --bg-raised:      #1e1e23;
+  --bg-hover:       #222228;
+  --bg-active:      #1a2035;
+  --bg-sidebar:     #111114;
+
+  --border:         #27272a;
+  --border-strong:  #3f3f46;
+
+  --text-primary:   #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted:     #71717a;
+  --text-subtle:    #52525b;
+  --text-placeholder: #52525b;
+  --text-on-brand:  #ffffff;
+
+  --brand:          #3b82f6;
+  --brand-hover:    #2563eb;
+  --brand-subtle:   #1a2035;
+  --brand-text:     #60a5fa;
+
+  --success:        #10b981;
+  --success-bg:     #052e16;
+  --success-text:   #6ee7b7;
+  --warning:        #f59e0b;
+  --warning-bg:     #27180a;
+  --warning-text:   #fcd34d;
+  --danger:         #ef4444;
+  --danger-bg:      #1f0808;
+  --danger-text:    #fca5a5;
+
+  --nav-active-bg:   #1a2035;
+  --nav-active-text: #60a5fa;
+  --nav-active-border: #3b82f6;
+  --nav-text:        #a1a1aa;
+  --nav-hover-bg:    #1e1e23;
+}
+
+/* ─── Base Styles ─── */
 @layer base {
   * {
-    @apply border-gray-800;
+    border-color: var(--border);
   }
 
   html {
@@ -13,8 +104,71 @@
   }
 
   body {
-    @apply bg-gray-950 text-white antialiased;
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     margin: 0;
     padding: 0;
   }
+}
+
+/* ─── Semantic Utilities ─── */
+@layer utilities {
+  /* Backgrounds */
+  .bg-page          { background-color: var(--bg-page); }
+  .bg-surface       { background-color: var(--bg-surface); }
+  .bg-raised        { background-color: var(--bg-raised); }
+  .bg-hover         { background-color: var(--bg-hover); }
+  .bg-active-tint   { background-color: var(--bg-active); }
+  .bg-sidebar       { background-color: var(--bg-sidebar); }
+  .bg-brand         { background-color: var(--brand); }
+  .bg-brand-subtle  { background-color: var(--brand-subtle); }
+  .bg-success-subtle  { background-color: var(--success-bg); }
+  .bg-warning-subtle  { background-color: var(--warning-bg); }
+  .bg-danger-subtle   { background-color: var(--danger-bg); }
+
+  /* Borders */
+  .border-default { border-color: var(--border); }
+  .border-strong  { border-color: var(--border-strong); }
+
+  /* Text */
+  .text-primary   { color: var(--text-primary); }
+  .text-secondary { color: var(--text-secondary); }
+  .text-muted     { color: var(--text-muted); }
+  .text-subtle    { color: var(--text-subtle); }
+  .text-placeholder { color: var(--text-placeholder); }
+  .text-brand     { color: var(--brand-text); }
+  /* Preserve explicit white text (for buttons with colored backgrounds) */
+  .text-white     { color: #ffffff; }
+  .text-on-brand  { color: var(--text-on-brand); }
+  .text-success   { color: var(--success); }
+  .text-warning   { color: var(--warning); }
+  .text-danger    { color: var(--danger); }
+
+  /* Status text inside badges */
+  .text-success-badge { color: var(--success-text); }
+  .text-warning-badge { color: var(--warning-text); }
+  .text-danger-badge  { color: var(--danger-text); }
+
+  /* Interactive hover */
+  .hover\:bg-hover:hover        { background-color: var(--bg-hover); }
+  .hover\:bg-surface:hover      { background-color: var(--bg-surface); }
+  .hover\:bg-raised:hover       { background-color: var(--bg-raised); }
+  .hover\:bg-brand-hover:hover  { background-color: var(--brand-hover); }
+  .hover\:bg-brand-subtle:hover { background-color: var(--brand-subtle); }
+  .hover\:text-primary:hover    { color: var(--text-primary); }
+  .hover\:text-brand:hover      { color: var(--brand-text); }
+  .hover\:text-brand-hover:hover { color: var(--brand-hover); }
+  .hover\:border-strong:hover   { border-color: var(--border-strong); }
+
+  /* bg-brand-hover (non-hover context) */
+  .bg-brand-hover { background-color: var(--brand-hover); }
+
+  /* Border top for spinner */
+  .border-t-brand { border-top-color: var(--brand); }
+
+  /* Focus ring for brand */
+  .focus\:border-brand:focus   { border-color: var(--brand); }
+  .focus\:ring-brand:focus     { --tw-ring-color: color-mix(in srgb, var(--brand) 30%, transparent); }
 }

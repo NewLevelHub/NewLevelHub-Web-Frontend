@@ -417,7 +417,7 @@ export default function ResourceDetailPage() {
   if (isLoading) {
     return (
       <main className={resourcePageNarrow}>
-        <p className="text-sm text-gray-400">Загрузка…</p>
+        <p className="text-sm text-secondary">Загрузка…</p>
       </main>
     );
   }
@@ -470,13 +470,13 @@ export default function ResourceDetailPage() {
       )}
 
       <section className={`${resFormCard} space-y-3`}>
-        <h2 className="text-base font-semibold text-gray-900">Занятость по дням</h2>
+        <h2 className="text-base font-semibold text-primary">Занятость по дням</h2>
         <div className="flex flex-wrap items-center gap-2">
           <input
             type="date"
             value={scheduleDay}
             onChange={(e) => setScheduleDay(e.target.value)}
-            className="rounded-lg border border-gray-600 bg-gray-900/40 px-2 py-1.5 text-sm text-gray-100"
+            className="rounded-lg border border-default bg-raised px-2 py-1.5 text-sm text-primary"
           />
           <div className="flex flex-wrap gap-1">
             {weekAnchors.map((iso) => {
@@ -490,7 +490,7 @@ export default function ResourceDetailPage() {
                   className={`rounded px-2 py-0.5 text-xs font-medium border ${
                     active
                       ? 'border-blue-500 bg-blue-600 text-white'
-                      : 'border-gray-600 text-gray-200 hover:bg-gray-800'
+                      : 'border-default text-secondary hover:bg-hover'
                   }`}
                 >
                   {dd}.{mm}
@@ -500,7 +500,7 @@ export default function ResourceDetailPage() {
           </div>
         </div>
         {scheduleLoading ? (
-          <p className="text-sm text-gray-400">Загрузка расписания…</p>
+          <p className="text-sm text-secondary">Загрузка расписания…</p>
         ) : (
           <ResourceDayTimeline dayDate={scheduleDay} slots={scheduleSlots} />
         )}
@@ -508,8 +508,8 @@ export default function ResourceDetailPage() {
 
       <section className={`${resFormCard} space-y-4`}>
         <div>
-          <h2 className="text-base font-semibold text-gray-900">Блокировки ресурса</h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <h2 className="text-base font-semibold text-primary">Блокировки ресурса</h2>
+          <p className="mt-1 text-sm text-muted">
             Суперадмин может заблокировать ресурс на период ремонта или мероприятия. Пересекающиеся бронирования будут автоматически отменены.
           </p>
         </div>
@@ -525,7 +525,7 @@ export default function ResourceDetailPage() {
             <span className={resLabel}>Начало блокировки</span>
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="mb-1 block text-xs text-gray-500">Дата</span>
+                <span className="mb-1 block text-xs text-muted">Дата</span>
                 <input
                   type="date"
                   value={blockForm.start_date}
@@ -537,7 +537,7 @@ export default function ResourceDetailPage() {
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-xs text-gray-500">Время</span>
+                <span className="mb-1 block text-xs text-muted">Время</span>
                 <input
                   type="time"
                   step={300}
@@ -555,7 +555,7 @@ export default function ResourceDetailPage() {
             <span className={resLabel}>Конец блокировки</span>
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="mb-1 block text-xs text-gray-500">Дата</span>
+                <span className="mb-1 block text-xs text-muted">Дата</span>
                 <input
                   type="date"
                   value={blockForm.end_date}
@@ -567,7 +567,7 @@ export default function ResourceDetailPage() {
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-xs text-gray-500">Время</span>
+                <span className="mb-1 block text-xs text-muted">Время</span>
                 <input
                   type="time"
                   step={300}
@@ -609,31 +609,31 @@ export default function ResourceDetailPage() {
             onClick={submitBlockForm}
             disabled={blockMutation.isPending}
             className={cn(
-              'rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900 disabled:opacity-50',
+              'rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-primary hover:bg-slate-900 disabled:opacity-50',
             )}
           >
             {blockMutation.isPending ? 'Блокировка...' : 'Заблокировать ресурс'}
           </button>
         </div>
 
-        <div className="space-y-3 border-t border-gray-200 pt-4">
-          <h3 className="text-sm font-semibold text-gray-900">Список блокировок</h3>
+        <div className="space-y-3 border-t border-default pt-4">
+          <h3 className="text-sm font-semibold text-primary">Список блокировок</h3>
           {blocksLoading ? (
-            <p className="text-sm text-gray-500">Загрузка блокировок...</p>
+            <p className="text-sm text-muted">Загрузка блокировок...</p>
           ) : blocks.length === 0 ? (
-            <p className="text-sm text-gray-500">Для ресурса пока нет блокировок.</p>
+            <p className="text-sm text-muted">Для ресурса пока нет блокировок.</p>
           ) : (
             <ul className="space-y-3">
               {blocks.map((block) => (
                 <li
                   key={block.id}
-                  className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 md:flex-row md:items-start md:justify-between"
+                  className="flex flex-col gap-3 rounded-xl border border-default bg-gray-50 px-4 py-3 md:flex-row md:items-start md:justify-between"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-primary">
                       {new Date(block.start_time).toLocaleString()} - {new Date(block.end_time).toLocaleString()}
                     </p>
-                    <p className="mt-1 text-sm text-gray-600">{block.reason || 'Без причины'}</p>
+                    <p className="mt-1 text-sm text-muted">{block.reason || 'Без причины'}</p>
                   </div>
                   <button
                     type="button"

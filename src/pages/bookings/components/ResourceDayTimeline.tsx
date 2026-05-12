@@ -137,12 +137,12 @@ export function ResourceDayTimeline({ dayDate, slots, className }: Props) {
 
   return (
     <div className={cn('space-y-2', className)}>
-      <div className="relative h-14 rounded-lg border border-gray-200 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
+      <div className="relative h-14 rounded-lg border border-default bg-gradient-to-b from-gray-50 to-white overflow-hidden">
         <div className="absolute inset-0 flex">
           {HOUR_TICKS.slice(0, -1).map((h) => (
             <div
               key={h}
-              className="flex-1 border-r border-gray-100/80 last:border-r-0"
+              className="flex-1 border-r border-default/80 last:border-r-0"
               title={`${h}:00`}
             />
           ))}
@@ -151,7 +151,7 @@ export function ResourceDayTimeline({ dayDate, slots, className }: Props) {
           <div
             key={`${seg.left}-${seg.width}-${idx}`}
             className={cn(
-              'absolute top-1 bottom-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium text-white shadow-sm overflow-hidden flex items-center',
+              'absolute top-1 bottom-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium text-primary shadow-sm overflow-hidden flex items-center',
               seg.isBlock ? 'bg-amber-700/95' : seg.isSoonAvailable ? 'bg-amber-500/95' : 'bg-rose-600/95',
             )}
             style={{ left: `${seg.left}%`, width: `${Math.max(seg.width, 0.35)}%` }}
@@ -161,7 +161,7 @@ export function ResourceDayTimeline({ dayDate, slots, className }: Props) {
           </div>
         ))}
       </div>
-      <div className="flex justify-between text-[10px] text-gray-500 px-0.5">
+      <div className="flex justify-between text-[10px] text-muted px-0.5">
         {HOUR_TICKS.map((h) => (
           <span key={h}>{h === 24 ? '24:00' : `${h}:00`}</span>
         ))}

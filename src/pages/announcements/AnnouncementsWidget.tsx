@@ -19,8 +19,8 @@ const CATEGORY_ICON: Record<AnnouncementCategory, React.ComponentType<{ size?: n
 
 const CATEGORY_BADGE_CLASS: Record<AnnouncementCategory, string> = {
   info: 'bg-blue-900/40 text-blue-200',
-  important: 'bg-red-900/40 text-red-200',
-  event: 'bg-emerald-900/40 text-emerald-200',
+  important: 'bg-danger-subtle text-danger-badge',
+  event: 'bg-success-subtle text-emerald-200',
 };
 
 const WIDGET_LIMIT = 5;
@@ -49,26 +49,26 @@ export function AnnouncementsWidget() {
   return (
     <section
       aria-labelledby="announcements-widget-heading"
-      className="rounded-xl border border-gray-800 bg-gray-900/80 p-5"
+      className="rounded-xl border border-default bg-surface p-5"
     >
       <header className="mb-3 flex items-center justify-between">
-        <h2 id="announcements-widget-heading" className="text-base font-semibold text-white">
+        <h2 id="announcements-widget-heading" className="text-base font-semibold text-primary">
           Последние объявления
         </h2>
         <Link
           to="/announcements"
-          className="text-sm text-indigo-300 hover:text-indigo-200 hover:underline"
+          className="text-sm text-brand hover:text-brand hover:underline"
         >
           Вся лента →
         </Link>
       </header>
 
       {isLoading ? (
-        <p className="text-sm text-gray-500">Загрузка…</p>
+        <p className="text-sm text-muted">Загрузка…</p>
       ) : isError ? (
         <p className="text-sm text-rose-300">Не удалось загрузить ленту.</p>
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-500">Объявлений пока нет.</p>
+        <p className="text-sm text-muted">Объявлений пока нет.</p>
       ) : (
         <ul className="space-y-2">
           {items.map((a) => {
@@ -79,7 +79,7 @@ export function AnnouncementsWidget() {
                 key={a.id}
                 className={cn(
                   'flex items-start gap-3 rounded-lg border px-3 py-2',
-                  a.is_pinned ? 'border-indigo-700/70 bg-indigo-950/20' : 'border-gray-800 bg-gray-900',
+                  a.is_pinned ? 'border-blue-200 dark:border-default/50 bg-brand-subtle' : 'border-default bg-surface',
                 )}
               >
                 <span
@@ -94,7 +94,7 @@ export function AnnouncementsWidget() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     {a.is_pinned ? (
-                      <Pin size={12} aria-hidden="true" className="text-indigo-300" />
+                      <Pin size={12} aria-hidden="true" className="text-brand" />
                     ) : null}
                     {!a.is_read ? (
                       <span
@@ -102,18 +102,18 @@ export function AnnouncementsWidget() {
                         aria-label="Непрочитано"
                       />
                     ) : null}
-                    <p className={cn('truncate text-sm font-medium', a.is_read ? 'text-gray-400' : 'text-white')}>
+                    <p className={cn('truncate text-sm font-medium', a.is_read ? 'text-secondary' : 'text-white')}>
                       {a.title}
                     </p>
                     {isBuilding ? (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-gray-700 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-gray-300">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-default px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-secondary">
                         <Building2 size={10} aria-hidden="true" />
                         БЦ
                       </span>
                     ) : null}
                   </div>
-                  <p className="mt-0.5 line-clamp-2 text-xs text-gray-400">{a.text}</p>
-                  <p className="mt-1 text-[11px] text-gray-500">
+                  <p className="mt-0.5 line-clamp-2 text-xs text-secondary">{a.text}</p>
+                  <p className="mt-1 text-[11px] text-muted">
                     {new Date(a.created_at).toLocaleString()}
                   </p>
                 </div>

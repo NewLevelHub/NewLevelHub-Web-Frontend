@@ -70,17 +70,17 @@ interface StatCardProps {
   to?: string;
 }
 
-function StatCard({ icon: Icon, label, value, iconClass = 'text-indigo-400', to }: StatCardProps) {
+function StatCard({ icon: Icon, label, value, iconClass = 'text-brand', to }: StatCardProps) {
   const inner = (
-    <div className="flex items-center gap-4 rounded-xl border border-gray-800 bg-gray-900 p-5 transition-colors hover:border-gray-700">
-      <div className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gray-800', iconClass.replace('text-', 'text-').replace('400', '900/40'))}>
+    <div className="flex items-center gap-4 rounded-xl border border-default bg-surface p-5 transition-colors hover:bg-hover">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-raised">
         <Icon size={20} className={iconClass} />
       </div>
       <div className="min-w-0">
-        <p className="truncate text-xs text-gray-500">{label}</p>
-        <p className="text-2xl font-bold text-white">{value}</p>
+        <p className="truncate text-xs text-muted">{label}</p>
+        <p className="text-2xl font-bold text-primary">{value}</p>
       </div>
-      {to && <ArrowRight size={14} className="ml-auto shrink-0 text-gray-600" />}
+      {to && <ArrowRight size={14} className="ml-auto shrink-0 text-subtle" />}
     </div>
   );
   return to ? <Link to={to}>{inner}</Link> : <>{inner}</>;
@@ -94,21 +94,21 @@ interface AnnouncementFeedProps {
 function AnnouncementFeed({ items, title = 'Объявления' }: AnnouncementFeedProps) {
   if (items.length === 0) return null;
   return (
-    <section className="rounded-xl border border-gray-800 bg-gray-900 p-5">
+    <section className="rounded-xl border border-default bg-surface p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-          <Megaphone size={15} className="text-amber-400" />
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-primary">
+          <Megaphone size={15} className="text-amber-500" />
           {title}
         </h2>
-        <Link to="/announcements" className="text-xs text-indigo-400 hover:text-indigo-300">
+        <Link to="/announcements" className="text-xs text-brand hover:text-brand-hover transition-colors">
           Все →
         </Link>
       </div>
       <ul className="space-y-3">
         {items.map((a) => (
-          <li key={a.id} className="border-b border-gray-800 pb-3 last:border-0 last:pb-0">
-            <p className="text-sm font-medium text-white">{a.title}</p>
-            <p className="mt-0.5 line-clamp-2 text-xs text-gray-400">{a.body}</p>
+          <li key={a.id} className="border-b border-default pb-3 last:border-0 last:pb-0">
+            <p className="text-sm font-medium text-primary">{a.title}</p>
+            <p className="mt-0.5 line-clamp-2 text-xs text-secondary">{a.body}</p>
           </li>
         ))}
       </ul>
@@ -156,9 +156,9 @@ function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
       </div>
 
       {/* Quick actions */}
-      <section className="rounded-xl border border-gray-800 bg-gray-900 p-5">
-        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
-          <LayoutGrid size={15} className="text-indigo-400" />
+      <section className="rounded-xl border border-default bg-surface p-5">
+        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-primary">
+          <LayoutGrid size={15} className="text-brand" />
           Быстрые действия
         </h2>
         <div className="flex flex-wrap gap-2">
@@ -169,7 +169,7 @@ function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
               <Link
                 key={action}
                 to={cfg.to}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-300 hover:border-indigo-700 hover:bg-indigo-900/20 hover:text-indigo-300"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-default bg-raised px-3 py-1.5 text-xs font-medium text-secondary hover:border-blue-300 hover:bg-brand-subtle hover:text-brand transition-colors"
               >
                 {cfg.label}
               </Link>
@@ -180,18 +180,18 @@ function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
 
       {/* Recent events */}
       {data.recent_events.length > 0 && (
-        <section className="rounded-xl border border-gray-800 bg-gray-900 p-5">
-          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
-            <Clock size={15} className="text-gray-400" />
+        <section className="rounded-xl border border-default bg-surface p-5">
+          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-primary">
+            <Clock size={15} className="text-muted" />
             Последние события
           </h2>
           <ul className="space-y-2">
             {data.recent_events.map((ev) => (
-              <li key={ev.id} className="flex items-center justify-between gap-3 rounded-lg bg-gray-800/50 px-3 py-2.5">
-                <span className="truncate text-sm text-gray-200">{ev.title}</span>
+              <li key={ev.id} className="flex items-center justify-between gap-3 rounded-lg bg-raised px-3 py-2.5">
+                <span className="truncate text-sm text-primary">{ev.title}</span>
                 <span className={cn(
                   'shrink-0 rounded-full px-2 py-0.5 text-xs font-medium',
-                  ev.status === 'confirmed' ? 'bg-emerald-900/40 text-emerald-300' : 'bg-gray-700 text-gray-400',
+                  ev.status === 'confirmed' ? 'bg-success-subtle text-success-badge' : 'bg-hover text-muted',
                 )}>
                   {ev.status}
                 </span>
@@ -232,42 +232,42 @@ function CompanyAdminWidgets({ data }: { data: CompanyAdminDashboardData }) {
       </div>
 
       {/* Pending approvals */}
-      <section className="rounded-xl border border-gray-800 bg-gray-900 p-5">
-        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
-          <UserCheck size={15} className="text-amber-400" />
+      <section className="rounded-xl border border-default bg-surface p-5">
+        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-primary">
+          <UserCheck size={15} className="text-amber-500" />
           Ожидают подтверждения
         </h2>
         <div className="grid gap-3 sm:grid-cols-2">
           <Link
             to="/leave"
-            className="flex items-center justify-between rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 hover:border-amber-700/50"
+            className="flex items-center justify-between rounded-lg border border-default bg-raised px-4 py-3 hover:bg-hover transition-colors"
           >
             <div className="flex items-center gap-3">
-              <FileText size={16} className="text-amber-400" />
-              <span className="text-sm text-gray-300">Заявки на отпуск</span>
+              <FileText size={16} className="text-amber-500" />
+              <span className="text-sm text-secondary">Заявки на отпуск</span>
             </div>
             <span className={cn(
               'rounded-full px-2.5 py-0.5 text-xs font-bold',
               data.pending_approvals.leaves > 0
-                ? 'bg-amber-900/50 text-amber-200'
-                : 'bg-gray-700 text-gray-400',
+                ? 'bg-warning-subtle text-warning-badge'
+                : 'bg-hover text-muted',
             )}>
               {data.pending_approvals.leaves}
             </span>
           </Link>
           <Link
             to="/passes"
-            className="flex items-center justify-between rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 hover:border-sky-700/50"
+            className="flex items-center justify-between rounded-lg border border-default bg-raised px-4 py-3 hover:bg-hover transition-colors"
           >
             <div className="flex items-center gap-3">
-              <BookOpen size={16} className="text-sky-400" />
-              <span className="text-sm text-gray-300">Гостевые пропуска</span>
+              <BookOpen size={16} className="text-blue-500" />
+              <span className="text-sm text-secondary">Гостевые пропуска</span>
             </div>
             <span className={cn(
               'rounded-full px-2.5 py-0.5 text-xs font-bold',
               data.pending_approvals.guest_passes > 0
-                ? 'bg-sky-900/50 text-sky-200'
-                : 'bg-gray-700 text-gray-400',
+                ? 'bg-brand-subtle text-brand'
+                : 'bg-hover text-muted',
             )}>
               {data.pending_approvals.guest_passes}
             </span>
@@ -487,26 +487,26 @@ export default function DashboardPage() {
   }
 
   if (!user) {
-    return <div className="text-gray-400">Загрузка профиля…</div>;
+    return <div className="text-muted">Загрузка профиля…</div>;
   }
 
   const cleaningSection = isEmployee ? (
-    <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+    <div className="rounded-xl border border-default bg-surface p-5">
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-900/40">
-          <Sparkles className="h-5 w-5 text-sky-400" aria-hidden="true" />
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-raised">
+          <Sparkles className="h-5 w-5 text-brand" aria-hidden="true" />
         </div>
         <div className="flex-1">
-          <h2 className="text-sm font-semibold text-white">Нужна уборка?</h2>
-          <p className="mt-0.5 text-xs text-gray-400">
+          <h2 className="text-sm font-semibold text-primary">Нужна уборка?</h2>
+          <p className="mt-0.5 text-xs text-secondary">
             Этаж определится автоматически по последнему подтверждённому бронированию.
           </p>
           {cleaningSuccess && (
-            <p className="mt-2 text-sm text-emerald-400">
+            <p className="mt-2 text-sm text-success">
               Заявка на уборку отправлена. Мы займёмся этим в ближайшее время.
             </p>
           )}
-          {cleaningError && <p className="mt-2 text-sm text-rose-400">{cleaningError}</p>}
+          {cleaningError && <p className="mt-2 text-sm text-danger">{cleaningError}</p>}
           <button
             type="button"
             disabled={cleaningMutation.isPending || cleaningSuccess}
@@ -515,7 +515,7 @@ export default function DashboardPage() {
               setCleaningError('');
               cleaningMutation.mutate({});
             }}
-            className="mt-3 inline-flex items-center rounded-lg border border-sky-700 bg-sky-900/30 px-4 py-2 text-sm font-medium text-sky-300 hover:bg-sky-900/50 disabled:opacity-50"
+            className="mt-3 inline-flex items-center rounded-lg border border-default px-4 py-2 text-sm font-medium text-secondary hover:bg-hover hover:text-primary transition-colors disabled:opacity-50"
           >
             {cleaningMutation.isPending ? 'Отправляем...' : 'Вызвать уборку'}
           </button>
@@ -536,10 +536,10 @@ export default function DashboardPage() {
     <div className="max-w-4xl space-y-8">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">
+        <h1 className="text-2xl font-bold text-primary">
           Привет, {user.full_name.split(' ')[0]} 👋
         </h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-muted">
           {roleLabel[user.role] ?? user.role}
           {user.company_name ? ` · ${user.company_name}` : ''}
         </p>
@@ -547,15 +547,15 @@ export default function DashboardPage() {
 
       {/* Email verification banner */}
       {!user.is_email_verified && (
-        <div className="rounded-xl border border-amber-800/50 bg-amber-950/20 p-5">
-          <p className="text-sm font-medium text-amber-300">
+        <div className="rounded-xl border border-amber-200 bg-warning-subtle p-5 dark:border-amber-900/40">
+          <p className="text-sm font-medium text-warning">
             Email не подтверждён — часть функций недоступна
           </p>
-          <p className="mt-1 text-xs text-amber-400/70">
+          <p className="mt-1 text-xs text-warning">
             Открой ссылку из письма или отправь его снова.
           </p>
-          {resendErr && <p className="mt-2 text-xs text-red-400">{resendErr}</p>}
-          {resendMsg && <p className="mt-2 text-xs text-emerald-400">{resendMsg}</p>}
+          {resendErr && <p className="mt-2 text-xs text-danger">{resendErr}</p>}
+          {resendMsg && <p className="mt-2 text-xs text-success">{resendMsg}</p>}
           <button
             type="button"
             disabled={resendLoading}
@@ -570,20 +570,20 @@ export default function DashboardPage() {
       {isCompanyAdmin && companyOnboarding && (
         companyOnboarding.completed ? (
           /* ── Компания уже полностью настроена ── */
-          <section className="rounded-xl border border-emerald-800/50 bg-emerald-950/20 p-5">
+          <section className="rounded-xl border border-green-200 bg-success-subtle p-5 dark:border-green-900/40">
             <div className="flex items-start gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-900/50">
-                <span className="text-lg leading-none">✓</span>
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-success-subtle">
+                <span className="text-lg leading-none text-success">✓</span>
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="text-sm font-semibold text-emerald-300">Компания полностью настроена</h2>
-                <p className="mt-1 text-xs text-emerald-400/70">
+                <h2 className="text-sm font-semibold text-success">Компания полностью настроена</h2>
+                <p className="mt-1 text-xs text-success">
                   Все обязательные шаги онбординга выполнены — можно работать.
                 </p>
                 <ul className="mt-3 space-y-1.5">
                   {companyOnboarding.steps.map((step) => (
-                    <li key={step.key} className="flex items-center gap-2 text-xs text-emerald-300">
-                      <span className="shrink-0 text-emerald-400">✓</span>
+                    <li key={step.key} className="flex items-center gap-2 text-xs text-success">
+                      <span className="shrink-0 text-success">✓</span>
                       {ONBOARDING_STEP_LABELS[step.key] ?? step.title}
                     </li>
                   ))}
@@ -593,15 +593,15 @@ export default function DashboardPage() {
           </section>
         ) : (
           /* ── Онбординг ещё не завершён — показываем шаги ── */
-          <section className="rounded-xl border border-indigo-800/60 bg-indigo-950/20 p-5">
-            <h2 className="text-sm font-semibold text-indigo-200">Онбординг компании не завершён</h2>
-            <p className="mt-1 text-xs text-indigo-300/80">
+          <section className="rounded-xl border border-blue-200 bg-brand-subtle p-5 dark:border-blue-900/40">
+            <h2 className="text-sm font-semibold text-brand">Онбординг компании не завершён</h2>
+            <p className="mt-1 text-xs text-brand">
               Завершите обязательные шаги, чтобы закрыть стартовый онбординг.
             </p>
             <ul className="mt-3 space-y-1.5 text-sm">
               {companyOnboarding.steps.map((step) => (
-                <li key={step.key} className={cn('flex items-center gap-2', step.completed ? 'text-emerald-300' : 'text-gray-300')}>
-                  <span className={cn('shrink-0 text-base leading-none', step.completed ? 'text-emerald-400' : 'text-gray-500')}>
+                <li key={step.key} className={cn('flex items-center gap-2', step.completed ? 'text-success' : 'text-secondary')}>
+                  <span className={cn('shrink-0 text-base leading-none', step.completed ? 'text-success' : 'text-muted')}>
                     {step.completed ? '✓' : '•'}
                   </span>
                   {ONBOARDING_STEP_LABELS[step.key] ?? step.title}
@@ -609,8 +609,8 @@ export default function DashboardPage() {
               ))}
             </ul>
             {uploadLogoStepPending && (
-              <div className="mt-4 rounded-lg border border-gray-700 bg-gray-900/40 p-3">
-                <p className="text-xs text-gray-300">
+              <div className="mt-4 rounded-lg border border-default bg-raised p-3">
+                <p className="text-xs text-secondary">
                   Загрузите логотип компании прямо сейчас:
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -619,7 +619,7 @@ export default function DashboardPage() {
                     type="file"
                     accept="image/*"
                     onChange={handleLogoSelect}
-                    className="text-xs text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-600 file:px-2.5 file:py-1.5 file:text-xs file:font-medium file:text-white hover:file:bg-indigo-500"
+                    className="text-xs text-secondary file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-2.5 file:py-1.5 file:text-xs file:font-medium file:text-white hover:file:bg-brand-hover"
                   />
                   <button
                     type="button"
@@ -628,24 +628,24 @@ export default function DashboardPage() {
                       if (!logoFile) return;
                       uploadLogoMutation.mutate(logoFile);
                     }}
-                    className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                    className="rounded-md bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-hover disabled:opacity-50"
                   >
                     {uploadLogoMutation.isPending ? 'Загрузка...' : 'Загрузить логотип'}
                   </button>
                 </div>
-                {logoUploadError && <p className="mt-2 text-xs text-red-300">{logoUploadError}</p>}
+                {logoUploadError && <p className="mt-2 text-xs text-danger">{logoUploadError}</p>}
               </div>
             )}
             <div className="mt-4 flex gap-2">
               <Link
                 to="/crm"
-                className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white hover:bg-indigo-500"
+                className="rounded-lg bg-brand px-3 py-2 text-xs font-medium text-white hover:bg-brand-hover transition-colors"
               >
                 Перейти в CRM
               </Link>
               <Link
                 to="/company/settings/members"
-                className="rounded-lg border border-gray-600 px-3 py-2 text-xs text-gray-200 hover:bg-gray-800"
+                className="rounded-lg border border-default px-3 py-2 text-xs text-secondary hover:bg-hover hover:text-primary transition-colors"
               >
                 Перейти к инвайтам
               </Link>
@@ -658,7 +658,7 @@ export default function DashboardPage() {
       {dashLoading && (
         <div className="grid gap-4 sm:grid-cols-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-24 animate-pulse rounded-xl border border-gray-800 bg-gray-900" />
+            <div key={i} className="h-24 animate-pulse rounded-xl border border-default bg-raised" />
           ))}
         </div>
       )}
@@ -675,30 +675,30 @@ export default function DashboardPage() {
       )}
 
       {/* Profile card + actions */}
-      <div className="rounded-xl border border-gray-800 bg-gray-900/80 p-6">
-        <h2 className="mb-4 text-sm font-semibold text-gray-400">Профиль</h2>
+      <div className="rounded-xl border border-default bg-surface p-6">
+        <h2 className="mb-4 text-sm font-semibold text-muted">Профиль</h2>
         <dl className="grid gap-3 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-gray-500">Имя</dt>
-            <dd className="font-medium text-white">{user.full_name}</dd>
+            <dt className="text-muted">Имя</dt>
+            <dd className="font-medium text-primary">{user.full_name}</dd>
           </div>
           <div>
-            <dt className="text-gray-500">Email</dt>
-            <dd className="font-medium text-white">{user.email}</dd>
+            <dt className="text-muted">Email</dt>
+            <dd className="font-medium text-primary">{user.email}</dd>
           </div>
           <div>
-            <dt className="text-gray-500">Роль</dt>
-            <dd className="font-medium capitalize text-white">{roleLabel[user.role] ?? user.role}</dd>
+            <dt className="text-muted">Роль</dt>
+            <dd className="font-medium capitalize text-primary">{roleLabel[user.role] ?? user.role}</dd>
           </div>
           <div>
-            <dt className="text-gray-500">Email подтверждён</dt>
+            <dt className="text-muted">Email подтверждён</dt>
             <dd>
               <span
                 className={cn(
                   'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
                   user.is_email_verified
-                    ? 'bg-green-900/50 text-green-300'
-                    : 'bg-amber-900/50 text-amber-200',
+                    ? 'bg-success-subtle text-success-badge'
+                    : 'bg-warning-subtle text-warning-badge',
                 )}
               >
                 {user.is_email_verified ? 'Да' : 'Нет'}
@@ -707,24 +707,24 @@ export default function DashboardPage() {
           </div>
           {user.company_name && (
             <div className="sm:col-span-2">
-              <dt className="text-gray-500">Компания</dt>
-              <dd className="font-medium text-white">{user.company_name}</dd>
+              <dt className="text-muted">Компания</dt>
+              <dd className="font-medium text-primary">{user.company_name}</dd>
             </div>
           )}
         </dl>
 
-        <div className="mt-6 flex flex-wrap gap-3 border-t border-gray-800 pt-6">
+        <div className="mt-6 flex flex-wrap gap-3 border-t border-default pt-6">
           <button
             type="button"
             onClick={handleRefreshProfile}
-            className="rounded-lg border border-gray-600 px-4 py-2 text-sm text-white hover:bg-gray-800"
+            className="rounded-lg border border-default px-4 py-2 text-sm text-secondary hover:bg-hover hover:text-primary transition-colors"
           >
             Обновить профиль
           </button>
           <button
             type="button"
             onClick={() => void logout()}
-            className="rounded-lg border border-red-900/60 bg-red-950/30 px-4 py-2 text-sm text-red-200 hover:bg-red-950/50"
+            className="rounded-lg border border-red-200 bg-danger-subtle px-4 py-2 text-sm text-danger-badge hover:bg-red-100 transition-colors dark:border-red-200 dark:border-red-900/40"
           >
             Выйти
           </button>

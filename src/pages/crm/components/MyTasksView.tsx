@@ -18,7 +18,7 @@ function MyTasksSkeleton() {
   return (
     <div className="space-y-3 animate-pulse">
       {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="h-14 rounded-lg bg-gray-800" />
+        <div key={i} className="h-14 rounded-lg bg-raised" />
       ))}
     </div>
   );
@@ -43,15 +43,15 @@ export function MyTasksView(props: MyTasksViewProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-white">Мои задачи</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Задачи назначенные на вас со всех досок</p>
+        <h1 className="text-xl font-semibold text-primary">Мои задачи</h1>
+        <p className="text-sm text-muted mt-0.5">Задачи назначенные на вас со всех досок</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-52">
           <Search
             size={14}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
           />
           <input
             ref={searchInputRef}
@@ -60,7 +60,7 @@ export function MyTasksView(props: MyTasksViewProps) {
             onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
             placeholder="Поиск по названию..."
             className={cn(
-              'w-full rounded-lg border border-gray-700 bg-gray-800 pl-8 pr-3 py-2 text-sm text-white placeholder-gray-500',
+              'w-full rounded-lg border border-default bg-raised pl-8 pr-3 py-2 text-sm text-primary placeholder-gray-500',
               'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
             )}
             aria-label="Поиск задач"
@@ -71,7 +71,7 @@ export function MyTasksView(props: MyTasksViewProps) {
           value={filters.priority}
           onChange={(e) => setFilters((f) => ({ ...f, priority: e.target.value }))}
           className={cn(
-            'rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white',
+            'rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary',
             'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
           )}
           aria-label="Фильтр по приоритету"
@@ -87,7 +87,7 @@ export function MyTasksView(props: MyTasksViewProps) {
           value={filters.deadline}
           onChange={(e) => setFilters((f) => ({ ...f, deadline: e.target.value }))}
           className={cn(
-            'rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white',
+            'rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary',
             'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
           )}
           aria-label="Фильтр по дедлайну"
@@ -102,7 +102,7 @@ export function MyTasksView(props: MyTasksViewProps) {
           value={filters.ordering}
           onChange={(e) => setFilters((f) => ({ ...f, ordering: e.target.value }))}
           className={cn(
-            'rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white',
+            'rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary',
             'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
           )}
           aria-label="Сортировка"
@@ -120,8 +120,8 @@ export function MyTasksView(props: MyTasksViewProps) {
             type="button"
             onClick={handleReset}
             className={cn(
-              'rounded-lg border border-gray-700 px-3 py-2 text-sm font-medium',
-              'text-gray-400 hover:text-white hover:border-gray-500 transition-colors',
+              'rounded-lg border border-default px-3 py-2 text-sm font-medium',
+              'text-secondary hover:text-primary hover:border-gray-500 transition-colors',
             )}
           >
             Сбросить
@@ -133,7 +133,7 @@ export function MyTasksView(props: MyTasksViewProps) {
         <MyTasksSkeleton />
       ) : isError ? (
         <div
-          className="flex items-center gap-2 rounded-lg border border-red-800 bg-red-900/30 px-4 py-3 text-sm text-red-300"
+          className="flex items-center gap-2 rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-4 py-3 text-sm text-danger"
           role="alert"
         >
           <AlertCircle size={16} className="shrink-0" />
@@ -141,8 +141,8 @@ export function MyTasksView(props: MyTasksViewProps) {
         </div>
       ) : tasks.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 gap-3">
-          <Inbox size={32} className="text-gray-600" />
-          <p className="text-gray-500 text-sm">
+          <Inbox size={32} className="text-muted" />
+          <p className="text-muted text-sm">
             {hasActiveFilters ? 'Задачи не найдены по текущим фильтрам' : 'У вас нет назначенных задач'}
           </p>
           {hasActiveFilters && (
@@ -157,37 +157,37 @@ export function MyTasksView(props: MyTasksViewProps) {
         </div>
       ) : (
         <>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted">
             {totalCount} {totalCount === 1 ? 'задача' : 'задач'}
           </p>
 
-          <div className="overflow-x-auto rounded-xl border border-gray-800">
+          <div className="overflow-x-auto rounded-xl border border-default">
             <table className="w-full text-sm" role="table" aria-label="Мои задачи">
               <thead>
-                <tr className="border-b border-gray-800 bg-gray-900/60">
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                <tr className="border-b border-default bg-surface/60">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase tracking-wide">
                     Название
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase tracking-wide">
                     Доска
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase tracking-wide">
                     Приоритет
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase tracking-wide">
                     Дедлайн
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800">
+              <tbody className="divide-y divide-[color:var(--border)]">
                 {tasks.map((task) => {
                   const overdue = task.deadline ? isOverdue(task.deadline) : false;
                   return (
-                    <tr key={task.id} className="bg-gray-900 hover:bg-gray-800/60 transition-colors">
+                    <tr key={task.id} className="bg-surface hover:bg-hover transition-colors">
                       <td className="px-4 py-3">
                         <Link
                           to={`/crm/tasks/${task.id}`}
-                          className="group inline-flex items-center gap-1.5 text-white hover:text-blue-400 transition-colors font-medium"
+                          className="group inline-flex items-center gap-1.5 text-primary hover:text-blue-400 transition-colors font-medium"
                           title="Открыть задачу"
                         >
                           <span className="line-clamp-1">{task.title}</span>
@@ -200,7 +200,7 @@ export function MyTasksView(props: MyTasksViewProps) {
                       <td className="px-4 py-3">
                         <Link
                           to={`/crm/boards/${task.board.id}`}
-                          className="text-gray-400 hover:text-gray-200 transition-colors text-xs"
+                          className="text-secondary hover:text-secondary transition-colors text-xs"
                         >
                           {task.board.name}
                         </Link>
@@ -220,7 +220,7 @@ export function MyTasksView(props: MyTasksViewProps) {
                           <span
                             className={cn(
                               'flex items-center gap-1 text-xs',
-                              overdue ? 'text-red-400' : 'text-gray-400',
+                              overdue ? 'text-red-400' : 'text-secondary',
                             )}
                           >
                             <Calendar size={11} className="shrink-0" />
@@ -228,7 +228,7 @@ export function MyTasksView(props: MyTasksViewProps) {
                             {overdue && <span className="text-red-500 font-medium">(просрочено)</span>}
                           </span>
                         ) : (
-                          <span className="text-xs text-gray-600">—</span>
+                          <span className="text-xs text-muted">—</span>
                         )}
                       </td>
                     </tr>
@@ -240,7 +240,7 @@ export function MyTasksView(props: MyTasksViewProps) {
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted">
                 Стр. {page} из {totalPages}
               </p>
               <div className="flex items-center gap-2">
@@ -249,8 +249,8 @@ export function MyTasksView(props: MyTasksViewProps) {
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
                   className={cn(
-                    'flex items-center gap-1.5 rounded-lg border border-gray-700 px-3 py-1.5 text-sm',
-                    'text-gray-400 hover:text-white hover:border-gray-500 transition-colors',
+                    'flex items-center gap-1.5 rounded-lg border border-default px-3 py-1.5 text-sm',
+                    'text-secondary hover:text-primary hover:border-gray-500 transition-colors',
                     'disabled:opacity-40 disabled:cursor-not-allowed',
                   )}
                   aria-label="Предыдущая страница"
@@ -263,8 +263,8 @@ export function MyTasksView(props: MyTasksViewProps) {
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
                   className={cn(
-                    'flex items-center gap-1.5 rounded-lg border border-gray-700 px-3 py-1.5 text-sm',
-                    'text-gray-400 hover:text-white hover:border-gray-500 transition-colors',
+                    'flex items-center gap-1.5 rounded-lg border border-default px-3 py-1.5 text-sm',
+                    'text-secondary hover:text-primary hover:border-gray-500 transition-colors',
                     'disabled:opacity-40 disabled:cursor-not-allowed',
                   )}
                   aria-label="Следующая страница"

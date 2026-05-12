@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router';
-import { Bell, User, Menu } from 'lucide-react';
+import { Bell, User, Menu, Sun, Moon } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/shared/store/auth';
+import { useTheme } from '@/shared/hooks/useTheme';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { cn } from '@/shared/lib/cn';
@@ -30,6 +31,7 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { toggle, isDark } = useTheme();
 
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -102,140 +104,145 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
   const hasUnread = recentItems.some(n => !n.is_read);
 
   function handleItemClick(n: Notification) {
-    if (!n.is_read) {
-      markReadMutation.mutate(n.id);
-    }
+    if (!n.is_read) markReadMutation.mutate(n.id);
     setOpen(false);
-    if (n.link) {
-      navigate(n.link);
-    }
+    if (n.link) navigate(n.link);
   }
 
   return (
-    <header className="relative z-[90] h-14 border-b border-gray-800 bg-gray-950/80 backdrop-blur-sm flex items-center justify-between md:justify-end gap-3 px-3 sm:px-4 md:px-6">
+    <header className="relative z-[90] flex h-14 items-center justify-between gap-3 border-b border-default bg-surface px-3 sm:px-4 md:justify-end md:px-6">
       <button
         type="button"
         onClick={onOpenMobileNav}
-        className="inline-flex items-center justify-center rounded-md p-2 text-gray-300 hover:bg-gray-800 md:hidden"
+        className="inline-flex items-center justify-center rounded-md p-2 text-secondary hover:bg-hover transition-colors md:hidden"
         aria-label="Открыть боковое меню"
         aria-controls="app-sidebar"
         aria-expanded={isMobileNavOpen}
       >
         <Menu size={18} />
       </button>
-      <div className="flex items-center gap-3 sm:gap-4">
-      <div className="relative">
+
+      <div className="flex items-center gap-1 sm:gap-1.5">
+        {/* Theme toggle */}
         <button
-          ref={buttonRef}
           type="button"
-          onClick={() => setOpen(prev => !prev)}
-          className="text-gray-400 hover:text-white transition-colors relative"
-          aria-label={
-            unreadCount > 0
-              ? `Уведомления (${unreadCount} непрочитанных)`
-              : 'Уведомления'
-          }
-          aria-expanded={open}
-          aria-haspopup="true"
+          onClick={toggle}
+          className="rounded-md p-2 text-secondary hover:bg-hover hover:text-primary transition-colors"
+          aria-label={isDark ? 'Включить светлую тему' : 'Включить тёмную тему'}
         >
-          <Bell size={20} />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] text-white flex items-center justify-center leading-none">
-              {badgeLabel}
-            </span>
-          )}
+          {isDark ? <Sun size={17} /> : <Moon size={17} />}
         </button>
 
-        {open && createPortal(
-          <div
-            ref={dropdownRef}
-            style={{ top: dropdownPos.top, right: dropdownPos.right }}
-            className="fixed w-[calc(100vw-1rem)] max-w-sm max-h-[28rem] overflow-y-auto rounded-xl border border-gray-700 bg-gray-900 shadow-xl z-[9999]"
-            role="dialog"
-            aria-label="Уведомления"
+        {/* Notifications */}
+        <div className="relative">
+          <button
+            ref={buttonRef}
+            type="button"
+            onClick={() => setOpen(prev => !prev)}
+            className="relative rounded-md p-2 text-secondary hover:bg-hover hover:text-primary transition-colors"
+            aria-label={
+              unreadCount > 0
+                ? `Уведомления (${unreadCount} непрочитанных)`
+                : 'Уведомления'
+            }
+            aria-expanded={open}
+            aria-haspopup="true"
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
-              <span className="text-sm font-semibold text-white">Уведомления</span>
-              {hasUnread && (
-                <button
-                  type="button"
-                  onClick={() => markAllReadMutation.mutate()}
-                  disabled={markAllReadMutation.isPending}
-                  className="text-xs text-blue-400 hover:text-blue-300 disabled:opacity-50 transition-colors"
-                >
-                  Прочитать все
-                </button>
-              )}
-            </div>
-
-            {recentLoading ? (
-              <div className="flex flex-col gap-3 px-4 py-4">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="animate-pulse space-y-1.5">
-                    <div className="h-3 w-3/4 rounded bg-gray-700" />
-                    <div className="h-3 w-1/2 rounded bg-gray-800" />
-                  </div>
-                ))}
-              </div>
-            ) : recentItems.length === 0 ? (
-              <p className="px-4 py-6 text-center text-sm text-gray-500">Нет уведомлений</p>
-            ) : (
-              <ul>
-                {recentItems.map(n => (
-                  <li key={n.id}>
-                    <button
-                      type="button"
-                      onClick={() => handleItemClick(n)}
-                      className={cn(
-                        'w-full text-left px-4 py-3 flex items-start gap-2 transition-colors border-b border-gray-800 last:border-b-0',
-                        n.is_read
-                          ? 'hover:bg-gray-800'
-                          : 'hover:bg-gray-800/80',
-                      )}
-                    >
-                      {!n.is_read && (
-                        <span
-                          className="mt-1.5 shrink-0 w-2 h-2 rounded-full bg-blue-500"
-                          aria-label="Непрочитанное"
-                        />
-                      )}
-                      <div className={cn('flex-1 min-w-0', n.is_read && 'ml-4')}>
-                        <p className="text-sm font-medium text-white truncate">{n.title}</p>
-                        <p className="text-xs text-gray-400 mt-0.5 line-clamp-3 whitespace-pre-line">
-                          {n.message ?? n.body}
-                        </p>
-                        <p className="text-[11px] text-gray-600 mt-1">
-                          {formatRelativeTime(n.created_at)}
-                        </p>
-                      </div>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+            <Bell size={17} />
+            {unreadCount > 0 && (
+              <span className="absolute right-1 top-1 flex h-[7px] w-[7px] items-center justify-center rounded-full bg-red-500">
+                <span className="sr-only">{badgeLabel}</span>
+              </span>
             )}
+          </button>
 
-            <div className="border-t border-gray-700 px-4 py-2.5">
-              <Link
-                to="/notifications"
-                onClick={() => setOpen(false)}
-                className="block text-center text-xs text-blue-400 hover:text-blue-300 transition-colors"
-              >
-                Смотреть все уведомления
-              </Link>
-            </div>
-          </div>,
-          document.body,
-        )}
-      </div>
+          {open && createPortal(
+            <div
+              ref={dropdownRef}
+              style={{ top: dropdownPos.top, right: dropdownPos.right }}
+              className="fixed z-[9999] w-[calc(100vw-1rem)] max-w-sm max-h-[28rem] overflow-y-auto rounded-xl border border-default bg-surface shadow-lg"
+              role="dialog"
+              aria-label="Уведомления"
+            >
+              <div className="flex items-center justify-between border-b border-default px-4 py-3">
+                <span className="text-sm font-semibold text-primary">Уведомления</span>
+                {hasUnread && (
+                  <button
+                    type="button"
+                    onClick={() => markAllReadMutation.mutate()}
+                    disabled={markAllReadMutation.isPending}
+                    className="text-xs text-brand hover:text-brand-hover disabled:opacity-50 transition-colors"
+                  >
+                    Прочитать все
+                  </button>
+                )}
+              </div>
 
-      <Link
-        to="/profile"
-        className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
-      >
-        <User size={20} />
-        <span className="hidden sm:inline">{user?.first_name || 'Профиль'}</span>
-      </Link>
+              {recentLoading ? (
+                <div className="flex flex-col gap-3 px-4 py-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="animate-pulse space-y-1.5">
+                      <div className="h-3 w-3/4 rounded bg-raised" />
+                      <div className="h-3 w-1/2 rounded bg-hover" />
+                    </div>
+                  ))}
+                </div>
+              ) : recentItems.length === 0 ? (
+                <p className="px-4 py-6 text-center text-sm text-muted">Нет уведомлений</p>
+              ) : (
+                <ul>
+                  {recentItems.map(n => (
+                    <li key={n.id}>
+                      <button
+                        type="button"
+                        onClick={() => handleItemClick(n)}
+                        className="w-full text-left px-4 py-3 flex items-start gap-2.5 border-b border-default last:border-b-0 hover:bg-raised transition-colors"
+                      >
+                        {!n.is_read && (
+                          <span
+                            className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-500"
+                            aria-label="Непрочитанное"
+                          />
+                        )}
+                        <div className={cn('flex-1 min-w-0', n.is_read && 'ml-4')}>
+                          <p className="truncate text-sm font-medium text-primary">{n.title}</p>
+                          <p className="mt-0.5 line-clamp-3 whitespace-pre-line text-xs text-secondary">
+                            {n.message ?? n.body}
+                          </p>
+                          <p className="mt-1 text-[11px] text-muted">
+                            {formatRelativeTime(n.created_at)}
+                          </p>
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="border-t border-default px-4 py-2.5">
+                <Link
+                  to="/notifications"
+                  onClick={() => setOpen(false)}
+                  className="block text-center text-xs text-brand hover:text-brand-hover transition-colors"
+                >
+                  Смотреть все уведомления
+                </Link>
+              </div>
+            </div>,
+            document.body,
+          )}
+        </div>
+
+        {/* Profile */}
+        <Link
+          to="/profile"
+          className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-secondary hover:bg-hover hover:text-primary transition-colors"
+        >
+          <User size={17} />
+          <span className="hidden sm:inline">{user?.first_name || 'Профиль'}</span>
+        </Link>
       </div>
     </header>
   );
 }
+

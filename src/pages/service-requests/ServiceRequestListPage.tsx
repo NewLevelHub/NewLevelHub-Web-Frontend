@@ -26,9 +26,9 @@ import type {
 
 const STATUS_BADGE_CLASS: Record<ServiceRequestStatus, string> = {
   [SERVICE_REQUEST_STATUSES.NEW]: 'bg-sky-900/60 text-sky-300',
-  [SERVICE_REQUEST_STATUSES.ACCEPTED]: 'bg-amber-900/60 text-amber-300',
-  [SERVICE_REQUEST_STATUSES.IN_PROGRESS]: 'bg-indigo-900/60 text-indigo-300',
-  [SERVICE_REQUEST_STATUSES.COMPLETED]: 'bg-emerald-900/60 text-emerald-300',
+  [SERVICE_REQUEST_STATUSES.ACCEPTED]: 'bg-warning-subtle text-warning',
+  [SERVICE_REQUEST_STATUSES.IN_PROGRESS]: 'bg-brand-subtle text-brand',
+  [SERVICE_REQUEST_STATUSES.COMPLETED]: 'bg-success-subtle text-success',
 };
 
 const TYPE_OPTIONS: Array<{ value: ServiceRequestType | ''; label: string }> = [
@@ -305,7 +305,7 @@ export default function ServiceRequestListPage() {
     <main className="mx-auto max-w-6xl space-y-6 p-6">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-white">Сервисные заявки</h1>
+        <h1 className="text-2xl font-bold text-primary">Сервисные заявки</h1>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -317,7 +317,7 @@ export default function ServiceRequestListPage() {
           <button
             type="button"
             onClick={openGeneralModal}
-            className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+            className="inline-flex items-center justify-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
           >
             Создать заявку
           </button>
@@ -325,13 +325,13 @@ export default function ServiceRequestListPage() {
       </div>
 
       {/* Filters */}
-      <section className="grid gap-3 rounded-xl border border-gray-700 bg-gray-800 p-4 sm:grid-cols-2">
-        <label className="text-sm text-gray-300">
+      <section className="grid gap-3 rounded-xl border border-default bg-raised p-4 sm:grid-cols-2">
+        <label className="text-sm text-secondary">
           Тип
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as ServiceRequestType | '')}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           >
             {TYPE_OPTIONS.map((opt) => (
               <option key={opt.value || 'all-types'} value={opt.value}>
@@ -340,12 +340,12 @@ export default function ServiceRequestListPage() {
             ))}
           </select>
         </label>
-        <label className="text-sm text-gray-300">
+        <label className="text-sm text-secondary">
           Статус
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as ServiceRequestStatus | '')}
-            className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           >
             {STATUS_OPTIONS.map((opt) => (
               <option key={opt.value || 'all-statuses'} value={opt.value}>
@@ -378,29 +378,29 @@ export default function ServiceRequestListPage() {
 
       {/* List */}
       {isLoading ? (
-        <p className="text-sm text-gray-400">Загрузка...</p>
+        <p className="text-sm text-secondary">Загрузка...</p>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-gray-400">Заявок пока нет.</p>
+        <p className="text-sm text-secondary">Заявок пока нет.</p>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-gray-700 bg-gray-800">
+        <div className="overflow-hidden rounded-2xl border border-default bg-raised">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-700/60">
-              <thead className="bg-gray-900/60">
+            <table className="min-w-full divide-y divide-[color:var(--border)]/60">
+              <thead className="bg-surface/60">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Тип</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Статус</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Тип</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Статус</th>
                   {isAdmin && (
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Сотрудник</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Сотрудник</th>
                   )}
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Описание</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Фото</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Этаж</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Создана</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Оценка</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Действия</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Описание</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Фото</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Этаж</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Создана</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Оценка</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Действия</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-700/60">
+              <tbody className="divide-y divide-[color:var(--border)]/60">
                 {rows.map((req) => {
                   const nextStatus = SERVICE_REQUEST_STATUS_TRANSITIONS[req.status];
                   const ownerId = getRequestOwnerId(req);
@@ -411,7 +411,7 @@ export default function ServiceRequestListPage() {
                     req.rating === null;
 
                   return (
-                    <tr key={req.id} className="text-sm text-gray-200">
+                    <tr key={req.id} className="text-sm text-secondary">
                       <td className="px-4 py-3">
                         {SERVICE_REQUEST_TYPE_LABELS[req.request_type] ?? req.request_type}
                       </td>
@@ -426,11 +426,11 @@ export default function ServiceRequestListPage() {
                         </span>
                       </td>
                       {isAdmin && (
-                        <td className="whitespace-nowrap px-4 py-3 text-gray-300">
+                        <td className="whitespace-nowrap px-4 py-3 text-secondary">
                           {getRequestOwnerName(req) || '—'}
                         </td>
                       )}
-                      <td className="max-w-xs px-4 py-3 text-gray-300">
+                      <td className="max-w-xs px-4 py-3 text-secondary">
                         <span className="line-clamp-2">{req.description || '—'}</span>
                       </td>
                       <td className="px-4 py-3">
@@ -449,11 +449,11 @@ export default function ServiceRequestListPage() {
                             Открыть
                           </a>
                         ) : (
-                          <span className="text-gray-500">—</span>
+                          <span className="text-muted">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3">{formatServiceRequestFloorCell(req, floors)}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-gray-400">
+                      <td className="whitespace-nowrap px-4 py-3 text-secondary">
                         {new Date(req.created_at).toLocaleDateString('ru-RU')}
                       </td>
                       <td className="px-4 py-3">
@@ -463,7 +463,7 @@ export default function ServiceRequestListPage() {
                             {req.rating}
                           </span>
                         ) : (
-                          <span className="text-gray-500">—</span>
+                          <span className="text-muted">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -474,7 +474,7 @@ export default function ServiceRequestListPage() {
                               type="button"
                               disabled={isPendingMutation}
                               onClick={() => handleUpdateStatus(req)}
-                              className="rounded-md border border-indigo-700 bg-indigo-900/30 px-2 py-1 text-xs text-indigo-300 hover:bg-indigo-900/50 disabled:opacity-50"
+                              className="rounded-md border border-default bg-brand-subtle px-2 py-1 text-xs text-brand hover:bg-brand-subtle disabled:opacity-50"
                             >
                               {SERVICE_REQUEST_STATUS_LABELS[nextStatus]}
                             </button>
@@ -487,7 +487,7 @@ export default function ServiceRequestListPage() {
                               disabled={isPendingMutation}
                               onClick={() => openRateModal(req.id)}
                               aria-label="Оценить выполненную заявку"
-                              className="inline-flex items-center gap-1.5 rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-gray-900 shadow-sm hover:bg-amber-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 disabled:opacity-50"
+                              className="inline-flex items-center gap-1.5 rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-primary shadow-sm hover:bg-amber-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 disabled:opacity-50"
                             >
                               <Star className="h-3.5 w-3.5 fill-gray-900" aria-hidden="true" />
                               Оценить
@@ -495,7 +495,7 @@ export default function ServiceRequestListPage() {
                           ) : null}
 
                           {!canChangeStatus && !canRate ? (
-                            <span className="text-xs text-gray-500">—</span>
+                            <span className="text-xs text-muted">—</span>
                           ) : null}
                         </div>
                       </td>
@@ -517,22 +517,22 @@ export default function ServiceRequestListPage() {
           onClick={() => closeCreateModal()}
         >
           <div
-            className="w-full max-w-lg rounded-xl border border-gray-700 bg-gray-800 p-5"
+            className="w-full max-w-lg rounded-xl border border-default bg-raised p-5"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold text-white">
+            <h2 className="text-lg font-semibold text-primary">
               {createModal.mode === 'cleaning' ? 'Вызвать уборку' : 'Новая сервисная заявка'}
             </h2>
 
             <form onSubmit={handleCreateSubmit} className="mt-4 space-y-4">
               {/* Type selector — only for general mode */}
               {createModal.mode === 'general' ? (
-                <label className="block text-sm text-gray-300">
+                <label className="block text-sm text-secondary">
                   Тип заявки
                   <select
                     value={createType}
                     onChange={(e) => setCreateType(e.target.value as ServiceRequestType)}
-                    className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                    className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
                   >
                     {TYPE_OPTIONS.filter((opt) => opt.value !== '').map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -544,9 +544,9 @@ export default function ServiceRequestListPage() {
               ) : null}
 
               {/* Floor */}
-              <label className="block text-sm text-gray-300">
+              <label className="block text-sm text-secondary">
                 Выбор этажа
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-muted">
                   Справочник этажей здания; не путать с полем «этаж» в настройках компании. Пустой
                   список — в БД нет записей Floor (их создаёт супер-админ).
                 </p>
@@ -555,7 +555,7 @@ export default function ServiceRequestListPage() {
                   onChange={(e) => setCreateFloorId(e.target.value)}
                   disabled={isFloorsLoading}
                   required
-                  className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                  className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
                 >
                   {isFloorsLoading ? (
                     <option value="">Загрузка этажей...</option>
@@ -577,58 +577,58 @@ export default function ServiceRequestListPage() {
                   )}
                 </select>
                 {floorsError ? (
-                  <p className="mt-1 text-xs text-amber-300">
+                  <p className="mt-1 text-xs text-warning">
                     Не удалось загрузить этажи. Без этажа отправка невозможна.
                   </p>
                 ) : null}
               </label>
 
-              <label className="block text-sm text-gray-300">
+              <label className="block text-sm text-secondary">
                 Место
                 <input
                   type="text"
                   value={createLocation}
                   onChange={(e) => setCreateLocation(e.target.value)}
                   required
-                  className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                  className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
                   placeholder="Переговорка A, туалет, кухня..."
                 />
               </label>
 
               {/* Description */}
-              <label className="block text-sm text-gray-300">
+              <label className="block text-sm text-secondary">
                 Описание
                 <textarea
                   value={createDescription}
                   onChange={(e) => setCreateDescription(e.target.value)}
                   rows={3}
                   required
-                  className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder:text-gray-500"
+                  className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted"
                   placeholder="Опишите проблему или запрос"
                 />
               </label>
 
-              <label className="block text-sm text-gray-300">
+              <label className="block text-sm text-secondary">
                 Фото (необязательно)
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => setCreatePhoto(e.target.files?.[0] ?? null)}
-                  className="mt-1 block w-full cursor-pointer rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-200 file:mr-3 file:rounded-md file:border-0 file:bg-gray-700 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-gray-100 hover:file:bg-gray-600"
+                  className="mt-1 block w-full cursor-pointer rounded-lg border border-default bg-surface px-3 py-2 text-sm text-secondary file:mr-3 file:rounded-md file:border-0 file:bg-hover file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-primary hover:file:bg-gray-600"
                 />
                 {createPhoto ? (
-                  <p className="mt-1 text-xs text-gray-400">Выбрано: {createPhoto.name}</p>
+                  <p className="mt-1 text-xs text-secondary">Выбрано: {createPhoto.name}</p>
                 ) : null}
               </label>
 
               {/* Urgency — only for general mode */}
               {createModal.mode === 'general' ? (
-                <label className="block text-sm text-gray-300">
+                <label className="block text-sm text-secondary">
                   Срочность
                   <select
                     value={createUrgency}
                     onChange={(e) => setCreateUrgency(e.target.value as 'normal' | 'urgent')}
-                    className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                    className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
                   >
                     <option value="normal">Обычная</option>
                     <option value="urgent">Срочная</option>
@@ -650,14 +650,14 @@ export default function ServiceRequestListPage() {
                   type="button"
                   onClick={() => closeCreateModal()}
                   disabled={createMutation.isPending || cleaningMutation.isPending}
-                  className="rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                  className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover"
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
                   disabled={createMutation.isPending || cleaningMutation.isPending}
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                  className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
                 >
                   {createMutation.isPending || cleaningMutation.isPending
                     ? 'Отправка...'
@@ -680,13 +680,13 @@ export default function ServiceRequestListPage() {
           onClick={closeRateModal}
         >
           <div
-            className="w-full max-w-sm rounded-xl border border-gray-700 bg-gray-800 p-5"
+            className="w-full max-w-sm rounded-xl border border-default bg-raised p-5"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold text-white">
+            <h2 className="text-lg font-semibold text-primary">
               {rateModal.autoOpened ? 'Заявка выполнена!' : 'Оценить заявку'}
             </h2>
-            <p className="mt-1 text-sm text-gray-400">
+            <p className="mt-1 text-sm text-secondary">
               {rateModal.autoOpened
                 ? 'Пожалуйста, оцените качество выполненной работы'
                 : 'Выберите оценку от 1 до 5'}
@@ -706,7 +706,7 @@ export default function ServiceRequestListPage() {
                       'h-8 w-8 transition-colors',
                       star <= ratingValue
                         ? 'fill-amber-400 text-amber-400'
-                        : 'fill-gray-700 text-gray-600 hover:text-amber-300',
+                        : 'fill-gray-700 text-muted hover:text-warning',
                     )}
                   />
                 </button>
@@ -727,7 +727,7 @@ export default function ServiceRequestListPage() {
                 type="button"
                 onClick={closeRateModal}
                 disabled={rateMutation.isPending}
-                className="rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover"
               >
                 Отмена
               </button>
@@ -737,7 +737,7 @@ export default function ServiceRequestListPage() {
                 onClick={() =>
                   rateMutation.mutate({ id: rateModal.requestId, rating: ratingValue })
                 }
-                className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-500 disabled:opacity-50"
+                className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-primary hover:bg-amber-500 disabled:opacity-50"
               >
                 {rateMutation.isPending ? 'Сохраняем...' : 'Отправить оценку'}
               </button>

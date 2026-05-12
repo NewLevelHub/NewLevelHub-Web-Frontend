@@ -30,8 +30,8 @@ export function AnnouncementFilters({ category, onCategoryChange }: Announcement
           className={cn(
             'rounded-full border px-3 py-1.5 text-sm transition-colors',
             category === opt.value
-              ? 'border-indigo-500 bg-indigo-600/20 text-indigo-200'
-              : 'border-gray-700 text-gray-300 hover:bg-gray-800',
+              ? 'border-blue-500 bg-brand/20 text-brand'
+              : 'border-default text-secondary hover:bg-hover',
           )}
         >
           {opt.label}
