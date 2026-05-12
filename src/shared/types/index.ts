@@ -955,6 +955,7 @@ export interface CrmTaskHistory {
   id: number;
   user: CrmHistoryUser;
   action: string;
+  field_name: string | null;
   old_value: string | null;
   new_value: string | null;
   created_at: string;
