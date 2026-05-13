@@ -7,12 +7,22 @@ import { getApiErrorMessage } from '@/shared/lib/apiError';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-const REASON_LABELS: Record<Exclude<PassValidationResponse, { valid: true }>['reason'], string> = {
+const REASON_LABELS: Record<import('@/shared/types').PassValidationFailure['reason'], string> = {
   expired: 'Срок действия пропуска истек',
   revoked: 'Пропуск отозван',
   already_used: 'Пропуск уже использован',
   not_found: 'Пропуск не найден',
 };
+
+function formatDateTime(iso: string): string {
+  const d = new Date(iso);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${day}.${month}.${year} ${hours}:${minutes}`;
+}
 
 const CAMERA_CONSTRAINTS_CHAIN: MediaStreamConstraints[] = [
   {
@@ -242,7 +252,11 @@ export default function PassValidatePage() {
           ) : (
             <div className="space-y-2 text-sm">
               <p className="font-semibold text-rose-300">Пропуск невалиден</p>
-              <p className="text-secondary">{REASON_LABELS[result.reason]}</p>
+              <p className="text-secondary">
+                {result.reason === 'not_yet_active'
+                  ? `Пропуск будет доступен с ${formatDateTime(result.available_from)}`
+                  : REASON_LABELS[result.reason]}
+              </p>
             </div>
           )}
         </section>

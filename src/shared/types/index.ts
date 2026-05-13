@@ -468,7 +468,13 @@ export interface PassValidationFailure {
   reason: 'expired' | 'revoked' | 'already_used' | 'not_found';
 }
 
-export type PassValidationResponse = PassValidationSuccess | PassValidationFailure;
+export interface PassValidationNotYetActive {
+  valid: false;
+  reason: 'not_yet_active';
+  available_from: string;
+}
+
+export type PassValidationResponse = PassValidationSuccess | PassValidationFailure | PassValidationNotYetActive;
 
 export interface AccessLogEntry {
   id: number;
