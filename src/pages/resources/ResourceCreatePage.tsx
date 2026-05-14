@@ -41,6 +41,8 @@ type ResourceCreatePayload = {
   equipment?: EquipmentState;
   min_duration_minutes?: number;
   max_duration_minutes?: number;
+  advance_booking_days?: number;
+  min_cancel_minutes?: number;
   parking_type?: ParkingType;
   capsule_zone?: CapsuleZone;
 };
@@ -97,6 +99,8 @@ type FormState = {
   equipment: EquipmentState;
   min_duration_minutes: string;
   max_duration_minutes: string;
+  advance_booking_days: string;
+  min_cancel_minutes: string;
   parking_type: ParkingType;
   capsule_zone: CapsuleZone;
 };
@@ -136,8 +140,8 @@ function parseError(error: unknown): { fieldErrors: Record<string, string>; mess
 
 function inputClass(hasError: boolean) {
   return cn(
-    'w-full rounded-lg border px-3 py-2 text-sm text-primary focus:border-transparent focus:outline-none focus:ring-2',
-    hasError ? 'border-red-400 focus:ring-red-500' : 'border-default focus:ring-blue-500',
+    'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary placeholder:text-placeholder focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors',
+    hasError ? 'border-red-400 focus:ring-red-500/20' : 'border-default',
   );
 }
 
@@ -196,6 +200,8 @@ export default function ResourceCreatePage() {
     equipment: defaultEquipment(),
     min_duration_minutes: '30',
     max_duration_minutes: '480',
+    advance_booking_days: '14',
+    min_cancel_minutes: '30',
     parking_type: PARKING_TYPES.REGULAR,
     capsule_zone: CAPSULE_ZONES.QUIET,
   });
@@ -319,6 +325,8 @@ export default function ResourceCreatePage() {
       payload.min_duration_minutes = Number(form.min_duration_minutes);
       payload.max_duration_minutes = Number(form.max_duration_minutes);
     }
+    if (form.advance_booking_days) payload.advance_booking_days = Number(form.advance_booking_days);
+    if (form.min_cancel_minutes) payload.min_cancel_minutes = Number(form.min_cancel_minutes);
 
     if (isDesk) {
       payload.has_monitor = form.has_monitor;
@@ -449,7 +457,7 @@ export default function ResourceCreatePage() {
       </div>
 
       <section className="rounded-2xl border border-default bg-surface p-6 shadow-sm">
-        <div className="mb-5 inline-flex rounded-lg border border-default bg-gray-50 p-1">
+        <div className="mb-5 inline-flex rounded-lg border border-default bg-raised p-1">
           <button
             type="button"
             onClick={() => setIsBulkMode(false)}
@@ -645,7 +653,7 @@ export default function ResourceCreatePage() {
           </label>
 
           {isDesk && (
-            <div className="space-y-3 rounded-xl border border-default bg-gray-50 p-4">
+            <div className="space-y-3 rounded-xl border border-default bg-raised p-4">
               <p className="text-sm font-semibold text-secondary">Настройки стола</p>
               <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                 <label className="flex items-center gap-2 text-sm text-secondary">
@@ -706,8 +714,43 @@ export default function ResourceCreatePage() {
             </div>
           )}
 
+          {/* Политика бронирования — для всех типов ресурсов */}
+          <div className="space-y-3 rounded-xl border border-default bg-raised p-4">
+            <p className="text-sm font-semibold text-secondary">Политика бронирования</p>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label htmlFor="advance_booking_days" className="mb-1 block text-sm font-medium text-secondary">
+                  Бронирование вперёд (дней)
+                </label>
+                <input
+                  type="number"
+                  id="advance_booking_days"
+                  min={1}
+                  placeholder="14"
+                  value={form.advance_booking_days}
+                  onChange={(e) => updateForm('advance_booking_days', e.target.value)}
+                  className={inputClass(false)}
+                />
+              </div>
+              <div>
+                <label htmlFor="min_cancel_minutes" className="mb-1 block text-sm font-medium text-secondary">
+                  Минимум для отмены (минут)
+                </label>
+                <input
+                  type="number"
+                  id="min_cancel_minutes"
+                  min={1}
+                  placeholder="30"
+                  value={form.min_cancel_minutes}
+                  onChange={(e) => updateForm('min_cancel_minutes', e.target.value)}
+                  className={inputClass(false)}
+                />
+              </div>
+            </div>
+          </div>
+
           {requiresCapacity && (
-            <div className="space-y-3 rounded-xl border border-default bg-gray-50 p-4">
+            <div className="space-y-3 rounded-xl border border-default bg-raised p-4">
               <p className="text-sm font-semibold text-secondary">Настройки переговорной</p>
               <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                 {RESOURCE_EQUIPMENT_KEYS.map((key) => (
@@ -760,7 +803,7 @@ export default function ResourceCreatePage() {
           )}
 
           {isParking && (
-            <div className="space-y-3 rounded-xl border border-default bg-gray-50 p-4">
+            <div className="space-y-3 rounded-xl border border-default bg-raised p-4">
               <p className="text-sm font-semibold text-secondary">Настройки парковки</p>
               <div>
                 <label htmlFor="parking_type" className="mb-1 block text-sm font-medium text-secondary">
@@ -801,7 +844,7 @@ export default function ResourceCreatePage() {
           )}
 
           {isCapsule && (
-            <div className="space-y-3 rounded-xl border border-default bg-gray-50 p-4">
+            <div className="space-y-3 rounded-xl border border-default bg-raised p-4">
               <p className="text-sm font-semibold text-secondary">Настройки капсулы</p>
               <div>
                 <label htmlFor="capsule_zone" className="mb-1 block text-sm font-medium text-secondary">
@@ -899,7 +942,7 @@ export default function ResourceCreatePage() {
             <button
               type="button"
               onClick={() => navigate('/resources')}
-              className="rounded-lg px-4 py-2.5 text-sm font-medium text-secondary transition-colors hover:bg-gray-100"
+              className="rounded-lg px-4 py-2.5 text-sm font-medium text-secondary transition-colors hover:bg-hover"
             >
               Отмена
             </button>

@@ -204,8 +204,6 @@ export const router = createBrowserRouter([
           { path: '/passes', element: <PassListPage /> },
           { path: '/passes/new', element: <PassCreatePage /> },
           { path: '/passes/:id', element: <PassDetailPage /> },
-          { path: '/service-requests', element: <ServiceRequestListPage /> },
-          { path: '/service-requests/new', element: <ServiceRequestCreatePage /> },
 
           // Company admin + employee onboarding
           {
@@ -219,6 +217,8 @@ export const router = createBrowserRouter([
           {
             element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE]} />,
             children: [
+              { path: '/service-requests', element: <ServiceRequestListPage /> },
+              { path: '/service-requests/new', element: <ServiceRequestCreatePage /> },
               { path: '/bookings/recurring', element: <RecurringBookingsPage /> },
               { path: '/files', element: <FileBrowserPage /> },
               { path: '/storage', element: <FileBrowserPage /> },

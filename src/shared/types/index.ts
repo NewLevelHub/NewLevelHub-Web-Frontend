@@ -302,6 +302,8 @@ export interface BookingResourceDetail {
   assigned_company: number | null;
   min_duration_minutes: number;
   max_duration_minutes: number;
+  advance_booking_days: number;
+  min_cancel_minutes: number;
   /** HH:MM:SS — рабочее окно ресурса (сериализатор бэкенда) */
   availability_start?: string;
   availability_end?: string;

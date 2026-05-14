@@ -34,7 +34,7 @@ function maxDateStr(days: number): string {
 }
 
 /** Map backend error detail strings to user-friendly Russian messages */
-function mapApiError(rawMessage: unknown, status?: number): string {
+function mapApiError(rawMessage: unknown, status?: number, advanceBookingDays?: number): string {
   const message = typeof rawMessage === 'string' ? rawMessage : String(rawMessage ?? '');
   if (status === 409) return 'Выбранное время уже занято';
   if (status === 403 && message.includes('cancel your own')) return 'Нельзя отменить чужую бронь';
@@ -45,7 +45,16 @@ function mapApiError(rawMessage: unknown, status?: number): string {
   if (message.includes('Booking is outside resource availability days')) return 'Выбранный день недоступен для этого ресурса';
   if (message.includes('Booking must be within a single day')) return 'Бронирование должно быть в пределах одного дня';
   if (message.includes('Resource is assigned to another company')) return 'Ресурс привязан к другой компании';
-  if (message.includes('Desk booking must start within 14 days')) return 'Слишком далёкая дата';
+  if (
+    message.includes('advance_booking_days') ||
+    message.includes('too far in advance') ||
+    message.includes('Booking must be within') ||
+    message.includes('Desk booking must start within')
+  ) {
+    return advanceBookingDays
+      ? `Бронирование данного ресурса доступно максимум за ${advanceBookingDays} дней`
+      : 'Слишком далёкая дата';
+  }
   if (message.includes('Meeting room booking minimum duration is 30')) return 'Минимальная длительность — 30 минут';
   if (message.includes('Meeting room booking maximum duration is 4')) return 'Максимальная длительность — 4 часа';
   if (message.includes('Parking booking must be whole-day only')) return 'Только целый день';
@@ -56,11 +65,11 @@ function mapApiError(rawMessage: unknown, status?: number): string {
   return message || 'Произошла ошибка';
 }
 
-function getBookingError(error: unknown): string {
+function getBookingError(error: unknown, advanceBookingDays?: number): string {
   const err = error as { response?: { status?: number }; message?: string };
   const status = err.response?.status;
   const baseMessage = getApiErrorMessage(error, 'Произошла ошибка');
-  if (baseMessage) return mapApiError(baseMessage, status);
+  if (baseMessage) return mapApiError(baseMessage, status, advanceBookingDays);
   if (status === 409) return 'Выбранное время уже занято';
   if (err instanceof Error && err.message && !('response' in err)) return err.message;
   return 'Произошла ошибка';
@@ -100,9 +109,9 @@ export default function BookingCreatePage() {
   const isDesk = resource?.type === RESOURCE_TYPES.DESK;
   const isCapsule = resource?.type === RESOURCE_TYPES.CAPSULE;
 
-  const maxDateDesk = maxDateStr(14);
-  const maxDateParking = maxDateStr(7);
-  const maxDate = isDesk ? maxDateDesk : isParking ? maxDateParking : undefined;
+  const maxDate = resource?.advance_booking_days
+    ? maxDateStr(resource.advance_booking_days)
+    : undefined;
 
   const minStep = useMemo(() => {
     return dayjs().tz(TZ).format('YYYY-MM-DDTHH:mm');
@@ -135,14 +144,11 @@ export default function BookingCreatePage() {
 
     const durationMin = end.diff(start, 'minute');
 
-    if (isDesk) {
-      const maxDesk = dayjs().tz(TZ).add(14, 'day');
-      if (start.isAfter(maxDesk)) return 'Можно бронировать не более чем на 14 дней вперёд';
-    }
-
-    if (isParking) {
-      const maxParking = dayjs().tz(TZ).add(7, 'day');
-      if (start.isAfter(maxParking)) return 'Можно бронировать не более чем на 7 дней вперёд';
+    if (resource?.advance_booking_days) {
+      const maxAllowed = dayjs().tz(TZ).add(resource.advance_booking_days, 'day');
+      if (start.isAfter(maxAllowed)) {
+        return `Бронирование данного ресурса доступно максимум за ${resource.advance_booking_days} дн.`;
+      }
     }
 
     if (isMeetingRoom) {
@@ -188,7 +194,7 @@ export default function BookingCreatePage() {
         setErrorMsg(e.message);
         return;
       }
-      setErrorMsg(getBookingError(e));
+      setErrorMsg(getBookingError(e, resource?.advance_booking_days));
     },
   });
 
@@ -298,7 +304,7 @@ export default function BookingCreatePage() {
               type="date"
               required
               min={todayStr}
-              max={maxDateParking}
+              max={maxDate}
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               className={fieldClass}
@@ -309,9 +315,9 @@ export default function BookingCreatePage() {
           </div>
         ) : (
           <>
-            {isDesk && (
+            {resource.advance_booking_days && (
               <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                Рабочее место можно бронировать не более чем на 14 дней вперёд.
+                Можно бронировать не более чем на {resource.advance_booking_days} дн. вперёд.
               </p>
             )}
             {isCapsule && (
