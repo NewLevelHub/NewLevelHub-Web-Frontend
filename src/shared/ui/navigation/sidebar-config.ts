@@ -166,6 +166,14 @@ const employeeNav: NavSection[] = [
   },
 ];
 
+/**
+ * Access matrix for unguarded routes (open to all authenticated roles):
+ * /bookings/catalog, /bookings/new, /bookings/:id  — guest ✓ (booking platform)
+ * /passes, /passes/new, /passes/:id                — guest ✓ (guest passes feature)
+ * /announcements                                   — guest ✓ (read-only info)
+ * building/map                                     — guest ✓ (public building info)
+ * /service-requests, /service-requests/new         — guest ✗ → RequireRole [SUPERADMIN, COMPANY_ADMIN, EMPLOYEE]
+ */
 const guestNav: NavSection[] = [
   {
     items: [{ label: 'Дашборд', path: '/', icon: LayoutDashboard }],
@@ -173,16 +181,8 @@ const guestNav: NavSection[] = [
   {
     title: 'Сервисы',
     items: [
-      { label: 'Бронирование', path: '/bookings/catalog', icon: Bookmark },
-      { label: 'Карта здания', path: '/building/map', icon: Map },
       { label: 'Объявления', path: '/announcements', icon: Megaphone },
-      { label: 'Гостевые пропуска', path: '/passes', icon: ShieldCheck },
-      { label: 'Сервисная заявка', path: '/service-requests', icon: Wrench },
     ],
-  },
-  {
-    title: 'Настройки',
-    items: [{ label: 'Уведомления', path: '/settings/notifications', icon: Bell }],
   },
 ];
 

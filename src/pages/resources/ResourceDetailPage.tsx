@@ -190,6 +190,8 @@ export default function ResourceDetailPage() {
   );
   const [minDuration, setMinDuration] = useState(30);
   const [maxDuration, setMaxDuration] = useState(480);
+  const [advanceBookingDays, setAdvanceBookingDays] = useState(14);
+  const [minCancelMinutes, setMinCancelMinutes] = useState(30);
 
   const [parkingType, setParkingType] = useState<'regular' | 'vip'>(PARKING_TYPES.REGULAR);
   const [capsuleZone, setCapsuleZone] = useState<'quiet' | 'regular'>(CAPSULE_ZONES.QUIET);
@@ -211,6 +213,8 @@ export default function ResourceDetailPage() {
     setEquipment(equipmentFromDetail(data.equipment));
     setMinDuration(data.min_duration_minutes);
     setMaxDuration(data.max_duration_minutes);
+    setAdvanceBookingDays(data.advance_booking_days ?? 14);
+    setMinCancelMinutes(data.min_cancel_minutes ?? 30);
     setParkingType(data.parking_type === PARKING_TYPES.VIP ? PARKING_TYPES.VIP : PARKING_TYPES.REGULAR);
     setCapsuleZone(
       data.capsule_zone === CAPSULE_ZONES.REGULAR ? CAPSULE_ZONES.REGULAR : CAPSULE_ZONES.QUIET,
@@ -242,6 +246,9 @@ export default function ResourceDetailPage() {
       base.min_duration_minutes = minDuration;
       base.max_duration_minutes = maxDuration;
     }
+
+    base.advance_booking_days = advanceBookingDays;
+    base.min_cancel_minutes = minCancelMinutes;
 
     if (type === RESOURCE_TYPES.PARKING) {
       base.parking_type = parkingType;
@@ -447,7 +454,7 @@ export default function ResourceDetailPage() {
             {RESOURCE_TYPE_LABELS[data.type]} · этаж {data.floor}
           </p>
           {activeBlock ? (
-            <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            <div className="mt-2 rounded-lg border border-default bg-raised px-3 py-2 text-sm text-secondary">
               Текущая активная блокировка: {new Date(activeBlock.start_time).toLocaleString()} -{' '}
               {new Date(activeBlock.end_time).toLocaleString()}
               {activeBlock.reason ? ` · ${activeBlock.reason}` : ''}
@@ -515,7 +522,7 @@ export default function ResourceDetailPage() {
         </div>
 
         {activeBlock && (
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          <div className="rounded-lg border border-default bg-raised px-4 py-3 text-sm text-secondary">
             Ресурс сейчас заблокирован{activeBlock.reason ? `: ${activeBlock.reason}` : '.'}
           </div>
         )}
@@ -609,7 +616,7 @@ export default function ResourceDetailPage() {
             onClick={submitBlockForm}
             disabled={blockMutation.isPending}
             className={cn(
-              'rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-primary hover:bg-slate-900 disabled:opacity-50',
+              'rounded-lg border border-default bg-raised px-4 py-2 text-sm font-medium text-primary hover:bg-hover transition-colors disabled:opacity-50',
             )}
           >
             {blockMutation.isPending ? 'Блокировка...' : 'Заблокировать ресурс'}
@@ -627,7 +634,7 @@ export default function ResourceDetailPage() {
               {blocks.map((block) => (
                 <li
                   key={block.id}
-                  className="flex flex-col gap-3 rounded-xl border border-default bg-gray-50 px-4 py-3 md:flex-row md:items-start md:justify-between"
+                  className="flex flex-col gap-3 rounded-xl border border-default bg-raised px-4 py-3 md:flex-row md:items-start md:justify-between"
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-primary">
@@ -865,6 +872,38 @@ export default function ResourceDetailPage() {
             </select>
           </fieldset>
         )}
+
+        <fieldset className={resFieldset}>
+          <legend className={resLegend}>Политика бронирования</legend>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="advance_booking_days" className={resLabel}>
+                Бронирование вперёд (дней)
+              </label>
+              <input
+                type="number"
+                id="advance_booking_days"
+                min={1}
+                value={advanceBookingDays}
+                onChange={(e) => setAdvanceBookingDays(Number(e.target.value))}
+                className={resInput}
+              />
+            </div>
+            <div>
+              <label htmlFor="min_cancel_minutes" className={resLabel}>
+                Мин. время отмены (мин)
+              </label>
+              <input
+                type="number"
+                id="min_cancel_minutes"
+                min={1}
+                value={minCancelMinutes}
+                onChange={(e) => setMinCancelMinutes(Number(e.target.value))}
+                className={resInput}
+              />
+            </div>
+          </div>
+        </fieldset>
 
         <div className="flex flex-wrap gap-3 pt-2">
           <button

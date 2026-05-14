@@ -323,30 +323,6 @@ function EmployeeWidgets({
 function GuestWidgets({ data }: { data: GuestDashboardData }) {
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard
-          icon={CalendarCheck}
-          label="Мои брони сегодня"
-          value={data.my_bookings_today}
-          iconClass="text-emerald-400"
-          to="/bookings"
-        />
-        <StatCard
-          icon={Armchair}
-          label="Свободных столов"
-          value={data.quick_booking.available_desks}
-          iconClass="text-sky-400"
-          to="/bookings"
-        />
-        <StatCard
-          icon={LayoutGrid}
-          label="Свободных переговорок"
-          value={data.quick_booking.available_rooms}
-          iconClass="text-violet-400"
-          to="/bookings"
-        />
-      </div>
-
       <AnnouncementFeed items={data.bc_announcements} title="Объявления бизнес-центра" />
     </div>
   );
