@@ -134,11 +134,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   registerByInvite: async (payload) => {
-    const { data } = await apiClient.post(API.auth.registerInvite, payload);
-    queryClient.clear();
-    tokenStorage.setAccessFromAuthResponse(data.tokens.access);
-    setSessionHint();
-    set({ user: mapApiUser(data.user as Record<string, unknown>), isAuthenticated: true });
+    await apiClient.post(API.auth.registerInvite, payload);
   },
 
   logout: async () => {

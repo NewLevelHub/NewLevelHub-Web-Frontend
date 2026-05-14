@@ -1,6 +1,7 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { MailCheck } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -47,7 +48,7 @@ export default function InviteAcceptPage() {
     onError: (err) => setError(getApiErrorMessage(err, 'Не удалось зарегистрироваться по инвайту')),
   });
 
-  function onSubmit(e: FormEvent) {
+  function onSubmit(e: { preventDefault(): void }) {
     e.preventDefault();
     setError('');
 
@@ -91,6 +92,23 @@ export default function InviteAcceptPage() {
         <button type="button" onClick={() => inviteQuery.refetch()} className={authPrimaryBtn}>
           Проверить снова
         </button>
+      </div>
+    );
+  }
+
+  if (registerMutation.isSuccess) {
+    return (
+      <div className="space-y-4 text-center">
+        <MailCheck className="mx-auto h-12 w-12 text-green-500" />
+        <h2 className="text-xl font-semibold">Подтвердите почту</h2>
+        <p className="text-sm text-muted">
+          Мы отправили письмо с подтверждением на{' '}
+          <span className="font-medium text-primary">{inviteQuery.data?.email}</span>.
+          Перейдите по ссылке в письме, чтобы активировать аккаунт и войти.
+        </p>
+        <Link to="/login" className={authLink}>
+          Вернуться на страницу входа
+        </Link>
       </div>
     );
   }
