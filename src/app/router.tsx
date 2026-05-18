@@ -186,24 +186,31 @@ export const router = createBrowserRouter([
       {
         element: <AppLayout />,
         children: [
-          // All roles
+          // Guest-accessible routes
           { path: '/dashboard', element: <DashboardPage /> },
+          { path: '/announcements', element: <AnnouncementListPage /> },
           { path: '/profile', element: <ProfilePage /> },
           { path: '/profile/settings', element: <ProfileSettingsPage /> },
-          { path: '/notifications', element: <NotificationListPage /> },
-          { path: '/settings/notifications', element: <NotificationPreferencesPage /> },
-          { path: '/bookings', element: <Navigate to="/bookings/catalog" replace /> },
-          { path: '/bookings/catalog', element: <BookingCatalogPage /> },
-          { path: '/bookings/resources/:id', element: <BookingResourceSchedulePage /> },
-          { path: '/bookings/new', element: <BookingCreatePage /> },
-          { path: '/bookings/my', element: <MyBookingsPage /> },
-          { path: '/bookings/:id', element: <BookingDetailPage /> },
-          // { path: '/building/map', element: <BuildingMapPage /> },
-          { path: 'building/map', element: <MapPage /> },
-          { path: '/announcements', element: <AnnouncementListPage /> },
-          { path: '/passes', element: <PassListPage /> },
-          { path: '/passes/new', element: <PassCreatePage /> },
-          { path: '/passes/:id', element: <PassDetailPage /> },
+
+          // Non-guest roles only
+          {
+            element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE, RECEPTION]} />,
+            children: [
+              { path: '/notifications', element: <NotificationListPage /> },
+              { path: '/settings/notifications', element: <NotificationPreferencesPage /> },
+              { path: '/bookings', element: <Navigate to="/bookings/catalog" replace /> },
+              { path: '/bookings/catalog', element: <BookingCatalogPage /> },
+              { path: '/bookings/resources/:id', element: <BookingResourceSchedulePage /> },
+              { path: '/bookings/new', element: <BookingCreatePage /> },
+              { path: '/bookings/my', element: <MyBookingsPage /> },
+              { path: '/bookings/:id', element: <BookingDetailPage /> },
+              // { path: '/building/map', element: <BuildingMapPage /> },
+              { path: 'building/map', element: <MapPage /> },
+              { path: '/passes', element: <PassListPage /> },
+              { path: '/passes/new', element: <PassCreatePage /> },
+              { path: '/passes/:id', element: <PassDetailPage /> },
+            ],
+          },
 
           // Company admin + employee onboarding
           {
@@ -227,7 +234,6 @@ export const router = createBrowserRouter([
               { path: '/crm/tasks/:id', element: <TaskDetailPage /> },
               { path: '/crm/my-tasks', element: <MyTasksPage /> },
               { path: '/team', element: <TeamDirectoryPage /> },
-              { path: '/company/team', element: <TeamDirectoryPage /> },
               { path: '/company/calendar', element: <CalendarPage /> },
               { path: '/calendar', element: <Navigate to="/company/calendar" replace /> },
               { path: '/hr/leaves', element: <LeaveRequestListPage /> },

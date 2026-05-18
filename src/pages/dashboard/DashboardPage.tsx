@@ -120,6 +120,22 @@ function AnnouncementFeed({ items, title = 'Объявления' }: Announcemen
 // Role widgets
 // ─────────────────────────────────────────────────────────────────────────────
 
+const BOOKING_STATUS_LABEL: Record<string, string> = {
+  confirmed: 'Подтверждено',
+  checked_in: 'Заезд',
+  completed: 'Завершено',
+  cancelled: 'Отменено',
+  no_show: 'Неявка',
+};
+
+const BOOKING_STATUS_CLASS: Record<string, string> = {
+  confirmed: 'bg-success-subtle text-success-badge',
+  checked_in: 'bg-blue-900/60 text-blue-300',
+  completed: 'bg-blue-900/60 text-blue-300',
+  cancelled: 'bg-rose-900/60 text-rose-300',
+  no_show: 'bg-warning-subtle text-warning',
+};
+
 const QUICK_ACTION_CONFIG: Record<string, { label: string; to: string }> = {
   invite_user: { label: 'Пригласить пользователя', to: '/companies' },
   create_announcement: { label: 'Создать объявление', to: '/announcements' },
@@ -191,9 +207,9 @@ function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
                 <span className="truncate text-sm text-primary">{ev.title}</span>
                 <span className={cn(
                   'shrink-0 rounded-full px-2 py-0.5 text-xs font-medium',
-                  ev.status === 'confirmed' ? 'bg-success-subtle text-success-badge' : 'bg-hover text-muted',
+                  BOOKING_STATUS_CLASS[ev.status] ?? 'bg-hover text-muted',
                 )}>
-                  {ev.status}
+                  {BOOKING_STATUS_LABEL[ev.status] ?? ev.status}
                 </span>
               </li>
             ))}

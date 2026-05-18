@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, memo, useRef } from 'react';
+import { useNavigate } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search,
@@ -19,20 +20,30 @@ import {
   UserCheck,
   UserX,
   UserMinus,
+  Shield,
+  X,
+  Mail,
+  Phone,
+  CalendarClock,
+  Loader2,
+  LayoutGrid,
+  List,
 } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { mapApiUser } from '@/shared/lib/mapUser';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
-import { PromptModal } from '@/shared/ui/PromptModal';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import type {
   Company,
   CompanyMember,
+  CompanyDirectoryMember,
+  CompanyDirectoryMemberProfile,
   MemberActionResponse,
   MemberActivity,
   PaginatedResponse,
@@ -63,6 +74,24 @@ interface Filters {
 }
 
 const PAGE_SIZE = 20;
+
+// ---------------------------------------------------------------------------
+// Backend error translations
+// ---------------------------------------------------------------------------
+const BACKEND_ERROR_RU: Record<string, string> = {
+  'reassign_to must be an active member of the same company':
+    'Переназначение возможно только на активного участника той же компании.',
+  'member not found': 'Сотрудник не найден.',
+  'cannot deactivate yourself': 'Нельзя деактивировать собственный аккаунт.',
+  'cannot remove yourself': 'Нельзя удалить себя из компании.',
+  'user is already active': 'Пользователь уже активен.',
+  'user is already inactive': 'Пользователь уже неактивен.',
+};
+
+function translateError(error: unknown, fallback: string): string {
+  const raw = getApiErrorMessage(error, '');
+  return BACKEND_ERROR_RU[raw.trim().toLowerCase()] ?? (raw || fallback);
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -270,6 +299,10 @@ interface MemberRowProps {
   onDeactivate: (member: CompanyMember) => void;
   onActivate: (member: CompanyMember) => void;
   onRemove: (member: CompanyMember) => void;
+  isSuperadmin: boolean;
+  isImpersonating: boolean;
+  onBlock: (member: CompanyMember) => void;
+  onImpersonate: (member: CompanyMember) => void;
 }
 
 const MemberRow = memo<MemberRowProps>(({
@@ -282,6 +315,10 @@ const MemberRow = memo<MemberRowProps>(({
   onDeactivate,
   onActivate,
   onRemove,
+  isSuperadmin,
+  isImpersonating,
+  onBlock,
+  onImpersonate,
 }) => {
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -378,6 +415,35 @@ const MemberRow = memo<MemberRowProps>(({
                   </button>
                 </div>
               )}
+              {isSuperadmin && member.role !== USER_ROLES.SUPERADMIN && (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={isUpdating}
+                    onClick={() => onBlock(member)}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium disabled:opacity-60',
+                      member.is_active
+                        ? 'border-red-800 bg-danger-subtle text-danger hover:bg-danger-subtle'
+                        : 'border-emerald-700 bg-success-subtle text-success hover:bg-success-subtle',
+                    )}
+                  >
+                    <Shield className="h-3.5 w-3.5" aria-hidden="true" />
+                    {member.is_active ? 'Заблокировать' : 'Разблокировать'}
+                  </button>
+                  {!isImpersonating && (
+                    <button
+                      type="button"
+                      disabled={isUpdating}
+                      onClick={() => onImpersonate(member)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-amber-700 bg-warning-subtle px-3 py-1.5 text-xs font-medium text-warning hover:bg-warning-subtle disabled:opacity-60"
+                    >
+                      <LogIn className="h-3.5 w-3.5" aria-hidden="true" />
+                      Войти от имени
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </td>
         </tr>
@@ -425,15 +491,510 @@ const OrderingButton = memo<OrderingButtonProps>(({ field, label, current, onCha
 });
 
 // ---------------------------------------------------------------------------
+// Directory tab (card grid view)
+// ---------------------------------------------------------------------------
+
+const DIR_PAGE_SIZE = 12;
+const DIR_DEBOUNCE_MS = 350;
+
+function roleLabelDir(role: string): string {
+  if (role === USER_ROLES.COMPANY_ADMIN) return 'Админ компании';
+  if (role === USER_ROLES.EMPLOYEE) return 'Сотрудник';
+  if (role === USER_ROLES.SUPERADMIN) return 'Суперадмин';
+  if (role === USER_ROLES.GUEST) return 'Гость';
+  return role;
+}
+
+function roleBadgeClassDir(role: string): string {
+  if (role === USER_ROLES.COMPANY_ADMIN) return 'bg-brand-subtle text-brand';
+  if (role === USER_ROLES.SUPERADMIN) return 'bg-purple-900/60 text-purple-300';
+  if (role === USER_ROLES.GUEST) return 'bg-warning-subtle text-warning';
+  return 'bg-hover text-secondary';
+}
+
+function formatDateTime(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('ru-RU', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+interface DirectoryTabProps {
+  companyId: string;
+}
+
+function DirectoryTab({ companyId }: DirectoryTabProps) {
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [position, setPosition] = useState('');
+  const [role, setRole] = useState('');
+  const [ordering, setOrdering] = useState<'full_name' | '-full_name' | 'date_joined' | '-date_joined'>('full_name');
+  const [page, setPage] = useState(1);
+  const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPage(1);
+    }, DIR_DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => {
+    setSelectedMemberId(null);
+  }, [debouncedSearch, position, role, ordering, page]);
+
+  const queryParams = {
+    search: debouncedSearch || undefined,
+    position: position || undefined,
+    role: role || undefined,
+    ordering,
+    page,
+    page_size: DIR_PAGE_SIZE,
+  };
+
+  const {
+    data: directoryData,
+    isLoading,
+    isError,
+    isFetching,
+  } = useQuery<PaginatedResponse<CompanyDirectoryMember>>({
+    queryKey: ['company-directory', companyId, queryParams],
+    queryFn: () =>
+      apiClient
+        .get<PaginatedResponse<CompanyDirectoryMember>>(API.companies.directory(companyId), {
+          params: queryParams,
+        })
+        .then((r) => r.data),
+    placeholderData: (prev) => prev,
+    staleTime: 15_000,
+  });
+
+  const {
+    data: profileData,
+    isLoading: isProfileLoading,
+    isError: isProfileError,
+  } = useQuery<CompanyDirectoryMemberProfile>({
+    queryKey: ['company-directory-profile', companyId, selectedMemberId],
+    queryFn: () =>
+      apiClient
+        .get<CompanyDirectoryMemberProfile>(
+          API.companies.directoryProfile(companyId, String(selectedMemberId!)),
+        )
+        .then((r) => r.data),
+    enabled: selectedMemberId !== null,
+    staleTime: 30_000,
+  });
+
+  const members = directoryData?.results ?? [];
+  const totalPages = directoryData ? Math.ceil(directoryData.count / DIR_PAGE_SIZE) : 0;
+
+  return (
+    <div className="space-y-5">
+      {/* Filters */}
+      <div className="rounded-xl border border-default bg-raised p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end">
+          <div className="flex-1">
+            <label htmlFor="dir-search" className="mb-1 block text-xs font-medium text-secondary">
+              Поиск
+            </label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden="true" />
+              <input
+                id="dir-search"
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Имя или email"
+                className={cn(inputClass, 'pl-9')}
+              />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="dir-position" className="mb-1 block text-xs font-medium text-secondary">
+              Должность
+            </label>
+            <input
+              id="dir-position"
+              type="text"
+              value={position}
+              onChange={(e) => { setPosition(e.target.value); setPage(1); }}
+              placeholder="Например: Designer"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label htmlFor="dir-role" className="mb-1 block text-xs font-medium text-secondary">
+              Роль
+            </label>
+            <select
+              id="dir-role"
+              value={role}
+              onChange={(e) => { setRole(e.target.value); setPage(1); }}
+              className={selectClass}
+            >
+              <option value="">Все роли</option>
+              <option value={USER_ROLES.EMPLOYEE}>Сотрудник</option>
+              <option value={USER_ROLES.COMPANY_ADMIN}>Админ компании</option>
+              <option value={USER_ROLES.SUPERADMIN}>Суперадмин</option>
+              <option value={USER_ROLES.GUEST}>Гость</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="dir-ordering" className="mb-1 block text-xs font-medium text-secondary">
+              Сортировка
+            </label>
+            <select
+              id="dir-ordering"
+              value={ordering}
+              onChange={(e) => { setOrdering(e.target.value as typeof ordering); setPage(1); }}
+              className={selectClass}
+            >
+              <option value="full_name">Имя (А-Я)</option>
+              <option value="-full_name">Имя (Я-А)</option>
+              <option value="-date_joined">Новые сначала</option>
+              <option value="date_joined">Старые сначала</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Cards */}
+      <div className={cn('transition-opacity', isFetching && 'opacity-70')}>
+        {isLoading ? (
+          <div className="flex items-center gap-2 rounded-xl border border-default bg-raised p-6 text-secondary">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            Загрузка сотрудников…
+          </div>
+        ) : isError ? (
+          <div className="rounded-xl border border-default bg-danger-subtle p-6 text-sm text-danger">
+            Не удалось загрузить список сотрудников.
+          </div>
+        ) : members.length === 0 ? (
+          <div className="rounded-xl border border-default bg-raised p-6 text-sm text-secondary">
+            По текущим фильтрам сотрудники не найдены.
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {members.map((member) => (
+              <button
+                key={member.id}
+                type="button"
+                onClick={() => setSelectedMemberId(selectedMemberId === member.id ? null : member.id)}
+                className={cn(
+                  'rounded-xl border bg-raised p-4 text-left transition-colors',
+                  selectedMemberId === member.id
+                    ? 'border-blue-500'
+                    : 'border-default hover:border-gray-500',
+                )}
+              >
+                <div className="mb-3 flex items-start gap-3">
+                  <Avatar src={member.avatar} fullName={member.full_name} />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-primary">{member.full_name}</p>
+                    {member.position && (
+                      <p className="truncate text-xs text-secondary">{member.position}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-1.5 text-xs text-secondary">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-3.5 w-3.5 shrink-0 text-muted" aria-hidden="true" />
+                    <span className="truncate">{member.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-3.5 w-3.5 shrink-0 text-muted" aria-hidden="true" />
+                    <span>{member.phone || '—'}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-1.5">
+                    <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', roleBadgeClassDir(member.role))}>
+                      {roleLabelDir(member.role)}
+                    </span>
+                    <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', member.is_active ? 'bg-success-subtle text-emerald-400' : 'bg-danger-subtle text-red-400')}>
+                      {member.is_active ? 'Активен' : 'Неактивен'}
+                    </span>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between text-sm text-secondary">
+          <span>Страница {page} из {totalPages} ({directoryData?.count ?? 0} сотрудников)</span>
+          <div className="flex gap-2">
+            <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}
+              className={cn('rounded-lg border border-default px-3 py-1.5', page <= 1 ? 'cursor-not-allowed opacity-50' : 'hover:bg-hover text-primary')}>
+              Назад
+            </button>
+            <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}
+              className={cn('rounded-lg border border-default px-3 py-1.5', page >= totalPages ? 'cursor-not-allowed opacity-50' : 'hover:bg-hover text-primary')}>
+              Вперёд
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Profile panel */}
+      {selectedMemberId && (
+        <section className="rounded-xl border border-default bg-raised p-5">
+          <h2 className="text-base font-semibold text-primary">Профиль сотрудника</h2>
+          {isProfileLoading ? (
+            <div className="mt-3 flex items-center gap-2 text-sm text-secondary">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Загрузка…
+            </div>
+          ) : isProfileError || !profileData ? (
+            <p className="mt-3 text-sm text-danger">Не удалось загрузить профиль.</p>
+          ) : (
+            <div className="mt-4 space-y-4">
+              <div className="flex items-start gap-3">
+                <Avatar src={profileData.avatar} fullName={profileData.full_name} />
+                <div>
+                  <p className="text-sm font-semibold text-primary">{profileData.full_name}</p>
+                  {profileData.position && <p className="text-xs text-secondary">{profileData.position}</p>}
+                </div>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-lg border border-default bg-surface/50 p-3">
+                  <p className="mb-1 text-xs text-muted">Email</p>
+                  <p className="text-sm text-secondary">{profileData.email}</p>
+                </div>
+                <div className="rounded-lg border border-default bg-surface/50 p-3">
+                  <p className="mb-1 text-xs text-muted">Телефон</p>
+                  <p className="text-sm text-secondary">{profileData.phone || '—'}</p>
+                </div>
+                <div className="rounded-lg border border-default bg-surface/50 p-3">
+                  <p className="mb-1 text-xs text-muted">Задачи</p>
+                  <p className="text-sm text-secondary">{profileData.tasks_count}</p>
+                </div>
+                <div className="rounded-lg border border-default bg-surface/50 p-3">
+                  <p className="mb-1 text-xs text-muted">Бронирования за 30 дней</p>
+                  <p className="text-sm text-secondary">{profileData.bookings_last_30_days}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-secondary">
+                <CalendarClock className="h-4 w-4" aria-hidden="true" />
+                Последний вход: {formatDateTime(profileData.last_login)}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Reassign member modal
+// ---------------------------------------------------------------------------
+
+interface ReassignMemberModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (reassignToId: string | undefined) => void;
+  companyId: string;
+  excludeMemberId: number;
+  isLoading: boolean;
+}
+
+function ReassignMemberModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  companyId,
+  excludeMemberId,
+  isLoading,
+}: ReassignMemberModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const [selectedId, setSelectedId] = useState('');
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedId('');
+      setSearch('');
+      setTimeout(() => searchRef.current?.focus(), 50);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isLoading) onClose();
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [isOpen, isLoading, onClose]);
+
+  const { data, isLoading: isFetching } = useQuery<PaginatedResponse<CompanyMember>>({
+    queryKey: ['reassignCandidates', companyId],
+    queryFn: () =>
+      apiClient
+        .get<PaginatedResponse<CompanyMember>>(API.companies.members(companyId), {
+          params: { is_active: 'true', page_size: 200 },
+        })
+        .then((r) => r.data),
+    enabled: isOpen,
+    staleTime: 30_000,
+  });
+
+  const members = (data?.results ?? []).filter((m) => m.id !== excludeMemberId);
+  const q = search.toLowerCase();
+  const filtered = q
+    ? members.filter(
+        (m) =>
+          m.full_name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q),
+      )
+    : members;
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="reassign-modal-title"
+    >
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        aria-hidden="true"
+        onClick={!isLoading ? onClose : undefined}
+      />
+      <div
+        ref={dialogRef}
+        className="relative w-full max-w-md rounded-2xl bg-surface shadow-2xl"
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between p-6 pb-3">
+          <div>
+            <h2 id="reassign-modal-title" className="text-base font-semibold text-primary">
+              Переназначение задач CRM
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              Выберите сотрудника для передачи задач или оставьте без выбора, чтобы снять исполнителя.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isLoading}
+            className="ml-3 shrink-0 rounded-lg p-1 text-secondary hover:bg-hover disabled:pointer-events-none disabled:opacity-50"
+            aria-label="Закрыть"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="px-6 pb-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden="true" />
+            <input
+              ref={searchRef}
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Поиск по имени или email…"
+              className="w-full rounded-lg border border-default bg-raised py-2 pl-9 pr-3 text-sm text-primary placeholder:text-muted focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20"
+              disabled={isLoading}
+            />
+          </div>
+        </div>
+
+        {/* Member list */}
+        <div className="mx-6 mb-4 max-h-56 overflow-y-auto rounded-lg border border-default">
+          {isFetching ? (
+            <p className="py-6 text-center text-sm text-muted">Загрузка…</p>
+          ) : filtered.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted">Сотрудники не найдены</p>
+          ) : (
+            <ul role="listbox" aria-label="Выберите сотрудника">
+              {filtered.map((m) => {
+                const isSelected = selectedId === String(m.id);
+                return (
+                  <li key={m.id}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      onClick={() => setSelectedId(isSelected ? '' : String(m.id))}
+                      disabled={isLoading}
+                      className={cn(
+                        'flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors',
+                        isSelected
+                          ? 'bg-brand-subtle text-brand'
+                          : 'text-primary hover:bg-hover',
+                      )}
+                    >
+                      <Avatar src={m.avatar} fullName={m.full_name} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium">{m.full_name}</p>
+                        <p className="truncate text-xs text-muted">{m.email}</p>
+                      </div>
+                      {isSelected && (
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-brand" aria-hidden="true" />
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-3 px-6 pb-6">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isLoading}
+            className="rounded-lg border border-default bg-surface px-4 py-2 text-sm font-medium text-secondary hover:bg-raised disabled:pointer-events-none disabled:opacity-50"
+          >
+            Отмена
+          </button>
+          <button
+            type="button"
+            disabled={isLoading}
+            onClick={() => onConfirm(selectedId || undefined)}
+            className="inline-flex items-center gap-2 rounded-lg bg-danger px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:pointer-events-none disabled:opacity-50"
+          >
+            {isLoading && (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden="true" />
+            )}
+            Удалить из компании
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
 
 const DEBOUNCE_MS = 350;
 
+type ViewTab = 'manage' | 'directory';
+
 export default function TeamManagePage() {
-  const { user } = useAuth();
+  const { user, isImpersonating, startImpersonation } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
+  const isCompanyAdmin = user?.role === USER_ROLES.COMPANY_ADMIN;
+  const showTabs = isCompanyAdmin;
+  const [view, setView] = useState<ViewTab>('manage');
 
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [filters, setFilters] = useState<Filters>({
@@ -452,6 +1013,8 @@ export default function TeamManagePage() {
   const [activateTarget, setActivateTarget] = useState<CompanyMember | null>(null);
   const [removeConfirmTarget, setRemoveConfirmTarget] = useState<CompanyMember | null>(null);
   const [removeReassignTarget, setRemoveReassignTarget] = useState<CompanyMember | null>(null);
+  const [blockTarget, setBlockTarget] = useState<CompanyMember | null>(null);
+  const [impersonateTarget, setImpersonateTarget] = useState<CompanyMember | null>(null);
 
   // Debounce search input
   useEffect(() => {
@@ -510,14 +1073,14 @@ export default function TeamManagePage() {
       apiClient
         .post<MemberActionResponse>(API.companies.memberDeactivate(currentCompanyId, String(memberId)))
         .then((r) => r.data),
-    onSuccess: async (payload) => {
+    onSuccess: async () => {
       setActionError(null);
-      setActionSuccess(payload.detail);
+      setActionSuccess('Сотрудник деактивирован.');
       await refreshMemberQueries();
     },
     onError: (error: unknown) => {
       setActionSuccess(null);
-      setActionError(getApiErrorMessage(error, 'Не удалось деактивировать сотрудника.'));
+      setActionError(translateError(error, 'Не удалось деактивировать сотрудника.'));
     },
   });
 
@@ -526,14 +1089,14 @@ export default function TeamManagePage() {
       apiClient
         .post<MemberActionResponse>(API.companies.memberActivate(currentCompanyId, String(memberId)))
         .then((r) => r.data),
-    onSuccess: async (payload) => {
+    onSuccess: async () => {
       setActionError(null);
-      setActionSuccess(payload.detail);
+      setActionSuccess('Сотрудник активирован.');
       await refreshMemberQueries();
     },
     onError: (error: unknown) => {
       setActionSuccess(null);
-      setActionError(getApiErrorMessage(error, 'Не удалось активировать сотрудника.'));
+      setActionError(translateError(error, 'Не удалось активировать сотрудника.'));
     },
   });
 
@@ -556,19 +1119,61 @@ export default function TeamManagePage() {
           ? ` Переназначено задач: ${payload.tasks_reassigned}.`
           : '';
       setActionError(null);
-      setActionSuccess(`${payload.detail}.${suffix}`.trim());
+      setActionSuccess(`Сотрудник удалён из компании.${suffix}`);
       await refreshMemberQueries();
     },
     onError: (error: unknown) => {
       setActionSuccess(null);
-      setActionError(getApiErrorMessage(error, 'Не удалось удалить сотрудника из компании.'));
+      setActionError(translateError(error, 'Не удалось удалить сотрудника из компании.'));
+    },
+  });
+
+  const blockUserMutation = useMutation({
+    mutationFn: ({ memberId, shouldBlock }: { memberId: number; shouldBlock: boolean }) =>
+      apiClient
+        .post(shouldBlock ? API.users.block(memberId) : API.users.unblock(memberId))
+        .then((r) => r.data),
+    onSuccess: async (_, { shouldBlock }) => {
+      setActionError(null);
+      setActionSuccess(shouldBlock ? 'Пользователь заблокирован.' : 'Пользователь разблокирован.');
+      await refreshMemberQueries();
+    },
+    onError: (error: unknown) => {
+      setActionSuccess(null);
+      setActionError(getApiErrorMessage(error, 'Не удалось обновить статус пользователя.'));
+    },
+  });
+
+  const impersonateMutation = useMutation({
+    mutationFn: (memberId: number) =>
+      apiClient
+        .post<{ access: string; refresh: string; user: Record<string, unknown> }>(
+          API.users.impersonate(memberId),
+        )
+        .then((r) => r.data),
+    onSuccess: (data) => {
+      const mappedUser = mapApiUser(data.user);
+      startImpersonation(mappedUser, data.access);
+      navigate('/dashboard');
+    },
+    onError: (error: unknown) => {
+      setActionSuccess(null);
+      const axiosError = error as { response?: { status?: number } };
+      setActionError(
+        axiosError?.response?.status === 400
+          ? 'Нельзя войти от имени суперадмина.'
+          : getApiErrorMessage(error, 'Не удалось выполнить вход от имени пользователя.'),
+      );
+      setImpersonateTarget(null);
     },
   });
 
   const isMemberActionPending =
     deactivateMemberMutation.isPending ||
     activateMemberMutation.isPending ||
-    removeMemberMutation.isPending;
+    removeMemberMutation.isPending ||
+    blockUserMutation.isPending ||
+    impersonateMutation.isPending;
 
   const handleToggleExpand = useCallback((id: number) => {
     setExpandedId((prev) => (prev === id ? null : id));
@@ -605,6 +1210,14 @@ export default function TeamManagePage() {
     setRemoveConfirmTarget(member);
   }, [companyId]);
 
+  const handleBlock = useCallback((member: CompanyMember) => {
+    setBlockTarget(member);
+  }, []);
+
+  const handleImpersonate = useCallback((member: CompanyMember) => {
+    setImpersonateTarget(member);
+  }, []);
+
   const totalPages = data ? Math.ceil(data.count / PAGE_SIZE) : 0;
 
   if (!companyId && !isSuperadmin) {
@@ -623,11 +1236,47 @@ export default function TeamManagePage() {
     <div className="space-y-6 p-6">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-primary">Управление сотрудниками</h1>
+        <h1 className="text-2xl font-bold text-primary">Сотрудники</h1>
         <p className="mt-1 text-sm text-secondary">
-          {companyId && data ? `Всего: ${data.count} сотрудников` : isSuperadmin && !companyId ? 'Выберите компанию для просмотра сотрудников' : 'Загрузка…'}
+          {companyId && data && view === 'manage'
+            ? `Всего: ${data.count} сотрудников`
+            : isSuperadmin && !companyId
+              ? 'Выберите компанию для просмотра сотрудников'
+              : ' '}
         </p>
       </div>
+
+      {/* Tab bar — company admin only */}
+      {showTabs && (
+        <div className="flex gap-1 rounded-xl border border-default bg-raised p-1 w-fit">
+          <button
+            type="button"
+            onClick={() => setView('manage')}
+            className={cn(
+              'inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+              view === 'manage'
+                ? 'bg-surface text-primary shadow-sm'
+                : 'text-secondary hover:text-primary',
+            )}
+          >
+            <List className="h-4 w-4" aria-hidden="true" />
+            Управление
+          </button>
+          <button
+            type="button"
+            onClick={() => setView('directory')}
+            className={cn(
+              'inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+              view === 'directory'
+                ? 'bg-surface text-primary shadow-sm'
+                : 'text-secondary hover:text-primary',
+            )}
+          >
+            <LayoutGrid className="h-4 w-4" aria-hidden="true" />
+            Карточки
+          </button>
+        </div>
+      )}
 
       {/* Company selector — superadmin only */}
       {isSuperadmin && (
@@ -659,8 +1308,11 @@ export default function TeamManagePage() {
         </div>
       )}
 
+      {/* Directory card view */}
+      {view === 'directory' && companyId && <DirectoryTab companyId={companyId} />}
+
       {/* Filters, table and pagination — only shown once a company is available */}
-      {companyId && <><div className="rounded-xl border border-default bg-raised p-4">
+      {view === 'manage' && companyId && <><div className="rounded-xl border border-default bg-raised p-4">
         {actionError && (
           <div className="mb-3 rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-3 py-2 text-sm text-danger">
             {actionError}
@@ -847,6 +1499,10 @@ export default function TeamManagePage() {
                     onDeactivate={handleDeactivate}
                     onActivate={handleActivate}
                     onRemove={handleRemove}
+                    isSuperadmin={isSuperadmin}
+                    isImpersonating={isImpersonating}
+                    onBlock={handleBlock}
+                    onImpersonate={handleImpersonate}
                   />
                 ))}
               </tbody>
@@ -958,19 +1614,18 @@ export default function TeamManagePage() {
         title="Удалить из компании?"
         description={
           removeConfirmTarget
-            ? `Сотрудник ${removeConfirmTarget.full_name} будет удалён из компании. Далее можно указать ID другого сотрудника для переназначения CRM-задач.`
+            ? `Сотрудник ${removeConfirmTarget.full_name} будет удалён из компании. Далее можно выбрать сотрудника для переназначения CRM-задач.`
             : ''
         }
         variant="danger"
         confirmLabel="Продолжить"
       />
 
-      <PromptModal
+      <ReassignMemberModal
         isOpen={removeReassignTarget !== null}
         onClose={() => !removeMemberMutation.isPending && setRemoveReassignTarget(null)}
-        onConfirm={(raw) => {
+        onConfirm={(reassignTo) => {
           if (!companyId || !removeReassignTarget) return;
-          const reassignTo = raw.trim() ? raw.trim() : undefined;
           setActionSuccess(null);
           setActionError(null);
           removeMemberMutation.mutate(
@@ -982,13 +1637,54 @@ export default function TeamManagePage() {
             { onSettled: () => setRemoveReassignTarget(null) },
           );
         }}
-        title="Переназначение задач CRM"
-        description="Укажите числовой ID сотрудника компании, которому передать задачи текущего пользователя. Оставьте поле пустым, чтобы снять исполнителя с задач."
-        label="ID сотрудника (необязательно)"
-        defaultValue=""
-        placeholder="например, 42"
-        confirmLabel="Удалить из компании"
+        companyId={companyId ?? ''}
+        excludeMemberId={removeReassignTarget?.id ?? 0}
         isLoading={removeMemberMutation.isPending}
+      />
+
+      <ConfirmModal
+        isOpen={blockTarget !== null}
+        onClose={() => !blockUserMutation.isPending && setBlockTarget(null)}
+        onConfirm={() => {
+          if (!blockTarget) return;
+          setActionSuccess(null);
+          setActionError(null);
+          blockUserMutation.mutate(
+            { memberId: blockTarget.id, shouldBlock: blockTarget.is_active },
+            { onSettled: () => setBlockTarget(null) },
+          );
+        }}
+        title={blockTarget?.is_active ? 'Заблокировать пользователя?' : 'Разблокировать пользователя?'}
+        description={
+          blockTarget
+            ? blockTarget.is_active
+              ? `Пользователь ${blockTarget.full_name} потеряет доступ к платформе.`
+              : `Пользователь ${blockTarget.full_name} снова получит доступ к платформе.`
+            : ''
+        }
+        variant={blockTarget?.is_active ? 'danger' : 'warning'}
+        confirmLabel={blockTarget?.is_active ? 'Заблокировать' : 'Разблокировать'}
+        isLoading={blockUserMutation.isPending}
+      />
+
+      <ConfirmModal
+        isOpen={impersonateTarget !== null}
+        onClose={() => !impersonateMutation.isPending && setImpersonateTarget(null)}
+        onConfirm={() => {
+          if (!impersonateTarget) return;
+          setActionSuccess(null);
+          setActionError(null);
+          impersonateMutation.mutate(impersonateTarget.id);
+        }}
+        title="Войти от имени пользователя?"
+        description={
+          impersonateTarget
+            ? `Вы войдёте в систему от имени ${impersonateTarget.full_name}. Все действия будут выполняться от его имени.`
+            : ''
+        }
+        variant="warning"
+        confirmLabel="Войти от имени"
+        isLoading={impersonateMutation.isPending}
       />
     </div>
   );
