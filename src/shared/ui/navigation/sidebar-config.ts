@@ -39,8 +39,6 @@ const superadminNav: NavSection[] = [
   {
     title: 'Управление',
     items: [
-      { label: 'Пользователи', path: `${SUPERADMIN_UI_PREFIX}/users`, icon: Users },
-      { label: 'Команда', path: '/company/team', icon: Users },
       { label: 'Сотрудники', path: '/team/manage', icon: Users },
       { label: 'Инвайты', path: '/company/settings/members', icon: MailPlus },
       { label: 'Компании', path: `${SUPERADMIN_UI_PREFIX}/companies`, icon: Building2 },
@@ -83,7 +81,6 @@ const companyAdminNav: NavSection[] = [
     title: 'Компания',
     items: [
       { label: 'Моя компания', path: '/companies', icon: Building2 },
-      { label: 'Команда', path: '/company/team', icon: Users },
       { label: 'Сотрудники', path: '/team/manage', icon: Users },
       { label: 'Настройки', path: '/company/settings', icon: Settings },
       { label: 'Инвайты', path: '/company/settings/members', icon: MailPlus },
@@ -138,7 +135,7 @@ const employeeNav: NavSection[] = [
     items: [
       { label: 'CRM Доски', path: '/crm', icon: Columns3 },
       { label: 'Мои задачи', path: '/crm/my-tasks', icon: ListTodo },
-      { label: 'Команда', path: '/company/team', icon: Users },
+      { label: 'Команда', path: '/team', icon: Users },
       { label: 'Календарь', path: '/company/calendar', icon: CalendarDays },
     ],
   },
@@ -183,6 +180,10 @@ const guestNav: NavSection[] = [
     items: [
       { label: 'Объявления', path: '/announcements', icon: Megaphone },
     ],
+  },
+  {
+    title: 'Профиль',
+    items: [{ label: 'Настройки', path: '/profile', icon: Settings }],
   },
 ];
 

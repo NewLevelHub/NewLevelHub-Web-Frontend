@@ -5,6 +5,17 @@ import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { authInput, authLabel, authPrimaryBtn, authLink } from '@/shared/ui/authFormStyles';
 import { AuthPasswordField } from '@/shared/ui/AuthPasswordField';
 
+const AUTH_ERROR_RU: Record<string, string> = {
+  'invalid credentials': 'Неверный email или пароль.',
+  'account is blocked': 'Аккаунт заблокирован. Обратитесь к администратору.',
+  'no active account found with the given credentials': 'Неверный email или пароль.',
+};
+
+function translateAuthError(error: unknown, fallback: string): string {
+  const raw = getApiErrorMessage(error, '');
+  return AUTH_ERROR_RU[raw.trim().toLowerCase()] ?? (raw || fallback);
+}
+
 export default function LoginPage() {
   const login = useAuthStore((s) => s.login);
   const location = useLocation();
@@ -23,7 +34,7 @@ export default function LoginPage() {
     try {
       await login(email.trim(), password, rememberMe);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Не удалось войти'));
+      setError(translateAuthError(err, 'Не удалось войти'));
     } finally {
       setLoading(false);
     }
