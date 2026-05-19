@@ -137,7 +137,7 @@ const BOOKING_STATUS_CLASS: Record<string, string> = {
 };
 
 const QUICK_ACTION_CONFIG: Record<string, { label: string; to: string }> = {
-  invite_user: { label: 'Пригласить пользователя', to: '/companies' },
+  invite_user: { label: 'Пригласить пользователя', to: '/company/settings/members' },
   create_announcement: { label: 'Создать объявление', to: '/announcements' },
   manage_bookings: { label: 'Управление бронями', to: `${STAFF_UI_PREFIX}/bookings` },
   view_analytics: { label: 'Аналитика', to: `${SUPERADMIN_UI_PREFIX}/analytics` },
@@ -153,21 +153,21 @@ function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
           label="Компании"
           value={data.total_companies}
           iconClass="text-violet-400"
-          to="/companies"
+          to="/superadmin/companies"
         />
         <StatCard
           icon={Users}
           label="Пользователи"
           value={data.total_users}
           iconClass="text-sky-400"
-          to="/companies"
+          to="/users"
         />
         <StatCard
           icon={CalendarCheck}
           label="Брони сегодня"
           value={data.bookings_today}
           iconClass="text-emerald-400"
-          to="/bookings"
+          to="/bookings/my"
         />
       </div>
 
