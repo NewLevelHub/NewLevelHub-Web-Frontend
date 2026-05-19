@@ -142,7 +142,10 @@ export default function BookingCatalogPage() {
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const results = data?.results ?? [];
 
-  const myCompanyId = user?.role === USER_ROLES.COMPANY_ADMIN ? (user?.company_id ?? null) : null;
+  const myCompanyId =
+    user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.EMPLOYEE
+      ? (user?.company_id ?? null)
+      : null;
 
   const sortedResults = useMemo(() => {
     if (!myCompanyId) return results;
