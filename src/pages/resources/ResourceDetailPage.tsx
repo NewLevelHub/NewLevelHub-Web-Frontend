@@ -21,6 +21,7 @@ import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import {
+  resActivateBtn,
   resBackLink,
   resCheckboxLabel,
   resDeleteBtn,
@@ -93,6 +94,7 @@ export default function ResourceDetailPage() {
   const queryClient = useQueryClient();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [deleteModal, setDeleteModal] = useState(false);
+  const [activateModal, setActivateModal] = useState(false);
   const [deactivateModal, setDeactivateModal] = useState(false);
   const [scheduleDay, setScheduleDay] = useState(() => localIsoDate(new Date()));
   const [blockForm, setBlockForm] = useState<BlockFormState>({
@@ -303,11 +305,26 @@ export default function ResourceDetailPage() {
     onError: (e) => setErrorMsg(getApiErrorMessage(e)),
   });
 
+  const activateMutation = useMutation({
+    mutationFn: async () => {
+      const { data: res } = await apiClient.post<BookingResourceDetail>(
+        API.bookings.resources.activate(String(resourceId)),
+      );
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['booking-resource', resourceId] });
+      queryClient.invalidateQueries({ queryKey: ['booking-resources'] });
+      setActivateModal(false);
+      setErrorMsg(null);
+    },
+    onError: (e) => setErrorMsg(getApiErrorMessage(e)),
+  });
+
   const deactivateMutation = useMutation({
     mutationFn: async () => {
-      const { data: res } = await apiClient.patch<BookingResourceDetail>(
-        API.bookings.resources.detail(String(resourceId)),
-        { is_active: false },
+      const { data: res } = await apiClient.post<BookingResourceDetail>(
+        API.bookings.resources.deactivate(String(resourceId)),
       );
       return res;
     },
@@ -913,6 +930,18 @@ export default function ResourceDetailPage() {
           >
             {saveMutation.isPending ? 'Сохранение…' : 'Сохранить'}
           </button>
+          {!isActive && (
+            <button
+              type="button"
+              onClick={() => {
+                setErrorMsg(null);
+                setActivateModal(true);
+              }}
+              className={resActivateBtn}
+            >
+              Активировать
+            </button>
+          )}
           {isActive && (
             <button
               type="button"
@@ -937,6 +966,17 @@ export default function ResourceDetailPage() {
           </button>
         </div>
       </form>
+
+      <ConfirmModal
+        isOpen={activateModal}
+        onClose={() => !activateMutation.isPending && setActivateModal(false)}
+        onConfirm={() => activateMutation.mutate()}
+        title="Активировать ресурс?"
+        description="Ресурс снова станет доступен для бронирования."
+        variant="warning"
+        confirmLabel="Активировать"
+        isLoading={activateMutation.isPending}
+      />
 
       <ConfirmModal
         isOpen={deactivateModal}
