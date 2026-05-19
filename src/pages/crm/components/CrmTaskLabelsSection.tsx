@@ -26,7 +26,8 @@ export function TaskLabelsSection({ taskId, boardId, taskLabels }: TaskLabelsSec
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const isAdmin = user?.role === USER_ROLES.COMPANY_ADMIN;
+  const isAdmin =
+    user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN;
 
   const { data: allLabels } = useQuery({
     queryKey: ['crm', 'labels'],
