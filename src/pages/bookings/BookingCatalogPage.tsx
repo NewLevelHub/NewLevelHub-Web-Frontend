@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Bookmark, CalendarDays, ChevronDown, ChevronUp, Search, Settings2 } from 'lucide-react';
+import { ArrowLeft, Bookmark, Building2, CalendarDays, ChevronDown, ChevronUp, Search, Settings2 } from 'lucide-react';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
@@ -142,6 +142,16 @@ export default function BookingCatalogPage() {
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const results = data?.results ?? [];
 
+  const myCompanyId = user?.role === USER_ROLES.COMPANY_ADMIN ? (user?.company_id ?? null) : null;
+
+  const sortedResults = useMemo(() => {
+    if (!myCompanyId) return results;
+    return [
+      ...results.filter((r) => r.assigned_company === myCompanyId),
+      ...results.filter((r) => r.assigned_company !== myCompanyId),
+    ];
+  }, [results, myCompanyId]);
+
   const { data: preselectedResource } = useQuery({
     queryKey: ['booking-resource-detail-for-modal', preselectResourceId],
     queryFn: () =>
@@ -180,6 +190,8 @@ export default function BookingCatalogPage() {
         availability_days: preselectedResource.availability_days,
         parking_type: preselectedResource.parking_type,
         capsule_zone: preselectedResource.capsule_zone,
+        assigned_company: preselectedResource.assigned_company,
+        assigned_company_name: null,
         status: BOOKING_RESOURCE_CATALOG_STATUS.FREE,
         reason: null,
         available_at: null,
@@ -460,21 +472,25 @@ export default function BookingCatalogPage() {
         <div className="min-w-0 flex-1 space-y-4">
           {isLoading ? (
             <div className="py-20 text-center text-sm text-secondary">Загрузка каталога…</div>
-          ) : results.length === 0 ? (
+          ) : sortedResults.length === 0 ? (
             <div className="py-20 text-center text-sm text-secondary">Нет ресурсов по заданным условиям.</div>
           ) : (
             <ul className="grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {results.map((r) => {
+              {sortedResults.map((r) => {
                 const imgSrc = resolveMediaUrl(r.photo_url ?? r.photo ?? '') ?? r.photo_url ?? r.photo ?? '';
                 const statusLabel = STATUS_LABELS[r.status] ?? r.status;
                 const badgeClass = STATUS_BADGE_CLASS[r.status] ?? 'bg-black/60';
                 const whenFree = formatAvailableAt(r.available_at);
+                const isMyCompany = myCompanyId !== null && r.assigned_company === myCompanyId;
                 return (
                   <li key={r.id}>
                     <article
                       className={cn(
-                        'h-full flex flex-col overflow-hidden rounded-2xl border border-default bg-raised shadow-sm transition-all',
-                        'hover:-translate-y-0.5 hover:border-blue-500/50 hover:shadow-indigo-900/20',
+                        'h-full flex flex-col overflow-hidden rounded-2xl border bg-raised shadow-sm transition-all',
+                        isMyCompany
+                          ? 'border-indigo-500/40 hover:border-indigo-400/70 hover:shadow-indigo-900/30'
+                          : 'border-default hover:border-blue-500/50 hover:shadow-indigo-900/20',
+                        'hover:-translate-y-0.5',
                         !r.is_active && 'opacity-60',
                       )}
                     >
@@ -500,6 +516,12 @@ export default function BookingCatalogPage() {
                       </div>
                       <div className="flex flex-1 flex-col gap-2 p-4">
                         <h2 className="font-semibold text-primary">{r.name}</h2>
+                        {isMyCompany && (
+                          <span className="inline-flex w-fit items-center gap-1 rounded-full border border-indigo-500/30 bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-300">
+                            <Building2 size={10} />
+                            Закреплён за вашей компанией
+                          </span>
+                        )}
                         <p className="text-xs text-secondary">
                           Этаж {r.floor}
                           {r.zone ? ` · ${r.zone}` : ''}

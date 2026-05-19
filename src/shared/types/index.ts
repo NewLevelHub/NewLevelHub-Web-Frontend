@@ -258,6 +258,8 @@ export interface BookingResourceListItem {
   availability_days?: number[];
   parking_type: ParkingType | null;
   capsule_zone: string;
+  assigned_company: number | null;
+  assigned_company_name: string | null;
   status: BookingResourceCatalogStatus;
   reason: string | null;
   /** Конец текущей занятости; только при status === soon_available */
