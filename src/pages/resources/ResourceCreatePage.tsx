@@ -354,7 +354,7 @@ export default function ResourceCreatePage() {
 
   function validateTypeSpecificFields() {
     if (requiresCapacity && (!form.capacity || Number(form.capacity) < 1)) {
-      setFieldErrors({ capacity: 'Для переговорной вместимость обязательна (>= 1).' });
+      setFieldErrors({ capacity: 'Для переговорки вместимость обязательна (>= 1).' });
       return false;
     }
 
@@ -412,7 +412,7 @@ export default function ResourceCreatePage() {
 
     if (isBulkMode) {
       if (!bulk.name_prefix.trim()) {
-        setFieldErrors({ name_prefix: 'Укажите префикс имени для bulk-create.' });
+        setFieldErrors({ name_prefix: 'Укажите префикс имени.' });
         return;
       }
       const count = Number(bulk.count);
@@ -453,7 +453,7 @@ export default function ResourceCreatePage() {
           Назад к ресурсам
         </button>
         <h1 className="text-2xl font-bold text-primary">Добавление ресурсов</h1>
-        <p className="text-sm text-muted">Создайте один ресурс или сразу пачку через bulk-create.</p>
+        <p className="text-sm text-muted">Создайте один ресурс или сразу несколько через массовое создание.</p>
       </div>
 
       <section className="rounded-2xl border border-default bg-surface p-6 shadow-sm">
@@ -476,7 +476,7 @@ export default function ResourceCreatePage() {
               isBulkMode ? 'bg-surface text-primary shadow-sm' : 'text-muted hover:text-secondary',
             )}
           >
-            Bulk-create
+            Массовое создание
           </button>
         </div>
 
@@ -499,7 +499,7 @@ export default function ResourceCreatePage() {
                 className={inputClass(!!fieldErrors.type)}
               >
                 <option value={RESOURCE_TYPES.DESK}>Стол</option>
-                <option value={RESOURCE_TYPES.MEETING_ROOM}>Переговорная</option>
+                <option value={RESOURCE_TYPES.MEETING_ROOM}>Переговорка</option>
                 <option value={RESOURCE_TYPES.PARKING}>Парковка</option>
                 <option value={RESOURCE_TYPES.CAPSULE}>Капсула</option>
               </select>
