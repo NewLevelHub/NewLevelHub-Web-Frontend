@@ -311,14 +311,14 @@ function EmployeeWidgets({
           label="Задачи на сегодня"
           value={data.my_tasks_today}
           iconClass="text-violet-400"
-          to="/crm"
+          to="/crm/my-tasks"
         />
         <StatCard
           icon={CalendarCheck}
           label="Мои брони сегодня"
           value={data.my_bookings_today}
           iconClass="text-emerald-400"
-          to="/bookings"
+          to="/bookings/my"
         />
         <StatCard
           icon={Bell}
