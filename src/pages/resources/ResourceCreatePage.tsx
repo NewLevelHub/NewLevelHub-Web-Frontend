@@ -6,6 +6,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import {
   CAPSULE_ZONES,
+  COMPANY_TIERS,
   PARKING_TYPES,
   RESOURCE_EQUIPMENT_KEYS,
   RESOURCE_EQUIPMENT_LABELS,
@@ -211,10 +212,10 @@ export default function ResourceCreatePage() {
   });
 
   const { data: companies = [] } = useQuery({
-    queryKey: [...companiesCacheRoot(user?.id), 'resource-create'],
+    queryKey: [...companiesCacheRoot(user?.id), 'resource-create', COMPANY_TIERS.PREMIUM],
     queryFn: async () => {
       const { data } = await apiClient.get<PaginatedResponse<Company>>(API.companies.list, {
-        params: { page_size: 100 },
+        params: { page_size: 100, plan: COMPANY_TIERS.PREMIUM },
       });
       return data.results;
     },
@@ -333,20 +334,18 @@ export default function ResourceCreatePage() {
       payload.has_dock = form.has_dock;
       payload.has_power_outlet = form.has_power_outlet;
       payload.is_hot_desk = form.is_hot_desk;
-      if (form.assigned_company_id) {
-        payload.assigned_company = Number(form.assigned_company_id);
-      }
     }
 
     if (isParking) {
       payload.parking_type = form.parking_type;
-      if (form.assigned_company_id) {
-        payload.assigned_company = Number(form.assigned_company_id);
-      }
     }
 
     if (isCapsule) {
       payload.capsule_zone = form.capsule_zone;
+    }
+
+    if (form.assigned_company_id) {
+      payload.assigned_company = Number(form.assigned_company_id);
     }
 
     return payload;
@@ -799,6 +798,24 @@ export default function ResourceCreatePage() {
                   )}
                 </div>
               </div>
+              <div>
+                <label htmlFor="meeting_room_assigned_company" className="mb-1 block text-sm font-medium text-secondary">
+                  Закрепить за компанией (необязательно)
+                </label>
+                <select
+                  id="meeting_room_assigned_company"
+                  value={form.assigned_company_id}
+                  onChange={(e) => updateForm('assigned_company_id', e.target.value)}
+                  className={inputClass(!!fieldErrors.assigned_company)}
+                >
+                  <option value="">— Не закреплять —</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
 
@@ -862,6 +879,24 @@ export default function ResourceCreatePage() {
                 {fieldErrors.capsule_zone && (
                   <p className="mt-1 text-xs text-red-600">{fieldErrors.capsule_zone}</p>
                 )}
+              </div>
+              <div>
+                <label htmlFor="capsule_assigned_company" className="mb-1 block text-sm font-medium text-secondary">
+                  Закрепить за компанией (необязательно)
+                </label>
+                <select
+                  id="capsule_assigned_company"
+                  value={form.assigned_company_id}
+                  onChange={(e) => updateForm('assigned_company_id', e.target.value)}
+                  className={inputClass(!!fieldErrors.assigned_company)}
+                >
+                  <option value="">— Не закреплять —</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           )}

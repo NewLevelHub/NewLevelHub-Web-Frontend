@@ -217,6 +217,7 @@ export default function ResourceListPage() {
                   <th className="px-4 py-3 font-medium">Этаж</th>
                   <th className="px-4 py-3 font-medium">Зона</th>
                   <th className="px-4 py-3 font-medium">Вместимость</th>
+                  <th className="px-4 py-3 font-medium">Компания</th>
                   <th className="px-4 py-3 font-medium">Статус</th>
                   <th className="w-28 px-4 py-3 font-medium" />
                 </tr>
@@ -244,6 +245,7 @@ export default function ResourceListPage() {
                       <td className={resTdMuted}>{r.floor}</td>
                       <td className={resTdMuted}>{r.zone || '—'}</td>
                       <td className={resTdMuted}>{r.capacity}</td>
+                      <td className={resTdMuted}>{r.assigned_company_name ?? '—'}</td>
                       <td className="px-4 py-2">
                         <div className="space-y-1">
                           <span className={operationalStatus.className}>{operationalStatus.label}</span>

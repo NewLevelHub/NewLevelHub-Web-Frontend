@@ -98,7 +98,7 @@ const companyAdminNav: NavSection[] = [
   {
     title: 'Сервисы',
     items: [
-      { label: 'Бронирование', path: '/bookings/catalog', icon: Bookmark },
+      { label: 'Бронирование', path: '/bookings/catalog', icon: CalendarDays },
       { label: 'Рекуррентные брони', path: '/bookings/recurring', icon: Repeat },
       { label: 'Бронирования (админ)', path: `${STAFF_UI_PREFIX}/bookings`, icon: CalendarDays },
       { label: 'Карта здания', path: '/building/map', icon: Map },
