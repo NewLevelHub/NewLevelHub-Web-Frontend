@@ -237,6 +237,7 @@ export interface InviteRegistrationPreview {
   company_name: string;
   email: string;
   role: string;
+  is_guest_upgrade?: boolean;
 }
 
 export type ResourceEquipment = Record<ResourceEquipmentKey, boolean>;

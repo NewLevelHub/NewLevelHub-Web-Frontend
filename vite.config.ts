@@ -33,4 +33,7 @@ export default defineConfig({
       },
     },
   },
+  preview: {
+    allowedHosts: ['staging.newlevelhub.kz'],
+  },
 })
