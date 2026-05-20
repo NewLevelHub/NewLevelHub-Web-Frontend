@@ -18,7 +18,7 @@ import {
 import { useUser } from '@/shared/hooks/useAuth';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
-import type { Company, PaginatedResponse, Resource } from '@/shared/types';
+import type { Company, PaginatedResponse, Resource, ServiceFloor } from '@/shared/types';
 
 type ResourceTypeValue = (typeof RESOURCE_TYPES)[keyof typeof RESOURCE_TYPES];
 type EquipmentState = Record<ResourceEquipmentKey, boolean>;
@@ -155,10 +155,11 @@ export default function ResourceCreatePage() {
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [primaryPhotoIndex, setPrimaryPhotoIndex] = useState<number | null>(null);
   const [form, setForm] = useState<FormState>({
     type: RESOURCE_TYPES.DESK,
     name: '',
-    floor: '1',
+    floor: '',
     zone: '',
     description: '',
     capacity: '',
@@ -190,6 +191,14 @@ export default function ResourceCreatePage() {
       const { data } = await apiClient.get<PaginatedResponse<Company>>(API.companies.list, {
         params: { page_size: 100, plan: COMPANY_TIERS.PREMIUM },
       });
+      return data.results;
+    },
+  });
+
+  const { data: floors = [], isLoading: floorsLoading } = useQuery({
+    queryKey: ['map-floors'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ results: ServiceFloor[] }>(API.map.floors);
       return data.results;
     },
   });
@@ -280,6 +289,24 @@ export default function ResourceCreatePage() {
     });
   }
 
+  function addPhotos(files: File[]) {
+    setPhotoFiles((prev) => {
+      const next = [...prev, ...files];
+      if (primaryPhotoIndex === null && next.length > 0) setPrimaryPhotoIndex(0);
+      return next;
+    });
+  }
+
+  function removePhoto(idx: number) {
+    setPhotoFiles((prev) => prev.filter((_, i) => i !== idx));
+    setPrimaryPhotoIndex((prev) => {
+      if (prev === null) return null;
+      if (prev === idx) return 0;
+      if (idx < prev) return prev - 1;
+      return prev;
+    });
+  }
+
   function buildTemplate(): Omit<ResourceCreatePayload, 'name'> {
     const payload: Omit<ResourceCreatePayload, 'name'> = {
       type: form.type,
@@ -365,8 +392,8 @@ export default function ResourceCreatePage() {
     setGeneralError(null);
     setFieldErrors({});
 
-    if (!form.floor || Number(form.floor) < 1) {
-      setFieldErrors({ floor: 'Укажите корректный этаж (>= 1).' });
+    if (!form.floor) {
+      setFieldErrors({ floor: 'Выберите этаж.' });
       return;
     }
 
@@ -405,12 +432,17 @@ export default function ResourceCreatePage() {
       return;
     }
 
+    const orderedFiles =
+      primaryPhotoIndex !== null && photoFiles.length > 1
+        ? [photoFiles[primaryPhotoIndex], ...photoFiles.filter((_, i) => i !== primaryPhotoIndex)]
+        : photoFiles;
+
     createMutation.mutate({
       payload: {
         ...buildTemplate(),
         name: form.name.trim(),
       },
-      photoFiles,
+      photoFiles: orderedFiles,
     });
   }
 
@@ -481,14 +513,20 @@ export default function ResourceCreatePage() {
               <label htmlFor="floor" className="mb-1 block text-sm font-medium text-secondary">
                 Этаж
               </label>
-              <input
+              <select
                 id="floor"
-                type="number"
-                min={1}
                 value={form.floor}
+                disabled={floorsLoading}
                 onChange={(e) => updateForm('floor', e.target.value)}
                 className={inputClass(!!fieldErrors.floor)}
-              />
+              >
+                <option value="">— Выберите этаж —</option>
+                {floors.map((f) => (
+                  <option key={f.id} value={String(f.number)}>
+                    {f.name ? `Этаж ${f.number} — ${f.name}` : `Этаж ${f.number}`}
+                  </option>
+                ))}
+              </select>
               {fieldErrors.floor && <p className="mt-1 text-xs text-red-600">{fieldErrors.floor}</p>}
             </div>
           </div>
@@ -617,25 +655,47 @@ export default function ResourceCreatePage() {
                   multiple
                   className="sr-only"
                   onChange={(e) => {
-                    const files = Array.from(e.target.files ?? []);
-                    setPhotoFiles((prev) => [...prev, ...files]);
+                    addPhotos(Array.from(e.target.files ?? []));
+                    e.target.value = '';
                   }}
                 />
               </label>
               {photoFiles.length > 0 && (
                 <ul className="mt-2 space-y-1">
-                  {photoFiles.map((file, i) => (
-                    <li key={i} className="flex items-center justify-between rounded-lg border border-default bg-raised px-3 py-1.5 text-sm text-secondary">
-                      <span className="truncate">{file.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => setPhotoFiles((prev) => prev.filter((_, idx) => idx !== i))}
-                        className="ml-3 shrink-0 text-red-500 hover:text-red-700"
+                  {photoFiles.map((file, i) => {
+                    const isPrimary = primaryPhotoIndex === i || photoFiles.length === 1;
+                    return (
+                      <li
+                        key={i}
+                        className={cn(
+                          'flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm',
+                          isPrimary
+                            ? 'border-blue-400 bg-blue-50 text-blue-900'
+                            : 'border-default bg-raised text-secondary',
+                        )}
                       >
-                        Удалить
-                      </button>
-                    </li>
-                  ))}
+                        {isPrimary ? (
+                          <span className="shrink-0 text-xs font-semibold text-blue-600">Главная</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setPrimaryPhotoIndex(i)}
+                            className="shrink-0 text-xs text-muted hover:text-blue-600 transition-colors"
+                          >
+                            Сделать главной
+                          </button>
+                        )}
+                        <span className="min-w-0 flex-1 truncate">{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(i)}
+                          className="shrink-0 text-red-500 hover:text-red-700"
+                        >
+                          Удалить
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>

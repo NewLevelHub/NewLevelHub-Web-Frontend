@@ -521,9 +521,9 @@ export default function BookingCatalogPage() {
                         !r.is_active && 'opacity-60',
                       )}
                     >
-                      <div className="relative aspect-[16/10] bg-surface">
+                      <div className="relative aspect-[16/10] overflow-hidden bg-surface">
                         {imgSrc ? (
-                          <img src={imgSrc} alt="" className="h-full w-full object-cover" />
+                          <img src={imgSrc} alt="" className="absolute inset-0 h-full w-full object-cover" />
                         ) : (
                           <div className="flex h-full items-center justify-center">
                             <Bookmark className="h-10 w-10 text-muted" />
