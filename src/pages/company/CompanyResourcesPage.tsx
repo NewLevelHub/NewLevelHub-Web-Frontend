@@ -94,17 +94,19 @@ export default function CompanyResourcesPage() {
                 {results.map((r) => (
                   <tr key={r.id} className={resTr}>
                     <td className="px-4 py-2">
-                      {r.photo ? (
-                        <img
-                          src={resolveMediaUrl(r.photo) ?? r.photo}
-                          alt=""
-                          className={resPhotoThumb}
-                        />
-                      ) : (
-                        <div className={resPlaceholderIconBox}>
-                          <Bookmark className="h-4 w-4 text-muted" />
-                        </div>
-                      )}
+                      {(() => {
+                        const src =
+                          r.photos?.[0]?.image_url ??
+                          r.photos?.[0]?.image ??
+                          (r.photo ? resolveMediaUrl(r.photo) ?? r.photo : null);
+                        return src ? (
+                          <img src={src} alt="" className={resPhotoThumb} />
+                        ) : (
+                          <div className={resPlaceholderIconBox}>
+                            <Bookmark className="h-4 w-4 text-muted" />
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className={resTdStrong}>{r.name}</td>
                     <td className={resTd}>{RESOURCE_TYPE_LABELS[r.type as ResourceType] ?? r.type}</td>

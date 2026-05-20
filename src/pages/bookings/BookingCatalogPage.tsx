@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Bookmark, Building2, CalendarDays, ChevronDown, ChevronUp, Search, Settings2 } from 'lucide-react';
+import { ArrowLeft, Bookmark, Building2, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Search, Settings2, X } from 'lucide-react';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
@@ -93,6 +93,8 @@ export default function BookingCatalogPage() {
   const [page, setPage] = useState(1);
   const [selectedResource, setSelectedResource] = useState<BookingResourceListItem | null>(null);
   const [expandedScheduleId, setExpandedScheduleId] = useState<number | null>(null);
+  const [panelResource, setPanelResource] = useState<BookingResourceListItem | null>(null);
+  const [photoIdx, setPhotoIdx] = useState(0);
   const autoOpenedForRef = useRef<number | null>(null);
   const [typeFilter, setTypeFilter] = useState('');
   const [floorFilter, setFloorFilter] = useState('');
@@ -155,6 +157,20 @@ export default function BookingCatalogPage() {
     ];
   }, [results, myCompanyId]);
 
+  const { data: panelDetail } = useQuery({
+    queryKey: ['booking-resource-panel-detail', panelResource?.id],
+    enabled: panelResource != null,
+    staleTime: 60_000,
+    queryFn: () =>
+      apiClient
+        .get<BookingResourceDetail>(API.bookings.resources.detail(String(panelResource!.id)))
+        .then((r) => r.data),
+  });
+
+  useEffect(() => {
+    setPhotoIdx(0);
+  }, [panelResource?.id]);
+
   const { data: preselectedResource } = useQuery({
     queryKey: ['booking-resource-detail-for-modal', preselectResourceId],
     queryFn: () =>
@@ -195,6 +211,7 @@ export default function BookingCatalogPage() {
         capsule_zone: preselectedResource.capsule_zone,
         assigned_company: preselectedResource.assigned_company,
         assigned_company_name: null,
+        photos: preselectedResource.photos ?? [],
         status: BOOKING_RESOURCE_CATALOG_STATUS.FREE,
         reason: null,
         available_at: null,
@@ -480,7 +497,13 @@ export default function BookingCatalogPage() {
           ) : (
             <ul className="grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {sortedResults.map((r) => {
-                const imgSrc = resolveMediaUrl(r.photo_url ?? r.photo ?? '') ?? r.photo_url ?? r.photo ?? '';
+                const firstPhotoSrc = r.photos?.[0]?.image_url ?? r.photos?.[0]?.image ?? null;
+                const imgSrc =
+                  firstPhotoSrc ??
+                  resolveMediaUrl(r.photo_url ?? r.photo ?? '') ??
+                  r.photo_url ??
+                  r.photo ??
+                  '';
                 const statusLabel = STATUS_LABELS[r.status] ?? r.status;
                 const badgeClass = STATUS_BADGE_CLASS[r.status] ?? 'bg-black/60';
                 const whenFree = formatAvailableAt(r.available_at);
@@ -488,8 +511,9 @@ export default function BookingCatalogPage() {
                 return (
                   <li key={r.id}>
                     <article
+                      onClick={() => setPanelResource(r)}
                       className={cn(
-                        'h-full flex flex-col overflow-hidden rounded-2xl border bg-raised shadow-sm transition-all',
+                        'h-full flex flex-col overflow-hidden rounded-2xl border bg-raised shadow-sm transition-all cursor-pointer',
                         isMyCompany
                           ? 'border-indigo-500/40 hover:border-indigo-400/70 hover:shadow-indigo-900/30'
                           : 'border-default hover:border-blue-500/50 hover:shadow-indigo-900/20',
@@ -557,7 +581,7 @@ export default function BookingCatalogPage() {
                         )}
 
                         {/* ── Weekly schedule toggle ── */}
-                        <div className="border-t border-default/60 pt-2">
+                        <div className="border-t border-default/60 pt-2" onClick={(e) => e.stopPropagation()}>
                           <button
                             type="button"
                             onClick={() =>
@@ -583,7 +607,7 @@ export default function BookingCatalogPage() {
                           )}
                         </div>
 
-                        <div className="pt-1">
+                        <div className="pt-1" onClick={(e) => e.stopPropagation()}>
                           {r.status === BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED ? (
                             <button
                               type="button"
@@ -643,6 +667,191 @@ export default function BookingCatalogPage() {
           )}
         </div>
       </div>
+
+      {panelResource && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={() => setPanelResource(null)}
+        >
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+
+          <div
+            className="relative z-10 flex w-full max-w-xl max-h-[88vh] flex-col overflow-hidden rounded-3xl bg-surface shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close */}
+            <button
+              type="button"
+              onClick={() => setPanelResource(null)}
+              className="absolute right-3 top-3 z-20 rounded-full bg-black/50 p-1.5 text-white backdrop-blur-sm hover:bg-black/75 transition-colors"
+            >
+              <X size={18} />
+            </button>
+
+            {/* Photo slider */}
+            {(() => {
+              const photos = panelResource.photos;
+              const legacySrc =
+                panelResource.photo_url ??
+                (panelResource.photo ? resolveMediaUrl(panelResource.photo) ?? panelResource.photo : null);
+              const hasSrc = photos.length > 0 || legacySrc;
+
+              if (!hasSrc) {
+                return (
+                  <div className="flex shrink-0 aspect-[16/9] items-center justify-center bg-raised">
+                    <Bookmark className="h-12 w-12 text-muted" />
+                  </div>
+                );
+              }
+
+              const currentSrc =
+                photos.length > 0
+                  ? (photos[photoIdx]?.image_url ?? resolveMediaUrl(photos[photoIdx]?.image) ?? photos[photoIdx]?.image)
+                  : legacySrc;
+
+              return (
+                <div className="relative shrink-0 aspect-[16/9] bg-black overflow-hidden">
+                  <img key={photoIdx} src={currentSrc ?? ''} alt="" className="h-full w-full object-cover" />
+
+                  {/* gradient overlay for badges */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+
+                  {/* type + status badges bottom */}
+                  <div className="absolute bottom-3 left-4 flex items-center gap-2">
+                    <span className="rounded-full border border-white/20 bg-black/50 px-2.5 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
+                      {RESOURCE_TYPE_LABELS[panelResource.type]}
+                    </span>
+                    <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium text-white', STATUS_BADGE_CLASS[panelResource.status] ?? 'bg-black/60')}>
+                      {STATUS_LABELS[panelResource.status] ?? panelResource.status}
+                    </span>
+                  </div>
+
+                  {/* slider arrows */}
+                  {photos.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setPhotoIdx((i) => (i - 1 + photos.length) % photos.length)}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/55 p-2 text-white hover:bg-black/80 transition-colors"
+                      >
+                        <ChevronLeft size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPhotoIdx((i) => (i + 1) % photos.length)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/55 p-2 text-white hover:bg-black/80 transition-colors"
+                      >
+                        <ChevronRight size={18} />
+                      </button>
+
+                      {/* dot indicators */}
+                      <div className="absolute bottom-3 right-4 flex items-center gap-1">
+                        {photos.map((_, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => setPhotoIdx(i)}
+                            className={cn(
+                              'h-1.5 rounded-full transition-all',
+                              i === photoIdx ? 'w-4 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/75',
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Scrollable body */}
+            <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-5">
+              {/* Title row */}
+              <div>
+                <h2 className="text-xl font-bold text-primary">{panelResource.name}</h2>
+                <p className="mt-0.5 text-sm text-secondary">
+                  Этаж {panelResource.floor}
+                  {panelResource.zone ? ` · ${panelResource.zone}` : ''}
+                  {panelResource.parking_type ? ` · ${panelResource.parking_type === 'vip' ? 'VIP' : 'Обычная'}` : ''}
+                  {panelResource.capsule_zone ? ` · ${panelResource.capsule_zone === 'quiet' ? 'Тихая зона' : 'Обычная зона'}` : ''}
+                </p>
+              </div>
+
+              {/* Description */}
+              {panelDetail === undefined ? (
+                <p className="text-sm text-muted italic">Загрузка…</p>
+              ) : panelDetail.description ? (
+                <p className="text-sm text-secondary leading-relaxed">{panelDetail.description}</p>
+              ) : null}
+
+              {/* Stats */}
+              <div className="flex flex-wrap gap-3">
+                <div className="rounded-xl border border-default bg-raised px-4 py-2.5 text-center">
+                  <p className="text-xs text-muted">Вместимость</p>
+                  <p className="mt-0.5 text-lg font-semibold text-primary">{panelResource.capacity}</p>
+                </div>
+                {panelResource.is_hot_desk && panelResource.type === RESOURCE_TYPES.DESK && (
+                  <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-center">
+                    <p className="text-xs text-blue-400">Режим</p>
+                    <p className="mt-0.5 text-sm font-semibold text-blue-300">Hot desk</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Equipment */}
+              {panelResource.equipment && panelResource.type === RESOURCE_TYPES.MEETING_ROOM && (
+                <div>
+                  <p className="mb-2 text-xs font-medium text-muted uppercase tracking-wide">Оборудование</p>
+                  <ul className="flex flex-wrap gap-1.5">
+                    {Object.entries(panelResource.equipment)
+                      .filter(([, v]) => v)
+                      .map(([key]) => (
+                        <li
+                          key={key}
+                          className="rounded-lg border border-default bg-hover px-2.5 py-1 text-xs font-medium text-secondary"
+                        >
+                          {RESOURCE_EQUIPMENT_LABELS[key as keyof typeof RESOURCE_EQUIPMENT_LABELS] ?? key}
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="shrink-0 border-t border-default px-5 py-4">
+              {panelResource.status === BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED ? (
+                <button
+                  type="button"
+                  disabled
+                  className="inline-flex w-full cursor-not-allowed justify-center rounded-xl bg-hover px-4 py-3 text-sm font-semibold text-secondary"
+                >
+                  Занят
+                </button>
+              ) : panelResource.status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED ? (
+                <button
+                  type="button"
+                  disabled
+                  className="inline-flex w-full cursor-not-allowed justify-center rounded-xl bg-slate-700 px-4 py-3 text-sm font-semibold text-slate-300"
+                >
+                  Заблокирован
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedResource(panelResource);
+                    setPanelResource(null);
+                  }}
+                  className="inline-flex w-full justify-center rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-white hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors"
+                >
+                  Забронировать
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedResource !== null && (
         <BookingModal

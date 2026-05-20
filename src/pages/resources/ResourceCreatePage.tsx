@@ -56,7 +56,7 @@ type BulkCreatePayload = {
 
 type CreateMutationInput = {
   payload: ResourceCreatePayload;
-  photoFile: File | null;
+  photoFiles: File[];
 };
 
 const DAY_OPTIONS = [
@@ -146,33 +146,6 @@ function inputClass(hasError: boolean) {
   );
 }
 
-function buildFormData(payload: ResourceCreatePayload, photoFile: File): FormData {
-  const fd = new FormData();
-  for (const [key, value] of Object.entries(payload)) {
-    if (value === undefined) continue;
-    if (value === null) {
-      fd.append(key, '');
-      continue;
-    }
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        fd.append(key, String(item));
-      }
-      continue;
-    }
-    if (typeof value === 'object') {
-      fd.append(key, JSON.stringify(value));
-      continue;
-    }
-    if (typeof value === 'boolean') {
-      fd.append(key, value ? 'true' : 'false');
-      continue;
-    }
-    fd.append(key, String(value));
-  }
-  fd.append('photo', photoFile);
-  return fd;
-}
 
 export default function ResourceCreatePage() {
   const user = useUser();
@@ -181,7 +154,7 @@ export default function ResourceCreatePage() {
   const [isBulkMode, setIsBulkMode] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [form, setForm] = useState<FormState>({
     type: RESOURCE_TYPES.DESK,
     name: '',
@@ -222,16 +195,16 @@ export default function ResourceCreatePage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async ({ payload, photoFile: file }: CreateMutationInput) => {
-      if (!file) {
-        return apiClient.post<Resource>(API.bookings.resources.create, payload).then((res) => res.data);
-      }
-      const fd = buildFormData(payload, file);
-      return apiClient
-        .post<Resource>(API.bookings.resources.create, fd, {
+    mutationFn: async ({ payload, photoFiles: files }: CreateMutationInput) => {
+      const { data: resource } = await apiClient.post<Resource>(API.bookings.resources.create, payload);
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append('image', file);
+        await apiClient.post(API.bookings.resources.uploadPhoto(String(resource.id)), fd, {
           headers: { 'Content-Type': undefined },
-        })
-        .then((res) => res.data);
+        });
+      }
+      return resource;
     },
     onSuccess: async (resource) => {
       await queryClient.invalidateQueries({ queryKey: ['booking-resources'] });
@@ -437,7 +410,7 @@ export default function ResourceCreatePage() {
         ...buildTemplate(),
         name: form.name.trim(),
       },
-      photoFile,
+      photoFiles,
     });
   }
 
@@ -628,16 +601,43 @@ export default function ResourceCreatePage() {
 
           {!isBulkMode && (
             <div>
-              <label htmlFor="photo" className="mb-1 block text-sm font-medium text-secondary">
-                Фото
+              <label className="mb-1 block text-sm font-medium text-secondary">
+                Фотографии
               </label>
-              <input
-                id="photo"
-                type="file"
-                accept="image/*"
-                onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
-                className={inputClass(false)}
-              />
+              <label
+                htmlFor="photos"
+                className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-default bg-raised px-4 py-3 text-sm text-secondary transition-colors hover:bg-hover"
+              >
+                <span className="font-medium text-blue-600">Выбрать фото</span>
+                <span className="text-muted">или перетащите файлы сюда</span>
+                <input
+                  id="photos"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="sr-only"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files ?? []);
+                    setPhotoFiles((prev) => [...prev, ...files]);
+                  }}
+                />
+              </label>
+              {photoFiles.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {photoFiles.map((file, i) => (
+                    <li key={i} className="flex items-center justify-between rounded-lg border border-default bg-raised px-3 py-1.5 text-sm text-secondary">
+                      <span className="truncate">{file.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setPhotoFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="ml-3 shrink-0 text-red-500 hover:text-red-700"
+                      >
+                        Удалить
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
 

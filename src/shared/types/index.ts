@@ -242,6 +242,13 @@ export interface InviteRegistrationPreview {
 
 export type ResourceEquipment = Record<ResourceEquipmentKey, boolean>;
 
+export interface ResourcePhoto {
+  id: number;
+  image: string;
+  image_url: string | null;
+  created_at: string;
+}
+
 /** Элемент каталога: GET /bookings/resources/ (пагинация). */
 export interface BookingResourceListItem {
   id: number;
@@ -251,6 +258,7 @@ export interface BookingResourceListItem {
   zone: string;
   photo: string | null;
   photo_url: string | null;
+  photos: ResourcePhoto[];
   capacity: number;
   equipment: ResourceEquipment | null;
   is_active: boolean;
@@ -295,6 +303,7 @@ export interface BookingResourceDetail {
   zone: string;
   description: string;
   photo: string | null;
+  photos: ResourcePhoto[];
   capacity: number;
   equipment: ResourceEquipment | null;
   is_active: boolean;
