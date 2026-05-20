@@ -312,6 +312,7 @@ export interface BookingResourceDetail {
   has_power_outlet: boolean;
   is_hot_desk: boolean;
   assigned_company: number | null;
+  assigned_company_name?: string | null;
   min_duration_minutes: number;
   max_duration_minutes: number;
   advance_booking_days: number;
