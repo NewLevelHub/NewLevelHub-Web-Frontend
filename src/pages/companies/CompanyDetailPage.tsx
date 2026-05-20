@@ -30,7 +30,7 @@ import {
   type CompanyTier,
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import type { CompanyDetail, CompanyLimits } from '@/shared/types';
 
@@ -344,9 +344,9 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
           setGeneralError(null);
           return;
         }
-        setGeneralError(getApiErrorMessage(error, 'Не удалось сохранить изменения. Попробуйте ещё раз.'));
+        setGeneralError(getApiError(error).message);
       } else {
-        setGeneralError(getApiErrorMessage(error, 'Не удалось сохранить изменения. Попробуйте ещё раз.'));
+        setGeneralError(getApiError(error).message);
       }
     },
   });

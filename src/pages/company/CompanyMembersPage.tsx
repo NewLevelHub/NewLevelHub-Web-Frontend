@@ -6,7 +6,7 @@ import { MailPlus, RefreshCw, Ban } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES, type UserRole } from '@/shared/config/constants';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
 import { useAuth } from '@/shared/hooks/useAuth';
@@ -90,7 +90,7 @@ export default function CompanyMembersPage() {
       void queryClient.invalidateQueries({ queryKey: ['company-invitations', companyId] });
     },
     onError: (err) => {
-      setFormError(getApiErrorMessage(err, 'Не удалось отправить приглашение'));
+      setFormError(getApiError(err).message);
     },
   });
 

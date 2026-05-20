@@ -6,7 +6,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { BOOKING_STATUSES, RESOURCE_TYPES, USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import type { Booking, BookingResourceDetail, CompanyMember, PaginatedResponse } from '@/shared/types';
 
@@ -105,7 +105,7 @@ export default function BookingDetailPage() {
     },
     onError: (error: unknown) => {
       setFormSuccess(null);
-      setFormError(getApiErrorMessage(error, 'Не удалось обновить время брони.'));
+      setFormError(getApiError(error).message);
     },
   });
 
@@ -124,7 +124,7 @@ export default function BookingDetailPage() {
     },
     onError: (error: unknown) => {
       setFormSuccess(null);
-      setFormError(getApiErrorMessage(error, 'Не удалось добавить участника.'));
+      setFormError(getApiError(error).message);
     },
   });
 
@@ -140,7 +140,7 @@ export default function BookingDetailPage() {
     },
     onError: (error: unknown) => {
       setFormSuccess(null);
-      setFormError(getApiErrorMessage(error, 'Не удалось удалить участника.'));
+      setFormError(getApiError(error).message);
     },
   });
 
@@ -156,7 +156,7 @@ export default function BookingDetailPage() {
     },
     onError: (error: unknown) => {
       setFormSuccess(null);
-      setFormError(getApiErrorMessage(error, 'Не удалось отменить бронирование.'));
+      setFormError(getApiError(error).message);
     },
   });
 
@@ -172,7 +172,7 @@ export default function BookingDetailPage() {
     },
     onError: (error: unknown) => {
       setFormSuccess(null);
-      setFormError(getApiErrorMessage(error, 'Не удалось выполнить чек-ин.'));
+      setFormError(getApiError(error).message);
     },
   });
 

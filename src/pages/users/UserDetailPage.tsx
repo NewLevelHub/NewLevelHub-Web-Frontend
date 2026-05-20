@@ -22,7 +22,7 @@ import { SUPERADMIN_UI_PREFIX, USER_ROLES } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
 import { mapApiUser } from '@/shared/lib/mapUser';
 import { useAuth } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import type { UserDetail } from '@/shared/types';
 
@@ -355,7 +355,7 @@ export default function UserDetailPage() {
       await queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error: unknown) => {
-      setStatusError(getApiErrorMessage(error, 'Не удалось обновить статус пользователя.'));
+      setStatusError(getApiError(error).message);
     },
   });
 

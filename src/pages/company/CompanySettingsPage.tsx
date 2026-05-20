@@ -5,7 +5,7 @@ import { Settings2, Plus, Trash2 } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { useAuth } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import type { CompanySettings } from '@/shared/types';
 
 interface LabelDraft {
@@ -87,7 +87,7 @@ export default function CompanySettingsPage() {
     },
     onError: (mutationError: unknown) => {
       setSuccess(null);
-      setError(getApiErrorMessage(mutationError, 'Не удалось сохранить настройки компании.'));
+      setError(getApiError(mutationError).message);
     },
   });
 

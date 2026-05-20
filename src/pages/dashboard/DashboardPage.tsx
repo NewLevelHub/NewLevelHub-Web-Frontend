@@ -22,7 +22,7 @@ import { useAuthStore } from '@/shared/store/auth';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { STAFF_UI_PREFIX, SUPERADMIN_UI_PREFIX, USER_ROLES } from '@/shared/config/constants';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { authPrimaryBtn } from '@/shared/ui/authFormStyles';
 import { cn } from '@/shared/lib/cn';
 import type {
@@ -408,7 +408,7 @@ export default function DashboardPage() {
       await queryClient.invalidateQueries({ queryKey: ['service-requests'] });
     },
     onError: (err: unknown) => {
-      setCleaningError(getApiErrorMessage(err, 'Не удалось создать заявку на уборку.'));
+      setCleaningError(getApiError(err).message);
       setCleaningSuccess(false);
     },
   });
@@ -430,7 +430,7 @@ export default function DashboardPage() {
       await fetchMe();
     },
     onError: (err: unknown) => {
-      setLogoUploadError(getApiErrorMessage(err, 'Не удалось загрузить логотип компании.'));
+      setLogoUploadError(getApiError(err).message);
     },
   });
 
@@ -442,7 +442,7 @@ export default function DashboardPage() {
       await apiClient.post(API.auth.resendVerification);
       setResendMsg('Письмо отправлено. Проверь почту или логи бэкенда.');
     } catch (e) {
-      setResendErr(getApiErrorMessage(e, 'Не удалось отправить'));
+      setResendErr(getApiError(e).message);
     } finally {
       setResendLoading(false);
     }

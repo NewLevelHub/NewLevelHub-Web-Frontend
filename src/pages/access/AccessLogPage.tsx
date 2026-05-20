@@ -6,7 +6,7 @@ import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useUser } from '@/shared/hooks/useAuth';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import type { AccessLogEntry, Company, GuestPass, PaginatedResponse } from '@/shared/types';
 
 const PAGE_SIZE = 20;
@@ -116,7 +116,7 @@ export default function AccessLogPage() {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (e) {
-      setExportError(getApiErrorMessage(e, 'Не удалось выгрузить CSV.'));
+      setExportError(getApiError(e).message);
     } finally {
       setIsExporting(false);
     }
@@ -207,7 +207,7 @@ export default function AccessLogPage() {
       </section>
 
       {exportError ? <p className="text-sm text-danger">{exportError}</p> : null}
-      {isError ? <p className="text-sm text-danger">{getApiErrorMessage(error, 'Не удалось загрузить лог доступа.')}</p> : null}
+      {isError ? <p className="text-sm text-danger">{getApiError(error).message}</p> : null}
 
       <div className="overflow-hidden rounded-xl border border-default bg-raised">
         <div className="overflow-x-auto">

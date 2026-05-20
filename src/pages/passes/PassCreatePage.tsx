@@ -7,7 +7,7 @@ import utc from 'dayjs/plugin/utc';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import type { GuestPass } from '@/shared/types';
 
 dayjs.extend(utc);
@@ -47,7 +47,7 @@ export default function PassCreatePage() {
       navigate(`/passes/${createdPass.id}`);
     },
     onError: (error: unknown) => {
-      setFormError(getApiErrorMessage(error, 'Не удалось создать пропуск.'));
+      setFormError(getApiError(error).message);
     },
   });
 

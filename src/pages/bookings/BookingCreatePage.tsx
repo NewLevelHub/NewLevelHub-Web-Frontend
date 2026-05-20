@@ -10,7 +10,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { RESOURCE_TYPE_LABELS, RESOURCE_TYPES, USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import type { Booking, BookingResourceDetail, CompanyMember } from '@/shared/types';
@@ -33,47 +33,6 @@ function maxDateStr(days: number): string {
   return dayjs().tz(TZ).add(days, 'day').format('YYYY-MM-DD');
 }
 
-/** Map backend error detail strings to user-friendly Russian messages */
-function mapApiError(rawMessage: unknown, status?: number, advanceBookingDays?: number): string {
-  const message = typeof rawMessage === 'string' ? rawMessage : String(rawMessage ?? '');
-  if (status === 409) return 'Выбранное время уже занято';
-  if (status === 403 && message.includes('cancel your own')) return 'Нельзя отменить чужую бронь';
-  if (message.includes('Email not verified')) return 'Для бронирования нужно подтвердить email';
-  if (message.includes('Datetime must include timezone')) return 'Ошибка формата даты';
-  if (message.includes('Booking start time must be in the future')) return 'Время начала должно быть в будущем';
-  if (message.includes('Booking is outside resource availability hours')) return 'Выбранное время вне доступных часов ресурса';
-  if (message.includes('Booking is outside resource availability days')) return 'Выбранный день недоступен для этого ресурса';
-  if (message.includes('Booking must be within a single day')) return 'Бронирование должно быть в пределах одного дня';
-  if (message.includes('Resource is assigned to another company')) return 'Ресурс привязан к другой компании';
-  if (
-    message.includes('advance_booking_days') ||
-    message.includes('too far in advance') ||
-    message.includes('Booking must be within') ||
-    message.includes('Desk booking must start within')
-  ) {
-    return advanceBookingDays
-      ? `Бронирование данного ресурса доступно максимум за ${advanceBookingDays} дней`
-      : 'Слишком далёкая дата';
-  }
-  if (message.includes('Meeting room booking minimum duration is 30')) return 'Минимальная длительность — 30 минут';
-  if (message.includes('Meeting room booking maximum duration is 4')) return 'Максимальная длительность — 4 часа';
-  if (message.includes('Parking booking must be whole-day only')) return 'Только целый день';
-  if (message.includes('Capsule booking minimum')) return message.replace(/Capsule booking minimum duration is (\d+) hours?\.?/, 'Мин. $1 ч');
-  if (message.includes('Capsule booking maximum')) return message.replace(/Capsule booking maximum duration is (\d+) hours?\.?/, 'Макс. $1 ч');
-  if (message.includes('Minimum booking duration is')) return message.replace(/Minimum booking duration is (\d+) minutes?\.?/, 'Мин. $1 минут');
-  if (message.includes('Active booking limit exceeded')) return 'Достигнут лимит броней';
-  return message || 'Произошла ошибка';
-}
-
-function getBookingError(error: unknown, advanceBookingDays?: number): string {
-  const err = error as { response?: { status?: number }; message?: string };
-  const status = err.response?.status;
-  const baseMessage = getApiErrorMessage(error, 'Произошла ошибка');
-  if (baseMessage) return mapApiError(baseMessage, status, advanceBookingDays);
-  if (status === 409) return 'Выбранное время уже занято';
-  if (err instanceof Error && err.message && !('response' in err)) return err.message;
-  return 'Произошла ошибка';
-}
 
 export default function BookingCreatePage() {
   const [searchParams] = useSearchParams();
@@ -190,11 +149,7 @@ export default function BookingCreatePage() {
       navigate(`/bookings/${booking.id}`);
     },
     onError: (e) => {
-      if (e instanceof Error && e.message && !('response' in e)) {
-        setErrorMsg(e.message);
-        return;
-      }
-      setErrorMsg(getBookingError(e, resource?.advance_booking_days));
+      setErrorMsg(getApiError(e).message);
     },
   });
 

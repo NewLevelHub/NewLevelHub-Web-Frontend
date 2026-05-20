@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Save, ListChecks, Pencil, Trash2 } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import type { OnboardingTemplate, OnboardingTemplateStepInput } from '@/shared/types';
 
@@ -90,7 +90,7 @@ export default function CompanyOnboardingTemplatesPage() {
     },
     onError: (mutationError: unknown) => {
       setSuccess(null);
-      setError(getApiErrorMessage(mutationError, 'Не удалось сохранить шаблон онбординга.'));
+      setError(getApiError(mutationError).message);
     },
   });
 
@@ -110,7 +110,7 @@ export default function CompanyOnboardingTemplatesPage() {
     },
     onError: (mutationError: unknown) => {
       setSuccess(null);
-      setError(getApiErrorMessage(mutationError, 'Не удалось удалить шаблон онбординга.'));
+      setError(getApiError(mutationError).message);
     },
   });
 

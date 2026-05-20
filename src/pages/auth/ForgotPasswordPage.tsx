@@ -1,19 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { useMutation } from '@tanstack/react-query';
-import type { AxiosError } from 'axios';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { authInput, authLabel, authPrimaryBtn, authLink } from '@/shared/ui/authFormStyles';
-
-function getForgotPasswordError(error: unknown): string {
-  const axiosErr = error as AxiosError;
-  if (axiosErr.response?.status === 429) {
-    return 'Слишком много попыток. Попробуйте через 15 минут.';
-  }
-  return getApiErrorMessage(error, 'Не удалось отправить письмо');
-}
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -61,7 +52,7 @@ export default function ForgotPasswordPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         {mutation.isError ? (
           <div className="rounded-lg border border-red-200 bg-danger-subtle px-3 py-2 text-sm text-danger dark:border-red-900/40">
-            {getForgotPasswordError(mutation.error)}
+            {getApiError(mutation.error).message}
           </div>
         ) : null}
 

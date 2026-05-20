@@ -1,25 +1,14 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useMutation } from '@tanstack/react-query';
-import type { AxiosError } from 'axios';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { authInput, authLabel, authPrimaryBtn, authLink } from '@/shared/ui/authFormStyles';
 
 interface ResetPasswordConfirmPayload {
   token: string;
   new_password: string;
-}
-
-/** Returns true when the error is a token-level failure (expired or already used). */
-function isTokenError(error: unknown): boolean {
-  const axiosErr = error as AxiosError<{ detail?: string }>;
-  const detail = axiosErr.response?.data?.detail ?? '';
-  return (
-    typeof detail === 'string' &&
-    (detail.toLowerCase().includes('expired') || detail.toLowerCase().includes('already used'))
-  );
 }
 
 export default function ResetPasswordPage() {
@@ -59,11 +48,8 @@ export default function ResetPasswordPage() {
     );
   }
 
-  const errorMessage = mutation.isError
-    ? getApiErrorMessage(mutation.error as AxiosError, 'Не удалось сбросить пароль')
-    : '';
-
-  const showNewLinkPrompt = mutation.isError && isTokenError(mutation.error);
+  const errorMessage = mutation.isError ? getApiError(mutation.error).message : '';
+  const showNewLinkPrompt = false;
 
   return (
     <div>

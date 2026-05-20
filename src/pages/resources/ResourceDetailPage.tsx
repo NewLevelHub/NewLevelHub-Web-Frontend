@@ -16,7 +16,7 @@ import {
   type ResourceType,
 } from '@/shared/config/constants';
 import { useUser } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
@@ -300,7 +300,7 @@ export default function ResourceDetailPage() {
       setErrorMsg(null);
       setPhotoFile(null);
     },
-    onError: (e) => setErrorMsg(getApiErrorMessage(e)),
+    onError: (e) => setErrorMsg(getApiError(e).message),
   });
 
   const deactivateMutation = useMutation({
@@ -318,7 +318,7 @@ export default function ResourceDetailPage() {
       setDeactivateModal(false);
       setErrorMsg(null);
     },
-    onError: (e) => setErrorMsg(getApiErrorMessage(e)),
+    onError: (e) => setErrorMsg(getApiError(e).message),
   });
 
   const deleteMutation = useMutation({
@@ -330,7 +330,7 @@ export default function ResourceDetailPage() {
       navigate('/resources');
     },
     onError: (e) => {
-      setErrorMsg(getApiErrorMessage(e));
+      setErrorMsg(getApiError(e).message);
       setDeleteModal(false);
     },
   });
@@ -362,7 +362,7 @@ export default function ResourceDetailPage() {
       setErrorMsg(null);
     },
     onError: (e) => {
-      const message = getApiErrorMessage(e);
+      const message = getApiError(e).message;
       setBlockFormError(message);
       setErrorMsg(message);
     },
@@ -381,7 +381,7 @@ export default function ResourceDetailPage() {
       ]);
       setErrorMsg(null);
     },
-    onError: (e) => setErrorMsg(getApiErrorMessage(e)),
+    onError: (e) => setErrorMsg(getApiError(e).message),
   });
 
   function toggleEquipment(key: ResourceEquipmentKey) {

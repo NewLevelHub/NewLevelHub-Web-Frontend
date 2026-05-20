@@ -2,7 +2,7 @@ import { Link } from 'react-router';
 
 import { USER_ROLES } from '@/shared/config/constants';
 import { useUser } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 
 import { AnnouncementEmptyState } from '@/pages/announcements/components/AnnouncementEmptyState';
 import { AnnouncementFilters } from '@/pages/announcements/components/AnnouncementFilters';
@@ -69,7 +69,7 @@ export default function AnnouncementListPage() {
         <AnnouncementEmptyState
           isError={isError}
           errorMessage={
-            isError ? getApiErrorMessage(error, 'Не удалось загрузить ленту объявлений.') : null
+            isError ? getApiError(error).message : null
           }
         />
       ) : (

@@ -12,7 +12,7 @@ import {
   USER_ROLES,
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
 import type {
@@ -248,7 +248,7 @@ export default function ManageBookingsPage() {
       setCancelFormError(null);
     },
     onError: (mutationError) => {
-      setCancelFormError(getApiErrorMessage(mutationError));
+      setCancelFormError(getApiError(mutationError).message);
     },
   });
 
@@ -265,7 +265,7 @@ export default function ManageBookingsPage() {
       setEditFormError(null);
     },
     onError: (mutationError) => {
-      setEditFormError(getApiErrorMessage(mutationError, 'Не удалось обновить время.'));
+      setEditFormError(getApiError(mutationError).message);
     },
   });
 
@@ -282,7 +282,7 @@ export default function ManageBookingsPage() {
       setEditFormError(null);
     },
     onError: (mutationError) => {
-      setEditFormError(getApiErrorMessage(mutationError, 'Не удалось добавить участника.'));
+      setEditFormError(getApiError(mutationError).message);
     },
   });
 
@@ -296,7 +296,7 @@ export default function ManageBookingsPage() {
       setEditFormError(null);
     },
     onError: (mutationError) => {
-      setEditFormError(getApiErrorMessage(mutationError, 'Не удалось удалить участника.'));
+      setEditFormError(getApiError(mutationError).message);
     },
   });
 
@@ -369,7 +369,7 @@ export default function ManageBookingsPage() {
     });
   };
 
-  const queryErrorText = isError ? getApiErrorMessage(error, 'Не удалось загрузить бронирования.') : null;
+  const queryErrorText = isError ? getApiError(error).message : null;
 
   return (
     <main className="mx-auto max-w-7xl space-y-4 sm:space-y-6 px-3 py-4 sm:px-4 sm:py-6 md:py-8">
