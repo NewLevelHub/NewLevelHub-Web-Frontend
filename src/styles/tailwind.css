@@ -3,3 +3,12 @@
 
 /* Class-based dark mode: add `.dark` to <html> */
 @variant dark (&:where(.dark, .dark *));
+
+@keyframes scan-line {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(11rem); }
+}
+
+@utility animate-scan-line {
+  animation: scan-line 2s ease-in-out infinite alternate;
+}

@@ -61,9 +61,13 @@ export const API = {
       create: '/bookings/resources/',
       detail: (id: string) => `/bookings/resources/${id}/`,
       schedule: (id: string) => `/bookings/resources/${id}/schedule/`,
+      activate: (id: string) => `/bookings/resources/${id}/activate/`,
+      deactivate: (id: string) => `/bookings/resources/${id}/deactivate/`,
       block: (id: string) => `/bookings/resources/${id}/block/`,
       blocks: (id: string) => `/bookings/resources/${id}/blocks/`,
       unblock: (id: string, blockId: string) => `/bookings/resources/${id}/blocks/${blockId}/`,
+      uploadPhoto: (id: string) => `/bookings/resources/${id}/photos/`,
+      deletePhoto: (id: string, photoId: string) => `/bookings/resources/${id}/photos/${photoId}/`,
       bulkCreate: '/bookings/resources/bulk-create/',
     },
     reservations: {

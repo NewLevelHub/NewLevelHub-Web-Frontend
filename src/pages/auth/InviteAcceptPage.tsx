@@ -123,6 +123,14 @@ export default function InviteAcceptPage() {
       </p>
 
       <form onSubmit={onSubmit} className="space-y-3">
+        {invite.is_guest_upgrade ? (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-200">
+            Ваш гостевой аккаунт будет переведён в роль{' '}
+            <span className="font-medium">{invite.role}</span> в компании{' '}
+            <span className="font-medium">{invite.company_name}</span>. После подтверждения
+            email вы сможете войти с новыми правами.
+          </div>
+        ) : null}
         {error ? (
           <div className="rounded-lg border border-red-200 bg-danger-subtle px-3 py-2 text-sm text-danger dark:border-red-900/40">
             {error}

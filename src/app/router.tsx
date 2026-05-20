@@ -67,7 +67,6 @@ import PassValidatePage from '@/pages/passes/PassValidatePage';
 import AccessLogPage from '@/pages/access/AccessLogPage';
 
 // Building
-import BuildingMapPage from '@/pages/building/BuildingMapPage';
 import MapManagePage from '@/pages/building/MapManagePage';
 
 // Service requests

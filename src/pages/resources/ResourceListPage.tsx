@@ -217,6 +217,7 @@ export default function ResourceListPage() {
                   <th className="px-4 py-3 font-medium">Этаж</th>
                   <th className="px-4 py-3 font-medium">Зона</th>
                   <th className="px-4 py-3 font-medium">Вместимость</th>
+                  <th className="px-4 py-3 font-medium">Компания</th>
                   <th className="px-4 py-3 font-medium">Статус</th>
                   <th className="w-28 px-4 py-3 font-medium" />
                 </tr>
@@ -227,23 +228,28 @@ export default function ResourceListPage() {
                   return (
                     <tr key={r.id} className={resTr}>
                       <td className="px-4 py-2">
-                        {r.photo ? (
-                          <img
-                            src={resolveMediaUrl(r.photo) ?? r.photo}
-                            alt=""
-                            className={resPhotoThumb}
-                          />
-                        ) : (
-                          <div className={resPlaceholderIconBox}>
-                            <Bookmark className="h-4 w-4 text-muted" />
-                          </div>
-                        )}
+                        {(() => {
+                          const firstPhoto = r.photos?.[0];
+                          const src = firstPhoto
+                            ? (firstPhoto.image_url ?? resolveMediaUrl(firstPhoto.image) ?? firstPhoto.image)
+                            : r.photo
+                              ? (resolveMediaUrl(r.photo) ?? r.photo)
+                              : null;
+                          return src ? (
+                            <img src={src} alt="" className={resPhotoThumb} />
+                          ) : (
+                            <div className={resPlaceholderIconBox}>
+                              <Bookmark className="h-4 w-4 text-muted" />
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className={resTdStrong}>{r.name}</td>
                       <td className={resTd}>{RESOURCE_TYPE_LABELS[r.type] ?? r.type}</td>
                       <td className={resTdMuted}>{r.floor}</td>
                       <td className={resTdMuted}>{r.zone || '—'}</td>
                       <td className={resTdMuted}>{r.capacity}</td>
+                      <td className={resTdMuted}>{r.assigned_company_name ?? '—'}</td>
                       <td className="px-4 py-2">
                         <div className="space-y-1">
                           <span className={operationalStatus.className}>{operationalStatus.label}</span>

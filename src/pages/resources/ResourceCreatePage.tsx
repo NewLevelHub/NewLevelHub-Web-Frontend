@@ -6,6 +6,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import {
   CAPSULE_ZONES,
+  COMPANY_TIERS,
   PARKING_TYPES,
   RESOURCE_EQUIPMENT_KEYS,
   RESOURCE_EQUIPMENT_LABELS,
@@ -17,7 +18,7 @@ import {
 import { useUser } from '@/shared/hooks/useAuth';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
-import type { Company, PaginatedResponse, Resource } from '@/shared/types';
+import type { Company, PaginatedResponse, Resource, ServiceFloor } from '@/shared/types';
 
 type ResourceTypeValue = (typeof RESOURCE_TYPES)[keyof typeof RESOURCE_TYPES];
 type EquipmentState = Record<ResourceEquipmentKey, boolean>;
@@ -55,7 +56,7 @@ type BulkCreatePayload = {
 
 type CreateMutationInput = {
   payload: ResourceCreatePayload;
-  photoFile: File | null;
+  photoFiles: File[];
 };
 
 const DAY_OPTIONS = [
@@ -145,33 +146,6 @@ function inputClass(hasError: boolean) {
   );
 }
 
-function buildFormData(payload: ResourceCreatePayload, photoFile: File): FormData {
-  const fd = new FormData();
-  for (const [key, value] of Object.entries(payload)) {
-    if (value === undefined) continue;
-    if (value === null) {
-      fd.append(key, '');
-      continue;
-    }
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        fd.append(key, String(item));
-      }
-      continue;
-    }
-    if (typeof value === 'object') {
-      fd.append(key, JSON.stringify(value));
-      continue;
-    }
-    if (typeof value === 'boolean') {
-      fd.append(key, value ? 'true' : 'false');
-      continue;
-    }
-    fd.append(key, String(value));
-  }
-  fd.append('photo', photoFile);
-  return fd;
-}
 
 export default function ResourceCreatePage() {
   const user = useUser();
@@ -180,11 +154,12 @@ export default function ResourceCreatePage() {
   const [isBulkMode, setIsBulkMode] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [primaryPhotoIndex, setPrimaryPhotoIndex] = useState<number | null>(null);
   const [form, setForm] = useState<FormState>({
     type: RESOURCE_TYPES.DESK,
     name: '',
-    floor: '1',
+    floor: '',
     zone: '',
     description: '',
     capacity: '',
@@ -211,26 +186,34 @@ export default function ResourceCreatePage() {
   });
 
   const { data: companies = [] } = useQuery({
-    queryKey: [...companiesCacheRoot(user?.id), 'resource-create'],
+    queryKey: [...companiesCacheRoot(user?.id), 'resource-create', COMPANY_TIERS.PREMIUM],
     queryFn: async () => {
       const { data } = await apiClient.get<PaginatedResponse<Company>>(API.companies.list, {
-        params: { page_size: 100 },
+        params: { page_size: 100, plan: COMPANY_TIERS.PREMIUM },
       });
       return data.results;
     },
   });
 
+  const { data: floors = [], isLoading: floorsLoading } = useQuery({
+    queryKey: ['map-floors'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ results: ServiceFloor[] }>(API.map.floors);
+      return data.results;
+    },
+  });
+
   const createMutation = useMutation({
-    mutationFn: async ({ payload, photoFile: file }: CreateMutationInput) => {
-      if (!file) {
-        return apiClient.post<Resource>(API.bookings.resources.create, payload).then((res) => res.data);
-      }
-      const fd = buildFormData(payload, file);
-      return apiClient
-        .post<Resource>(API.bookings.resources.create, fd, {
+    mutationFn: async ({ payload, photoFiles: files }: CreateMutationInput) => {
+      const { data: resource } = await apiClient.post<Resource>(API.bookings.resources.create, payload);
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append('image', file);
+        await apiClient.post(API.bookings.resources.uploadPhoto(String(resource.id)), fd, {
           headers: { 'Content-Type': undefined },
-        })
-        .then((res) => res.data);
+        });
+      }
+      return resource;
     },
     onSuccess: async (resource) => {
       await queryClient.invalidateQueries({ queryKey: ['booking-resources'] });
@@ -306,6 +289,24 @@ export default function ResourceCreatePage() {
     });
   }
 
+  function addPhotos(files: File[]) {
+    setPhotoFiles((prev) => {
+      const next = [...prev, ...files];
+      if (primaryPhotoIndex === null && next.length > 0) setPrimaryPhotoIndex(0);
+      return next;
+    });
+  }
+
+  function removePhoto(idx: number) {
+    setPhotoFiles((prev) => prev.filter((_, i) => i !== idx));
+    setPrimaryPhotoIndex((prev) => {
+      if (prev === null) return null;
+      if (prev === idx) return 0;
+      if (idx < prev) return prev - 1;
+      return prev;
+    });
+  }
+
   function buildTemplate(): Omit<ResourceCreatePayload, 'name'> {
     const payload: Omit<ResourceCreatePayload, 'name'> = {
       type: form.type,
@@ -333,20 +334,18 @@ export default function ResourceCreatePage() {
       payload.has_dock = form.has_dock;
       payload.has_power_outlet = form.has_power_outlet;
       payload.is_hot_desk = form.is_hot_desk;
-      if (form.assigned_company_id) {
-        payload.assigned_company = Number(form.assigned_company_id);
-      }
     }
 
     if (isParking) {
       payload.parking_type = form.parking_type;
-      if (form.assigned_company_id) {
-        payload.assigned_company = Number(form.assigned_company_id);
-      }
     }
 
     if (isCapsule) {
       payload.capsule_zone = form.capsule_zone;
+    }
+
+    if (form.assigned_company_id) {
+      payload.assigned_company = Number(form.assigned_company_id);
     }
 
     return payload;
@@ -393,8 +392,8 @@ export default function ResourceCreatePage() {
     setGeneralError(null);
     setFieldErrors({});
 
-    if (!form.floor || Number(form.floor) < 1) {
-      setFieldErrors({ floor: 'Укажите корректный этаж (>= 1).' });
+    if (!form.floor) {
+      setFieldErrors({ floor: 'Выберите этаж.' });
       return;
     }
 
@@ -433,12 +432,17 @@ export default function ResourceCreatePage() {
       return;
     }
 
+    const orderedFiles =
+      primaryPhotoIndex !== null && photoFiles.length > 1
+        ? [photoFiles[primaryPhotoIndex], ...photoFiles.filter((_, i) => i !== primaryPhotoIndex)]
+        : photoFiles;
+
     createMutation.mutate({
       payload: {
         ...buildTemplate(),
         name: form.name.trim(),
       },
-      photoFile,
+      photoFiles: orderedFiles,
     });
   }
 
@@ -509,14 +513,20 @@ export default function ResourceCreatePage() {
               <label htmlFor="floor" className="mb-1 block text-sm font-medium text-secondary">
                 Этаж
               </label>
-              <input
+              <select
                 id="floor"
-                type="number"
-                min={1}
                 value={form.floor}
+                disabled={floorsLoading}
                 onChange={(e) => updateForm('floor', e.target.value)}
                 className={inputClass(!!fieldErrors.floor)}
-              />
+              >
+                <option value="">— Выберите этаж —</option>
+                {floors.map((f) => (
+                  <option key={f.id} value={String(f.number)}>
+                    {f.name ? `Этаж ${f.number} — ${f.name}` : `Этаж ${f.number}`}
+                  </option>
+                ))}
+              </select>
               {fieldErrors.floor && <p className="mt-1 text-xs text-red-600">{fieldErrors.floor}</p>}
             </div>
           </div>
@@ -629,16 +639,65 @@ export default function ResourceCreatePage() {
 
           {!isBulkMode && (
             <div>
-              <label htmlFor="photo" className="mb-1 block text-sm font-medium text-secondary">
-                Фото
+              <label className="mb-1 block text-sm font-medium text-secondary">
+                Фотографии
               </label>
-              <input
-                id="photo"
-                type="file"
-                accept="image/*"
-                onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
-                className={inputClass(false)}
-              />
+              <label
+                htmlFor="photos"
+                className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-default bg-raised px-4 py-3 text-sm text-secondary transition-colors hover:bg-hover"
+              >
+                <span className="font-medium text-blue-600">Выбрать фото</span>
+                <span className="text-muted">или перетащите файлы сюда</span>
+                <input
+                  id="photos"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="sr-only"
+                  onChange={(e) => {
+                    addPhotos(Array.from(e.target.files ?? []));
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+              {photoFiles.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {photoFiles.map((file, i) => {
+                    const isPrimary = primaryPhotoIndex === i || photoFiles.length === 1;
+                    return (
+                      <li
+                        key={i}
+                        className={cn(
+                          'flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm',
+                          isPrimary
+                            ? 'border-blue-400 bg-blue-50 text-blue-900'
+                            : 'border-default bg-raised text-secondary',
+                        )}
+                      >
+                        {isPrimary ? (
+                          <span className="shrink-0 text-xs font-semibold text-blue-600">Главная</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setPrimaryPhotoIndex(i)}
+                            className="shrink-0 text-xs text-muted hover:text-blue-600 transition-colors"
+                          >
+                            Сделать главной
+                          </button>
+                        )}
+                        <span className="min-w-0 flex-1 truncate">{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(i)}
+                          className="shrink-0 text-red-500 hover:text-red-700"
+                        >
+                          Удалить
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
           )}
 
@@ -799,6 +858,24 @@ export default function ResourceCreatePage() {
                   )}
                 </div>
               </div>
+              <div>
+                <label htmlFor="meeting_room_assigned_company" className="mb-1 block text-sm font-medium text-secondary">
+                  Закрепить за компанией (необязательно)
+                </label>
+                <select
+                  id="meeting_room_assigned_company"
+                  value={form.assigned_company_id}
+                  onChange={(e) => updateForm('assigned_company_id', e.target.value)}
+                  className={inputClass(!!fieldErrors.assigned_company)}
+                >
+                  <option value="">— Не закреплять —</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
 
@@ -862,6 +939,24 @@ export default function ResourceCreatePage() {
                 {fieldErrors.capsule_zone && (
                   <p className="mt-1 text-xs text-red-600">{fieldErrors.capsule_zone}</p>
                 )}
+              </div>
+              <div>
+                <label htmlFor="capsule_assigned_company" className="mb-1 block text-sm font-medium text-secondary">
+                  Закрепить за компанией (необязательно)
+                </label>
+                <select
+                  id="capsule_assigned_company"
+                  value={form.assigned_company_id}
+                  onChange={(e) => updateForm('assigned_company_id', e.target.value)}
+                  className={inputClass(!!fieldErrors.assigned_company)}
+                >
+                  <option value="">— Не закреплять —</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           )}
