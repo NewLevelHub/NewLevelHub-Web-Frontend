@@ -28,7 +28,7 @@ import {
   resDeactivateBtn,
   resErrorBanner,
   resFieldset,
-  resFileInput,
+
   resFormCard,
   resInput,
   resLabel,
@@ -46,6 +46,7 @@ import type {
   Company,
   PaginatedResponse,
   ResourceBlock,
+  ResourcePhoto,
   ResourceScheduleSlot,
 } from '@/shared/types';
 import { ResourceDayTimeline } from '@/pages/bookings/components/ResourceDayTimeline';
@@ -179,7 +180,7 @@ export default function ResourceDetailPage() {
   const [description, setDescription] = useState('');
   const [capacity, setCapacity] = useState(1);
   const [isActive, setIsActive] = useState(true);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [newPhotoFiles, setNewPhotoFiles] = useState<File[]>([]);
 
   const [hasMonitor, setHasMonitor] = useState(false);
   const [hasDock, setHasDock] = useState(false);
@@ -221,7 +222,6 @@ export default function ResourceDetailPage() {
     setCapsuleZone(
       data.capsule_zone === CAPSULE_ZONES.REGULAR ? CAPSULE_ZONES.REGULAR : CAPSULE_ZONES.QUIET,
     );
-    setPhotoFile(null);
   }, [data]);
 
   function buildPayload(): Record<string, unknown> {
@@ -266,32 +266,9 @@ export default function ResourceDetailPage() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const base = buildPayload();
-      if (photoFile) {
-        const fd = new FormData();
-        for (const [k, v] of Object.entries(base)) {
-          if (v === undefined) continue;
-          if (k === 'equipment' && typeof v === 'object' && v !== null) {
-            fd.append(k, JSON.stringify(v));
-          } else if (v === null) {
-            fd.append(k, '');
-          } else if (typeof v === 'boolean') {
-            fd.append(k, v ? 'true' : 'false');
-          } else {
-            fd.append(k, String(v));
-          }
-        }
-        fd.append('photo', photoFile);
-        const { data: res } = await apiClient.patch<BookingResourceDetail>(
-          API.bookings.resources.detail(String(resourceId)),
-          fd,
-          { headers: { 'Content-Type': 'multipart/form-data' } },
-        );
-        return res;
-      }
       const { data: res } = await apiClient.patch<BookingResourceDetail>(
         API.bookings.resources.detail(String(resourceId)),
-        base,
+        buildPayload(),
       );
       return res;
     },
@@ -300,7 +277,6 @@ export default function ResourceDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['booking-resource-schedule', resourceId] });
       queryClient.invalidateQueries({ queryKey: ['booking-resources'] });
       setErrorMsg(null);
-      setPhotoFile(null);
     },
     onError: (e) => setErrorMsg(getApiErrorMessage(e)),
   });
@@ -401,6 +377,34 @@ export default function ResourceDetailPage() {
     onError: (e) => setErrorMsg(getApiErrorMessage(e)),
   });
 
+  const addPhotosMutation = useMutation({
+    mutationFn: async (files: File[]) => {
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append('image', file);
+        await apiClient.post<ResourcePhoto>(
+          API.bookings.resources.uploadPhoto(String(resourceId)),
+          fd,
+          { headers: { 'Content-Type': undefined } },
+        );
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['booking-resource', resourceId] });
+      setNewPhotoFiles([]);
+    },
+    onError: (e) => setErrorMsg(getApiErrorMessage(e)),
+  });
+
+  const deletePhotoMutation = useMutation({
+    mutationFn: (photoId: number) =>
+      apiClient.delete(API.bookings.resources.deletePhoto(String(resourceId), String(photoId))),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['booking-resource', resourceId] });
+    },
+    onError: (e) => setErrorMsg(getApiErrorMessage(e)),
+  });
+
   function toggleEquipment(key: ResourceEquipmentKey) {
     setEquipment((prev) => ({ ...prev, [key]: !prev[key] }));
   }
@@ -478,12 +482,17 @@ export default function ResourceDetailPage() {
             </div>
           ) : null}
         </div>
-        {data.photo && (
-          <img
-            src={resolveMediaUrl(data.photo) ?? data.photo}
-            alt=""
-            className={resPhotoHeader}
-          />
+        {(data.photos ?? []).length > 0 && (
+          <div className="flex gap-2">
+            {(data.photos ?? []).slice(0, 3).map((p) => (
+              <img
+                key={p.id}
+                src={p.image_url ?? resolveMediaUrl(p.image) ?? p.image}
+                alt=""
+                className={resPhotoHeader}
+              />
+            ))}
+          </div>
         )}
       </div>
 
@@ -750,14 +759,71 @@ export default function ResourceDetailPage() {
           />
         </div>
 
-        <div>
-          <label className={resLabel}>Новое фото</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
-            className={resFileInput}
-          />
+        <div className="space-y-3">
+          <label className={resLabel}>Фотографии</label>
+          {(data.photos ?? []).length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {(data.photos ?? []).map((p) => (
+                <div key={p.id} className="group relative">
+                  <img
+                    src={p.image_url ?? p.image}
+                    alt=""
+                    className="h-20 w-28 rounded-lg border border-default object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => deletePhotoMutation.mutate(p.id)}
+                    disabled={deletePhotoMutation.isPending}
+                    className="absolute right-1 top-1 hidden rounded bg-black/60 px-1.5 py-0.5 text-xs text-white group-hover:block"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <label
+            htmlFor="new-photos"
+            className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-default bg-raised px-4 py-3 text-sm text-secondary transition-colors hover:bg-hover"
+          >
+            <span className="font-medium text-blue-600">Добавить фото</span>
+            <span className="text-muted">— можно выбрать несколько</span>
+            <input
+              id="new-photos"
+              type="file"
+              accept="image/*"
+              multiple
+              className="sr-only"
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? []);
+                setNewPhotoFiles((prev) => [...prev, ...files]);
+              }}
+            />
+          </label>
+          {newPhotoFiles.length > 0 && (
+            <div className="space-y-1.5">
+              {newPhotoFiles.map((file, i) => (
+                <div key={i} className="flex items-center justify-between rounded-lg border border-default bg-raised px-3 py-1.5 text-sm text-secondary">
+                  <span className="truncate">{file.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setNewPhotoFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                    className="ml-3 shrink-0 text-red-500 hover:text-red-700"
+                  >
+                    Удалить
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => addPhotosMutation.mutate(newPhotoFiles)}
+                disabled={addPhotosMutation.isPending}
+                className="rounded-lg border border-blue-300 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+              >
+                {addPhotosMutation.isPending ? 'Загрузка...' : 'Загрузить выбранные'}
+              </button>
+            </div>
+          )}
         </div>
 
         <label className={resCheckboxLabel}>

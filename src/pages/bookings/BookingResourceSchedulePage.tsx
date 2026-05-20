@@ -1,16 +1,36 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Bookmark, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { BOOKING_RESOURCE_CATALOG_STATUS, RESOURCE_TYPE_LABELS, type ResourceType } from '@/shared/config/constants';
+import {
+  BOOKING_RESOURCE_CATALOG_STATUS,
+  RESOURCE_EQUIPMENT_LABELS,
+  RESOURCE_TYPE_LABELS,
+  type ResourceEquipmentKey,
+  type ResourceType,
+} from '@/shared/config/constants';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import { cn } from '@/shared/lib/cn';
 import type { BookingResourceDetail, ResourceScheduleSlot } from '@/shared/types';
 
 import { ResourceDayTimeline } from '@/pages/bookings/components/ResourceDayTimeline';
+
+const STATUS_LABELS: Record<string, string> = {
+  [BOOKING_RESOURCE_CATALOG_STATUS.FREE]: 'Свободен',
+  [BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED]: 'Занят',
+  [BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED]: 'Заблокирован',
+  [BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE]: 'Скоро свободен',
+};
+
+const STATUS_BADGE_CLASS: Record<string, string> = {
+  [BOOKING_RESOURCE_CATALOG_STATUS.FREE]: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  [BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED]: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+  [BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED]: 'bg-slate-500/15 text-slate-400 border-slate-500/30',
+  [BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE]: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+};
 
 function localIsoDate(d: Date): string {
   const y = d.getFullYear();
@@ -29,6 +49,7 @@ export default function BookingResourceSchedulePage() {
   const { id } = useParams<{ id: string }>();
   const resourceId = id ? Number(id) : NaN;
   const [selectedDay, setSelectedDay] = useState(() => localIsoDate(new Date()));
+  const [photoIdx, setPhotoIdx] = useState(0);
 
   const weekAnchors = useMemo(() => {
     const [y, m, d] = selectedDay.split('-').map(Number);
@@ -93,50 +114,179 @@ export default function BookingResourceSchedulePage() {
     );
   }
 
-  const imgSrc = resolveMediaUrl(detail.photo ?? '') ?? detail.photo ?? '';
+  const photos = detail.photos ?? [];
+  const legacySrc = detail.photo ? (resolveMediaUrl(detail.photo) ?? detail.photo) : null;
+  const currentPhotoSrc =
+    photos.length > 0
+      ? (photos[photoIdx]?.image_url ?? resolveMediaUrl(photos[photoIdx]?.image) ?? photos[photoIdx]?.image)
+      : legacySrc;
+
+  const status = detail.status;
+  const statusLabel = status ? (STATUS_LABELS[status] ?? status) : null;
+  const statusClass = status ? (STATUS_BADGE_CLASS[status] ?? 'bg-slate-500/15 text-slate-400 border-slate-500/30') : null;
+
+  const isBookable =
+    status !== BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED &&
+    status !== BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED &&
+    detail.is_active;
+
+  const activeEquipment = detail.equipment
+    ? Object.entries(detail.equipment).filter(([, v]) => v).map(([k]) => k as ResourceEquipmentKey)
+    : [];
 
   return (
     <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-3xl mx-auto space-y-6">
       <Link
         to="/bookings/catalog"
-        className="inline-flex items-center gap-2 text-sm font-medium text-secondary hover:text-primary"
+        className="inline-flex items-center gap-2 text-sm font-medium text-secondary hover:text-primary transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
         Каталог
       </Link>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-        {imgSrc ? (
-          <img
-            src={imgSrc}
-            alt=""
-            className="w-full sm:w-48 rounded-xl object-cover aspect-[4/3] border border-default"
-          />
-        ) : null}
-        <div className="min-w-0 flex-1 space-y-1">
-          <h1 className="text-2xl font-bold text-primary">{detail.name}</h1>
-          <p className="text-sm text-muted">
-            {RESOURCE_TYPE_LABELS[detail.type as ResourceType]} · этаж {detail.floor}
-            {detail.zone ? ` · ${detail.zone}` : ''}
-          </p>
-          {detail.description ? (
-            <p className="text-sm text-muted pt-1">{detail.description}</p>
-          ) : null}
+      {/* Photo slider */}
+      <div className="relative w-full overflow-hidden rounded-2xl bg-raised aspect-[16/9]">
+        {currentPhotoSrc ? (
+          <img key={photoIdx} src={currentPhotoSrc} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <Bookmark className="h-14 w-14 text-muted" />
+          </div>
+        )}
+
+        {/* gradient + badges */}
+        {currentPhotoSrc && (
+          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
+        )}
+        <div className="absolute bottom-3 left-4 flex items-center gap-2">
+          <span className="rounded-full border border-white/20 bg-black/50 px-2.5 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
+            {RESOURCE_TYPE_LABELS[detail.type as ResourceType]}
+          </span>
+          {statusLabel && (
+            <span className={cn('rounded-full border px-2.5 py-0.5 text-xs font-medium backdrop-blur-sm', statusClass)}>
+              {statusLabel}
+            </span>
+          )}
         </div>
+
+        {/* arrows */}
+        {photos.length > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={() => setPhotoIdx((i) => (i - 1 + photos.length) % photos.length)}
+              className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/55 p-2 text-white hover:bg-black/80 transition-colors"
+              aria-label="Предыдущее фото"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setPhotoIdx((i) => (i + 1) % photos.length)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/55 p-2 text-white hover:bg-black/80 transition-colors"
+              aria-label="Следующее фото"
+            >
+              <ChevronRight size={20} />
+            </button>
+
+            {/* dots */}
+            <div className="absolute bottom-3 right-4 flex items-center gap-1">
+              {photos.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setPhotoIdx(i)}
+                  className={cn(
+                    'h-1.5 rounded-full transition-all',
+                    i === photoIdx ? 'w-4 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/75',
+                  )}
+                  aria-label={`Фото ${i + 1}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
-      {detail.status === BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE && (
-        <div className="bg-amber-500/15 border border-amber-500/30 rounded-lg px-4 py-2 flex items-center">
-          <span className="inline-block w-2 h-2 rounded-full bg-amber-400 mr-2 shrink-0" aria-hidden="true" />
-          <span className="text-amber-400 text-sm">
-            Скоро освободится
-            {detail.available_at
-              ? ` · ${new Date(detail.available_at).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })}`
-              : ''}
+      {/* Name + meta */}
+      <div>
+        <h1 className="text-2xl font-bold text-primary">{detail.name}</h1>
+        <p className="mt-1 text-sm text-secondary">
+          Этаж {detail.floor}
+          {detail.zone ? ` · ${detail.zone}` : ''}
+          {detail.parking_type ? ` · ${detail.parking_type === 'vip' ? 'VIP парковка' : 'Обычная парковка'}` : ''}
+          {detail.capsule_zone === 'quiet' ? ' · Тихая зона' : detail.capsule_zone === 'regular' ? ' · Обычная зона' : ''}
+        </p>
+        {detail.assigned_company_name && (
+          <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/15 px-2.5 py-0.5 text-xs font-medium text-indigo-300">
+            <Building2 size={11} />
+            {detail.assigned_company_name}
           </span>
+        )}
+      </div>
+
+      {/* Description */}
+      {detail.description && (
+        <p className="text-sm text-secondary leading-relaxed">{detail.description}</p>
+      )}
+
+      {/* Key info grid */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-xl border border-default bg-raised p-3">
+          <p className="text-xs text-muted">Тип</p>
+          <p className="mt-0.5 text-sm font-semibold text-primary">
+            {RESOURCE_TYPE_LABELS[detail.type as ResourceType]}
+          </p>
+        </div>
+        <div className="rounded-xl border border-default bg-raised p-3">
+          <p className="text-xs text-muted">Вместимость</p>
+          <p className="mt-0.5 text-sm font-semibold text-primary">{detail.capacity}</p>
+        </div>
+        {statusLabel && (
+          <div className="rounded-xl border border-default bg-raised p-3">
+            <p className="text-xs text-muted">Статус</p>
+            <p className={cn('mt-0.5 text-sm font-semibold', status === BOOKING_RESOURCE_CATALOG_STATUS.FREE ? 'text-emerald-400' : status === BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED ? 'text-rose-400' : status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED ? 'text-slate-400' : 'text-amber-400')}>
+              {statusLabel}
+            </p>
+          </div>
+        )}
+        {detail.is_hot_desk && (
+          <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-3">
+            <p className="text-xs text-blue-400">Режим</p>
+            <p className="mt-0.5 text-sm font-semibold text-blue-300">Hot desk</p>
+          </div>
+        )}
+      </div>
+
+      {/* Soon available banner */}
+      {status === BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE && detail.available_at && (
+        <div className="flex items-center gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-amber-400" aria-hidden="true" />
+          <p className="text-sm text-amber-300">
+            Освободится в{' '}
+            {new Date(detail.available_at).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })}
+          </p>
         </div>
       )}
 
+      {/* Equipment */}
+      {activeEquipment.length > 0 && (
+        <div>
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">Оборудование</p>
+          <ul className="flex flex-wrap gap-1.5">
+            {activeEquipment.map((key) => (
+              <li
+                key={key}
+                className="rounded-lg border border-default bg-raised px-2.5 py-1 text-xs font-medium text-secondary"
+              >
+                {RESOURCE_EQUIPMENT_LABELS[key] ?? key}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Schedule */}
       <div className="rounded-2xl border border-default bg-surface p-4 shadow-sm space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold text-primary">Расписание</h2>
@@ -218,13 +368,24 @@ export default function BookingResourceSchedulePage() {
         )}
       </div>
 
+      {/* Book button */}
       <div>
-        <Link
-          to={`/bookings/new?resource=${detail.id}`}
-          className="inline-flex justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          Забронировать
-        </Link>
+        {isBookable ? (
+          <Link
+            to={`/bookings/new?resource=${detail.id}`}
+            className="inline-flex justify-center rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+          >
+            Забронировать
+          </Link>
+        ) : (
+          <button
+            type="button"
+            disabled
+            className="inline-flex cursor-not-allowed justify-center rounded-xl bg-hover px-6 py-3 text-sm font-semibold text-secondary"
+          >
+            {status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED ? 'Заблокирован' : 'Занят'}
+          </button>
+        )}
       </div>
     </main>
   );

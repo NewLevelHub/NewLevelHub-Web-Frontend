@@ -18,7 +18,7 @@ import {
 import { useUser } from '@/shared/hooks/useAuth';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
-import type { Company, PaginatedResponse, Resource } from '@/shared/types';
+import type { Company, PaginatedResponse, Resource, ServiceFloor } from '@/shared/types';
 
 type ResourceTypeValue = (typeof RESOURCE_TYPES)[keyof typeof RESOURCE_TYPES];
 type EquipmentState = Record<ResourceEquipmentKey, boolean>;
@@ -56,7 +56,7 @@ type BulkCreatePayload = {
 
 type CreateMutationInput = {
   payload: ResourceCreatePayload;
-  photoFile: File | null;
+  photoFiles: File[];
 };
 
 const DAY_OPTIONS = [
@@ -146,33 +146,6 @@ function inputClass(hasError: boolean) {
   );
 }
 
-function buildFormData(payload: ResourceCreatePayload, photoFile: File): FormData {
-  const fd = new FormData();
-  for (const [key, value] of Object.entries(payload)) {
-    if (value === undefined) continue;
-    if (value === null) {
-      fd.append(key, '');
-      continue;
-    }
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        fd.append(key, String(item));
-      }
-      continue;
-    }
-    if (typeof value === 'object') {
-      fd.append(key, JSON.stringify(value));
-      continue;
-    }
-    if (typeof value === 'boolean') {
-      fd.append(key, value ? 'true' : 'false');
-      continue;
-    }
-    fd.append(key, String(value));
-  }
-  fd.append('photo', photoFile);
-  return fd;
-}
 
 export default function ResourceCreatePage() {
   const user = useUser();
@@ -181,11 +154,12 @@ export default function ResourceCreatePage() {
   const [isBulkMode, setIsBulkMode] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [primaryPhotoIndex, setPrimaryPhotoIndex] = useState<number | null>(null);
   const [form, setForm] = useState<FormState>({
     type: RESOURCE_TYPES.DESK,
     name: '',
-    floor: '1',
+    floor: '',
     zone: '',
     description: '',
     capacity: '',
@@ -221,17 +195,25 @@ export default function ResourceCreatePage() {
     },
   });
 
+  const { data: floors = [], isLoading: floorsLoading } = useQuery({
+    queryKey: ['map-floors'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ results: ServiceFloor[] }>(API.map.floors);
+      return data.results;
+    },
+  });
+
   const createMutation = useMutation({
-    mutationFn: async ({ payload, photoFile: file }: CreateMutationInput) => {
-      if (!file) {
-        return apiClient.post<Resource>(API.bookings.resources.create, payload).then((res) => res.data);
-      }
-      const fd = buildFormData(payload, file);
-      return apiClient
-        .post<Resource>(API.bookings.resources.create, fd, {
+    mutationFn: async ({ payload, photoFiles: files }: CreateMutationInput) => {
+      const { data: resource } = await apiClient.post<Resource>(API.bookings.resources.create, payload);
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append('image', file);
+        await apiClient.post(API.bookings.resources.uploadPhoto(String(resource.id)), fd, {
           headers: { 'Content-Type': undefined },
-        })
-        .then((res) => res.data);
+        });
+      }
+      return resource;
     },
     onSuccess: async (resource) => {
       await queryClient.invalidateQueries({ queryKey: ['booking-resources'] });
@@ -304,6 +286,24 @@ export default function ResourceCreatePage() {
     updateForm('equipment', {
       ...form.equipment,
       [key]: !form.equipment[key],
+    });
+  }
+
+  function addPhotos(files: File[]) {
+    setPhotoFiles((prev) => {
+      const next = [...prev, ...files];
+      if (primaryPhotoIndex === null && next.length > 0) setPrimaryPhotoIndex(0);
+      return next;
+    });
+  }
+
+  function removePhoto(idx: number) {
+    setPhotoFiles((prev) => prev.filter((_, i) => i !== idx));
+    setPrimaryPhotoIndex((prev) => {
+      if (prev === null) return null;
+      if (prev === idx) return 0;
+      if (idx < prev) return prev - 1;
+      return prev;
     });
   }
 
@@ -392,8 +392,8 @@ export default function ResourceCreatePage() {
     setGeneralError(null);
     setFieldErrors({});
 
-    if (!form.floor || Number(form.floor) < 1) {
-      setFieldErrors({ floor: 'Укажите корректный этаж (>= 1).' });
+    if (!form.floor) {
+      setFieldErrors({ floor: 'Выберите этаж.' });
       return;
     }
 
@@ -432,12 +432,17 @@ export default function ResourceCreatePage() {
       return;
     }
 
+    const orderedFiles =
+      primaryPhotoIndex !== null && photoFiles.length > 1
+        ? [photoFiles[primaryPhotoIndex], ...photoFiles.filter((_, i) => i !== primaryPhotoIndex)]
+        : photoFiles;
+
     createMutation.mutate({
       payload: {
         ...buildTemplate(),
         name: form.name.trim(),
       },
-      photoFile,
+      photoFiles: orderedFiles,
     });
   }
 
@@ -508,14 +513,20 @@ export default function ResourceCreatePage() {
               <label htmlFor="floor" className="mb-1 block text-sm font-medium text-secondary">
                 Этаж
               </label>
-              <input
+              <select
                 id="floor"
-                type="number"
-                min={1}
                 value={form.floor}
+                disabled={floorsLoading}
                 onChange={(e) => updateForm('floor', e.target.value)}
                 className={inputClass(!!fieldErrors.floor)}
-              />
+              >
+                <option value="">— Выберите этаж —</option>
+                {floors.map((f) => (
+                  <option key={f.id} value={String(f.number)}>
+                    {f.name ? `Этаж ${f.number} — ${f.name}` : `Этаж ${f.number}`}
+                  </option>
+                ))}
+              </select>
               {fieldErrors.floor && <p className="mt-1 text-xs text-red-600">{fieldErrors.floor}</p>}
             </div>
           </div>
@@ -628,16 +639,65 @@ export default function ResourceCreatePage() {
 
           {!isBulkMode && (
             <div>
-              <label htmlFor="photo" className="mb-1 block text-sm font-medium text-secondary">
-                Фото
+              <label className="mb-1 block text-sm font-medium text-secondary">
+                Фотографии
               </label>
-              <input
-                id="photo"
-                type="file"
-                accept="image/*"
-                onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
-                className={inputClass(false)}
-              />
+              <label
+                htmlFor="photos"
+                className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-default bg-raised px-4 py-3 text-sm text-secondary transition-colors hover:bg-hover"
+              >
+                <span className="font-medium text-blue-600">Выбрать фото</span>
+                <span className="text-muted">или перетащите файлы сюда</span>
+                <input
+                  id="photos"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="sr-only"
+                  onChange={(e) => {
+                    addPhotos(Array.from(e.target.files ?? []));
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+              {photoFiles.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {photoFiles.map((file, i) => {
+                    const isPrimary = primaryPhotoIndex === i || photoFiles.length === 1;
+                    return (
+                      <li
+                        key={i}
+                        className={cn(
+                          'flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm',
+                          isPrimary
+                            ? 'border-blue-400 bg-blue-50 text-blue-900'
+                            : 'border-default bg-raised text-secondary',
+                        )}
+                      >
+                        {isPrimary ? (
+                          <span className="shrink-0 text-xs font-semibold text-blue-600">Главная</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setPrimaryPhotoIndex(i)}
+                            className="shrink-0 text-xs text-muted hover:text-blue-600 transition-colors"
+                          >
+                            Сделать главной
+                          </button>
+                        )}
+                        <span className="min-w-0 flex-1 truncate">{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(i)}
+                          className="shrink-0 text-red-500 hover:text-red-700"
+                        >
+                          Удалить
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
           )}
 
