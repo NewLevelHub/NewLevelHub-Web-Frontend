@@ -52,6 +52,33 @@ import type {
 import { ResourceDayTimeline } from '@/pages/bookings/components/ResourceDayTimeline';
 import { cn } from '@/shared/lib/cn';
 
+function fmtDT(iso: string): string {
+  const d = new Date(iso);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  const HH = String(d.getHours()).padStart(2, '0');
+  const MM = String(d.getMinutes()).padStart(2, '0');
+  return `${dd}.${mm}.${yyyy}, ${HH}:${MM}`;
+}
+
+function fmtBlockRange(start: string, end: string): string {
+  const ds = new Date(start);
+  const de = new Date(end);
+  const sameDay =
+    ds.getFullYear() === de.getFullYear() &&
+    ds.getMonth() === de.getMonth() &&
+    ds.getDate() === de.getDate();
+  const timeOf = (d: Date) =>
+    `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  if (sameDay) {
+    const dd = String(ds.getDate()).padStart(2, '0');
+    const mm = String(ds.getMonth() + 1).padStart(2, '0');
+    return `${dd}.${mm}.${ds.getFullYear()}, ${timeOf(ds)} – ${timeOf(de)}`;
+  }
+  return `${fmtDT(start)} – ${fmtDT(end)}`;
+}
+
 type EquipmentState = Record<ResourceEquipmentKey, boolean>;
 type BlockFormState = {
   start_date: string;
@@ -476,8 +503,7 @@ export default function ResourceDetailPage() {
           </p>
           {activeBlock ? (
             <div className="mt-2 rounded-lg border border-default bg-raised px-3 py-2 text-sm text-secondary">
-              Текущая активная блокировка: {new Date(activeBlock.start_time).toLocaleString()} -{' '}
-              {new Date(activeBlock.end_time).toLocaleString()}
+              Текущая активная блокировка: {fmtBlockRange(activeBlock.start_time, activeBlock.end_time)}
               {activeBlock.reason ? ` · ${activeBlock.reason}` : ''}
             </div>
           ) : null}
@@ -664,7 +690,7 @@ export default function ResourceDetailPage() {
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-primary">
-                      {new Date(block.start_time).toLocaleString()} - {new Date(block.end_time).toLocaleString()}
+                      {fmtBlockRange(block.start_time, block.end_time)}
                     </p>
                     <p className="mt-1 text-sm text-muted">{block.reason || 'Без причины'}</p>
                   </div>
