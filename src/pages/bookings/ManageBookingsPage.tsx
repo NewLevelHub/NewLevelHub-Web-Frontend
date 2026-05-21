@@ -180,7 +180,6 @@ export default function ManageBookingsPage() {
     const params: Record<string, string | number> = {
       page,
       page_size: PAGE_SIZE,
-      ordering: '-start_time',
     };
 
     if (isSuperadmin && companyId) {
@@ -211,6 +210,7 @@ export default function ManageBookingsPage() {
       return response;
     },
     refetchInterval: 30_000,
+    refetchOnMount: 'always',
   });
 
   const { data: editBookingData } = useQuery({
@@ -241,7 +241,19 @@ export default function ManageBookingsPage() {
     mutationFn: async ({ bookingId, reason }: { bookingId: number; reason: string }) => {
       await apiClient.post(API.bookings.reservations.adminCancel(String(bookingId)), { reason });
     },
-    onSuccess: async () => {
+    onSuccess: async (_, { bookingId }) => {
+      queryClient.setQueriesData<PaginatedResponse<Booking>>(
+        { queryKey: ['admin-bookings'], exact: false },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            results: old.results.map((b) =>
+              b.id === bookingId ? { ...b, status: BOOKING_STATUSES.CANCELLED } : b,
+            ),
+          };
+        },
+      );
       await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
       setCancelTarget(null);
       setCancelReason('');

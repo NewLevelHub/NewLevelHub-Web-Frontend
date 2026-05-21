@@ -114,6 +114,7 @@ export default function MyBookingsPage() {
     onSuccess: async () => {
       setListError(null);
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
     },
     onError: (error: unknown) => {
       setListError(getApiError(error).message);
@@ -128,6 +129,7 @@ export default function MyBookingsPage() {
       setListError(null);
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
       await queryClient.invalidateQueries({ queryKey: ['booking-reservation'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
     },
     onError: (error: unknown) => {
       setListError(getApiError(error).message);
@@ -182,6 +184,7 @@ export default function MyBookingsPage() {
       setEditSuccess('Время бронирования обновлено.');
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
       await queryClient.invalidateQueries({ queryKey: ['my-bookings', 'edit-booking'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
     },
     onError: (error: unknown) => {
       setEditSuccess(null);
@@ -201,6 +204,7 @@ export default function MyBookingsPage() {
       setSelectedParticipantId('');
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
       await queryClient.invalidateQueries({ queryKey: ['my-bookings', 'edit-booking'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
     },
     onError: (error: unknown) => {
       setEditSuccess(null);
@@ -217,6 +221,7 @@ export default function MyBookingsPage() {
       setEditSuccess('Участник удален.');
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
       await queryClient.invalidateQueries({ queryKey: ['my-bookings', 'edit-booking'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
     },
     onError: (error: unknown) => {
       setEditSuccess(null);

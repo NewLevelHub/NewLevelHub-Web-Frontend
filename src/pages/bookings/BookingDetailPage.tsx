@@ -102,6 +102,7 @@ export default function BookingDetailPage() {
       setFormSuccess('Время бронирования обновлено.');
       await queryClient.invalidateQueries({ queryKey: ['booking-reservation', bookingId] });
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
     },
     onError: (error: unknown) => {
       setFormSuccess(null);
@@ -121,6 +122,7 @@ export default function BookingDetailPage() {
       setSelectedUserId('');
       await queryClient.invalidateQueries({ queryKey: ['booking-reservation', bookingId] });
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
     },
     onError: (error: unknown) => {
       setFormSuccess(null);
@@ -137,6 +139,7 @@ export default function BookingDetailPage() {
       setFormSuccess('Участник удален.');
       await queryClient.invalidateQueries({ queryKey: ['booking-reservation', bookingId] });
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
     },
     onError: (error: unknown) => {
       setFormSuccess(null);
@@ -153,6 +156,7 @@ export default function BookingDetailPage() {
       setFormSuccess('Бронирование отменено.');
       await queryClient.invalidateQueries({ queryKey: ['booking-reservation', bookingId] });
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
     },
     onError: (error: unknown) => {
       setFormSuccess(null);
@@ -169,6 +173,7 @@ export default function BookingDetailPage() {
       setFormSuccess('Чек-ин выполнен успешно.');
       await queryClient.invalidateQueries({ queryKey: ['booking-reservation', bookingId] });
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
     },
     onError: (error: unknown) => {
       setFormSuccess(null);

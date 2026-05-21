@@ -146,6 +146,7 @@ export default function BookingCreatePage() {
     onSuccess: (booking) => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
       navigate(`/bookings/${booking.id}`);
     },
     onError: (e) => {
