@@ -4,7 +4,6 @@ import { X, User, Archive, AlertCircle } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
-import { useAuth } from '@/shared/hooks/useAuth';
 import type { CrmTask, CompanyMember, PaginatedResponse } from '@/shared/types';
 import { ChecklistSection } from '@/pages/crm/components/CrmTaskChecklistSection';
 import { CommentSection } from '@/pages/crm/components/CrmTaskCommentSection';
@@ -17,14 +16,12 @@ type TaskPriorityValue = CrmTask['priority'];
 export interface TaskDetailModalProps {
   taskId: number;
   boardId: string;
+  boardCompanyId: number;
   onClose: () => void;
 }
 
-export function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalProps) {
+export function TaskDetailModal({ taskId, boardId, boardCompanyId, onClose }: TaskDetailModalProps) {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-
-  const companyId = user?.company_id != null ? String(user.company_id) : null;
 
   const { data: task, isLoading, isError } = useQuery({
     queryKey: ['crm', 'task', taskId],
@@ -34,12 +31,15 @@ export function TaskDetailModal({ taskId, boardId, onClose }: TaskDetailModalPro
     },
   });
 
+  // Use the company resolved from the task itself so the list is always scoped
+  // to the board's company, including when the viewer is a superadmin.
+  const companyId = task?.board.company != null ? String(task.board.company) : String(boardCompanyId);
+
   const { data: membersData } = useQuery({
     queryKey: ['company-members', companyId],
-    enabled: Boolean(companyId),
     queryFn: () =>
       apiClient
-        .get<PaginatedResponse<CompanyMember>>(API.companies.members(companyId!))
+        .get<PaginatedResponse<CompanyMember>>(API.companies.members(companyId))
         .then((r) => r.data),
   });
 

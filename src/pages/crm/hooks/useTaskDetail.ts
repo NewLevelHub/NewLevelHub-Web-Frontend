@@ -3,17 +3,14 @@ import { useParams, useNavigate } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
-import { useAuth } from '@/shared/hooks/useAuth';
 import type { CrmTask, CompanyMember, PaginatedResponse } from '@/shared/types';
 
 export function useTaskDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
 
   const taskId = Number(id);
-  const companyId = user?.company_id != null ? String(user.company_id) : null;
 
   const {
     data: task,
@@ -29,6 +26,10 @@ export function useTaskDetail() {
   });
 
   const boardId = task?.board?.id != null ? String(task.board.id) : '';
+
+  // Derive company from the task's board so the assignee list is always scoped
+  // to the board's company, including when the viewer is a superadmin.
+  const companyId = task?.board.company != null ? String(task.board.company) : null;
 
   const { data: membersData } = useQuery({
     queryKey: ['company-members', companyId],

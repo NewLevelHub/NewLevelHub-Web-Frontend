@@ -9,6 +9,7 @@ export interface CrmSortableColumnProps {
   column: CrmColumn;
   allColumns: CrmColumn[];
   boardId: string;
+  boardCompanyId: number;
   tasks: CrmTask[];
   taskCountByColumnId: Record<number, number>;
   onTaskClick: (taskId: number) => void;
@@ -18,6 +19,7 @@ export function CrmSortableColumn({
   column,
   allColumns,
   boardId,
+  boardCompanyId,
   tasks,
   taskCountByColumnId,
   onTaskClick,
@@ -37,6 +39,7 @@ export function CrmSortableColumn({
         column={column}
         allColumns={allColumns}
         boardId={boardId}
+        boardCompanyId={boardCompanyId}
         tasks={tasks}
         taskCountByColumnId={taskCountByColumnId}
         onTaskClick={onTaskClick}

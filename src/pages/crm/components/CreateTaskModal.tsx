@@ -4,7 +4,6 @@ import { X, Calendar, User } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
-import { useAuth } from '@/shared/hooks/useAuth';
 import type { CrmTask, CompanyMember, PaginatedResponse } from '@/shared/types';
 import { WIP_LIMIT_VIOLATION_MESSAGE } from '@/pages/crm/hooks/useWipLimitToast';
 
@@ -12,14 +11,14 @@ type TaskPriorityValue = CrmTask['priority'];
 
 export interface CreateTaskModalProps {
   boardId: string;
+  boardCompanyId: number;
   columnId: number;
   onClose: () => void;
   wipBlocked?: boolean;
 }
 
-export function CreateTaskModal({ boardId, columnId, onClose, wipBlocked }: CreateTaskModalProps) {
+export function CreateTaskModal({ boardId, boardCompanyId, columnId, onClose, wipBlocked }: CreateTaskModalProps) {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
   const titleRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState('');
@@ -28,14 +27,13 @@ export function CreateTaskModal({ boardId, columnId, onClose, wipBlocked }: Crea
   const [deadline, setDeadline] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
 
-  const companyId = user?.company_id != null ? String(user.company_id) : null;
+  const companyId = String(boardCompanyId);
 
   const { data: membersData } = useQuery({
     queryKey: ['company-members', companyId],
-    enabled: Boolean(companyId),
     queryFn: () =>
       apiClient
-        .get<PaginatedResponse<CompanyMember>>(API.companies.members(companyId!))
+        .get<PaginatedResponse<CompanyMember>>(API.companies.members(companyId))
         .then((r) => r.data),
   });
 
