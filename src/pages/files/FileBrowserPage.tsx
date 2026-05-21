@@ -7,6 +7,7 @@ import { API } from '@/shared/api/endpoints';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { cn } from '@/shared/lib/cn';
+import { downloadFromApiEndpoint } from '@/shared/lib/resolveDownloadUrl';
 import type {
   CompanyDirectoryMember,
   PaginatedResponse,
@@ -310,21 +311,8 @@ export default function FileBrowserPage() {
   });
 
   const downloadFileMutation = useMutation({
-    mutationFn: async ({ id, name, mimeType }: { id: number; name: string; mimeType?: string }) => {
-      const response = await apiClient.get(API.storage.fileDownload(String(id)), {
-        responseType: 'blob',
-      });
-      const blob = new Blob([response.data], {
-        type: mimeType ?? 'application/octet-stream',
-      });
-      const objectUrl = window.URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = objectUrl;
-      anchor.download = name;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      window.URL.revokeObjectURL(objectUrl);
+    mutationFn: async ({ id, name }: { id: number; name: string; mimeType?: string }) => {
+      await downloadFromApiEndpoint(API.storage.fileDownload(String(id)), { filename: name });
     },
   });
 

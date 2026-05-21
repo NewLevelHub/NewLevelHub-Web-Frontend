@@ -113,6 +113,8 @@ export const API = {
     taskHistory: (taskId: number) => `/crm/tasks/${taskId}/history/`,
     taskAttachments: (taskId: number) => `/crm/tasks/${taskId}/attachments/`,
     taskAttachmentDetail: (taskId: number, attachmentId: number) => `/crm/tasks/${taskId}/attachments/${attachmentId}/`,
+    taskAttachmentDownload: (taskId: number, attachmentId: number) =>
+      `/crm/tasks/${taskId}/attachments/${attachmentId}/download/`,
     labels: '/crm/labels/',
     labelDetail: (id: number) => `/crm/labels/${id}/`,
   },
