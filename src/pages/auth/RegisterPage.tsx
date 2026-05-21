@@ -28,6 +28,11 @@ export default function RegisterPage() {
       setError('Пароль не короче 8 символов');
       return;
     }
+    const tld = email.trim().split('@')[1]?.split('.').pop() ?? '';
+    if (!/^[a-zA-Z]{2,}$/.test(tld)) {
+      setError('Укажите корректный email — домен должен содержать буквенное расширение (например, .kz, .com)');
+      return;
+    }
     setLoading(true);
     try {
       await register({
