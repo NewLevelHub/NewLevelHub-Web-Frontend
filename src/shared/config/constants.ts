@@ -8,6 +8,14 @@ export const USER_ROLES = {
 
 export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
 
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  [USER_ROLES.SUPERADMIN]: 'Суперадмин',
+  [USER_ROLES.RECEPTION]: 'Ресепшн',
+  [USER_ROLES.COMPANY_ADMIN]: 'Администратор компании',
+  [USER_ROLES.EMPLOYEE]: 'Сотрудник',
+  [USER_ROLES.GUEST]: 'Гость',
+};
+
 /**
  * SPA routes only for the platform superadmin. Kept outside `/admin/` so they never
  * collide with Django admin (`/admin/<app_label>/`).
