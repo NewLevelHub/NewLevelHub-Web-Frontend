@@ -206,6 +206,27 @@ const StatusBadge = memo<StatusBadgeProps>(({ isActive }) => (
   </span>
 ));
 
+interface EmailVerifiedBadgeProps {
+  isVerified: boolean;
+}
+
+const EmailVerifiedBadge = memo<EmailVerifiedBadgeProps>(({ isVerified }) => (
+  <span
+    className={cn(
+      'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium',
+      isVerified ? 'bg-success-subtle text-emerald-400' : 'bg-warning-subtle text-warning',
+    )}
+    aria-label={isVerified ? 'Email подтверждён' : 'Email не подтверждён'}
+  >
+    {isVerified ? (
+      <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+    ) : (
+      <XCircle className="h-3 w-3" aria-hidden="true" />
+    )}
+    {isVerified ? 'Подтверждён' : 'Не подтверждён'}
+  </span>
+));
+
 // ---------------------------------------------------------------------------
 // Activity panel
 // ---------------------------------------------------------------------------
@@ -362,6 +383,9 @@ const MemberRow = memo<MemberRowProps>(({
         <td className="hidden px-4 py-3 lg:table-cell">
           <StatusBadge isActive={member.is_active} />
         </td>
+        <td className="hidden px-4 py-3 lg:table-cell">
+          <EmailVerifiedBadge isVerified={member.is_email_verified} />
+        </td>
         <td className="hidden px-4 py-3 text-xs text-secondary xl:table-cell">
           {formatDate(member.date_joined)}
         </td>
@@ -378,7 +402,7 @@ const MemberRow = memo<MemberRowProps>(({
       </tr>
       {isExpanded && (
         <tr role="row">
-          <td colSpan={7} className="bg-raised px-4 pb-4 pt-2">
+          <td colSpan={8} className="bg-raised px-4 pb-4 pt-2">
             <div className="space-y-3">
               <ActivityPanel companyId={companyId} memberId={member.id} />
               {canManageMembers && (
@@ -1468,6 +1492,12 @@ export default function TeamManagePage() {
                     className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary lg:table-cell"
                   >
                     Статус
+                  </th>
+                  <th
+                    scope="col"
+                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary lg:table-cell"
+                  >
+                    Email
                   </th>
                   <th
                     scope="col"
