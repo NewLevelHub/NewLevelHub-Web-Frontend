@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Save, ListChecks, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Save, ListChecks, Pencil, Trash2, Star } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
@@ -83,11 +83,6 @@ export default function CompanyOnboardingTemplatesPage() {
 
   const templates = templatesQuery.data ?? [];
 
-  const activeTemplate = useMemo(
-    () => templates.find((template) => template.is_active) ?? null,
-    [templates],
-  );
-
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload = {
@@ -139,6 +134,20 @@ export default function CompanyOnboardingTemplatesPage() {
     onError: (mutationError: unknown) => {
       setSuccess(null);
       setError(getApiErrorMessage(mutationError, 'Не удалось удалить шаблон онбординга.'));
+    },
+  });
+
+  const setDefaultMutation = useMutation({
+    mutationFn: (templateId: number) =>
+      apiClient.post<OnboardingTemplate>(API.onboarding.templateSetDefault(templateId)).then((r) => r.data),
+    onSuccess: async () => {
+      setError(null);
+      setSuccess('Шаблон по умолчанию обновлён.');
+      await queryClient.invalidateQueries({ queryKey: ['onboarding-templates'] });
+    },
+    onError: (mutationError: unknown) => {
+      setSuccess(null);
+      setError(getApiErrorMessage(mutationError, 'Не удалось назначить шаблон по умолчанию.'));
     },
   });
 
@@ -333,17 +342,44 @@ export default function CompanyOnboardingTemplatesPage() {
             )}
             <div className="space-y-3">
               {templates.map((template) => (
-                <div key={template.id} className="rounded-lg border border-default bg-surface p-4">
+                <div
+                  key={template.id}
+                  className={`rounded-lg border bg-surface p-4 ${template.is_default ? 'border-brand/50' : 'border-default'}`}
+                >
                   <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="font-medium text-primary">{template.name}</p>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-primary">{template.name}</p>
+                        {template.is_default && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-brand-subtle px-2 py-0.5 text-xs font-medium text-brand">
+                            <Star className="h-3 w-3" aria-hidden="true" />
+                            По умолчанию
+                          </span>
+                        )}
+                      </div>
                       <p className="mt-1 text-xs text-secondary">
-                        {template.steps.length} шагов
-                        {template.is_active ? ' · активный' : ' · неактивный'}
-                        {activeTemplate?.id === template.id ? ' (используется по умолчанию)' : ''}
+                        {template.steps.length} {template.steps.length === 1 ? 'шаг' : 'шагов'}
+                        {' · '}
+                        {template.is_active ? 'активный' : 'неактивный'}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-2">
+                      {template.is_active && !template.is_default && (
+                        <button
+                          type="button"
+                          disabled={setDefaultMutation.isPending}
+                          onClick={() => {
+                            setError(null);
+                            setSuccess(null);
+                            setDefaultMutation.mutate(template.id);
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:border-brand/50 hover:bg-brand-subtle hover:text-brand disabled:opacity-50"
+                          aria-label={`Сделать шаблон «${template.name}» шаблоном по умолчанию`}
+                        >
+                          <Star className="h-3.5 w-3.5" aria-hidden="true" />
+                          Сделать дефолтным
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => startEditing(template)}

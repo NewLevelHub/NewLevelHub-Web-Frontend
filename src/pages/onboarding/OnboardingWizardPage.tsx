@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, PartyPopper } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { cn } from '@/shared/lib/cn';
@@ -10,6 +10,7 @@ import type { OnboardingStatus } from '@/shared/types';
 export default function OnboardingWizardPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [isDone, setIsDone] = useState(false);
 
   const { data, isPending, isError, refetch } = useQuery<OnboardingStatus>({
     queryKey: ['onboarding-progress'],
@@ -25,10 +26,16 @@ export default function OnboardingWizardPage() {
   });
 
   useEffect(() => {
-    if (data?.completed) {
+    if (data?.completed) setIsDone(true);
+  }, [data?.completed]);
+
+  useEffect(() => {
+    if (!isDone) return;
+    const timer = setTimeout(() => {
       void navigate('/dashboard', { replace: true });
-    }
-  }, [data, navigate]);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [isDone, navigate]);
 
   if (isPending) {
     return (
@@ -51,6 +58,21 @@ export default function OnboardingWizardPage() {
             Попробовать снова
           </button>
         </div>
+      </div>
+    );
+  }
+
+  if (isDone) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-5 bg-page px-4 text-center">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-success-subtle">
+          <PartyPopper className="h-10 w-10 text-green-400" aria-hidden="true" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-primary">Онбординг завершён!</h1>
+          <p className="mt-2 text-secondary">Все шаги адаптации выполнены. Добро пожаловать в команду 🎉</p>
+        </div>
+        <p className="text-sm text-muted">Переходим на дашборд...</p>
       </div>
     );
   }
@@ -120,7 +142,7 @@ export default function OnboardingWizardPage() {
                   <p
                     className={cn(
                       'font-medium',
-                      step.is_completed ? 'text-success line-through' : 'text-white',
+                      step.is_completed ? 'text-success line-through' : 'text-primary',
                     )}
                   >
                     {step.title}
