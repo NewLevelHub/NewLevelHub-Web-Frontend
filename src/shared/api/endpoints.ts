@@ -179,6 +179,7 @@ export const API = {
     teamProgress: '/hr/onboarding/progress/team/',
     templates: '/hr/onboarding/templates/',
     template: (templateId: number) => `/hr/onboarding/templates/${templateId}/`,
+    templateSetDefault: (templateId: number) => `/hr/onboarding/templates/${templateId}/set-default/`,
   },
   storage: {
     folders: '/storage/folders/',

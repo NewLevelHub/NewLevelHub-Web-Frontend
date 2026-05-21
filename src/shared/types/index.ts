@@ -896,6 +896,7 @@ export interface OnboardingTemplate {
   id: number;
   name: string;
   is_active: boolean;
+  is_default: boolean;
   steps: Array<OnboardingTemplateStepInput & { id: number }>;
   created_at: string;
 }
