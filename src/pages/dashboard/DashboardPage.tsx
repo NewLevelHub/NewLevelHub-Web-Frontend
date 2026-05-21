@@ -33,8 +33,6 @@ import type {
   GuestDashboardData,
   DashboardAnnouncementItem,
   OnboardingStatus,
-  ServiceRequest,
-  ServiceRequestCleaningPayload,
 } from '@/shared/types';
 
 interface CompanyOnboardingStep {
@@ -394,24 +392,8 @@ export default function DashboardPage() {
   const [resendErr, setResendErr] = useState('');
   const [resendLoading, setResendLoading] = useState(false);
 
-  const [cleaningSuccess, setCleaningSuccess] = useState(false);
-  const [cleaningError, setCleaningError] = useState('');
   const [logoUploadError, setLogoUploadError] = useState('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
-
-  const cleaningMutation = useMutation({
-    mutationFn: (payload: ServiceRequestCleaningPayload) =>
-      apiClient.post<ServiceRequest>(API.serviceRequests.quickCleaning, payload).then((r) => r.data),
-    onSuccess: async () => {
-      setCleaningSuccess(true);
-      setCleaningError('');
-      await queryClient.invalidateQueries({ queryKey: ['service-requests'] });
-    },
-    onError: (err: unknown) => {
-      setCleaningError(getApiError(err).message);
-      setCleaningSuccess(false);
-    },
-  });
 
   const uploadLogoMutation = useMutation({
     mutationFn: (file: File) => {
@@ -491,25 +473,14 @@ export default function DashboardPage() {
         <div className="flex-1">
           <h2 className="text-sm font-semibold text-primary">Нужна уборка?</h2>
           <p className="mt-0.5 text-xs text-secondary">
-            Этаж определится автоматически по последнему подтверждённому бронированию.
+            Оформите заявку на уборку — укажите этаж и детали.
           </p>
-          {cleaningSuccess && (
-            <p className="mt-2 text-sm text-success">
-              Заявка на уборку отправлена. Мы займёмся этим в ближайшее время.
-            </p>
-          )}
-          {cleaningError && <p className="mt-2 text-sm text-danger">{cleaningError}</p>}
           <button
             type="button"
-            disabled={cleaningMutation.isPending || cleaningSuccess}
-            onClick={() => {
-              setCleaningSuccess(false);
-              setCleaningError('');
-              cleaningMutation.mutate({});
-            }}
-            className="mt-3 inline-flex items-center rounded-lg border border-default px-4 py-2 text-sm font-medium text-secondary hover:bg-hover hover:text-primary transition-colors disabled:opacity-50"
+            onClick={() => navigate('/service-requests', { state: { openCleaning: true } })}
+            className="mt-3 inline-flex items-center rounded-lg border border-default px-4 py-2 text-sm font-medium text-secondary hover:bg-hover hover:text-primary transition-colors"
           >
-            {cleaningMutation.isPending ? 'Отправляем...' : 'Вызвать уборку'}
+            Вызвать уборку
           </button>
         </div>
       </div>

@@ -353,7 +353,7 @@ export default function ResourceCreatePage() {
 
   function validateTypeSpecificFields() {
     if (requiresCapacity && (!form.capacity || Number(form.capacity) < 1)) {
-      setFieldErrors({ capacity: 'Для переговорки вместимость обязательна (>= 1).' });
+      setFieldErrors({ capacity: 'Для переговорки вместимость обязательна и должна быть больше 0.' });
       return false;
     }
 
