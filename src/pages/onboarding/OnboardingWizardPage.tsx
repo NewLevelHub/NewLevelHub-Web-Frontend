@@ -120,7 +120,7 @@ export default function OnboardingWizardPage() {
                   <p
                     className={cn(
                       'font-medium',
-                      step.is_completed ? 'text-success line-through' : 'text-white',
+                      step.is_completed ? 'text-success line-through' : 'text-primary',
                     )}
                   >
                     {step.title}

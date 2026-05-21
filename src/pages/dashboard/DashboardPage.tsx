@@ -360,8 +360,8 @@ export default function DashboardPage() {
   const companyId = user?.company_id != null ? String(user.company_id) : null;
   const requiresHrOnboarding = isEmployee;
 
-  const { data: onboardingProgress } = useQuery<OnboardingStatus>({
-    queryKey: ['hr-onboarding-progress'],
+  const { data: onboardingProgress, isFetching: onboardingFetching } = useQuery<OnboardingStatus>({
+    queryKey: ['onboarding-progress'],
     queryFn: () => apiClient.get<OnboardingStatus>(API.onboarding.progress).then((r) => r.data),
     enabled: Boolean(user) && requiresHrOnboarding,
     retry: false,
@@ -378,10 +378,10 @@ export default function DashboardPage() {
   });
 
   useEffect(() => {
-    if (requiresHrOnboarding && onboardingProgress && onboardingProgress.completed === false) {
+    if (!onboardingFetching && requiresHrOnboarding && onboardingProgress && onboardingProgress.completed === false) {
       void navigate('/onboarding', { replace: true });
     }
-  }, [requiresHrOnboarding, onboardingProgress, navigate]);
+  }, [requiresHrOnboarding, onboardingProgress, onboardingFetching, navigate]);
 
   const { data: dashboard, isLoading: dashLoading } = useQuery<DashboardData>({
     queryKey: ['dashboard'],
