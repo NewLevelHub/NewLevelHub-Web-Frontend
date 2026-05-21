@@ -31,13 +31,20 @@ function formatDateTime(iso: string): string {
   return `${d.getDate()} ${MONTHS[d.getMonth()]} в ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+function fmtDate(iso: string): string {
+  const d = new Date(iso);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${dd}.${mm}.${yyyy}`;
+}
+
 function formatPeriod(from: string, until: string): string {
   const df = new Date(from);
   const dt = new Date(until);
-  const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
   const fromTime = `${String(df.getHours()).padStart(2, '0')}:${String(df.getMinutes()).padStart(2, '0')}`;
   const untilTime = `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
-  return `${df.getDate()} ${MONTHS[df.getMonth()]} · ${fromTime} — ${untilTime}`;
+  return `${fmtDate(from)}, ${fromTime} — ${fmtDate(until)}, ${untilTime}`;
 }
 
 const CAMERA_CONSTRAINTS_CHAIN: MediaStreamConstraints[] = [
@@ -411,7 +418,7 @@ export default function PassValidatePage() {
               <p><span className="text-secondary">Пригласил:</span> {result.invited_by}</p>
               <p>
                 <span className="text-secondary">Период:</span>{' '}
-                {new Date(result.valid_from).toLocaleString()} — {new Date(result.valid_until).toLocaleString()}
+                {fmtDate(result.valid_from)} — {fmtDate(result.valid_until)}
               </p>
             </div>
           ) : (
