@@ -6,7 +6,7 @@ import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useUser } from '@/shared/hooks/useAuth';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import type { AccessLogEntry, Company, GuestPass, PaginatedResponse } from '@/shared/types';
 
 const PAGE_SIZE = 20;
@@ -116,7 +116,7 @@ export default function AccessLogPage() {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (e) {
-      setExportError(getApiErrorMessage(e, 'Не удалось выгрузить CSV.'));
+      setExportError(getApiError(e).message);
     } finally {
       setIsExporting(false);
     }
@@ -207,7 +207,7 @@ export default function AccessLogPage() {
       </section>
 
       {exportError ? <p className="text-sm text-danger">{exportError}</p> : null}
-      {isError ? <p className="text-sm text-danger">{getApiErrorMessage(error, 'Не удалось загрузить лог доступа.')}</p> : null}
+      {isError ? <p className="text-sm text-danger">{getApiError(error).message}</p> : null}
 
       <div className="overflow-hidden rounded-xl border border-default bg-raised">
         <div className="overflow-x-auto">
@@ -215,6 +215,7 @@ export default function AccessLogPage() {
             <thead className="bg-surface text-left text-secondary">
               <tr>
                 <th className="px-4 py-3">Гость</th>
+                <th className="px-4 py-3">Компания</th>
                 <th className="px-4 py-3">Пригласил</th>
                 <th className="px-4 py-3">Проверил</th>
                 <th className="px-4 py-3">Валидирован</th>
@@ -224,13 +225,13 @@ export default function AccessLogPage() {
             <tbody className="divide-y divide-[color:var(--border)]">
               {isLoading ? (
                 <tr>
-                  <td className="px-4 py-6 text-center text-secondary" colSpan={5}>
+                  <td className="px-4 py-6 text-center text-secondary" colSpan={6}>
                     Загрузка лога...
                   </td>
                 </tr>
               ) : (data?.results?.length ?? 0) === 0 ? (
                 <tr>
-                  <td className="px-4 py-6 text-center text-secondary" colSpan={5}>
+                  <td className="px-4 py-6 text-center text-secondary" colSpan={6}>
                     По выбранным фильтрам ничего не найдено.
                   </td>
                 </tr>
@@ -246,6 +247,11 @@ export default function AccessLogPage() {
                       ) : (
                         '—'
                       )}
+                    </td>
+                    <td className="px-4 py-3 align-top">
+                      {typeof log.guest_pass === 'number'
+                        ? (guestPassMap?.[log.guest_pass]?.created_by_company_name ?? '—')
+                        : '—'}
                     </td>
                     <td className="px-4 py-3 align-top">{log.invited_by ?? '—'}</td>
                     <td className="px-4 py-3 align-top">{log.validated_by ?? '—'}</td>

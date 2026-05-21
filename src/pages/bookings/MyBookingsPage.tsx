@@ -14,7 +14,7 @@ import {
   type ResourceType,
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import type { Booking, BookingResourceDetail, CompanyMember, PaginatedResponse } from '@/shared/types';
 
@@ -116,7 +116,7 @@ export default function MyBookingsPage() {
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
     },
     onError: (error: unknown) => {
-      setListError(getApiErrorMessage(error, 'Не удалось отменить бронирование.'));
+      setListError(getApiError(error).message);
     },
   });
 
@@ -130,7 +130,7 @@ export default function MyBookingsPage() {
       await queryClient.invalidateQueries({ queryKey: ['booking-reservation'] });
     },
     onError: (error: unknown) => {
-      setListError(getApiErrorMessage(error, 'Не удалось выполнить чек-ин.'));
+      setListError(getApiError(error).message);
     },
   });
 
@@ -185,7 +185,7 @@ export default function MyBookingsPage() {
     },
     onError: (error: unknown) => {
       setEditSuccess(null);
-      setEditError(getApiErrorMessage(error, 'Не удалось изменить время.'));
+      setEditError(getApiError(error).message);
     },
   });
 
@@ -204,7 +204,7 @@ export default function MyBookingsPage() {
     },
     onError: (error: unknown) => {
       setEditSuccess(null);
-      setEditError(getApiErrorMessage(error, 'Не удалось добавить участника.'));
+      setEditError(getApiError(error).message);
     },
   });
 
@@ -220,7 +220,7 @@ export default function MyBookingsPage() {
     },
     onError: (error: unknown) => {
       setEditSuccess(null);
-      setEditError(getApiErrorMessage(error, 'Не удалось удалить участника.'));
+      setEditError(getApiError(error).message);
     },
   });
 

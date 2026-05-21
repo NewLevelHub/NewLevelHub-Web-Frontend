@@ -15,6 +15,8 @@ apiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Default to Russian until i18n chooses locale per user.
+  config.headers['Accept-Language'] = 'ru-RU';
   return config;
 });
 
@@ -70,7 +72,10 @@ apiClient.interceptors.response.use(
       const { data } = await axios.post<{ access: string }>(
         `${env.API_BASE_URL}${API.auth.refreshToken}`,
         {},
-        { withCredentials: true },
+        {
+          withCredentials: true,
+          headers: { 'Accept-Language': 'ru-RU' },
+        },
       );
       const newAccess = data.access;
 

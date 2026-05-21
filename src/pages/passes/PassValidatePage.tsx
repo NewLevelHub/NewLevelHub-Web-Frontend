@@ -7,7 +7,7 @@ import { USER_ROLES } from '@/shared/config/constants';
 import { useUser } from '@/shared/hooks/useAuth';
 import { cn } from '@/shared/lib/cn';
 import type { PassValidationResponse } from '@/shared/types';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -88,7 +88,7 @@ export default function PassValidatePage() {
       setResult(response.data);
     } catch (validationError) {
       setResult(null);
-      setError(getApiErrorMessage(validationError, 'Не удалось выполнить проверку QR.'));
+      setError(getApiError(validationError).message);
     } finally {
       setIsSubmitting(false);
     }

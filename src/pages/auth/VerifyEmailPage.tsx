@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { cn } from '@/shared/lib/cn';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 
 type Status = 'loading' | 'success' | 'error';
 type VerifyResult = { ok: true } | { ok: false; message: string };
@@ -20,7 +20,7 @@ function verifyTokenOnce(token: string): Promise<VerifyResult> {
     .then((): VerifyResult => ({ ok: true }))
     .catch((err: unknown): VerifyResult => ({
       ok: false,
-      message: getApiErrorMessage(err, 'Не удалось подтвердить email. Попробуйте позже.'),
+      message: getApiError(err).message,
     }));
 
   verifyRequests.set(token, request);

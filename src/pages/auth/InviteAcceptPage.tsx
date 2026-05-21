@@ -6,7 +6,7 @@ import { MailCheck } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLE_LABELS, type UserRole } from '@/shared/config/constants';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { useAuthStore } from '@/shared/store/auth';
 import type { InviteRegistrationPreview } from '@/shared/types';
 import { authInput, authLabel, authLink, authPrimaryBtn } from '@/shared/ui/authFormStyles';
@@ -46,7 +46,7 @@ export default function InviteAcceptPage() {
         password,
         ...(phone.trim() ? { phone: phone.trim() } : {}),
       }),
-    onError: (err) => setError(getApiErrorMessage(err, 'Не удалось зарегистрироваться по инвайту')),
+    onError: (err) => setError(getApiError(err).message),
   });
 
   function onSubmit(e: { preventDefault(): void }) {
@@ -88,7 +88,7 @@ export default function InviteAcceptPage() {
       <div className="space-y-4">
         <h2 className="text-center text-xl font-semibold">Инвайт недействителен</h2>
         <p className="rounded-lg border border-red-200 bg-danger-subtle px-3 py-2 text-sm text-danger dark:border-red-900/40">
-          {getApiErrorMessage(inviteQuery.error, 'Ссылка невалидна, истекла или уже использована')}
+          {getApiError(inviteQuery.error).message}
         </p>
         <button type="button" onClick={() => inviteQuery.refetch()} className={authPrimaryBtn}>
           Проверить снова

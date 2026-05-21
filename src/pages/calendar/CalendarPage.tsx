@@ -16,7 +16,7 @@ import {
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import type {
   CalendarBusySlot,
@@ -396,7 +396,7 @@ export default function CalendarPage() {
             </div>
           ) : isEventsError ? (
             <div className="rounded-xl border border-red-200 dark:border-red-800 bg-danger-subtle p-6 text-sm text-danger">
-              {getApiErrorMessage(eventsError, 'Не удалось загрузить календарь.')}
+              {getApiError(eventsError).message}
             </div>
           ) : events.length === 0 ? (
             <div className="rounded-xl border border-default bg-raised p-8 text-center text-sm text-secondary">

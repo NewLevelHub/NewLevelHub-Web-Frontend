@@ -15,7 +15,7 @@ import {
   type ServiceRequestType,
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import type {
   PaginatedResponse,
@@ -156,7 +156,7 @@ export default function ServiceRequestListPage() {
       await queryClient.invalidateQueries({ queryKey: ['service-requests'] });
     },
     onError: (err) => {
-      setMutationError(getApiErrorMessage(err, 'Не удалось создать заявку.'));
+      setMutationError(getApiError(err).message);
     },
   });
 
@@ -169,7 +169,7 @@ export default function ServiceRequestListPage() {
       await queryClient.invalidateQueries({ queryKey: ['service-requests'] });
     },
     onError: (err) => {
-      setMutationError(getApiErrorMessage(err, 'Не удалось создать заявку на уборку.'));
+      setMutationError(getApiError(err).message);
     },
   });
 
@@ -192,7 +192,7 @@ export default function ServiceRequestListPage() {
       }
     },
     onError: (err) => {
-      setMutationError(getApiErrorMessage(err, 'Не удалось изменить статус.'));
+      setMutationError(getApiError(err).message);
     },
   });
 
@@ -209,7 +209,7 @@ export default function ServiceRequestListPage() {
       await queryClient.invalidateQueries({ queryKey: ['service-requests'] });
     },
     onError: (err) => {
-      setMutationError(getApiErrorMessage(err, 'Не удалось оценить заявку.'));
+      setMutationError(getApiError(err).message);
     },
   });
 
@@ -372,7 +372,7 @@ export default function ServiceRequestListPage() {
           className="rounded-lg border border-rose-800 bg-rose-950/30 px-3 py-2 text-sm text-rose-300"
           role="alert"
         >
-          {getApiErrorMessage(error, 'Не удалось загрузить заявки.')}
+          {getApiError(error).message}
         </div>
       ) : null}
 

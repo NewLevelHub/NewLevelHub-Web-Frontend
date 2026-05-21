@@ -5,7 +5,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useUser } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import type { Announcement, CursorPaginatedResponse } from '@/shared/types';
 
 import { buildListUrl, type CategoryFilter } from '@/pages/announcements/utils/announcementUtils';
@@ -88,7 +88,7 @@ export function useAnnouncements() {
   );
 
   const deleteError = deleteMutation.error
-    ? getApiErrorMessage(deleteMutation.error, 'Не удалось удалить объявление.')
+    ? getApiError(deleteMutation.error).message
     : null;
 
   const canDelete = useCallback(

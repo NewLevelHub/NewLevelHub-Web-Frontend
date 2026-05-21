@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { useAuthStore } from '@/shared/store/auth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { authInput, authLabel, authPrimaryBtn, authLink } from '@/shared/ui/authFormStyles';
 import { AuthPasswordField } from '@/shared/ui/AuthPasswordField';
 
@@ -44,7 +44,7 @@ export default function RegisterPage() {
         ...(phone.trim() ? { phone: phone.trim() } : {}),
       });
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Не удалось зарегистрироваться'));
+      setError(getApiError(err).message);
     } finally {
       setLoading(false);
     }

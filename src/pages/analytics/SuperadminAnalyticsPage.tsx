@@ -26,7 +26,7 @@ import { API } from '@/shared/api/endpoints';
 import { RESOURCE_TYPES, RESOURCE_TYPE_LABELS, USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import { filenameFromContentDisposition, triggerCsvFileDownload } from '@/shared/lib/csvDownload';
 import type { Company, PaginatedResponse, SuperadminAnalyticsPeriod, SuperadminAnalyticsResponse } from '@/shared/types';
@@ -271,7 +271,7 @@ export default function SuperadminAnalyticsPage() {
   });
 
   const overview = data?.overview;
-  const errorText = isError ? getApiErrorMessage(error) : null;
+  const errorText = isError ? getApiError(error).message : null;
 
   async function handleExportCsv() {
     if (!queryEnabled) return;
@@ -294,7 +294,7 @@ export default function SuperadminAnalyticsPage() {
       const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
       triggerCsvFileDownload(blob, filename);
     } catch (e) {
-      setExportError(getApiErrorMessage(e, 'Не удалось выгрузить CSV.'));
+      setExportError(getApiError(e).message);
     } finally {
       setIsExporting(false);
     }

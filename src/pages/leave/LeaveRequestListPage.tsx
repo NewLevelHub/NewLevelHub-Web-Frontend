@@ -14,7 +14,7 @@ import {
   type LeaveType,
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import type { LeaveBalance, LeaveRequest, PaginatedResponse, TeamLeaveBalance } from '@/shared/types';
 
@@ -109,7 +109,7 @@ export default function LeaveRequestListPage() {
       await queryClient.invalidateQueries({ queryKey: ['leave-team-balance'] });
     },
     onError: (err) => {
-      setMutationError(getApiErrorMessage(err, 'Не удалось обновить заявку.'));
+      setMutationError(getApiError(err).message);
     },
   });
 
@@ -122,7 +122,7 @@ export default function LeaveRequestListPage() {
       await queryClient.invalidateQueries({ queryKey: ['leave-balance', year] });
     },
     onError: (err) => {
-      setMutationError(getApiErrorMessage(err, 'Не удалось установить баланс.'));
+      setMutationError(getApiError(err).message);
     },
   });
 
@@ -226,7 +226,7 @@ export default function LeaveRequestListPage() {
 
       {error ? (
         <div className="rounded-lg border border-rose-800 bg-rose-950/30 px-3 py-2 text-sm text-rose-300" role="alert">
-          {getApiErrorMessage(error, 'Не удалось загрузить заявки.')}
+          {getApiError(error).message}
         </div>
       ) : null}
 
