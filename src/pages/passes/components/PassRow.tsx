@@ -24,9 +24,9 @@ export function PassRow({ pass, isSuperadmin }: PassRowProps) {
       </td>
       <td className="px-4 py-3 align-top">{pass.purpose || '—'}</td>
       <td className="px-4 py-3 text-xs text-secondary align-top whitespace-nowrap">
-        {new Date(pass.valid_from).toLocaleString()}
+        {new Date(pass.valid_from).toLocaleString('ru-RU')}
         <br />
-        {new Date(pass.valid_until).toLocaleString()}
+        {new Date(pass.valid_until).toLocaleString('ru-RU')}
       </td>
       <td className="px-4 py-3 align-top whitespace-nowrap">
         <PassStatusBadge status={pass.status as PassStatus} />

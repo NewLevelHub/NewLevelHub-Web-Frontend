@@ -378,7 +378,7 @@ export default function MyBookingsPage() {
                   <p className="text-xs text-muted">
                     {RESOURCE_TYPE_LABELS[b.resource_type as ResourceType] ?? b.resource_type}
                     {' · '}
-                    {start.toLocaleString()} — {end.toLocaleString()}
+                    {start.toLocaleString('ru-RU')} — {end.toLocaleString('ru-RU')}
                   </p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE_CLASS[b.status] ?? 'bg-gray-100 text-muted')}>

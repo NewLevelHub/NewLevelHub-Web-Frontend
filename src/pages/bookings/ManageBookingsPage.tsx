@@ -582,12 +582,12 @@ export default function ManageBookingsPage() {
                         : '—'}
                     </p>
                     <p className="text-xs text-secondary">
-                      {new Date(booking.start_time).toLocaleString()} —{' '}
-                      {new Date(booking.end_time).toLocaleString()}
+                      {new Date(booking.start_time).toLocaleString('ru-RU')} —{' '}
+                      {new Date(booking.end_time).toLocaleString('ru-RU')}
                     </p>
                     {booking.checked_in_at && (
                       <p className="text-xs text-success">
-                        Check-in: {new Date(booking.checked_in_at).toLocaleString()}
+                        Check-in: {new Date(booking.checked_in_at).toLocaleString('ru-RU')}
                       </p>
                     )}
                     {booking.cancel_reason ? (

@@ -114,7 +114,7 @@ export function AnnouncementsWidget() {
                   </div>
                   <p className="mt-0.5 line-clamp-2 text-xs text-secondary">{a.text}</p>
                   <p className="mt-1 text-[11px] text-muted">
-                    {new Date(a.created_at).toLocaleString()}
+                    {new Date(a.created_at).toLocaleString('ru-RU')}
                   </p>
                 </div>
               </li>

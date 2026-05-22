@@ -258,7 +258,7 @@ export default function BookingDetailPage() {
       <section className="rounded-2xl border border-default bg-surface p-6 shadow-sm space-y-3">
         <h1 className="text-xl font-bold text-primary">{data.resource_name}</h1>
         <p className="text-sm text-muted">
-          {start.toLocaleString()} — {end.toLocaleString()}
+          {start.toLocaleString('ru-RU')} — {end.toLocaleString('ru-RU')}
         </p>
         <p className="text-sm">
           <span className="font-medium text-secondary">Статус: </span>

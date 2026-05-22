@@ -158,7 +158,7 @@ function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
           label="Пользователи"
           value={data.total_users}
           iconClass="text-sky-400"
-          to="/users"
+          to="/team/manage"
         />
         <StatCard
           icon={CalendarCheck}
