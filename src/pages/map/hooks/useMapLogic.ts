@@ -342,6 +342,10 @@ export function useMapLogic(): UseMapLogicReturn {
   }, []);
 
   const handleDeleteFloor = useCallback((floor: ServiceFloor) => {
+    setAddPanelOpen(false);
+    setGhostPin(null);
+    setAddPanelForm(EMPTY_FORM);
+    setMovingPointId(null);
     setDeletingFloor(floor);
     setDeleteFloorDialogOpen(true);
   }, []);
@@ -353,14 +357,25 @@ export function useMapLogic(): UseMapLogicReturn {
 
   const handleDeleteFloorSuccess = useCallback(
     (deletedFloorId: number) => {
+      // Optimistically remove the deleted floor from the cache so the
+      // auto-select useEffect doesn't re-select the just-deleted floor
+      // before the background refetch completes.
+      queryClient.setQueryData<ServiceFloor[]>(['map-floors'], (old) =>
+        old ? old.filter((f) => f.id !== deletedFloorId) : old,
+      );
       setDeleteFloorDialogOpen(false);
       setDeletingFloor(null);
+      setAddPanelOpen(false);
+      setGhostPin(null);
+      setAddPanelForm(EMPTY_FORM);
+      setMovingPointId(null);
+      setEditMode(false);
       if (selectedFloorId === deletedFloorId) {
         const remaining = floors?.filter((f) => f.id !== deletedFloorId) ?? [];
         setSelectedFloorId(remaining.length > 0 ? remaining[0].id : null);
       }
     },
-    [selectedFloorId, floors],
+    [selectedFloorId, floors, queryClient],
   );
 
   const selectedFloor = floors?.find((f) => f.id === selectedFloorId);

@@ -143,7 +143,7 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
           </div>
         ) : null}
 
-        {floorMap && !mapLoading && !mapError ? (
+        {floorMap && !mapLoading && !mapError && selectedFloorId !== null ? (
           <div className="flex flex-col gap-3">
             <MapEditToolbar
               floorName={floorMap.floor_name}
