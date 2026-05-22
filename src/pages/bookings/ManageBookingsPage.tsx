@@ -488,7 +488,7 @@ export default function ManageBookingsPage() {
           </select>
         </label>
         <label className="text-sm text-secondary">
-          Date from
+          Дата с
           <input
             type="datetime-local"
             value={dateFrom}
@@ -500,7 +500,7 @@ export default function ManageBookingsPage() {
           />
         </label>
         <label className="text-sm text-secondary">
-          Date to
+          Дата по
           <input
             type="datetime-local"
             value={dateTo}
