@@ -154,11 +154,11 @@ export default function PassDetailPage() {
         </div>
         <div>
           <div className="text-secondary">Действует с</div>
-          <div>{new Date(data.valid_from).toLocaleString()}</div>
+          <div>{new Date(data.valid_from).toLocaleString('ru-RU')}</div>
         </div>
         <div>
           <div className="text-secondary">Действует до</div>
-          <div>{new Date(data.valid_until).toLocaleString()}</div>
+          <div>{new Date(data.valid_until).toLocaleString('ru-RU')}</div>
         </div>
       </section>
 

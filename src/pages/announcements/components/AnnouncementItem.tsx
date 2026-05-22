@@ -75,7 +75,7 @@ export const AnnouncementItem = memo<AnnouncementItemProps>(function Announcemen
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-muted">
               {a.author_name ? `${a.author_name} · ` : ''}
-              {new Date(a.created_at).toLocaleString()}
+              {new Date(a.created_at).toLocaleString('ru-RU')}
             </p>
             <div className="flex items-center gap-3">
               {isAuthor ? (

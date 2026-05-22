@@ -80,7 +80,7 @@ function formatAvailableAt(iso: string | null): string | null {
   if (!iso) return null;
   try {
     const d = new Date(iso);
-    return d.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+    return d.toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' });
   } catch {
     return null;
   }

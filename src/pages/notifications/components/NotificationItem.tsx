@@ -62,7 +62,7 @@ export const NotificationItem = memo<NotificationItemProps>(
           <p className="font-medium text-sm text-primary">{n.title}</p>
           <p className="text-sm text-muted mt-0.5 whitespace-pre-line">{n.message ?? n.body}</p>
           <p className="text-xs text-secondary mt-1">
-            {new Date(n.created_at).toLocaleString()}
+            {new Date(n.created_at).toLocaleString('ru-RU')}
           </p>
         </div>
         {!n.is_read && <NotificationBadge />}
