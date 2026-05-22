@@ -8,7 +8,7 @@ import { API } from '@/shared/api/endpoints';
 import type { CompanyAnalytics } from '@/shared/types';
 import { PageStub } from '@/shared/ui/PageStub';
 import { USER_ROLES } from '@/shared/config/constants';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import { filenameFromContentDisposition, triggerCsvFileDownload } from '@/shared/lib/csvDownload';
 import { useAuthStore } from '@/shared/store/auth';
@@ -64,7 +64,7 @@ export default function AnalyticsDashboardPage() {
       const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
       triggerCsvFileDownload(blob, filename);
     } catch (e) {
-      setExportError(getApiErrorMessage(e, 'Не удалось выгрузить CSV.'));
+      setExportError(getApiError(e).message);
     } finally {
       setIsExporting(false);
     }

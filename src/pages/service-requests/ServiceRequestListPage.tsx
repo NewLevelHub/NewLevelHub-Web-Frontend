@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Star } from 'lucide-react';
+import { useLocation } from 'react-router';
+
+import { CleaningModal } from './components/CleaningModal';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -15,7 +18,7 @@ import {
   type ServiceRequestType,
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import type {
   PaginatedResponse,
@@ -78,9 +81,7 @@ function formatServiceRequestFloorCell(req: ServiceRequest, floors: ServiceFloor
   return '—';
 }
 
-type CreateModalState =
-  | { mode: 'general' }
-  | { mode: 'cleaning' };
+type CreateModalState = { mode: 'general' };
 
 function getRequestOwnerId(request: ServiceRequest): number | null {
   const requestWithFallback = request as ServiceRequest & { user?: number; created_by?: number };
@@ -103,6 +104,19 @@ export default function ServiceRequestListPage() {
   const [typeFilter, setTypeFilter] = useState<ServiceRequestType | ''>('');
   const [statusFilter, setStatusFilter] = useState<ServiceRequestStatus | ''>('');
   const [mutationError, setMutationError] = useState<string | null>(null);
+
+  // Cleaning modal state
+  const [isCleaningModalOpen, setIsCleaningModalOpen] = useState(false);
+
+  const location = useLocation();
+
+  useEffect(() => {
+    if ((location.state as { openCleaning?: boolean } | null)?.openCleaning) {
+      setIsCleaningModalOpen(true);
+      // сбрасываем state чтобы при обновлении страницы модалка не открывалась снова
+      window.history.replaceState({}, '');
+    }
+  }, [location.state]);
 
   // Create modal state
   const [createModal, setCreateModal] = useState<CreateModalState | null>(null);
@@ -156,20 +170,7 @@ export default function ServiceRequestListPage() {
       await queryClient.invalidateQueries({ queryKey: ['service-requests'] });
     },
     onError: (err) => {
-      setMutationError(getApiErrorMessage(err, 'Не удалось создать заявку.'));
-    },
-  });
-
-  const cleaningMutation = useMutation({
-    mutationFn: (payload: FormData) =>
-      apiClient.post<ServiceRequest>(API.serviceRequests.quickCleaning, payload).then((r) => r.data),
-    onSuccess: async () => {
-      setMutationError(null);
-      closeCreateModal(true);
-      await queryClient.invalidateQueries({ queryKey: ['service-requests'] });
-    },
-    onError: (err) => {
-      setMutationError(getApiErrorMessage(err, 'Не удалось создать заявку на уборку.'));
+      setMutationError(getApiError(err).message);
     },
   });
 
@@ -192,7 +193,7 @@ export default function ServiceRequestListPage() {
       }
     },
     onError: (err) => {
-      setMutationError(getApiErrorMessage(err, 'Не удалось изменить статус.'));
+      setMutationError(getApiError(err).message);
     },
   });
 
@@ -209,7 +210,7 @@ export default function ServiceRequestListPage() {
       await queryClient.invalidateQueries({ queryKey: ['service-requests'] });
     },
     onError: (err) => {
-      setMutationError(getApiErrorMessage(err, 'Не удалось оценить заявку.'));
+      setMutationError(getApiError(err).message);
     },
   });
 
@@ -225,15 +226,11 @@ export default function ServiceRequestListPage() {
   }
 
   function openCleaningModal() {
-    setCreateDescription('');
-    setCreateFloorId('');
-    setCreatePhoto(null);
-    setMutationError(null);
-    setCreateModal({ mode: 'cleaning' });
+    setIsCleaningModalOpen(true);
   }
 
   function closeCreateModal(force = false) {
-    if (!force && (createMutation.isPending || cleaningMutation.isPending)) return;
+    if (!force && createMutation.isPending) return;
     setCreateModal(null);
     setMutationError(null);
   }
@@ -257,22 +254,13 @@ export default function ServiceRequestListPage() {
     }
 
     const payload = new FormData();
-
-    if (createModal.mode === 'cleaning') {
-      payload.append('description', createDescription.trim());
-      payload.append('floor', createFloorId);
-      payload.append('location', createLocation.trim());
-      if (createPhoto) payload.append('photo', createPhoto);
-      cleaningMutation.mutate(payload);
-    } else {
-      payload.append('request_type', createType);
-      payload.append('description', createDescription.trim());
-      payload.append('urgency', createUrgency);
-      payload.append('floor', createFloorId);
-      payload.append('location', createLocation.trim());
-      if (createPhoto) payload.append('photo', createPhoto);
-      createMutation.mutate(payload);
-    }
+    payload.append('request_type', createType);
+    payload.append('description', createDescription.trim());
+    payload.append('urgency', createUrgency);
+    payload.append('floor', createFloorId);
+    payload.append('location', createLocation.trim());
+    if (createPhoto) payload.append('photo', createPhoto);
+    createMutation.mutate(payload);
   }
 
   function handleUpdateStatus(request: ServiceRequest) {
@@ -297,7 +285,6 @@ export default function ServiceRequestListPage() {
   const rows = data?.results ?? [];
   const isPendingMutation =
     createMutation.isPending ||
-    cleaningMutation.isPending ||
     updateStatusMutation.isPending ||
     rateMutation.isPending;
 
@@ -372,7 +359,7 @@ export default function ServiceRequestListPage() {
           className="rounded-lg border border-rose-800 bg-rose-950/30 px-3 py-2 text-sm text-rose-300"
           role="alert"
         >
-          {getApiErrorMessage(error, 'Не удалось загрузить заявки.')}
+          {getApiError(error).message}
         </div>
       ) : null}
 
@@ -508,7 +495,14 @@ export default function ServiceRequestListPage() {
         </div>
       )}
 
-      {/* Create / Cleaning Modal */}
+      {/* Cleaning Modal */}
+      <CleaningModal
+        isOpen={isCleaningModalOpen}
+        onClose={() => setIsCleaningModalOpen(false)}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['service-requests'] })}
+      />
+
+      {/* Create General Modal */}
       {createModal ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
@@ -520,28 +514,24 @@ export default function ServiceRequestListPage() {
             className="w-full max-w-lg rounded-xl border border-default bg-raised p-5"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold text-primary">
-              {createModal.mode === 'cleaning' ? 'Вызвать уборку' : 'Новая сервисная заявка'}
-            </h2>
+            <h2 className="text-lg font-semibold text-primary">Новая сервисная заявка</h2>
 
             <form onSubmit={handleCreateSubmit} className="mt-4 space-y-4">
-              {/* Type selector — only for general mode */}
-              {createModal.mode === 'general' ? (
-                <label className="block text-sm text-secondary">
-                  Тип заявки
-                  <select
-                    value={createType}
-                    onChange={(e) => setCreateType(e.target.value as ServiceRequestType)}
-                    className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-                  >
-                    {TYPE_OPTIONS.filter((opt) => opt.value !== '').map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
+              {/* Type selector */}
+              <label className="block text-sm text-secondary">
+                Тип заявки
+                <select
+                  value={createType}
+                  onChange={(e) => setCreateType(e.target.value as ServiceRequestType)}
+                  className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+                >
+                  {TYPE_OPTIONS.filter((opt) => opt.value !== '').map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
               {/* Floor */}
               <label className="block text-sm text-secondary">
@@ -621,20 +611,18 @@ export default function ServiceRequestListPage() {
                 ) : null}
               </label>
 
-              {/* Urgency — only for general mode */}
-              {createModal.mode === 'general' ? (
-                <label className="block text-sm text-secondary">
-                  Срочность
-                  <select
-                    value={createUrgency}
-                    onChange={(e) => setCreateUrgency(e.target.value as 'normal' | 'urgent')}
-                    className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-                  >
-                    <option value="normal">Обычная</option>
-                    <option value="urgent">Срочная</option>
-                  </select>
-                </label>
-              ) : null}
+              {/* Urgency */}
+              <label className="block text-sm text-secondary">
+                Срочность
+                <select
+                  value={createUrgency}
+                  onChange={(e) => setCreateUrgency(e.target.value as 'normal' | 'urgent')}
+                  className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+                >
+                  <option value="normal">Обычная</option>
+                  <option value="urgent">Срочная</option>
+                </select>
+              </label>
 
               {mutationError ? (
                 <div
@@ -649,21 +637,17 @@ export default function ServiceRequestListPage() {
                 <button
                   type="button"
                   onClick={() => closeCreateModal()}
-                  disabled={createMutation.isPending || cleaningMutation.isPending}
+                  disabled={createMutation.isPending}
                   className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover"
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
-                  disabled={createMutation.isPending || cleaningMutation.isPending}
+                  disabled={createMutation.isPending}
                   className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
                 >
-                  {createMutation.isPending || cleaningMutation.isPending
-                    ? 'Отправка...'
-                    : createModal.mode === 'cleaning'
-                      ? 'Вызвать уборку'
-                      : 'Создать заявку'}
+                  {createMutation.isPending ? 'Отправка...' : 'Создать заявку'}
                 </button>
               </div>
             </form>

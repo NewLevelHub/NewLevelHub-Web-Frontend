@@ -163,7 +163,7 @@ export function ResourceDayTimeline({ dayDate, slots, className }: Props) {
       </div>
       <div className="flex justify-between text-[10px] text-muted px-0.5">
         {HOUR_TICKS.map((h) => (
-          <span key={h}>{h === 24 ? '24:00' : `${h}:00`}</span>
+          <span key={h}>{`${String(h).padStart(2, '0')}:00`}</span>
         ))}
       </div>
     </div>

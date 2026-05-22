@@ -1,11 +1,19 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import dayjs from 'dayjs';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import type { GuestPass } from '@/shared/types';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const TZ = 'Asia/Almaty';
 
 type GuestPassCreatePayload = {
   guest_name: string;
@@ -20,13 +28,12 @@ type GuestPassCreatePayload = {
 export default function PassCreatePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const now = new Date();
 
   const [guestName, setGuestName] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
   const [purpose, setPurpose] = useState('');
-  const [validFrom, setValidFrom] = useState(now.toISOString().slice(0, 16));
+  const [validFrom, setValidFrom] = useState(dayjs().tz(TZ).format('YYYY-MM-DDTHH:mm'));
   const [isSingleUse, setIsSingleUse] = useState(true);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -40,7 +47,7 @@ export default function PassCreatePage() {
       navigate(`/passes/${createdPass.id}`);
     },
     onError: (error: unknown) => {
-      setFormError(getApiErrorMessage(error, 'Не удалось создать пропуск.'));
+      setFormError(getApiError(error).message);
     },
   });
 
@@ -51,15 +58,13 @@ export default function PassCreatePage() {
       setFormError('Заполните обязательные поля: имя, email и цель.');
       return;
     }
-    const computedValidUntil = new Date(new Date(validFrom).getTime() + 1000 * 60 * 60 * 24 * 30);
-
     createPassMutation.mutate({
       guest_name: guestName.trim(),
       guest_email: guestEmail.trim(),
       guest_phone: guestPhone.trim() || undefined,
       purpose: purpose.trim(),
-      valid_from: new Date(validFrom).toISOString(),
-      valid_until: computedValidUntil.toISOString(),
+      valid_from: dayjs.tz(validFrom, TZ).toISOString(),
+      valid_until: dayjs.tz(validFrom, TZ).add(30, 'day').toISOString(),
       is_single_use: isSingleUse,
     });
   };
@@ -117,6 +122,7 @@ export default function PassCreatePage() {
               type="datetime-local"
               value={validFrom}
               onChange={(event) => setValidFrom(event.target.value)}
+              min={dayjs().tz(TZ).format('YYYY-MM-DDTHH:mm')}
               className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               required
             />

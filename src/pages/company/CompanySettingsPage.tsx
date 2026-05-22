@@ -6,8 +6,8 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
+import { getApiError } from '@/shared/lib/getApiError';
 import type { Company, CompanySettings, CrmLabel, PaginatedResponse } from '@/shared/types';
 
 function normalizeTimeInput(value: string): string {
@@ -104,7 +104,7 @@ export default function CompanySettingsPage() {
     },
     onError: (mutationError: unknown) => {
       setSuccess(null);
-      setError(getApiErrorMessage(mutationError, 'Не удалось сохранить настройки компании.'));
+      setError(getApiError(mutationError).message);
     },
   });
 

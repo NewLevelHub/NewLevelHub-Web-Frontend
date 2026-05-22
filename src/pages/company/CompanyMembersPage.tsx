@@ -5,8 +5,8 @@ import { MailPlus, RefreshCw, Ban } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { USER_ROLES, type UserRole } from '@/shared/config/constants';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { USER_ROLES, USER_ROLE_LABELS, type UserRole } from '@/shared/config/constants';
+import { getApiError } from '@/shared/lib/getApiError';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
 import { useAuth } from '@/shared/hooks/useAuth';
@@ -90,7 +90,7 @@ export default function CompanyMembersPage() {
       void queryClient.invalidateQueries({ queryKey: ['company-invitations', companyId] });
     },
     onError: (err) => {
-      setFormError(getApiErrorMessage(err, 'Не удалось отправить приглашение'));
+      setFormError(getApiError(err).message);
     },
   });
 
@@ -273,7 +273,7 @@ export default function CompanyMembersPage() {
                   <p className="text-sm text-secondary">{m.email}</p>
                 </div>
                 <span className="rounded-full bg-raised px-2.5 py-0.5 text-xs text-secondary">
-                  {m.role}
+                  {USER_ROLE_LABELS[m.role as UserRole] ?? m.role}
                 </span>
               </li>
             ))}
@@ -345,7 +345,7 @@ export default function CompanyMembersPage() {
                   <div>
                     <p className="font-medium text-primary">{inv.email}</p>
                     <p className="text-xs text-muted">
-                      {inv.role} · до {new Date(inv.expires_at).toLocaleString()}
+                      {USER_ROLE_LABELS[inv.role as UserRole] ?? inv.role} · до {new Date(inv.expires_at).toLocaleString()}
                       {inv.is_expired ? ' · просрочено' : inv.is_used ? ' · использовано' : ''}
                     </p>
                     {isSuperadmin && selectedCompanyName ? (

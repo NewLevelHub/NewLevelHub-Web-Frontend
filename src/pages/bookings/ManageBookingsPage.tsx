@@ -12,7 +12,7 @@ import {
   USER_ROLES,
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
 import type {
@@ -180,7 +180,6 @@ export default function ManageBookingsPage() {
     const params: Record<string, string | number> = {
       page,
       page_size: PAGE_SIZE,
-      ordering: '-start_time',
     };
 
     if (isSuperadmin && companyId) {
@@ -211,6 +210,7 @@ export default function ManageBookingsPage() {
       return response;
     },
     refetchInterval: 30_000,
+    refetchOnMount: 'always',
   });
 
   const { data: editBookingData } = useQuery({
@@ -241,14 +241,26 @@ export default function ManageBookingsPage() {
     mutationFn: async ({ bookingId, reason }: { bookingId: number; reason: string }) => {
       await apiClient.post(API.bookings.reservations.adminCancel(String(bookingId)), { reason });
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+    onSuccess: (_, { bookingId }) => {
+      queryClient.setQueryData<PaginatedResponse<Booking>>(
+        ['admin-bookings', queryParams],
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            results: old.results.map((b) =>
+              b.id === bookingId ? { ...b, status: BOOKING_STATUSES.CANCELLED } : b,
+            ),
+          };
+        },
+      );
+      void queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
       setCancelTarget(null);
       setCancelReason('');
       setCancelFormError(null);
     },
     onError: (mutationError) => {
-      setCancelFormError(getApiErrorMessage(mutationError));
+      setCancelFormError(getApiError(mutationError).message);
     },
   });
 
@@ -259,13 +271,13 @@ export default function ManageBookingsPage() {
         end_time: new Date(endTime).toISOString(),
       });
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
-      await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+      void queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
       setEditFormError(null);
     },
     onError: (mutationError) => {
-      setEditFormError(getApiErrorMessage(mutationError, 'Не удалось обновить время.'));
+      setEditFormError(getApiError(mutationError).message);
     },
   });
 
@@ -275,14 +287,14 @@ export default function ManageBookingsPage() {
         user_ids: [userId],
       });
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
-      await queryClient.invalidateQueries({ queryKey: ['admin-bookings', 'edit-booking'] });
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-bookings', 'edit-booking'] });
       setSelectedParticipantId('');
       setEditFormError(null);
     },
     onError: (mutationError) => {
-      setEditFormError(getApiErrorMessage(mutationError, 'Не удалось добавить участника.'));
+      setEditFormError(getApiError(mutationError).message);
     },
   });
 
@@ -290,13 +302,13 @@ export default function ManageBookingsPage() {
     mutationFn: async ({ bookingId, userId }: { bookingId: number; userId: number }) => {
       await apiClient.delete(API.bookings.reservations.removeParticipant(String(bookingId), String(userId)));
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
-      await queryClient.invalidateQueries({ queryKey: ['admin-bookings', 'edit-booking'] });
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-bookings', 'edit-booking'] });
       setEditFormError(null);
     },
     onError: (mutationError) => {
-      setEditFormError(getApiErrorMessage(mutationError, 'Не удалось удалить участника.'));
+      setEditFormError(getApiError(mutationError).message);
     },
   });
 
@@ -369,7 +381,7 @@ export default function ManageBookingsPage() {
     });
   };
 
-  const queryErrorText = isError ? getApiErrorMessage(error, 'Не удалось загрузить бронирования.') : null;
+  const queryErrorText = isError ? getApiError(error).message : null;
 
   return (
     <main className="mx-auto max-w-7xl space-y-4 sm:space-y-6 px-3 py-4 sm:px-4 sm:py-6 md:py-8">
@@ -593,7 +605,7 @@ export default function ManageBookingsPage() {
                           Изменить
                         </button>
                       ) : null}
-                      {canAdminCancel ? (
+                      {canAdminCancel && (
                         <button
                           type="button"
                           onClick={() => openCancelModal(booking)}
@@ -601,8 +613,6 @@ export default function ManageBookingsPage() {
                         >
                           Админ-отмена
                         </button>
-                      ) : (
-                        <span className="text-xs text-muted">Недоступно для статуса {booking.status}</span>
                       )}
                     </div>
                   </div>

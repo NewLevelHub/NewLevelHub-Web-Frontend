@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import type { MapPoint } from '@/shared/types';
 
 export interface MapDeletePointDialogProps {
@@ -27,7 +27,7 @@ export const MapDeletePointDialog = memo<MapDeletePointDialogProps>(
         onSuccess();
       },
       onError: (err: unknown) => {
-        setDeleteError(getApiErrorMessage(err, 'Не удалось удалить точку'));
+        setDeleteError(getApiError(err).message);
       },
     });
 

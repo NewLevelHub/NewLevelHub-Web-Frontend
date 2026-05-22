@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import type {
   BookingResourceListItem,
   MapPointCreatePayload,
@@ -50,7 +50,7 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
         onSuccess();
       },
       onError: (err: unknown) => {
-        setFormError(getApiErrorMessage(err, 'Не удалось создать точку'));
+        setFormError(getApiError(err).message);
       },
     });
 

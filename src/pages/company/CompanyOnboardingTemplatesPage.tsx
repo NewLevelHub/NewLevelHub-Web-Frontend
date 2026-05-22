@@ -5,9 +5,9 @@ import { Plus, Save, ListChecks, Pencil, Trash2, Star } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
-import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { useAuth } from '@/shared/hooks/useAuth';
+import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
+import { getApiError } from '@/shared/lib/getApiError';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import type { Company, OnboardingTemplate, OnboardingTemplateStepInput, PaginatedResponse } from '@/shared/types';
 
@@ -113,7 +113,7 @@ export default function CompanyOnboardingTemplatesPage() {
     },
     onError: (mutationError: unknown) => {
       setSuccess(null);
-      setError(getApiErrorMessage(mutationError, 'Не удалось сохранить шаблон онбординга.'));
+      setError(getApiError(mutationError).message);
     },
   });
 
@@ -133,7 +133,7 @@ export default function CompanyOnboardingTemplatesPage() {
     },
     onError: (mutationError: unknown) => {
       setSuccess(null);
-      setError(getApiErrorMessage(mutationError, 'Не удалось удалить шаблон онбординга.'));
+      setError(getApiError(mutationError).message);
     },
   });
 
@@ -147,7 +147,7 @@ export default function CompanyOnboardingTemplatesPage() {
     },
     onError: (mutationError: unknown) => {
       setSuccess(null);
-      setError(getApiErrorMessage(mutationError, 'Не удалось назначить шаблон по умолчанию.'));
+      setError(getApiError(mutationError).message);
     },
   });
 

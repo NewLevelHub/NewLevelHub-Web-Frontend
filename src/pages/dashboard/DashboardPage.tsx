@@ -22,7 +22,7 @@ import { useAuthStore } from '@/shared/store/auth';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { STAFF_UI_PREFIX, SUPERADMIN_UI_PREFIX, USER_ROLES } from '@/shared/config/constants';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { authPrimaryBtn } from '@/shared/ui/authFormStyles';
 import { cn } from '@/shared/lib/cn';
 import type {
@@ -33,8 +33,6 @@ import type {
   GuestDashboardData,
   DashboardAnnouncementItem,
   OnboardingStatus,
-  ServiceRequest,
-  ServiceRequestCleaningPayload,
 } from '@/shared/types';
 
 interface CompanyOnboardingStep {
@@ -137,7 +135,7 @@ const BOOKING_STATUS_CLASS: Record<string, string> = {
 };
 
 const QUICK_ACTION_CONFIG: Record<string, { label: string; to: string }> = {
-  invite_user: { label: 'Пригласить пользователя', to: '/companies' },
+  invite_user: { label: 'Пригласить пользователя', to: '/company/settings/members' },
   create_announcement: { label: 'Создать объявление', to: '/announcements' },
   manage_bookings: { label: 'Управление бронями', to: `${STAFF_UI_PREFIX}/bookings` },
   view_analytics: { label: 'Аналитика', to: `${SUPERADMIN_UI_PREFIX}/analytics` },
@@ -153,21 +151,21 @@ function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
           label="Компании"
           value={data.total_companies}
           iconClass="text-violet-400"
-          to="/companies"
+          to="/superadmin/companies"
         />
         <StatCard
           icon={Users}
           label="Пользователи"
           value={data.total_users}
           iconClass="text-sky-400"
-          to="/companies"
+          to="/users"
         />
         <StatCard
           icon={CalendarCheck}
           label="Брони сегодня"
           value={data.bookings_today}
           iconClass="text-emerald-400"
-          to="/bookings"
+          to="/bookings/my"
         />
       </div>
 
@@ -311,14 +309,14 @@ function EmployeeWidgets({
           label="Задачи на сегодня"
           value={data.my_tasks_today}
           iconClass="text-violet-400"
-          to="/crm"
+          to="/crm/my-tasks"
         />
         <StatCard
           icon={CalendarCheck}
           label="Мои брони сегодня"
           value={data.my_bookings_today}
           iconClass="text-emerald-400"
-          to="/bookings"
+          to="/bookings/my"
         />
         <StatCard
           icon={Bell}
@@ -394,24 +392,8 @@ export default function DashboardPage() {
   const [resendErr, setResendErr] = useState('');
   const [resendLoading, setResendLoading] = useState(false);
 
-  const [cleaningSuccess, setCleaningSuccess] = useState(false);
-  const [cleaningError, setCleaningError] = useState('');
   const [logoUploadError, setLogoUploadError] = useState('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
-
-  const cleaningMutation = useMutation({
-    mutationFn: (payload: ServiceRequestCleaningPayload) =>
-      apiClient.post<ServiceRequest>(API.serviceRequests.quickCleaning, payload).then((r) => r.data),
-    onSuccess: async () => {
-      setCleaningSuccess(true);
-      setCleaningError('');
-      await queryClient.invalidateQueries({ queryKey: ['service-requests'] });
-    },
-    onError: (err: unknown) => {
-      setCleaningError(getApiErrorMessage(err, 'Не удалось создать заявку на уборку.'));
-      setCleaningSuccess(false);
-    },
-  });
 
   const uploadLogoMutation = useMutation({
     mutationFn: (file: File) => {
@@ -430,7 +412,7 @@ export default function DashboardPage() {
       await fetchMe();
     },
     onError: (err: unknown) => {
-      setLogoUploadError(getApiErrorMessage(err, 'Не удалось загрузить логотип компании.'));
+      setLogoUploadError(getApiError(err).message);
     },
   });
 
@@ -442,7 +424,7 @@ export default function DashboardPage() {
       await apiClient.post(API.auth.resendVerification);
       setResendMsg('Письмо отправлено. Проверь почту или логи бэкенда.');
     } catch (e) {
-      setResendErr(getApiErrorMessage(e, 'Не удалось отправить'));
+      setResendErr(getApiError(e).message);
     } finally {
       setResendLoading(false);
     }
@@ -491,25 +473,14 @@ export default function DashboardPage() {
         <div className="flex-1">
           <h2 className="text-sm font-semibold text-primary">Нужна уборка?</h2>
           <p className="mt-0.5 text-xs text-secondary">
-            Этаж определится автоматически по последнему подтверждённому бронированию.
+            Оформите заявку на уборку — укажите этаж и детали.
           </p>
-          {cleaningSuccess && (
-            <p className="mt-2 text-sm text-success">
-              Заявка на уборку отправлена. Мы займёмся этим в ближайшее время.
-            </p>
-          )}
-          {cleaningError && <p className="mt-2 text-sm text-danger">{cleaningError}</p>}
           <button
             type="button"
-            disabled={cleaningMutation.isPending || cleaningSuccess}
-            onClick={() => {
-              setCleaningSuccess(false);
-              setCleaningError('');
-              cleaningMutation.mutate({});
-            }}
-            className="mt-3 inline-flex items-center rounded-lg border border-default px-4 py-2 text-sm font-medium text-secondary hover:bg-hover hover:text-primary transition-colors disabled:opacity-50"
+            onClick={() => navigate('/service-requests', { state: { openCleaning: true } })}
+            className="mt-3 inline-flex items-center rounded-lg border border-default px-4 py-2 text-sm font-medium text-secondary hover:bg-hover hover:text-primary transition-colors"
           >
-            {cleaningMutation.isPending ? 'Отправляем...' : 'Вызвать уборку'}
+            Вызвать уборку
           </button>
         </div>
       </div>

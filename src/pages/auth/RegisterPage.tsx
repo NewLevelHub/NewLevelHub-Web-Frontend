@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { useAuthStore } from '@/shared/store/auth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { authInput, authLabel, authPrimaryBtn, authLink } from '@/shared/ui/authFormStyles';
 import { AuthPasswordField } from '@/shared/ui/AuthPasswordField';
 
@@ -28,6 +28,11 @@ export default function RegisterPage() {
       setError('Пароль не короче 8 символов');
       return;
     }
+    const tld = email.trim().split('@')[1]?.split('.').pop() ?? '';
+    if (!/^[a-zA-Z]{2,}$/.test(tld)) {
+      setError('Укажите корректный email — домен должен содержать буквенное расширение (например, .kz, .com)');
+      return;
+    }
     setLoading(true);
     try {
       await register({
@@ -39,7 +44,7 @@ export default function RegisterPage() {
         ...(phone.trim() ? { phone: phone.trim() } : {}),
       });
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Не удалось зарегистрироваться'));
+      setError(getApiError(err).message);
     } finally {
       setLoading(false);
     }

@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { cn } from '@/shared/lib/cn';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import type {
   BookingResourceListItem,
   MapPointType,
@@ -58,7 +58,7 @@ export const MapPointEditModal = memo<MapPointEditModalProps>(
         onSuccess();
       },
       onError: (err: unknown) => {
-        setFormError(getApiErrorMessage(err, 'Не удалось обновить точку'));
+        setFormError(getApiError(err).message);
       },
     });
 

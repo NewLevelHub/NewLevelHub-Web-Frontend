@@ -14,7 +14,7 @@ import {
   type ResourceType,
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import type { Booking, BookingResourceDetail, CompanyMember, PaginatedResponse } from '@/shared/types';
 
@@ -114,9 +114,10 @@ export default function MyBookingsPage() {
     onSuccess: async () => {
       setListError(null);
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
     },
     onError: (error: unknown) => {
-      setListError(getApiErrorMessage(error, 'Не удалось отменить бронирование.'));
+      setListError(getApiError(error).message);
     },
   });
 
@@ -128,9 +129,10 @@ export default function MyBookingsPage() {
       setListError(null);
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
       await queryClient.invalidateQueries({ queryKey: ['booking-reservation'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
     },
     onError: (error: unknown) => {
-      setListError(getApiErrorMessage(error, 'Не удалось выполнить чек-ин.'));
+      setListError(getApiError(error).message);
     },
   });
 
@@ -182,10 +184,11 @@ export default function MyBookingsPage() {
       setEditSuccess('Время бронирования обновлено.');
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
       await queryClient.invalidateQueries({ queryKey: ['my-bookings', 'edit-booking'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
     },
     onError: (error: unknown) => {
       setEditSuccess(null);
-      setEditError(getApiErrorMessage(error, 'Не удалось изменить время.'));
+      setEditError(getApiError(error).message);
     },
   });
 
@@ -201,10 +204,11 @@ export default function MyBookingsPage() {
       setSelectedParticipantId('');
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
       await queryClient.invalidateQueries({ queryKey: ['my-bookings', 'edit-booking'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
     },
     onError: (error: unknown) => {
       setEditSuccess(null);
-      setEditError(getApiErrorMessage(error, 'Не удалось добавить участника.'));
+      setEditError(getApiError(error).message);
     },
   });
 
@@ -217,10 +221,11 @@ export default function MyBookingsPage() {
       setEditSuccess('Участник удален.');
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
       await queryClient.invalidateQueries({ queryKey: ['my-bookings', 'edit-booking'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
     },
     onError: (error: unknown) => {
       setEditSuccess(null);
-      setEditError(getApiErrorMessage(error, 'Не удалось удалить участника.'));
+      setEditError(getApiError(error).message);
     },
   });
 

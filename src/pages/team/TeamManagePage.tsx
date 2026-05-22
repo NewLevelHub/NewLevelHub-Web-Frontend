@@ -33,7 +33,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { mapApiUser } from '@/shared/lib/mapUser';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
@@ -74,24 +74,6 @@ interface Filters {
 }
 
 const PAGE_SIZE = 20;
-
-// ---------------------------------------------------------------------------
-// Backend error translations
-// ---------------------------------------------------------------------------
-const BACKEND_ERROR_RU: Record<string, string> = {
-  'reassign_to must be an active member of the same company':
-    'Переназначение возможно только на активного участника той же компании.',
-  'member not found': 'Сотрудник не найден.',
-  'cannot deactivate yourself': 'Нельзя деактивировать собственный аккаунт.',
-  'cannot remove yourself': 'Нельзя удалить себя из компании.',
-  'user is already active': 'Пользователь уже активен.',
-  'user is already inactive': 'Пользователь уже неактивен.',
-};
-
-function translateError(error: unknown, fallback: string): string {
-  const raw = getApiErrorMessage(error, '');
-  return BACKEND_ERROR_RU[raw.trim().toLowerCase()] ?? (raw || fallback);
-}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -1080,7 +1062,7 @@ export default function TeamManagePage() {
     },
     onError: (error: unknown) => {
       setActionSuccess(null);
-      setActionError(translateError(error, 'Не удалось деактивировать сотрудника.'));
+      setActionError(getApiError(error).message);
     },
   });
 
@@ -1096,7 +1078,7 @@ export default function TeamManagePage() {
     },
     onError: (error: unknown) => {
       setActionSuccess(null);
-      setActionError(translateError(error, 'Не удалось активировать сотрудника.'));
+      setActionError(getApiError(error).message);
     },
   });
 
@@ -1124,7 +1106,7 @@ export default function TeamManagePage() {
     },
     onError: (error: unknown) => {
       setActionSuccess(null);
-      setActionError(translateError(error, 'Не удалось удалить сотрудника из компании.'));
+      setActionError(getApiError(error).message);
     },
   });
 
@@ -1140,7 +1122,7 @@ export default function TeamManagePage() {
     },
     onError: (error: unknown) => {
       setActionSuccess(null);
-      setActionError(getApiErrorMessage(error, 'Не удалось обновить статус пользователя.'));
+      setActionError(getApiError(error).message);
     },
   });
 
@@ -1158,12 +1140,7 @@ export default function TeamManagePage() {
     },
     onError: (error: unknown) => {
       setActionSuccess(null);
-      const axiosError = error as { response?: { status?: number } };
-      setActionError(
-        axiosError?.response?.status === 400
-          ? 'Нельзя войти от имени суперадмина.'
-          : getApiErrorMessage(error, 'Не удалось выполнить вход от имени пользователя.'),
-      );
+      setActionError(getApiError(error).message);
       setImpersonateTarget(null);
     },
   });

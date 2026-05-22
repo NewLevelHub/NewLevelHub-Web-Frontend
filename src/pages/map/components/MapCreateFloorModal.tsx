@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import type { ServiceFloor, ServiceFloorCreatePayload } from '@/shared/types';
 
 export interface MapCreateFloorModalProps {
@@ -54,7 +54,7 @@ export const MapCreateFloorModal = memo<MapCreateFloorModalProps>(({ open, onClo
       onClose();
     },
     onError: (err: unknown) => {
-      setFormError(getApiErrorMessage(err, 'Не удалось создать этаж'));
+      setFormError(getApiError(err).message);
     },
   });
 

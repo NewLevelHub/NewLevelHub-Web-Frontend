@@ -9,7 +9,7 @@ import {
   SERVICE_REQUEST_TYPE_LABELS,
   type ServiceRequestType,
 } from '@/shared/config/constants';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import type { PaginatedResponse, ServiceRequest } from '@/shared/types';
 
 const TYPE_OPTIONS: Array<{ value: ServiceRequestType; label: string }> = [
@@ -56,7 +56,7 @@ export default function ServiceRequestCreatePage() {
       void navigate('/service-requests');
     },
     onError: (err: unknown) => {
-      setFormError(getApiErrorMessage(err, 'Не удалось создать заявку.'));
+      setFormError(getApiError(err).message);
     },
   });
 

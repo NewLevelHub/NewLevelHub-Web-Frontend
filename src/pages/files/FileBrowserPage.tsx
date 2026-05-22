@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { useAuth } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import { downloadFromApiEndpoint } from '@/shared/lib/resolveDownloadUrl';
 import type {
@@ -288,7 +288,7 @@ export default function FileBrowserPage() {
     },
     onError: (error) => {
       setUploadSuccess(null);
-      setUploadError(getApiErrorMessage(error, 'Не удалось загрузить файл'));
+      setUploadError(getApiError(error).message);
     },
   });
 
@@ -332,7 +332,7 @@ export default function FileBrowserPage() {
       refreshStorageData();
     },
     onError: (error) => {
-      setShareError(getApiErrorMessage(error, 'Не удалось выдать доступ к файлу'));
+      setShareError(getApiError(error).message);
     },
   });
 

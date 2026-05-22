@@ -5,7 +5,8 @@ import { MailCheck } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { USER_ROLE_LABELS, type UserRole } from '@/shared/config/constants';
+import { getApiError } from '@/shared/lib/getApiError';
 import { useAuthStore } from '@/shared/store/auth';
 import type { InviteRegistrationPreview } from '@/shared/types';
 import { authInput, authLabel, authLink, authPrimaryBtn } from '@/shared/ui/authFormStyles';
@@ -45,7 +46,7 @@ export default function InviteAcceptPage() {
         password,
         ...(phone.trim() ? { phone: phone.trim() } : {}),
       }),
-    onError: (err) => setError(getApiErrorMessage(err, 'Не удалось зарегистрироваться по инвайту')),
+    onError: (err) => setError(getApiError(err).message),
   });
 
   function onSubmit(e: { preventDefault(): void }) {
@@ -87,7 +88,7 @@ export default function InviteAcceptPage() {
       <div className="space-y-4">
         <h2 className="text-center text-xl font-semibold">Инвайт недействителен</h2>
         <p className="rounded-lg border border-red-200 bg-danger-subtle px-3 py-2 text-sm text-danger dark:border-red-900/40">
-          {getApiErrorMessage(inviteQuery.error, 'Ссылка невалидна, истекла или уже использована')}
+          {getApiError(inviteQuery.error).message}
         </p>
         <button type="button" onClick={() => inviteQuery.refetch()} className={authPrimaryBtn}>
           Проверить снова
@@ -126,7 +127,7 @@ export default function InviteAcceptPage() {
         {invite.is_guest_upgrade ? (
           <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-200">
             Ваш гостевой аккаунт будет переведён в роль{' '}
-            <span className="font-medium">{invite.role}</span> в компании{' '}
+            <span className="font-medium">{USER_ROLE_LABELS[invite.role as UserRole] ?? invite.role}</span> в компании{' '}
             <span className="font-medium">{invite.company_name}</span>. После подтверждения
             email вы сможете войти с новыми правами.
           </div>
@@ -148,7 +149,7 @@ export default function InviteAcceptPage() {
           <label htmlFor="invite-role" className={authLabel}>
             Роль
           </label>
-          <input id="invite-role" value={invite.role} readOnly className={`${authInput} opacity-70`} />
+          <input id="invite-role" value={USER_ROLE_LABELS[invite.role as UserRole] ?? invite.role} readOnly className={`${authInput} opacity-70`} />
         </div>
 
         <div className="grid grid-cols-2 gap-3">

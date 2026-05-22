@@ -7,7 +7,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { PASS_STATUSES, USER_ROLES, type PassStatus } from '@/shared/config/constants';
 import { useUser } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import type { GuestPass } from '@/shared/types';
 import { PassStatusBadge } from '@/pages/passes/components/PassStatusBadge';
 import { QRCodeView } from '@/pages/passes/components/QRCodeView';
@@ -119,12 +119,12 @@ export default function PassDetailPage() {
           ) : null}
           {resendMutation.isError ? (
             <div className="mt-3 text-sm text-rose-300">
-              {getApiErrorMessage(resendMutation.error, 'Не удалось повторно отправить QR.')}
+              {getApiError(resendMutation.error).message}
             </div>
           ) : null}
           {revokeMutation.isError ? (
             <div className="mt-3 text-sm text-rose-300">
-              {getApiErrorMessage(revokeMutation.error, 'Не удалось отозвать пропуск.')}
+              {getApiError(revokeMutation.error).message}
             </div>
           ) : null}
           {successMessage ? <div className="mt-3 text-sm text-success">{successMessage}</div> : null}

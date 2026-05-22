@@ -11,7 +11,7 @@ import {
   type AnnouncementCategory,
 } from '@/shared/config/constants';
 import { useUser } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import type { Announcement, Company, PaginatedResponse } from '@/shared/types';
 
@@ -93,7 +93,7 @@ export default function AnnouncementCreatePage() {
       navigate('/announcements');
     },
     onError: (error: unknown) => {
-      setFormError(getApiErrorMessage(error, 'Не удалось создать объявление.'));
+      setFormError(getApiError(error).message);
     },
   });
 

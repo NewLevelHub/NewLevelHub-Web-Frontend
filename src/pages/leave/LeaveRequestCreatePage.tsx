@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { LEAVE_TYPES, LEAVE_TYPE_LABELS, type LeaveType } from '@/shared/config/constants';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 
 type LeaveRequestCreatePayload = {
   leave_type: LeaveType;
@@ -40,7 +40,7 @@ export default function LeaveRequestCreatePage() {
       navigate('/leave');
     },
     onError: (error: unknown) => {
-      setFormError(getApiErrorMessage(error, 'Не удалось подать заявку.'));
+      setFormError(getApiError(error).message);
     },
   });
 

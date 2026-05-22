@@ -102,7 +102,7 @@ export default function ResourceListPage() {
       };
     }
     return {
-      label: resource.is_active ? 'Активен' : 'Выключен',
+      label: resource.is_active ? 'Активен' : 'Неактивен',
       className: resource.is_active ? resBadgeOn : resBadgeOff,
     };
   };

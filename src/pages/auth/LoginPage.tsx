@@ -1,20 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useAuthStore } from '@/shared/store/auth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import { authInput, authLabel, authPrimaryBtn, authLink } from '@/shared/ui/authFormStyles';
 import { AuthPasswordField } from '@/shared/ui/AuthPasswordField';
-
-const AUTH_ERROR_RU: Record<string, string> = {
-  'invalid credentials': 'Неверный email или пароль.',
-  'account is blocked': 'Аккаунт заблокирован. Обратитесь к администратору.',
-  'no active account found with the given credentials': 'Неверный email или пароль.',
-};
-
-function translateAuthError(error: unknown, fallback: string): string {
-  const raw = getApiErrorMessage(error, '');
-  return AUTH_ERROR_RU[raw.trim().toLowerCase()] ?? (raw || fallback);
-}
 
 export default function LoginPage() {
   const login = useAuthStore((s) => s.login);
@@ -34,7 +23,7 @@ export default function LoginPage() {
     try {
       await login(email.trim(), password, rememberMe);
     } catch (err) {
-      setError(translateAuthError(err, 'Не удалось войти'));
+      setError(getApiError(err).message);
     } finally {
       setLoading(false);
     }

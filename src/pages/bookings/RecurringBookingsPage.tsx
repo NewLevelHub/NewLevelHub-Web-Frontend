@@ -6,7 +6,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
-import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { getApiError } from '@/shared/lib/getApiError';
 import type {
   BookingResourceListItem,
   PaginatedResponse,
@@ -124,7 +124,7 @@ export default function RecurringBookingsPage() {
     },
     onError: (error: unknown) => {
       setLastSkippedDates([]);
-      setErrorMessage(getApiErrorMessage(error, 'Не удалось создать рекуррентную серию.'));
+      setErrorMessage(getApiError(error).message);
     },
   });
 
@@ -137,7 +137,7 @@ export default function RecurringBookingsPage() {
       await queryClient.invalidateQueries({ queryKey: ['recurring-bookings', 'list'] });
     },
     onError: (error: unknown) => {
-      setErrorMessage(getApiErrorMessage(error, 'Не удалось отменить серию.'));
+      setErrorMessage(getApiError(error).message);
     },
   });
 
