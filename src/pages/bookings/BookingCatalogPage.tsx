@@ -581,7 +581,7 @@ export default function BookingCatalogPage() {
                         )}
 
                         {/* ── Weekly schedule toggle ── */}
-                        <div className="border-t border-default/60 pt-2" onClick={(e) => e.stopPropagation()}>
+                        <div className="mt-auto border-t border-default/60 pt-2" onClick={(e) => e.stopPropagation()}>
                           <button
                             type="button"
                             onClick={() =>
