@@ -4,6 +4,7 @@ import { Paperclip, FileText, FileSpreadsheet, Image, File, Trash2, Loader2 } fr
 import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
+import { downloadFromApiEndpoint } from '@/shared/lib/resolveDownloadUrl';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
@@ -101,6 +102,11 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
     },
   });
 
+  const downloadMutation = useMutation({
+    mutationFn: (attachment: CrmAttachment) =>
+      downloadFromApiEndpoint(attachment.url, { filename: attachment.filename }),
+  });
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -189,6 +195,8 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
               year: 'numeric',
             });
             const isDeleting = deleteMutation.isPending && deleteMutation.variables === attachment.id;
+            const isDownloading =
+              downloadMutation.isPending && downloadMutation.variables?.id === attachment.id;
 
             return (
               <li
@@ -197,14 +205,14 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
               >
                 <IconComponent size={18} className="text-secondary shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <a
-                    href={attachment.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-secondary hover:text-primary truncate block max-w-full"
+                  <button
+                    type="button"
+                    onClick={() => downloadMutation.mutate(attachment)}
+                    disabled={isDownloading}
+                    className="text-sm text-secondary hover:text-primary truncate block max-w-full text-left disabled:opacity-50"
                   >
-                    {attachment.filename}
-                  </a>
+                    {isDownloading ? 'Открытие…' : attachment.filename}
+                  </button>
                   <p className="text-xs text-muted truncate">
                     {formatFileSize(attachment.size)} · {attachment.uploaded_by.full_name} · {formattedDate}
                   </p>

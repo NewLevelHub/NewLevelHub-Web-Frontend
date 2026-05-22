@@ -11,7 +11,7 @@ import { RESOURCE_TYPE_LABELS, RESOURCE_TYPES, USER_ROLES } from '@/shared/confi
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
-import type { Booking, BookingResourceListItem, CompanyMember } from '@/shared/types';
+import type { Booking, BookingResourceListItem, Company, CompanyMember, PaginatedResponse } from '@/shared/types';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -52,6 +52,7 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
   const [endLocal, setEndLocal] = useState('');
   const [description, setDescription] = useState('');
   const [participantIds, setParticipantIds] = useState<number[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -70,19 +71,34 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
   }, []);
 
   // Fetch company members for participant multi-select (only for meeting rooms)
+  const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
   const companyId = user?.company_id ? String(user.company_id) : null;
+  const effectiveCompanyId = isSuperadmin ? selectedCompanyId : companyId;
 
-  const { data: membersData, isLoading: loadingMembers } = useQuery({
-    queryKey: ['company-members-for-booking', companyId],
-    enabled: isMeetingRoom && open && companyId !== null,
+  const { data: companiesData } = useQuery({
+    queryKey: ['companies-for-booking'],
+    enabled: isMeetingRoom && open && isSuperadmin,
+    queryFn: async () => {
+      const { data } = await apiClient.get<PaginatedResponse<Company>>(
+        API.companies.list,
+        { params: { page_size: 200 } },
+      );
+      return data.results;
+    },
+  });
+
+  const { data: membersData, isLoading: loadingParticipants } = useQuery({
+    queryKey: ['company-members-for-booking', effectiveCompanyId],
+    enabled: isMeetingRoom && open && effectiveCompanyId !== null,
     queryFn: async () => {
       const { data } = await apiClient.get<CompanyMember[] | { results: CompanyMember[] }>(
-        API.companies.members(companyId!),
+        API.companies.members(effectiveCompanyId!),
         { params: { page_size: 200 } },
       );
       return Array.isArray(data) ? data : data.results;
     },
   });
+
   const userOptions = membersData ?? [];
 
   // Reset form when modal opens or resource changes
@@ -93,6 +109,7 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
       setEndLocal('');
       setDescription('');
       setParticipantIds([]);
+      setSelectedCompanyId(null);
       setErrorMsg(null);
       setSuccessMsg(null);
       setTimeout(() => {
@@ -100,6 +117,11 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
       }, 50);
     }
   }, [open, resource.id]);
+
+  // Clear participants when superadmin switches company
+  useEffect(() => {
+    setParticipantIds([]);
+  }, [selectedCompanyId]);
 
   // Auto-set parking times when date is selected
   useEffect(() => {
@@ -394,7 +416,25 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
                 <span className="font-normal text-muted">(необязательно)</span>
               </p>
 
-              {loadingMembers ? (
+              {isSuperadmin && (
+                <select
+                  value={selectedCompanyId ?? ''}
+                  onChange={(e) => setSelectedCompanyId(e.target.value || null)}
+                  className={cn(fieldClass, 'mb-2')}
+                  aria-label="Выберите компанию"
+                >
+                  <option value="">Выберите компанию</option>
+                  {(companiesData ?? []).map((c) => (
+                    <option key={c.id} value={String(c.id)}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {isSuperadmin && !selectedCompanyId ? (
+                <p className="text-sm text-secondary">Выберите компанию для добавления участников</p>
+              ) : loadingParticipants ? (
                 <p className="text-sm text-muted">Загрузка участников…</p>
               ) : userOptions.filter((u) => u.id !== user?.id).length === 0 ? (
                 <p className="text-sm text-secondary">Нет доступных участников</p>
