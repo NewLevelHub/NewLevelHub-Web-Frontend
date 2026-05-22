@@ -68,6 +68,11 @@ export interface UseMapLogicReturn {
   deletingPoint: MapPoint | null;
   handleCloseDeleteDialog: () => void;
   handleDeleteSuccess: () => void;
+  deleteFloorDialogOpen: boolean;
+  deletingFloor: ServiceFloor | null;
+  handleDeleteFloor: (floor: ServiceFloor) => void;
+  handleCloseDeleteFloorDialog: () => void;
+  handleDeleteFloorSuccess: (deletedFloorId: number) => void;
 }
 
 export function useMapLogic(): UseMapLogicReturn {
@@ -97,6 +102,9 @@ export function useMapLogic(): UseMapLogicReturn {
   const [deletingPoint, setDeletingPoint] = useState<MapPoint | null>(null);
 
   const [createFloorOpen, setCreateFloorOpen] = useState(false);
+
+  const [deleteFloorDialogOpen, setDeleteFloorDialogOpen] = useState(false);
+  const [deletingFloor, setDeletingFloor] = useState<ServiceFloor | null>(null);
 
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -333,6 +341,43 @@ export function useMapLogic(): UseMapLogicReturn {
     setDeletingPoint(null);
   }, []);
 
+  const handleDeleteFloor = useCallback((floor: ServiceFloor) => {
+    setAddPanelOpen(false);
+    setGhostPin(null);
+    setAddPanelForm(EMPTY_FORM);
+    setMovingPointId(null);
+    setDeletingFloor(floor);
+    setDeleteFloorDialogOpen(true);
+  }, []);
+
+  const handleCloseDeleteFloorDialog = useCallback(() => {
+    setDeleteFloorDialogOpen(false);
+    setDeletingFloor(null);
+  }, []);
+
+  const handleDeleteFloorSuccess = useCallback(
+    (deletedFloorId: number) => {
+      // Optimistically remove the deleted floor from the cache so the
+      // auto-select useEffect doesn't re-select the just-deleted floor
+      // before the background refetch completes.
+      queryClient.setQueryData<ServiceFloor[]>(['map-floors'], (old) =>
+        old ? old.filter((f) => f.id !== deletedFloorId) : old,
+      );
+      setDeleteFloorDialogOpen(false);
+      setDeletingFloor(null);
+      setAddPanelOpen(false);
+      setGhostPin(null);
+      setAddPanelForm(EMPTY_FORM);
+      setMovingPointId(null);
+      setEditMode(false);
+      if (selectedFloorId === deletedFloorId) {
+        const remaining = floors?.filter((f) => f.id !== deletedFloorId) ?? [];
+        setSelectedFloorId(remaining.length > 0 ? remaining[0].id : null);
+      }
+    },
+    [selectedFloorId, floors, queryClient],
+  );
+
   const selectedFloor = floors?.find((f) => f.id === selectedFloorId);
   const resolvedImageUrl = selectedFloor
     ? resolveMediaUrl(selectedFloor.plan_image_url ?? selectedFloor.plan_image)
@@ -405,5 +450,10 @@ export function useMapLogic(): UseMapLogicReturn {
     deletingPoint,
     handleCloseDeleteDialog,
     handleDeleteSuccess,
+    deleteFloorDialogOpen,
+    deletingFloor,
+    handleDeleteFloor,
+    handleCloseDeleteFloorDialog,
+    handleDeleteFloorSuccess,
   };
 }

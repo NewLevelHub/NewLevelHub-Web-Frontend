@@ -110,7 +110,7 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
   }
 
   return (
-    <header className="relative z-[90] flex h-14 items-center justify-between gap-3 border-b border-default bg-surface px-3 sm:px-4 md:justify-end md:px-6">
+    <header className="relative z-[30] flex h-14 items-center justify-between gap-3 border-b border-default bg-surface px-3 sm:px-4 md:justify-end md:px-6">
       <button
         type="button"
         onClick={onOpenMobileNav}

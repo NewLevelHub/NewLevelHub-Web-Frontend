@@ -143,6 +143,7 @@ export const API = {
   },
   map: {
     floors: '/services/floors/',
+    floor: (id: number) => `/services/floors/${id}/`,
     floorMap: (floorId: number | string) => `/services/floors/${floorId}/map/`,
     search: '/services/map-points/search/',
     mapPoints: {

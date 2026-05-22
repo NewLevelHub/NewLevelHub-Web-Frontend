@@ -15,6 +15,7 @@ import { EditableFloorMapWithImage } from '@/pages/map/components/EditableFloorM
 import { MapPointAddPanel } from '@/pages/map/components/MapPointAddPanel';
 import { MapPointEditModal } from '@/pages/map/components/MapPointEditModal';
 import { MapDeletePointDialog } from '@/pages/map/components/MapDeletePointDialog';
+import { MapDeleteFloorDialog } from '@/pages/map/components/MapDeleteFloorDialog';
 import { MapCreateFloorModal } from '@/pages/map/components/MapCreateFloorModal';
 
 export type MapPageLayoutProps = UseMapLogicReturn;
@@ -70,6 +71,11 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
     deletingPoint,
     handleCloseDeleteDialog,
     handleDeleteSuccess,
+    deleteFloorDialogOpen,
+    deletingFloor,
+    handleDeleteFloor,
+    handleCloseDeleteFloorDialog,
+    handleDeleteFloorSuccess,
   } = logic;
 
   return (
@@ -103,8 +109,10 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
         floorsError={floorsError}
         selectedFloorId={selectedFloorId}
         isSuperadmin={isSuperadmin}
+        editMode={editMode}
         onSelectFloor={handleSelectFloor}
         onOpenCreateFloor={onOpenCreateFloor}
+        onDeleteFloor={handleDeleteFloor}
       />
 
       <div
@@ -135,7 +143,7 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
           </div>
         ) : null}
 
-        {floorMap && !mapLoading && !mapError ? (
+        {floorMap && !mapLoading && !mapError && selectedFloorId !== null ? (
           <div className="flex flex-col gap-3">
             <MapEditToolbar
               floorName={floorMap.floor_name}
@@ -240,6 +248,13 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
           onSuccess={handleDeleteSuccess}
         />
       ) : null}
+
+      <MapDeleteFloorDialog
+        open={deleteFloorDialogOpen}
+        floor={deletingFloor}
+        onClose={handleCloseDeleteFloorDialog}
+        onSuccess={handleDeleteFloorSuccess}
+      />
 
       {isSuperadmin ? (
         <MapCreateFloorModal

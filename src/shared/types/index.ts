@@ -142,6 +142,7 @@ export interface CompanyMember {
   position: string | null;
   avatar: string | null;
   is_active: boolean;
+  is_email_verified: boolean;
   date_joined: string;
   last_login: string | null;
 }

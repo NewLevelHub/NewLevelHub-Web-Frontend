@@ -17,6 +17,7 @@ export interface CrmKanbanColumnProps {
   column: CrmColumn;
   allColumns: CrmColumn[];
   boardId: string;
+  boardCompanyId: number;
   tasks: CrmTask[];
   taskCountByColumnId: Record<number, number>;
   onTaskClick: (taskId: number) => void;
@@ -28,6 +29,7 @@ export function CrmKanbanColumn({
   column,
   allColumns,
   boardId,
+  boardCompanyId,
   tasks,
   taskCountByColumnId,
   onTaskClick,
@@ -148,6 +150,7 @@ export function CrmKanbanColumn({
       {showAddTask && (
         <CreateTaskModal
           boardId={boardId}
+          boardCompanyId={boardCompanyId}
           columnId={column.id}
           wipBlocked={atWipLimit}
           onClose={() => setShowAddTask(false)}

@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Loader2, Plus } from 'lucide-react';
+import { Loader2, Plus, Trash2 } from 'lucide-react';
 
 import { cn } from '@/shared/lib/cn';
 import type { ServiceFloor } from '@/shared/types';
@@ -12,8 +12,10 @@ export interface MapFloorTabsProps {
   floorsError: boolean;
   selectedFloorId: number | null;
   isSuperadmin: boolean;
+  editMode: boolean;
   onSelectFloor: (floorId: number) => void;
   onOpenCreateFloor: () => void;
+  onDeleteFloor: (floor: ServiceFloor) => void;
 }
 
 export const MapFloorTabs = memo<MapFloorTabsProps>(
@@ -23,8 +25,10 @@ export const MapFloorTabs = memo<MapFloorTabsProps>(
     floorsError,
     selectedFloorId,
     isSuperadmin,
+    editMode,
     onSelectFloor,
     onOpenCreateFloor,
+    onDeleteFloor,
   }) => {
     return (
       <>
@@ -50,23 +54,38 @@ export const MapFloorTabs = memo<MapFloorTabsProps>(
               aria-label="Этажи здания"
             >
               {floors.map((floor) => (
-                <button
-                  key={floor.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={selectedFloorId === floor.id}
-                  aria-controls="floor-map-panel"
-                  id={`tab-floor-${floor.id}`}
-                  onClick={() => onSelectFloor(floor.id)}
-                  className={cn(
-                    'shrink-0 rounded-lg border px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
-                    selectedFloorId === floor.id
-                      ? 'border-blue-500 bg-indigo-50 text-indigo-700'
-                      : 'border-default bg-surface text-gray-700 hover:border-gray-300 hover:bg-raised',
-                  )}
-                >
-                  {formatFloorTabLabel(floor)}
-                </button>
+                <div key={floor.id} className="relative shrink-0 flex items-center">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={selectedFloorId === floor.id}
+                    aria-controls="floor-map-panel"
+                    id={`tab-floor-${floor.id}`}
+                    onClick={() => onSelectFloor(floor.id)}
+                    className={cn(
+                      'rounded-lg border px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
+                      isSuperadmin && editMode ? 'pr-8' : '',
+                      selectedFloorId === floor.id
+                        ? 'border-blue-500 bg-indigo-50 text-indigo-700'
+                        : 'border-default bg-surface text-gray-700 hover:border-gray-300 hover:bg-raised',
+                    )}
+                  >
+                    {formatFloorTabLabel(floor)}
+                  </button>
+                  {isSuperadmin && editMode ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteFloor(floor);
+                      }}
+                      aria-label={`Удалить этаж ${formatFloorTabLabel(floor)}`}
+                      className="absolute right-1.5 flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:bg-rose-100 hover:text-rose-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 transition-colors"
+                    >
+                      <Trash2 className="h-3 w-3" aria-hidden="true" />
+                    </button>
+                  ) : null}
+                </div>
               ))}
             </div>
             {isSuperadmin ? (

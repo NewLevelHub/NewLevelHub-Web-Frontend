@@ -162,6 +162,7 @@ export function BoardDetailMain({ ctx }: BoardDetailMainProps) {
                       column={column}
                       allColumns={localColumns}
                       boardId={boardId}
+                      boardCompanyId={board.company}
                       tasks={isTasksLoading ? [] : localTasksByColumn[column.id] ?? []}
                       taskCountByColumnId={Object.fromEntries(
                         Object.entries(localTasksByColumn).map(([k, v]) => [Number(k), v.length]),
@@ -183,6 +184,7 @@ export function BoardDetailMain({ ctx }: BoardDetailMainProps) {
                     column={activeColumn}
                     allColumns={localColumns}
                     boardId={boardId}
+                    boardCompanyId={board.company}
                     tasks={localTasksByColumn[activeColumn.id] ?? []}
                     taskCountByColumnId={Object.fromEntries(
                       Object.entries(localTasksByColumn).map(([k, v]) => [Number(k), v.length]),
@@ -202,7 +204,7 @@ export function BoardDetailMain({ ctx }: BoardDetailMainProps) {
       )}
 
       {selectedTaskId !== null && (
-        <TaskDetailModal taskId={selectedTaskId} boardId={boardId} onClose={closeTaskModal} />
+        <TaskDetailModal taskId={selectedTaskId} boardId={boardId} boardCompanyId={board.company} onClose={closeTaskModal} />
       )}
 
       {archivePanelOpen && (
