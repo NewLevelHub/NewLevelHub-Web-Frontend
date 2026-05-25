@@ -53,6 +53,7 @@ const superadminNav: NavSection[] = [
     title: 'Здание',
     items: [
       { label: 'Карта здания', path: '/building/map', icon: Map },
+      { label: 'Сотрудники здания', path: '/building/staff', icon: Users },
       { label: 'Сервисные заявки', path: '/service-requests', icon: Wrench },
       { label: 'Объявления', path: '/announcements', icon: Megaphone },
     ],
@@ -199,9 +200,26 @@ const receptionNav: NavSection[] = [
   },
 ];
 
+const serviceManagerNav: NavSection[] = [
+  {
+    items: [{ label: 'Дашборд', path: '/', icon: LayoutDashboard }],
+  },
+  {
+    title: 'Сервис',
+    items: [
+      { label: 'Сервисные заявки', path: '/service-requests', icon: Wrench },
+    ],
+  },
+  {
+    title: 'Настройки',
+    items: [{ label: 'Уведомления', path: '/settings/notifications', icon: Bell }],
+  },
+];
+
 export const sidebarConfig: Record<UserRole, NavSection[]> = {
   [USER_ROLES.SUPERADMIN]: superadminNav,
   [USER_ROLES.RECEPTION]: receptionNav,
+  [USER_ROLES.SERVICE_MANAGER]: serviceManagerNav,
   [USER_ROLES.COMPANY_ADMIN]: companyAdminNav,
   [USER_ROLES.EMPLOYEE]: employeeNav,
   [USER_ROLES.GUEST]: guestNav,

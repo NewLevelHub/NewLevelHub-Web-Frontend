@@ -1,6 +1,7 @@
 export const USER_ROLES = {
   SUPERADMIN: 'superadmin',
   RECEPTION: 'reception',
+  SERVICE_MANAGER: 'service_manager',
   COMPANY_ADMIN: 'company_admin',
   EMPLOYEE: 'employee',
   GUEST: 'guest',
@@ -11,6 +12,7 @@ export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
 export const USER_ROLE_LABELS: Record<UserRole, string> = {
   [USER_ROLES.SUPERADMIN]: 'Суперадмин',
   [USER_ROLES.RECEPTION]: 'Ресепшн',
+  [USER_ROLES.SERVICE_MANAGER]: 'Сервис-менеджер',
   [USER_ROLES.COMPANY_ADMIN]: 'Администратор компании',
   [USER_ROLES.EMPLOYEE]: 'Сотрудник',
   [USER_ROLES.GUEST]: 'Гость',

@@ -21,9 +21,12 @@ const btnGhost =
   'inline-flex items-center justify-center gap-1 rounded-lg border border-default px-3 py-1.5 text-xs font-medium text-secondary hover:bg-hover disabled:opacity-50';
 
 const INVITE_ROLES: { value: UserRole; label: string }[] = [
-  { value: USER_ROLES.EMPLOYEE, label: 'Сотрудник' },
-  { value: USER_ROLES.COMPANY_ADMIN, label: 'Администратор компании' },
+  { value: USER_ROLES.EMPLOYEE, label: USER_ROLE_LABELS[USER_ROLES.EMPLOYEE] },
+  { value: USER_ROLES.COMPANY_ADMIN, label: USER_ROLE_LABELS[USER_ROLES.COMPANY_ADMIN] },
 ];
+
+// Roles invitable only by superadmin (backend enforces this in InvitationCreateSerializer.validate_role).
+const SUPERADMIN_ONLY_INVITE_ROLES: ReadonlySet<UserRole> = new Set([USER_ROLES.COMPANY_ADMIN]);
 
 export default function CompanyMembersPage() {
   const { user } = useAuth();
@@ -119,9 +122,9 @@ export default function CompanyMembersPage() {
     );
   }
 
-  const canOfferCompanyAdmin = user?.role === USER_ROLES.SUPERADMIN;
+  const isSuperadminUser = user?.role === USER_ROLES.SUPERADMIN;
   const roleOptions = INVITE_ROLES.filter(
-    (o) => o.value !== USER_ROLES.COMPANY_ADMIN || canOfferCompanyAdmin,
+    (o) => !SUPERADMIN_ONLY_INVITE_ROLES.has(o.value) || isSuperadminUser,
   );
 
   async function onInviteSubmit(e: FormEvent) {

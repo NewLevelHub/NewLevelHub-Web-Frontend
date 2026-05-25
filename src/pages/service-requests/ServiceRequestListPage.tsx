@@ -23,6 +23,7 @@ import { cn } from '@/shared/lib/cn';
 import type {
   PaginatedResponse,
   ServiceRequest,
+  ServiceRequestAssignPayload,
   ServiceRequestRatePayload,
   ServiceRequestUpdateStatusPayload,
 } from '@/shared/types';
@@ -132,8 +133,17 @@ export default function ServiceRequestListPage() {
   const [ratingValue, setRatingValue] = useState(5);
 
   const isAdmin =
-    user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN;
-  const canChangeStatus = user?.role === USER_ROLES.SUPERADMIN;
+    user?.role === USER_ROLES.SUPERADMIN ||
+    user?.role === USER_ROLES.COMPANY_ADMIN ||
+    user?.role === USER_ROLES.SERVICE_MANAGER;
+  // All management actions (status + assign) are reserved for superadmin and
+  // service_manager. company_admin can only create requests on behalf of their
+  // company (matches IsServiceRequestManager on the backend).
+  const canChangeStatus =
+    user?.role === USER_ROLES.SUPERADMIN ||
+    user?.role === USER_ROLES.SERVICE_MANAGER;
+  const canAssign = canChangeStatus;
+  const isServiceManager = user?.role === USER_ROLES.SERVICE_MANAGER;
 
   const queryParams: Record<string, string> = {};
   if (typeFilter) queryParams.type = typeFilter;
@@ -191,6 +201,22 @@ export default function ServiceRequestListPage() {
       ) {
         openRateModal(variables.id, true);
       }
+    },
+    onError: (err) => {
+      setMutationError(getApiError(err).message);
+    },
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: ({ id, assigned_to }: { id: number; assigned_to: number | null }) =>
+      apiClient
+        .patch<ServiceRequest>(API.serviceRequests.assign(String(id)), {
+          assigned_to,
+        } satisfies ServiceRequestAssignPayload)
+        .then((r) => r.data),
+    onSuccess: async () => {
+      setMutationError(null);
+      await queryClient.invalidateQueries({ queryKey: ['service-requests'] });
     },
     onError: (err) => {
       setMutationError(getApiError(err).message);
@@ -286,29 +312,34 @@ export default function ServiceRequestListPage() {
   const isPendingMutation =
     createMutation.isPending ||
     updateStatusMutation.isPending ||
+    assignMutation.isPending ||
     rateMutation.isPending;
+
+
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 p-6">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-primary">Сервисные заявки</h1>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={openCleaningModal}
-            className="inline-flex items-center justify-center rounded-lg border border-sky-700 bg-sky-900/30 px-4 py-2 text-sm font-medium text-sky-300 hover:bg-sky-900/50"
-          >
-            Вызвать уборку
-          </button>
-          <button
-            type="button"
-            onClick={openGeneralModal}
-            className="inline-flex items-center justify-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
-          >
-            Создать заявку
-          </button>
-        </div>
+        {isServiceManager ? null : (
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={openCleaningModal}
+              className="inline-flex items-center justify-center rounded-lg border border-sky-700 bg-sky-900/30 px-4 py-2 text-sm font-medium text-sky-300 hover:bg-sky-900/50"
+            >
+              Вызвать уборку
+            </button>
+            <button
+              type="button"
+              onClick={openGeneralModal}
+              className="inline-flex items-center justify-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
+            >
+              Создать заявку
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
@@ -379,6 +410,9 @@ export default function ServiceRequestListPage() {
                   {isAdmin && (
                     <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Сотрудник</th>
                   )}
+                  {isAdmin && (
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Исполнитель</th>
+                  )}
                   <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Описание</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Фото</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Этаж</th>
@@ -415,6 +449,11 @@ export default function ServiceRequestListPage() {
                       {isAdmin && (
                         <td className="whitespace-nowrap px-4 py-3 text-secondary">
                           {getRequestOwnerName(req) || '—'}
+                        </td>
+                      )}
+                      {isAdmin && (
+                        <td className="whitespace-nowrap px-4 py-3 text-secondary">
+                          {req.assigned_to_name || '—'}
                         </td>
                       )}
                       <td className="max-w-xs px-4 py-3 text-secondary">
@@ -455,8 +494,11 @@ export default function ServiceRequestListPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-2">
-                          {/* Superadmin: advance status */}
-                          {canChangeStatus && nextStatus ? (
+                          {/* Admin / service_manager: advance status.
+                              Service managers can only act on their own assigned request. */}
+                          {canChangeStatus &&
+                          nextStatus &&
+                          (!isServiceManager || req.assigned_to === Number(user?.id)) ? (
                             <button
                               type="button"
                               disabled={isPendingMutation}
@@ -465,6 +507,39 @@ export default function ServiceRequestListPage() {
                             >
                               {SERVICE_REQUEST_STATUS_LABELS[nextStatus]}
                             </button>
+                          ) : null}
+
+                          {/* Admin / service_manager: self-assign or unassign */}
+                          {canAssign && req.status !== SERVICE_REQUEST_STATUSES.COMPLETED ? (
+                            user?.id != null && req.assigned_to === Number(user.id) ? (
+                              // Service managers cannot unassign themselves — only superadmin can
+                              !isServiceManager ? (
+                                <button
+                                  type="button"
+                                  disabled={isPendingMutation}
+                                  onClick={() =>
+                                    assignMutation.mutate({ id: req.id, assigned_to: null })
+                                  }
+                                  className="rounded-md border border-default px-2 py-1 text-xs text-secondary hover:bg-hover disabled:opacity-50"
+                                >
+                                  Снять с себя
+                                </button>
+                              ) : null
+                            ) : user?.id != null && (!isServiceManager || !req.assigned_to) ? (
+                              <button
+                                type="button"
+                                disabled={isPendingMutation}
+                                onClick={() =>
+                                  assignMutation.mutate({
+                                    id: req.id,
+                                    assigned_to: Number(user.id),
+                                  })
+                                }
+                                className="rounded-md border border-default bg-surface px-2 py-1 text-xs text-primary hover:bg-hover disabled:opacity-50"
+                              >
+                                {!isServiceManager && req.assigned_to_name ? 'Переназначить на себя' : 'Взять в работу'}
+                              </button>
+                            ) : null
                           ) : null}
 
                           {/* Employee: rate completed request */}
@@ -481,7 +556,7 @@ export default function ServiceRequestListPage() {
                             </button>
                           ) : null}
 
-                          {!canChangeStatus && !canRate ? (
+                          {!canChangeStatus && !canAssign && !canRate ? (
                             <span className="text-xs text-muted">—</span>
                           ) : null}
                         </div>

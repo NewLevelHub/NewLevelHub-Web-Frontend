@@ -548,6 +548,10 @@ export interface ServiceRequestRatePayload {
   rating: number;
 }
 
+export interface ServiceRequestAssignPayload {
+  assigned_to: number | null;
+}
+
 export interface Announcement {
   id: number;
   title: string;

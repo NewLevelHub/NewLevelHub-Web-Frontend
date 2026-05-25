@@ -27,6 +27,14 @@ export const API = {
       `/companies/${companyId}/invitations/${invitationId}/revoke/`,
     invitationResend: (companyId: string, invitationId: string) =>
       `/companies/${companyId}/invitations/${invitationId}/resend/`,
+    // Building-staff invites — reception / service_manager, no company.
+    buildingInvitations: '/companies/building-invites/',
+    buildingInvitationRevoke: (invitationId: string) =>
+      `/companies/building-invites/${invitationId}/revoke/`,
+    buildingInvitationResend: (invitationId: string) =>
+      `/companies/building-invites/${invitationId}/resend/`,
+    // Building-staff users (reception / service_manager) — list for superadmin.
+    buildingStaff: '/companies/building-staff/',
     settings: (id: string) => `/companies/${id}/settings/`,
     memberActivity: (companyId: string, userId: string) =>
       `/companies/${companyId}/members/${userId}/activity/`,
@@ -159,6 +167,7 @@ export const API = {
     quickCleaning: '/services/requests/quick-cleaning/',
     detail: (id: string) => `/services/requests/${id}/`,
     updateStatus: (id: string) => `/services/requests/${id}/status/`,
+    assign: (id: string) => `/services/requests/${id}/assign/`,
     rate: (id: string) => `/services/requests/${id}/rate/`,
   },
   announcements: {

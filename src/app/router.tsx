@@ -68,6 +68,7 @@ import AccessLogPage from '@/pages/access/AccessLogPage';
 
 // Building
 import MapManagePage from '@/pages/building/MapManagePage';
+import BuildingStaffPage from '@/pages/building/BuildingStaffPage';
 
 // Service requests
 import ServiceRequestListPage from '@/pages/service-requests/ServiceRequestListPage';
@@ -114,7 +115,7 @@ import UnsubscribeInvalidPage from '@/pages/unsubscribe/UnsubscribeInvalidPage';
 import NotFoundPage from '@/pages/errors/NotFoundPage';
 import ForbiddenPage from '@/pages/errors/ForbiddenPage';
 
-const { SUPERADMIN, RECEPTION, COMPANY_ADMIN, EMPLOYEE } = USER_ROLES;
+const { SUPERADMIN, RECEPTION, SERVICE_MANAGER, COMPANY_ADMIN, EMPLOYEE } = USER_ROLES;
 
 /** Old `/admin/bookings` SPA URLs → `/staff/bookings` (shared staff UI, not Django admin). */
 function SuperadminLegacyRedirect() {
@@ -219,11 +220,19 @@ export const router = createBrowserRouter([
             ],
           },
 
+          // service_manager is building-wide and only needs access to the
+          // service-requests views (no /new since they can't create on behalf).
+          {
+            element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE, SERVICE_MANAGER]} />,
+            children: [
+              { path: '/service-requests', element: <ServiceRequestListPage /> },
+            ],
+          },
+
           // Company users (superadmin + company_admin + employee)
           {
             element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE]} />,
             children: [
-              { path: '/service-requests', element: <ServiceRequestListPage /> },
               { path: '/service-requests/new', element: <ServiceRequestCreatePage /> },
               { path: '/bookings/recurring', element: <RecurringBookingsPage /> },
               { path: '/files', element: <FileBrowserPage /> },
@@ -319,6 +328,7 @@ export const router = createBrowserRouter([
               { path: '/resources/new', element: <ResourceCreatePage /> },
               { path: '/resources/:id', element: <ResourceDetailPage /> },
               { path: '/building/map/manage', element: <MapManagePage /> },
+              { path: '/building/staff', element: <BuildingStaffPage /> },
               { path: '/users', element: <UsersListPage /> },
               { path: '/users/:id', element: <UserDetailPage /> },
               { path: `${SUPERADMIN_UI_PREFIX}/users`, element: <UsersListPage /> },
