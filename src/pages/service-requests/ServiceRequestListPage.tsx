@@ -58,6 +58,8 @@ type ServiceFloorOption = {
   name?: string | null;
 };
 
+type BookingResourceOption = { id: number; name: string };
+
 function normalizeServiceFloors(payload: ServiceFloorOption[] | PaginatedResponse<ServiceFloorOption>) {
   return Array.isArray(payload) ? payload : payload.results;
 }
@@ -125,6 +127,7 @@ export default function ServiceRequestListPage() {
   const [createDescription, setCreateDescription] = useState('');
   const [createFloorId, setCreateFloorId] = useState('');
   const [createLocation, setCreateLocation] = useState('');
+  const [createResourceId, setCreateResourceId] = useState('');
   const [createUrgency, setCreateUrgency] = useState<'normal' | 'urgent'>('normal');
   const [createPhoto, setCreatePhoto] = useState<File | null>(null);
 
@@ -245,10 +248,37 @@ export default function ServiceRequestListPage() {
     setCreateDescription('');
     setCreateFloorId('');
     setCreateLocation('');
+    setCreateResourceId('');
     setCreateUrgency('normal');
     setCreatePhoto(null);
     setMutationError(null);
     setCreateModal({ mode: 'general' });
+  }
+
+  // Resolve floor number from selected floor id for resource fetching
+  const selectedFloorNumber: number | null = (() => {
+    if (!createFloorId) return null;
+    const floor = floors.find((f) => String(f.id) === createFloorId);
+    return floor?.number ?? floor?.floor_number ?? null;
+  })();
+
+  const { data: floorResourcesData, isLoading: isResourcesLoading } = useQuery({
+    queryKey: ['booking-resources-by-floor', selectedFloorNumber],
+    queryFn: () =>
+      apiClient
+        .get<PaginatedResponse<BookingResourceOption>>(API.bookings.resources.list, {
+          params: { floor: selectedFloorNumber, is_active: true, page_size: 100 },
+        })
+        .then((r) => (Array.isArray(r.data) ? r.data : r.data.results) as BookingResourceOption[]),
+    enabled: selectedFloorNumber !== null,
+    staleTime: 30_000,
+  });
+  const floorResources: BookingResourceOption[] = floorResourcesData ?? [];
+
+  function handleCreateFloorChange(floorId: string) {
+    setCreateFloorId(floorId);
+    setCreateResourceId('');
+    // Don't clear location — user may have typed something already
   }
 
   function openCleaningModal() {
@@ -626,7 +656,7 @@ export default function ServiceRequestListPage() {
                 </p>
                 <select
                   value={createFloorId}
-                  onChange={(e) => setCreateFloorId(e.target.value)}
+                  onChange={(e) => handleCreateFloorChange(e.target.value)}
                   disabled={isFloorsLoading}
                   required
                   className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
@@ -656,6 +686,39 @@ export default function ServiceRequestListPage() {
                   </p>
                 ) : null}
               </label>
+
+              {/* Resource (optional, loaded from floor) */}
+              {createFloorId ? (
+                <label className="block text-sm text-secondary">
+                  Ресурс (необязательно)
+                  <select
+                    value={createResourceId}
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      setCreateResourceId(id);
+                      if (id) {
+                        const resource = floorResources.find((r) => String(r.id) === id);
+                        if (resource) setCreateLocation(resource.name);
+                      }
+                    }}
+                    disabled={isResourcesLoading}
+                    className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+                  >
+                    <option value="">
+                      {isResourcesLoading
+                        ? 'Загрузка ресурсов...'
+                        : floorResources.length === 0
+                          ? 'Нет ресурсов на этом этаже'
+                          : 'Не выбрано'}
+                    </option>
+                    {floorResources.map((r) => (
+                      <option key={r.id} value={String(r.id)}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
 
               <label className="block text-sm text-secondary">
                 Место
