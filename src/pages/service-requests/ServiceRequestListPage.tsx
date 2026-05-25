@@ -315,7 +315,16 @@ export default function ServiceRequestListPage() {
     assignMutation.isPending ||
     rateMutation.isPending;
 
-
+  // Service manager can only hold 1 active (non-completed) request at a time.
+  // Check the current page's data to hide the "take" button proactively.
+  const serviceManagerHasActive =
+    isServiceManager &&
+    user?.id != null &&
+    rows.some(
+      (r) =>
+        Number(r.assigned_to) === Number(user.id) &&
+        r.status !== SERVICE_REQUEST_STATUSES.COMPLETED,
+    );
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 p-6">
@@ -525,7 +534,7 @@ export default function ServiceRequestListPage() {
                                   Снять с себя
                                 </button>
                               ) : null
-                            ) : user?.id != null && (!isServiceManager || !req.assigned_to) ? (
+                            ) : user?.id != null && (!isServiceManager || !req.assigned_to) && !serviceManagerHasActive ? (
                               <button
                                 type="button"
                                 disabled={isPendingMutation}
