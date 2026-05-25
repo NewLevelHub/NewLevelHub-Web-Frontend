@@ -1,12 +1,16 @@
 import { useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { MailPlus, RefreshCw, Ban } from 'lucide-react';
+import { MailPlus, RefreshCw, Ban, Shield, LogIn, Trash2 } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES, USER_ROLE_LABELS, type UserRole } from '@/shared/config/constants';
 import { getApiError } from '@/shared/lib/getApiError';
+import { mapApiUser } from '@/shared/lib/mapUser';
 import { cn } from '@/shared/lib/cn';
+import { useAuth } from '@/shared/hooks/useAuth';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import type { CompanyInvitation, CompanyMember, PaginatedResponse } from '@/shared/types';
 
 const inputClass =
@@ -30,9 +34,18 @@ const ROLE_FILTERS: { value: UserRole | ''; label: string }[] = [
 
 export default function BuildingStaffPage() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { user, isImpersonating, startImpersonation } = useAuth();
+  const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
 
   const [roleFilter, setRoleFilter] = useState<UserRole | ''>('');
   const [search, setSearch] = useState('');
+
+  // Action targets
+  const [blockTarget, setBlockTarget] = useState<CompanyMember | null>(null);
+  const [impersonateTarget, setImpersonateTarget] = useState<CompanyMember | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CompanyMember | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const staffQuery = useQuery({
     queryKey: ['building-staff', { role: roleFilter, search }],
@@ -91,6 +104,57 @@ export default function BuildingStaffPage() {
       void queryClient.invalidateQueries({ queryKey: ['building-invitations'] });
     },
   });
+
+  const blockUserMutation = useMutation({
+    mutationFn: ({ memberId, shouldBlock }: { memberId: number; shouldBlock: boolean }) =>
+      apiClient.post(shouldBlock ? API.users.block(memberId) : API.users.unblock(memberId)),
+    onSuccess: async () => {
+      setActionError(null);
+      setBlockTarget(null);
+      await queryClient.invalidateQueries({ queryKey: ['building-staff'] });
+      void queryClient.invalidateQueries({ queryKey: ['company-members'] });
+      void queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+    },
+    onError: (err) => {
+      setActionError(getApiError(err).message);
+    },
+  });
+
+  const impersonateMutation = useMutation({
+    mutationFn: (memberId: number) =>
+      apiClient
+        .post<{ access: string; refresh: string; user: Record<string, unknown> }>(
+          API.users.impersonate(memberId),
+        )
+        .then((r) => r.data),
+    onSuccess: (data) => {
+      const mappedUser = mapApiUser(data.user);
+      startImpersonation(mappedUser, data.access);
+      navigate('/dashboard');
+    },
+    onError: (err) => {
+      setActionError(getApiError(err).message);
+      setImpersonateTarget(null);
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (memberId: number) =>
+      apiClient.delete(API.users.detail(memberId)),
+    onSuccess: async () => {
+      setActionError(null);
+      setDeleteTarget(null);
+      await queryClient.invalidateQueries({ queryKey: ['building-staff'] });
+    },
+    onError: (err) => {
+      setActionError(getApiError(err).message);
+    },
+  });
+
+  const isActionPending =
+    blockUserMutation.isPending ||
+    impersonateMutation.isPending ||
+    deleteUserMutation.isPending;
 
   function onInviteSubmit(e: FormEvent) {
     e.preventDefault();
@@ -221,9 +285,49 @@ export default function BuildingStaffPage() {
                   </p>
                   <p className="text-sm text-secondary">{m.email}</p>
                 </div>
-                <span className={cn('rounded-full bg-raised px-2.5 py-0.5 text-xs text-secondary')}>
-                  {USER_ROLE_LABELS[m.role as UserRole] ?? m.role}
-                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={cn('rounded-full bg-raised px-2.5 py-0.5 text-xs text-secondary')}>
+                    {USER_ROLE_LABELS[m.role as UserRole] ?? m.role}
+                  </span>
+                  {isSuperadmin ? (
+                    <>
+                      <button
+                        type="button"
+                        disabled={isActionPending}
+                        onClick={() => setBlockTarget(m)}
+                        className={cn(
+                          'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium disabled:opacity-60',
+                          m.is_active
+                            ? 'border-red-800 bg-danger-subtle text-danger hover:bg-danger-subtle'
+                            : 'border-emerald-700 bg-success-subtle text-success hover:bg-success-subtle',
+                        )}
+                      >
+                        <Shield className="h-3.5 w-3.5" />
+                        {m.is_active ? 'Заблокировать' : 'Разблокировать'}
+                      </button>
+                      {!isImpersonating ? (
+                        <button
+                          type="button"
+                          disabled={isActionPending}
+                          onClick={() => setImpersonateTarget(m)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-amber-700 bg-warning-subtle px-2.5 py-1 text-xs font-medium text-warning hover:bg-warning-subtle disabled:opacity-60"
+                        >
+                          <LogIn className="h-3.5 w-3.5" />
+                          Войти от имени
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        disabled={isActionPending}
+                        onClick={() => setDeleteTarget(m)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-red-800 bg-danger-subtle px-2.5 py-1 text-xs font-medium text-danger hover:bg-danger-subtle disabled:opacity-60"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Удалить
+                      </button>
+                    </>
+                  ) : null}
+                </div>
               </li>
             ))}
             {!staff.length ? (
@@ -285,6 +389,62 @@ export default function BuildingStaffPage() {
           </ul>
         )}
       </section>
+
+      {/* Action error */}
+      {actionError ? (
+        <div className="rounded-lg border border-red-200 dark:border-red-900/40 bg-danger-subtle px-4 py-3 text-sm text-danger">
+          {actionError}
+        </div>
+      ) : null}
+
+      {/* Block / unblock confirm */}
+      <ConfirmModal
+        isOpen={blockTarget !== null}
+        onClose={() => !blockUserMutation.isPending && setBlockTarget(null)}
+        onConfirm={() => {
+          if (!blockTarget) return;
+          blockUserMutation.mutate({ memberId: blockTarget.id, shouldBlock: blockTarget.is_active });
+        }}
+        title={blockTarget?.is_active ? 'Заблокировать пользователя' : 'Разблокировать пользователя'}
+        description={
+          blockTarget?.is_active
+            ? `Заблокировать ${blockTarget?.full_name || blockTarget?.email}? Пользователь не сможет войти в систему.`
+            : `Разблокировать ${blockTarget?.full_name || blockTarget?.email}?`
+        }
+        confirmLabel={blockTarget?.is_active ? 'Заблокировать' : 'Разблокировать'}
+        variant={blockTarget?.is_active ? 'danger' : 'warning'}
+        isLoading={blockUserMutation.isPending}
+      />
+
+      {/* Impersonate confirm */}
+      <ConfirmModal
+        isOpen={impersonateTarget !== null}
+        onClose={() => !impersonateMutation.isPending && setImpersonateTarget(null)}
+        onConfirm={() => {
+          if (!impersonateTarget) return;
+          impersonateMutation.mutate(impersonateTarget.id);
+        }}
+        title="Войти от имени пользователя"
+        description={`Вы войдёте в систему от имени ${impersonateTarget?.full_name || impersonateTarget?.email}. Вернуться можно из шапки.`}
+        confirmLabel="Войти"
+        variant="warning"
+        isLoading={impersonateMutation.isPending}
+      />
+
+      {/* Delete confirm */}
+      <ConfirmModal
+        isOpen={deleteTarget !== null}
+        onClose={() => !deleteUserMutation.isPending && setDeleteTarget(null)}
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          deleteUserMutation.mutate(deleteTarget.id);
+        }}
+        title="Удалить пользователя"
+        description={`Удалить ${deleteTarget?.full_name || deleteTarget?.email}? Это действие нельзя отменить.`}
+        confirmLabel="Удалить"
+        variant="danger"
+        isLoading={deleteUserMutation.isPending}
+      />
     </div>
   );
 }
