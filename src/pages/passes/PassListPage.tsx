@@ -1,7 +1,11 @@
+import { useState } from 'react';
 import { Link } from 'react-router';
 
+import { apiClient } from '@/shared/api/client';
+import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useUser } from '@/shared/hooks/useAuth';
+import { getApiError } from '@/shared/lib/getApiError';
 import { PassFilters } from '@/pages/passes/components/PassFilters';
 import { PassRow } from '@/pages/passes/components/PassRow';
 import { PassSkeleton } from '@/pages/passes/components/PassSkeleton';
@@ -11,6 +15,9 @@ export default function PassListPage() {
   const user = useUser();
   const isAdminView = user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN;
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
+
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const {
     passes,
@@ -31,19 +38,55 @@ export default function PassListPage() {
     totalCount,
   } = usePasses();
 
+  async function handleExport() {
+    try {
+      setIsExporting(true);
+      setExportError(null);
+      const response = await apiClient.get<Blob>(API.passes.export, {
+        responseType: 'blob',
+        headers: { Accept: 'text/csv, */*;q=0.9' },
+      });
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `guest_passes_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      setExportError(getApiError(e).message);
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   return (
-    <main className="mx-auto max-w-5xl space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
+    <main className="mx-auto max-w-7xl space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-primary">Гостевые пропуска</h1>
           <p className="text-sm text-secondary">Ваши цифровые пропуска с QR-кодом.</p>
         </div>
-        <Link
-          to="/passes/new"
-          className="inline-flex items-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
-        >
-          Создать пропуск
-        </Link>
+        <div className="flex items-center gap-2">
+          {isAdminView ? (
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={isExporting}
+              className="rounded-lg border border-default px-4 py-2 text-sm font-medium text-secondary hover:bg-hover disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isExporting ? 'Экспорт...' : 'Экспорт CSV'}
+            </button>
+          ) : null}
+          <Link
+            to="/passes/new"
+            className="inline-flex items-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
+          >
+            Создать пропуск
+          </Link>
+        </div>
       </div>
 
       <PassFilters
@@ -63,21 +106,25 @@ export default function PassListPage() {
         onReset={resetFilters}
       />
 
+      {exportError ? <p className="text-sm text-danger">{exportError}</p> : null}
       {isLoading ? <PassSkeleton /> : null}
       {isError ? <div className="text-sm text-danger">Не удалось загрузить список пропусков.</div> : null}
 
       {!isLoading && !isError ? (
         <div className="overflow-hidden rounded-xl border border-default bg-raised">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] divide-y divide-[color:var(--border)] text-sm">
-              <thead className="bg-surface text-left text-secondary">
+            <table className="w-full min-w-[900px] divide-y divide-[color:var(--border)] text-sm">
+              <thead className="bg-surface text-left">
                 <tr>
-                  <th className="px-4 py-3">Гость</th>
-                  <th className="px-4 py-3">Владелец</th>
-                  <th className="px-4 py-3">Цель</th>
-                  <th className="px-4 py-3">Период</th>
-                  <th className="px-4 py-3">Статус</th>
-                  <th className="px-4 py-3 text-right">Детали</th>
+                  <th className="px-4 py-3 font-medium text-primary">Гость</th>
+                  <th className="px-4 py-3 font-medium text-primary">Владелец</th>
+                  <th className="px-4 py-3 font-medium text-primary">Цель</th>
+                  <th className="px-4 py-3 font-medium text-primary">Период</th>
+                  <th className="px-4 py-3 font-medium text-primary">Статус</th>
+                  <th className="px-4 py-3 font-medium text-primary">Проверил</th>
+                  <th className="px-4 py-3 font-medium text-primary">Валидирован</th>
+                  <th className="px-4 py-3 font-medium text-primary">Метод</th>
+                  <th className="px-4 py-3 font-medium text-primary text-right">Детали</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[color:var(--border)]">

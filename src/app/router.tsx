@@ -63,9 +63,6 @@ import PassCreatePage from '@/pages/passes/PassCreatePage';
 import PassDetailPage from '@/pages/passes/PassDetailPage';
 import PassValidatePage from '@/pages/passes/PassValidatePage';
 
-// Access log
-import AccessLogPage from '@/pages/access/AccessLogPage';
-
 // Building
 import MapManagePage from '@/pages/building/MapManagePage';
 import BuildingStaffPage from '@/pages/building/BuildingStaffPage';
@@ -261,7 +258,7 @@ export const router = createBrowserRouter([
               { path: '/announcements/new', element: <AnnouncementCreatePage /> },
               { path: '/analytics', element: <AnalyticsDashboardPage /> },
               { path: '/company/analytics', element: <AnalyticsDashboardPage /> },
-              { path: '/access/logs', element: <AccessLogPage /> },
+              { path: '/access/logs', element: <Navigate to="/passes" replace /> },
             ],
           },
 

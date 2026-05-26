@@ -468,6 +468,9 @@ export interface GuestPass {
   times_used: number;
   status: PassStatus;
   created_at: string;
+  last_validated_at?: string | null;
+  last_validated_by?: string | null;
+  last_method?: string | null;
 }
 
 export interface PassValidationSuccess {

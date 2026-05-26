@@ -46,7 +46,6 @@ const superadminNav: NavSection[] = [
       { label: 'Бронирования', path: `${STAFF_UI_PREFIX}/bookings`, icon: CalendarDays },
       { label: 'Пропуска', path: '/passes', icon: ShieldCheck },
       { label: 'Проверка QR', path: '/access/validate', icon: ShieldCheck },
-      { label: 'Лог доступа', path: '/access/logs', icon: Clock },
     ],
   },
   {
@@ -104,7 +103,6 @@ const companyAdminNav: NavSection[] = [
       { label: 'Бронирования (админ)', path: `${STAFF_UI_PREFIX}/bookings`, icon: CalendarDays },
       { label: 'Карта здания', path: '/building/map', icon: Map },
       { label: 'Гостевые пропуска', path: '/passes', icon: ShieldCheck },
-      { label: 'Лог доступа', path: '/access/logs', icon: Clock },
       { label: 'Файлы', path: '/storage', icon: FileText },
       { label: 'Объявления', path: '/announcements', icon: Megaphone },
       { label: 'Отпуска', path: '/hr/leaves', icon: Clock },

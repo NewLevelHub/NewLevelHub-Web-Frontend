@@ -31,6 +31,17 @@ export function PassRow({ pass, isSuperadmin }: PassRowProps) {
       <td className="px-4 py-3 align-top whitespace-nowrap">
         <PassStatusBadge status={pass.status as PassStatus} />
       </td>
+      <td className="px-4 py-3 text-xs text-secondary align-top">
+        {pass.last_validated_by || '—'}
+      </td>
+      <td className="px-4 py-3 text-xs text-secondary align-top whitespace-nowrap">
+        {pass.last_validated_at
+          ? new Date(pass.last_validated_at).toLocaleString('ru-RU')
+          : '—'}
+      </td>
+      <td className="px-4 py-3 text-xs text-secondary align-top">
+        {pass.last_method || '—'}
+      </td>
       <td className="px-4 py-3 text-right align-top whitespace-nowrap">
         <Link to={`/passes/${pass.id}`} className="text-brand hover:text-brand">
           Открыть
