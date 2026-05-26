@@ -43,7 +43,12 @@ export function useAdminBoards() {
   );
 
   const handleBoardClick = (board: CrmBoard) => {
-    void navigate(`/crm/boards/${board.id}`);
+    void navigate(`/crm/boards/${board.id}`, {
+      state: {
+        backTo: '/superadmin/crm/boards',
+        companyName: companyMap.get(board.company),
+      },
+    });
   };
 
   return {

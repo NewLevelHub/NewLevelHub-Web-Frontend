@@ -1,10 +1,11 @@
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import {
   ChevronLeft,
   LayoutGrid,
   AlertCircle,
+  Building2,
   Inbox,
   Plus,
   Archive,
@@ -26,6 +27,10 @@ export interface BoardDetailMainProps {
 }
 
 export function BoardDetailMain({ ctx }: BoardDetailMainProps) {
+  const location = useLocation();
+  const backTo = (location.state as { backTo?: string; companyName?: string } | null)?.backTo ?? '/crm';
+  const companyName = (location.state as { backTo?: string; companyName?: string } | null)?.companyName;
+
   const {
     boardId,
     board,
@@ -63,7 +68,7 @@ export function BoardDetailMain({ ctx }: BoardDetailMainProps) {
     <div className="space-y-6">
       {WipLimitToast}
       <Link
-        to="/crm"
+        to={backTo}
         className="inline-flex items-center gap-1.5 text-sm text-secondary hover:text-primary transition-colors"
       >
         <ChevronLeft size={16} />
@@ -76,6 +81,12 @@ export function BoardDetailMain({ ctx }: BoardDetailMainProps) {
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="text-xl font-semibold text-primary">{board.name}</h1>
+          {companyName && (
+            <div className="flex items-center gap-1 mt-0.5">
+              <Building2 size={12} className="text-muted shrink-0" />
+              <span className="text-xs text-muted">{companyName}</span>
+            </div>
+          )}
           {board.description && <p className="text-sm text-muted mt-0.5">{board.description}</p>}
         </div>
         <button
