@@ -1,0 +1,111 @@
+{
+  "dashboard": {
+    "greeting": "Доброе утро, {{name}}",
+    "subtitle": "{{date}} · в БЦ сейчас {{count}} человек, загрузка {{load}}%",
+    "createAnnouncement": "Создать объявление",
+    "addResource": "Добавить ресурс",
+    "kpi": {
+      "activeBookings": "Активные брони",
+      "spaceLoad": "Загрузка пространств",
+      "openRequests": "Открытые заявки",
+      "activeTenants": "Активные арендаторы"
+    },
+    "upcomingBookings": "Ближайшие бронирования",
+    "acrossAllCompanies": "по всем компаниям · сегодня",
+    "openAll": "Открыть все",
+    "table": {
+      "resource": "Ресурс",
+      "company": "Компания",
+      "user": "Пользователь",
+      "time": "Время",
+      "status": "Статус"
+    },
+    "announcements": "Новые объявления",
+    "all": "Все",
+    "floorLoad": "Загрузка по этажам",
+    "now": "сейчас",
+    "status": {
+      "confirmed": "Подтверждена",
+      "pending": "Ожидает",
+      "soon": "Скоро",
+      "checked_in": "Заезд",
+      "completed": "Завершено",
+      "cancelled": "Отменено",
+      "no_show": "Неявка"
+    },
+    "floors": {
+      "floor1": "Этаж 1 · Reception",
+      "floor2": "Этаж 2 · Open space",
+      "floor3": "Этаж 3 · Переговорки",
+      "floor4": "Этаж 4 · Капсулы",
+      "floor5": "Этаж 5 · VIP"
+    },
+    "noBookings": "Нет предстоящих бронирований",
+    "noAnnouncements": "Нет новых объявлений",
+    "floorNoData": "Нет данных по этажам",
+    "companyAdmin": {
+      "greeting": "Доброе утро, {{name}}",
+      "subtitle": "{{date}} · в офисе сегодня {{count}} сотрудников из {{total}}",
+      "bookResource": "Забронировать",
+      "submitRequest": "Подать заявку",
+      "kpi": {
+        "teamBookings": "Брони команды сегодня",
+        "freeNow": "Свободно сейчас",
+        "openTasks": "Открытые задачи",
+        "unread": "Непрочитанных"
+      },
+      "teamBookingsTitle": "Брони команды сегодня",
+      "teamBookingsSubtitle": "сегодня · {{count}} событий",
+      "openAll": "Открыть все",
+      "statusConfirmed": "подтверждено",
+      "statusSoon": "скоро",
+      "myTasks": "Мои задачи",
+      "tasksToday": "на сегодня · {{count}}",
+      "allTasks": "Все →",
+      "newAnnouncements": "Новые объявления",
+      "allAnnouncements": "Все →",
+      "noAnnouncements": "Нет новых объявлений"
+    },
+    "employee": {
+      "greeting": "Привет, {{name}}",
+      "subtitle": "{{date}} · у тебя {{bookings}} бронирований и {{tasks}} задач сегодня",
+      "inviteGuest": "Пригласить гостя",
+      "bookResource": "Забронировать",
+      "kpi": {
+        "myBookings": "Мои брони сегодня",
+        "myTasks": "Мои задачи на сегодня",
+        "unread": "Непрочитанных уведомлений"
+      },
+      "upcomingBookings": "Мои ближайшие брони",
+      "allMyBookings": "Все мои",
+      "openBooking": "Открыть",
+      "bookingConfirmed": "подтверждено",
+      "myTasks": "Мои задачи",
+      "tasksFromBoards": "{{count}} · от {{boards}} досок",
+      "allTasks": "Все →",
+      "newAnnouncements": "Новые объявления",
+      "allAnnouncements": "Все →",
+      "noAnnouncements": "Нет новых объявлений",
+      "noBookings": "Нет ближайших бронирований"
+    }
+  },
+  "profile": {
+    "title": "Профиль",
+    "name": "Имя",
+    "email": "Email",
+    "role": "Роль",
+    "emailVerified": "Email подтверждён",
+    "yes": "Да",
+    "no": "Нет",
+    "company": "Компания",
+    "refreshProfile": "Обновить профиль",
+    "logout": "Выйти",
+    "roles": {
+      "superadmin": "Супер-администратор",
+      "company_admin": "Администратор компании",
+      "employee": "Сотрудник",
+      "reception": "Ресепшен",
+      "guest": "Гость"
+    }
+  }
+}

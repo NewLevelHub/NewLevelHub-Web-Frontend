@@ -1046,6 +1046,68 @@ export interface DashboardRecentEvent {
   status: string;
 }
 
+export interface DashboardBookingItem {
+  id: number;
+  resource_name: string;
+  user_name: string;
+  company_name: string | null;
+  start_time: string;
+  end_time: string;
+  status: string;
+}
+
+export interface DashboardAnnouncementRecentItem {
+  id: number;
+  title: string;
+  text: string;
+  created_at: string;
+}
+
+export interface FloorLoadItem {
+  floor_number: number;
+  floor_name: string;
+  occupancy_pct: number;
+}
+
+export interface TeamBookingItem {
+  user_full_name: string;
+  user_initials: string;
+  resource_name: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+}
+
+export interface CompanyAdminTaskItem {
+  id: number;
+  title: string;
+  due_date: string;
+  due_time: string | null;
+  priority: string;
+  is_overdue: boolean;
+}
+
+export interface EmployeeUpcomingBooking {
+  id: number;
+  resource_name: string;
+  resource_type: string;
+  resource_capacity: number | null;
+  resource_row: null;
+  start_time: string;
+  end_time: string;
+  is_all_day: boolean;
+  status: string;
+}
+
+export interface EmployeeTaskItem {
+  id: number;
+  title: string;
+  board_name: string;
+  due_date: string;
+  priority: string;
+  is_overdue: boolean;
+}
+
 export interface SuperadminDashboardData {
   role: 'superadmin';
   user: DashboardUserInfo;
@@ -1054,6 +1116,14 @@ export interface SuperadminDashboardData {
   bookings_today: number;
   recent_events: DashboardRecentEvent[];
   quick_actions: string[];
+  bookings_recent: DashboardBookingItem[];
+  announcements_recent: DashboardAnnouncementRecentItem[];
+  bookings_week_delta: number;
+  space_load_pct: number;
+  open_service_requests: number;
+  service_requests_closed_today: number;
+  new_companies_last_7d: number;
+  floor_load: FloorLoadItem[];
 }
 
 export interface CompanyAdminDashboardData {
@@ -1064,6 +1134,9 @@ export interface CompanyAdminDashboardData {
   bookings_today: number;
   announcement_feed: DashboardAnnouncementItem[];
   pending_approvals: { leaves: number; guest_passes: number };
+  free_resources_now: number;
+  team_bookings_today: TeamBookingItem[];
+  my_tasks: CompanyAdminTaskItem[];
 }
 
 export interface EmployeeDashboardData {
@@ -1073,6 +1146,9 @@ export interface EmployeeDashboardData {
   my_bookings_today: number;
   announcement_feed: DashboardAnnouncementItem[];
   unread_notifications_count: number;
+  my_upcoming_bookings: EmployeeUpcomingBooking[];
+  my_tasks: EmployeeTaskItem[];
+  my_tasks_boards_count: number;
 }
 
 export interface GuestDashboardData {

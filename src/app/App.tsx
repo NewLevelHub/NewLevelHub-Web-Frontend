@@ -1,3 +1,4 @@
+import '@/shared/lib/i18n';
 import { useEffect } from 'react';
 import { RouterProvider } from 'react-router';
 import { QueryClientProvider } from '@tanstack/react-query';

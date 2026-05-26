@@ -1,0 +1,111 @@
+{
+  "dashboard": {
+    "greeting": "Good morning, {{name}}",
+    "subtitle": "{{date}} · {{count}} people in the BC right now, load {{load}}%",
+    "createAnnouncement": "Create announcement",
+    "addResource": "Add resource",
+    "kpi": {
+      "activeBookings": "Active bookings",
+      "spaceLoad": "Space utilization",
+      "openRequests": "Open requests",
+      "activeTenants": "Active tenants"
+    },
+    "upcomingBookings": "Upcoming bookings",
+    "acrossAllCompanies": "across all companies · today",
+    "openAll": "Open all",
+    "table": {
+      "resource": "Resource",
+      "company": "Company",
+      "user": "User",
+      "time": "Time",
+      "status": "Status"
+    },
+    "announcements": "New announcements",
+    "all": "All",
+    "floorLoad": "Floor utilization",
+    "now": "now",
+    "status": {
+      "confirmed": "Confirmed",
+      "pending": "Pending",
+      "soon": "Soon",
+      "checked_in": "Checked in",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "no_show": "No show"
+    },
+    "floors": {
+      "floor1": "Floor 1 · Reception",
+      "floor2": "Floor 2 · Open space",
+      "floor3": "Floor 3 · Meeting rooms",
+      "floor4": "Floor 4 · Capsules",
+      "floor5": "Floor 5 · VIP"
+    },
+    "noBookings": "No upcoming bookings",
+    "noAnnouncements": "No new announcements",
+    "floorNoData": "No floor data available",
+    "companyAdmin": {
+      "greeting": "Good morning, {{name}}",
+      "subtitle": "{{date}} · {{count}} employees in the office today out of {{total}}",
+      "bookResource": "Book resource",
+      "submitRequest": "Submit request",
+      "kpi": {
+        "teamBookings": "Team bookings today",
+        "freeNow": "Available now",
+        "openTasks": "Open tasks",
+        "unread": "Unread"
+      },
+      "teamBookingsTitle": "Team bookings today",
+      "teamBookingsSubtitle": "today · {{count}} events",
+      "openAll": "Open all",
+      "statusConfirmed": "confirmed",
+      "statusSoon": "soon",
+      "myTasks": "My tasks",
+      "tasksToday": "today · {{count}}",
+      "allTasks": "All →",
+      "newAnnouncements": "New announcements",
+      "allAnnouncements": "All →",
+      "noAnnouncements": "No new announcements"
+    },
+    "employee": {
+      "greeting": "Hello, {{name}}",
+      "subtitle": "{{date}} · you have {{bookings}} bookings and {{tasks}} tasks today",
+      "inviteGuest": "Invite guest",
+      "bookResource": "Book resource",
+      "kpi": {
+        "myBookings": "My bookings today",
+        "myTasks": "My tasks for today",
+        "unread": "Unread notifications"
+      },
+      "upcomingBookings": "My upcoming bookings",
+      "allMyBookings": "All mine",
+      "openBooking": "Open",
+      "bookingConfirmed": "confirmed",
+      "myTasks": "My tasks",
+      "tasksFromBoards": "{{count}} · from {{boards}} boards",
+      "allTasks": "All →",
+      "newAnnouncements": "New announcements",
+      "allAnnouncements": "All →",
+      "noAnnouncements": "No new announcements",
+      "noBookings": "No upcoming bookings"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "emailVerified": "Email verified",
+    "yes": "Yes",
+    "no": "No",
+    "company": "Company",
+    "refreshProfile": "Refresh profile",
+    "logout": "Sign out",
+    "roles": {
+      "superadmin": "Super administrator",
+      "company_admin": "Company administrator",
+      "employee": "Employee",
+      "reception": "Reception",
+      "guest": "Guest"
+    }
+  }
+}
