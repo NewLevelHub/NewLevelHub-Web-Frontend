@@ -117,6 +117,24 @@ export interface SuperadminAnalyticsResponse {
   }>;
 }
 
+/** GET /analytics/resources/ — загруженность в разрезе конкретных ресурсов. */
+export interface ResourceUsageRow {
+  resource_id: number;
+  resource_name: string;
+  resource_type: string;
+  floor: number;
+  total_bookings: number;
+  avg_duration_minutes: number;
+  total_booked_minutes: number;
+}
+
+export interface ResourceUsageResponse {
+  period: SuperadminAnalyticsPeriod;
+  date_from: string;
+  date_to: string;
+  results: ResourceUsageRow[];
+}
+
 export interface CompanyLimits {
   employees: {
     current: number;
