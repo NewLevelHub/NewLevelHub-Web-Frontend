@@ -81,6 +81,7 @@ import AnnouncementCreatePage from '@/pages/announcements/AnnouncementCreatePage
 // Leave
 import LeaveRequestListPage from '@/pages/leave/LeaveRequestListPage';
 import LeaveRequestCreatePage from '@/pages/leave/LeaveRequestCreatePage';
+import LeaveRequestEditPage from '@/pages/leave/LeaveRequestEditPage';
 
 // Files
 import FileBrowserPage from '@/pages/files/FileBrowserPage';
@@ -246,6 +247,7 @@ export const router = createBrowserRouter([
               { path: '/calendar', element: <Navigate to="/company/calendar" replace /> },
               { path: '/hr/leaves', element: <LeaveRequestListPage /> },
               { path: '/hr/leaves/new', element: <LeaveRequestCreatePage /> },
+              { path: '/hr/leaves/:id/edit', element: <LeaveRequestEditPage /> },
               { path: '/leave', element: <Navigate to="/hr/leaves" replace /> },
               { path: '/leave/new', element: <Navigate to="/hr/leaves/new" replace /> },
             ],

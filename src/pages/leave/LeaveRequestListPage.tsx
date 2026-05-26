@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
@@ -23,6 +23,7 @@ const STATUS_OPTIONS: Array<{ value: ''; label: string } | { value: LeaveStatus;
   { value: LEAVE_STATUSES.PENDING, label: LEAVE_STATUS_LABELS[LEAVE_STATUSES.PENDING] },
   { value: LEAVE_STATUSES.APPROVED, label: LEAVE_STATUS_LABELS[LEAVE_STATUSES.APPROVED] },
   { value: LEAVE_STATUSES.REJECTED, label: LEAVE_STATUS_LABELS[LEAVE_STATUSES.REJECTED] },
+  { value: LEAVE_STATUSES.CANCELLED, label: LEAVE_STATUS_LABELS[LEAVE_STATUSES.CANCELLED] },
 ];
 
 const TYPE_OPTIONS: Array<{ value: ''; label: string } | { value: LeaveType; label: string }> = [
@@ -37,6 +38,7 @@ const STATUS_BADGE_CLASS: Record<LeaveStatus, string> = {
   [LEAVE_STATUSES.PENDING]: 'bg-warning-subtle text-warning',
   [LEAVE_STATUSES.APPROVED]: 'bg-success-subtle text-success',
   [LEAVE_STATUSES.REJECTED]: 'bg-rose-900/60 text-rose-300',
+  [LEAVE_STATUSES.CANCELLED]: 'bg-[color:var(--bg-hover)] text-muted',
 };
 const LIVE_REFETCH_MS = 15000;
 type ReviewStatus = Extract<LeaveStatus, 'approved' | 'rejected'>;
@@ -47,6 +49,7 @@ type ReviewDialogState = {
 
 export default function LeaveRequestListPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<LeaveStatus | ''>('');
   const [typeFilter, setTypeFilter] = useState<LeaveType | ''>('');
@@ -55,6 +58,7 @@ export default function LeaveRequestListPage() {
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [reviewDialog, setReviewDialog] = useState<ReviewDialogState | null>(null);
   const [reviewCommentInput, setReviewCommentInput] = useState('');
+  const [cancelConfirmId, setCancelConfirmId] = useState<number | null>(null);
 
   const queryParams = useMemo(() => {
     const params: Record<string, string> = {};
@@ -123,6 +127,20 @@ export default function LeaveRequestListPage() {
     },
     onError: (err) => {
       setMutationError(getApiError(err).message);
+    },
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: (id: number) => apiClient.post(API.leave.cancel(String(id))),
+    onSuccess: async () => {
+      setMutationError(null);
+      setCancelConfirmId(null);
+      await queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
+      await queryClient.invalidateQueries({ queryKey: ['leave-balance'] });
+    },
+    onError: (err) => {
+      setMutationError(getApiError(err).message);
+      setCancelConfirmId(null);
     },
   });
 
@@ -245,6 +263,7 @@ export default function LeaveRequestListPage() {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Статус</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Комментарий</th>
                 {isAdmin ? <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Действия</th> : null}
+                {!isAdmin ? <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Действия</th> : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-[color:var(--border)]/60">
@@ -299,6 +318,31 @@ export default function LeaveRequestListPage() {
                         >
                           Отменить одобрение
                         </button>
+                      ) : (
+                        <span className="text-xs text-muted">—</span>
+                      )}
+                    </td>
+                  ) : null}
+                  {!isAdmin ? (
+                    <td className="px-4 py-3">
+                      {leave.status === LEAVE_STATUSES.PENDING ? (
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            className="rounded-md border border-default bg-surface px-2 py-1 text-xs text-secondary hover:bg-hover"
+                            onClick={() => navigate(`/hr/leaves/${leave.id}/edit`)}
+                          >
+                            Редактировать
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded-md border border-rose-800 bg-rose-900/30 px-2 py-1 text-xs text-rose-300 hover:bg-rose-900/50"
+                            disabled={cancelMutation.isPending}
+                            onClick={() => setCancelConfirmId(leave.id)}
+                          >
+                            Отменить
+                          </button>
+                        </div>
                       ) : (
                         <span className="text-xs text-muted">—</span>
                       )}
@@ -441,6 +485,43 @@ export default function LeaveRequestListPage() {
                   : reviewDialog.status === LEAVE_STATUSES.APPROVED
                     ? 'Подтвердить одобрение'
                     : 'Подтвердить отклонение'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {cancelConfirmId !== null ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => { if (!cancelMutation.isPending) setCancelConfirmId(null); }}
+        >
+          <div
+            className="w-full max-w-sm rounded-xl border border-default bg-raised p-5"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 className="text-lg font-semibold text-primary">Отменить заявку</h2>
+            <p className="mt-2 text-sm text-secondary">
+              Вы уверены, что хотите отменить эту заявку? Действие нельзя отменить.
+            </p>
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover"
+                onClick={() => setCancelConfirmId(null)}
+                disabled={cancelMutation.isPending}
+              >
+                Назад
+              </button>
+              <button
+                type="button"
+                className="rounded-lg bg-rose-600 px-3 py-2 text-sm font-medium text-white hover:bg-rose-500 disabled:opacity-50"
+                disabled={cancelMutation.isPending}
+                onClick={() => cancelMutation.mutate(cancelConfirmId)}
+              >
+                {cancelMutation.isPending ? 'Отмена...' : 'Подтвердить отмену'}
               </button>
             </div>
           </div>

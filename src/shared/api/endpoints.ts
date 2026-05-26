@@ -180,6 +180,8 @@ export const API = {
     requests: '/hr/leaves/',
     create: '/hr/leaves/',
     detail: (id: string) => `/hr/leaves/${id}/`,
+    update: (id: string) => `/hr/leaves/${id}/`,
+    cancel: (id: string) => `/hr/leaves/${id}/cancel/`,
     review: (id: string) => `/hr/leaves/${id}/review/`,
     balance: '/hr/leaves/balance/',
     balanceSet: '/hr/leaves/balance/set/',

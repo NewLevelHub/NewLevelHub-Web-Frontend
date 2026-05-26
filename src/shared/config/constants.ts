@@ -184,6 +184,7 @@ export const LEAVE_STATUSES = {
   PENDING: 'pending',
   APPROVED: 'approved',
   REJECTED: 'rejected',
+  CANCELLED: 'cancelled',
 } as const;
 
 export type LeaveStatus = (typeof LEAVE_STATUSES)[keyof typeof LEAVE_STATUSES];
@@ -192,6 +193,7 @@ export const LEAVE_STATUS_LABELS: Record<LeaveStatus, string> = {
   [LEAVE_STATUSES.PENDING]: 'На рассмотрении',
   [LEAVE_STATUSES.APPROVED]: 'Одобрено',
   [LEAVE_STATUSES.REJECTED]: 'Отклонено',
+  [LEAVE_STATUSES.CANCELLED]: 'Отменено',
 };
 
 export const COMPANY_TIERS = {
