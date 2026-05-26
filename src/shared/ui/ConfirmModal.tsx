@@ -125,7 +125,7 @@ export function ConfirmModal({
             </h2>
             <p
               id="confirm-modal-description"
-              className="mt-1 text-sm text-muted"
+              className="mt-1 text-sm text-muted break-all"
             >
               {description}
             </p>

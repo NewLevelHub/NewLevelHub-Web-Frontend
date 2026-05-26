@@ -637,6 +637,7 @@ export interface StorageFolder {
   name: string;
   scope: 'personal' | 'company';
   parent: number | null;
+  owner: number;
   children_count: number;
   files_count: number;
   created_at: string;
@@ -693,6 +694,7 @@ export interface StorageFileShare {
   shared_by: number;
   shared_by_name: string;
   permission: StorageSharePermission;
+  comment: string;
   created_at: string;
 }
 
