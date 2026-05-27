@@ -232,13 +232,18 @@ export default function CalendarPage() {
   const groupedEvents = useMemo(() => {
     const groups = new Map<string, CalendarEvent[]>();
     for (const event of events) {
-      const key = event.start.slice(0, 10);
+      const startKey = event.start.slice(0, 10);
+      const endKey = event.end.slice(0, 10);
+      let key = startKey;
+      if (key < period.dateFrom) key = period.dateFrom;
+      if (endKey < key) key = endKey;
+      if (key > period.dateTo) key = period.dateTo;
       const list = groups.get(key) ?? [];
       list.push(event);
       groups.set(key, list);
     }
     return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, [events]);
+  }, [events, period.dateFrom, period.dateTo]);
 
   const resetFilters = () => {
     setSelectedUserId('');
