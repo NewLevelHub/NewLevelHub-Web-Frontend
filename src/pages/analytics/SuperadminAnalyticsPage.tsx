@@ -1134,8 +1134,8 @@ export default function SuperadminAnalyticsPage() {
       )}
 
       {data && (
-        <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <div className="rounded-2xl border border-default bg-raised p-4 xl:col-span-1">
+        <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div className="rounded-2xl border border-default bg-raised p-4">
             <h3 className="text-sm font-semibold text-primary mb-3">Top-5 ресурсов</h3>
             <div className="space-y-2 text-sm">
               {data.top_resources.map((row) => (
@@ -1147,19 +1147,10 @@ export default function SuperadminAnalyticsPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-default bg-raised p-4 xl:col-span-1">
-            <h3 className="text-sm font-semibold text-primary mb-3">Top-5 компаний</h3>
-            <div className="space-y-2 text-sm">
-              {data.top_companies.map((row) => (
-                <div key={row.company_id} className="flex items-center justify-between text-secondary">
-                  <span className="truncate pr-3">{row.company_name}</span>
-                  <span className="tabular-nums">{row.booking_count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Top-5 компаний скрыты до проработки метрики:
+              сейчас рейтинг строится по числу бронирований, что не отражает ценность компании. */}
 
-          <div className="rounded-2xl border border-default bg-raised p-4 xl:col-span-1">
+          <div className="rounded-2xl border border-default bg-raised p-4">
             <h3 className="text-sm font-semibold text-primary mb-3">Низкая загруженность (&lt;20%)</h3>
             <div className="space-y-2 text-sm">
               {data.low_utilization.map((row) => (
