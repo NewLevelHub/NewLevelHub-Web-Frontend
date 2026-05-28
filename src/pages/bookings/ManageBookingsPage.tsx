@@ -450,7 +450,7 @@ export default function ManageBookingsPage() {
   const selectClass = 'w-full rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-2.5 py-1.5 text-[13px] text-[color:var(--text-primary)] focus:outline-none';
 
   return (
-    <main className="mx-auto max-w-7xl space-y-4 px-3 py-4 sm:px-4 sm:py-6">
+    <div className="space-y-4">
       {/* Page header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -1050,6 +1050,6 @@ export default function ManageBookingsPage() {
           document.body,
         );
       })()}
-    </main>
+    </div>
   );
 }

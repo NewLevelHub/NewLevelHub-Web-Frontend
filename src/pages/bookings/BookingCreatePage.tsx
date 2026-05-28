@@ -167,7 +167,7 @@ export default function BookingCreatePage() {
 
   if (validResourceId === null) {
     return (
-      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto space-y-4 text-zinc-100">
+      <div className="space-y-4 text-zinc-100">
         <h1 className="text-xl font-bold text-primary">{t('booking.create.title')}</h1>
         <p className="text-sm text-zinc-400">
           {t('booking.create.selectResourceHint')}{' '}
@@ -176,32 +176,32 @@ export default function BookingCreatePage() {
           </Link>
           .
         </p>
-      </main>
+      </div>
     );
   }
 
   if (loadingResource) {
     return (
-      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto text-zinc-300">
+      <div className="text-zinc-300">
         <p className="text-sm">{t('booking.create.loadingResource')}</p>
-      </main>
+      </div>
     );
   }
 
   if (!resource) {
     return (
-      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto space-y-4 text-zinc-100">
+      <div className="space-y-4 text-zinc-100">
         <p className="text-sm text-red-400">{t('booking.create.resourceNotFound')}</p>
         <Link
           to="/bookings/catalog"
           className="text-sm text-blue-400 hover:text-blue-300 underline-offset-2 hover:underline"
         >{t('common.goToCatalog')}</Link>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto space-y-6 text-zinc-100">
+    <div className="space-y-6 text-zinc-100">
       <Link
         to="/bookings/catalog"
         className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-primary"
@@ -393,6 +393,6 @@ export default function BookingCreatePage() {
           {createMutation.isPending ? t('common.submitting') : t('catalog.book')}
         </button>
       </form>
-    </main>
+    </div>
   );
 }

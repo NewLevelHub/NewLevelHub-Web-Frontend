@@ -1,24 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation, useNavigate } from 'react-router';
-import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router';
 import { ChevronDown, ChevronLeft, ChevronRight, ExternalLink, LayoutGrid, Plus, Search } from 'lucide-react';
 
-import { apiClient } from '@/shared/api/client';
-import { API } from '@/shared/api/endpoints';
-import {
-  BOOKING_RESOURCE_CATALOG_STATUS,
-  RESOURCE_TYPES,
-  RESOURCE_TYPE_LABEL_KEYS,
-  USER_ROLES,
-  type ResourceType,
-} from '@/shared/config/constants';
-import { useAuth } from '@/shared/hooks/useAuth';
 import { cn } from '@/shared/lib/cn';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
-import type { BookingResourceListItem, PaginatedResponse } from '@/shared/types';
+import { BOOKING_RESOURCE_CATALOG_STATUS, RESOURCE_TYPE_LABEL_KEYS } from '@/shared/config/constants';
+import type { BookingResourceListItem } from '@/shared/types';
+import { useResourceList } from '@/pages/resources/hooks/useResourceList';
 
-const PAGE_SIZE = 20;
+// ─── ResourceStatusBadge ──────────────────────────────────────────────────────
 
 function ResourceStatusBadge({ resource }: { resource: BookingResourceListItem }) {
   const { t } = useTranslation();
@@ -55,8 +46,11 @@ function ResourceStatusBadge({ resource }: { resource: BookingResourceListItem }
   );
 }
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function ResourceListPage() {
   const { t } = useTranslation();
+
   const statusFilter = useMemo(
     () => [
       { value: '' as const, label: t('common.allStatuses') },
@@ -65,68 +59,32 @@ export default function ResourceListPage() {
     ],
     [t],
   );
-  const typeOptions = useMemo(
-    () => [
-      { value: '', label: t('common.bookingFilter.allTypes') },
-      ...Object.values(RESOURCE_TYPES).map((resourceType) => ({
-        value: resourceType,
-        label: t(RESOURCE_TYPE_LABEL_KEYS[resourceType as ResourceType]),
-      })),
-    ],
-    [t],
-  );
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
-  const successMessage =
-    typeof location.state === 'object' && location.state && 'successMessage' in location.state
-      ? String((location.state as { successMessage?: string }).successMessage ?? '')
-      : null;
-  const [page, setPage] = useState(1);
-  const [typeFilter, setTypeFilter] = useState('');
-  const [floorFilter, setFloorFilter] = useState('');
-  const [activeFilter, setActiveFilter] = useState('');
-  const [searchInput, setSearchInput] = useState('');
-  const debouncedSearch = useDebouncedValue(searchInput, 350);
 
-  const queryParams: Record<string, string | number> = { page, page_size: PAGE_SIZE };
-  if (typeFilter) queryParams.resource_type = typeFilter;
-  if (floorFilter !== '' && !Number.isNaN(Number(floorFilter))) {
-    queryParams.floor = Number(floorFilter);
-  }
-  if (activeFilter !== '') queryParams.is_active = activeFilter;
-  if (debouncedSearch.trim()) queryParams.search = debouncedSearch.trim();
-
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['booking-resources', queryParams],
-    queryFn: async () => {
-      const { data: res } = await apiClient.get<PaginatedResponse<BookingResourceListItem>>(
-        API.bookings.resources.list,
-        { params: queryParams },
-      );
-      return res;
-    },
-  });
-
-  const totalCount = data?.count ?? 0;
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-  const results = data?.results ?? [];
-
-  const rangeStart = (page - 1) * PAGE_SIZE + 1;
-  const rangeEnd = Math.min(page * PAGE_SIZE, totalCount);
-
-  useEffect(() => {
-    setPage(1);
-  }, [typeFilter, floorFilter, activeFilter, debouncedSearch]);
-
-  useEffect(() => {
-    if (!successMessage) return;
-    navigate(location.pathname, { replace: true, state: null });
-  }, [location.pathname, navigate, successMessage]);
+  const {
+    isSuperadmin,
+    searchInput,
+    setSearchInput,
+    typeFilter,
+    setTypeFilter,
+    floorFilter,
+    setFloorFilter,
+    activeFilter,
+    setActiveFilter,
+    typeOptions,
+    page,
+    setPage,
+    totalCount,
+    totalPages,
+    rangeStart,
+    rangeEnd,
+    results,
+    isLoading,
+    isError,
+    successMessage,
+  } = useResourceList();
 
   return (
-    <main className="mx-auto max-w-7xl space-y-4 px-3 py-4 sm:px-4 sm:py-6">
+    <div className="space-y-4">
       {/* Page header */}
       <div className="flex items-start justify-between mb-6">
         <div>
@@ -168,7 +126,6 @@ export default function ResourceListPage() {
 
       {/* Card wrapper */}
       <div className="bg-[color:var(--bg-surface)] border border-[color:var(--border)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
-
         {/* Filter bar */}
         <div
           className="flex items-center gap-1.5 flex-wrap px-4 py-3 border-b border-[color:var(--border)]"
@@ -189,7 +146,6 @@ export default function ResourceListPage() {
             />
           </div>
 
-          {/* Separator */}
           <span className="self-stretch w-px bg-[color:var(--border)] flex-shrink-0 my-0.5" aria-hidden="true" />
 
           {/* Type select */}
@@ -199,9 +155,10 @@ export default function ResourceListPage() {
               onChange={(e) => setTypeFilter(e.target.value)}
               className="h-[30px] px-2.5 pr-6 text-[12px] border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] cursor-pointer focus:outline-none appearance-none"
             >
+              <option value="">{t('common.bookingFilter.allTypes')}</option>
               {typeOptions.map((o) => (
-                <option key={o.value || 'all'} value={o.value}>
-                  {o.label}
+                <option key={o.value} value={o.value}>
+                  {t(RESOURCE_TYPE_LABEL_KEYS[o.value])}
                 </option>
               ))}
             </select>
@@ -222,7 +179,6 @@ export default function ResourceListPage() {
             className="w-20 h-[30px] px-2.5 text-[12px] border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-primary)] focus:outline-none placeholder:text-[color:var(--text-muted)]"
           />
 
-          {/* Separator */}
           <span className="self-stretch w-px bg-[color:var(--border)] flex-shrink-0 my-0.5" aria-hidden="true" />
 
           {/* Status chips */}
@@ -331,7 +287,6 @@ export default function ResourceListPage() {
                       key={r.id}
                       className="border-b border-[color:var(--border)] hover:bg-[color:var(--bg-hover)] transition-colors"
                     >
-                      {/* Photo */}
                       <td className="w-10 px-3 py-2 align-middle">
                         {photoSrc ? (
                           <img
@@ -345,8 +300,6 @@ export default function ResourceListPage() {
                           </div>
                         )}
                       </td>
-
-                      {/* Name */}
                       <td className="px-3 py-2.5 align-middle font-medium text-[color:var(--text-primary)]">
                         <Link
                           to={`/resources/${r.id}`}
@@ -355,40 +308,26 @@ export default function ResourceListPage() {
                           {r.name}
                         </Link>
                       </td>
-
-                      {/* Type */}
                       <td className="px-3 py-2.5 align-middle text-[color:var(--text-muted)]">
                         {t(RESOURCE_TYPE_LABEL_KEYS[r.type]) ?? r.type}
                       </td>
-
-                      {/* Floor */}
                       <td className="px-3 py-2.5 align-middle text-[color:var(--text-muted)]">
                         {r.floor}
                       </td>
-
-                      {/* Zone */}
                       <td className="px-3 py-2.5 align-middle text-[color:var(--text-muted)]">
                         {r.zone || '—'}
                       </td>
-
-                      {/* Capacity */}
                       <td className="px-3 py-2.5 align-middle text-[color:var(--text-muted)]">
                         {r.capacity}
                       </td>
-
-                      {/* Company (superadmin only) */}
                       {isSuperadmin && (
                         <td className="px-3 py-2.5 align-middle text-[color:var(--text-muted)]">
                           {r.assigned_company_name ?? '—'}
                         </td>
                       )}
-
-                      {/* Status */}
                       <td className="px-3 py-2.5 align-middle">
                         <ResourceStatusBadge resource={r} />
                       </td>
-
-                      {/* Action */}
                       <td className="w-10 px-3 py-2.5 align-middle">
                         <Link
                           to={`/resources/${r.id}`}
@@ -406,25 +345,6 @@ export default function ResourceListPage() {
           </div>
         )}
       </div>
-    </main>
+    </div>
   );
-}
-
-function useDebouncedValue<T>(value: T, ms: number): T {
-  const [debounced, setDebounced] = useState(value);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const flush = useCallback(() => {
-    setDebounced(value);
-  }, [value]);
-
-  useEffect(() => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(flush, ms);
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, [value, ms, flush]);
-
-  return debounced;
 }

@@ -167,7 +167,7 @@ export default function RecurringBookingsPage() {
   }
 
   return (
-    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-5xl mx-auto space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-primary">{t('booking.recurring.title')}</h1>
         <Link
@@ -384,6 +384,6 @@ export default function RecurringBookingsPage() {
           )}
         </div>
       </div>
-    </main>
+    </div>
   );
 }

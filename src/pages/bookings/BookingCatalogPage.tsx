@@ -289,7 +289,7 @@ export default function BookingCatalogPage() {
   const hasAvailFilter = availFromLocal !== '' || availToLocal !== '';
 
   return (
-    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-7xl mx-auto space-y-5">
+    <div className="space-y-5">
       {/* ── Page header ── */}
       <div>
         <h1 className="text-xl font-bold text-primary">{t('catalog.title')}</h1>
@@ -876,7 +876,7 @@ export default function BookingCatalogPage() {
           }}
         />
       )}
-    </main>
+    </div>
   );
 }
 

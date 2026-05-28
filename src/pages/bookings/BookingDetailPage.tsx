@@ -194,26 +194,26 @@ export default function BookingDetailPage() {
 
   if (!bookingId) {
     return (
-      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto">
+      <div>
         <p className="text-sm text-red-600">{t('booking.detail.invalidLink')}</p>
-      </main>
+      </div>
     );
   }
 
   if (isLoading) {
     return (
-      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto">
+      <div>
         <p className="text-sm text-muted">{t('common.loading')}</p>
-      </main>
+      </div>
     );
   }
 
   if (isError || !data) {
     return (
-      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto space-y-3">
+      <div className="space-y-3">
         <p className="text-sm text-red-600">{t('booking.detail.notFound')}</p>
         <Link to="/bookings/my" className="text-sm text-blue-600 hover:underline">{t('common.myBookings')}</Link>
-      </main>
+      </div>
     );
   }
 
@@ -241,7 +241,7 @@ export default function BookingDetailPage() {
   const selectedParticipantUserId = Number(selectedUserId);
 
   return (
-    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto space-y-6">
+    <div className="space-y-6">
       {isOwner ? (
         <Link to="/bookings/my" className="text-sm text-blue-600 hover:underline">
           {t('booking.detail.myBookings')}
@@ -425,6 +425,6 @@ export default function BookingDetailPage() {
           )}
         </section>
       ) : null}
-    </main>
+    </div>
   );
 }
