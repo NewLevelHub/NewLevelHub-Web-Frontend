@@ -1072,6 +1072,11 @@ export default function TeamManagePage() {
   const refreshMemberQueries = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
     await queryClient.invalidateQueries({ queryKey: ['company-members'] });
+    // Leave requests can reference this member as assigned_reviewer; the backend
+    // releases the FK on deactivate/remove, so refresh the leaves list and the
+    // reviewer-options picker too.
+    await queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
+    await queryClient.invalidateQueries({ queryKey: ['leave', 'reviewer-options'] });
   }, [queryClient]);
 
   const deactivateMemberMutation = useMutation({

@@ -7,12 +7,14 @@ import { API } from '@/shared/api/endpoints';
 import { LEAVE_STATUSES, LEAVE_TYPES, LEAVE_TYPE_LABELS, type LeaveType } from '@/shared/config/constants';
 import { getApiError } from '@/shared/lib/getApiError';
 import type { LeaveRequest } from '@/shared/types';
+import { useReviewerOptions } from './useReviewerOptions';
 
 type LeaveRequestUpdatePayload = {
   leave_type: LeaveType;
   start_date: string;
   end_date: string;
   comment?: string;
+  assigned_reviewer?: number | null;
 };
 
 const TYPE_OPTIONS: Array<{ value: LeaveType; label: string }> = [
@@ -27,12 +29,17 @@ export default function LeaveRequestEditPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  const { isCompanyAdmin, options: reviewerOptions, isLoading: reviewersLoading } = useReviewerOptions();
   const [leaveType, setLeaveType] = useState<LeaveType>(LEAVE_TYPES.VACATION);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [comment, setComment] = useState('');
+  const [assignedReviewer, setAssignedReviewer] = useState<string>('');
   const [formError, setFormError] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
+
+  const reviewerRequired = isCompanyAdmin;
+  const noPeerAvailable = isCompanyAdmin && !reviewersLoading && reviewerOptions.length === 0;
 
   const { data: leave, isLoading, error } = useQuery({
     queryKey: ['leave-request', id],
@@ -47,6 +54,7 @@ export default function LeaveRequestEditPage() {
       setStartDate(leave.start_date);
       setEndDate(leave.end_date);
       setComment(leave.comment ?? '');
+      setAssignedReviewer(leave.assigned_reviewer != null ? String(leave.assigned_reviewer) : '');
       setInitialized(true);
     }
   }, [leave, initialized]);
@@ -77,12 +85,17 @@ export default function LeaveRequestEditPage() {
       setFormError('Дата начала должна быть раньше или равна дате окончания.');
       return;
     }
+    if (reviewerRequired && !assignedReviewer) {
+      setFormError('Укажите согласующего администратора.');
+      return;
+    }
 
     updateMutation.mutate({
       leave_type: leaveType,
       start_date: startDate,
       end_date: endDate,
       comment: comment.trim() || undefined,
+      assigned_reviewer: assignedReviewer ? Number(assignedReviewer) : null,
     });
   };
 
@@ -161,6 +174,31 @@ export default function LeaveRequestEditPage() {
           </label>
         </div>
 
+        {reviewerRequired ? (
+          noPeerAvailable ? (
+            <div className="rounded-lg border border-rose-800 bg-rose-950/30 px-3 py-2 text-sm text-rose-300" role="alert">
+              В компании нет другого администратора. Сохранить заявку нельзя — попросите суперадмина назначить ещё одного company_admin.
+            </div>
+          ) : (
+            <label className="block text-sm text-secondary">
+              Согласующий администратор <span className="text-rose-400">*</span>
+              <select
+                value={assignedReviewer}
+                onChange={(event) => setAssignedReviewer(event.target.value)}
+                className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+                required
+              >
+                <option value="">{reviewersLoading ? 'Загрузка...' : 'Выберите согласующего'}</option>
+                {reviewerOptions.map((opt) => (
+                  <option key={opt.id} value={String(opt.id)}>
+                    {opt.full_name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )
+        ) : null}
+
         <label className="block text-sm text-secondary">
           Комментарий
           <textarea
@@ -187,7 +225,7 @@ export default function LeaveRequestEditPage() {
           </Link>
           <button
             type="submit"
-            disabled={updateMutation.isPending}
+            disabled={updateMutation.isPending || noPeerAvailable}
             className="inline-flex items-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
           >
             {updateMutation.isPending ? 'Сохранение...' : 'Сохранить изменения'}

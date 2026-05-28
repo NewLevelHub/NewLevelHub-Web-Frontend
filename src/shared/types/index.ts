@@ -608,6 +608,8 @@ export interface LeaveRequest {
   duration_days?: number;
   comment: string;
   status: LeaveStatus;
+  assigned_reviewer: number | null;
+  assigned_reviewer_name?: string | null;
   reviewed_by: number | null;
   reviewer?: number | null;
   review_comment: string;

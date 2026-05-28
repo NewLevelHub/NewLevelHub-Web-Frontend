@@ -17,6 +17,7 @@ import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import type { LeaveBalance, LeaveRequest, PaginatedResponse, TeamLeaveBalance } from '@/shared/types';
+import { useReviewerOptions } from './useReviewerOptions';
 
 const STATUS_OPTIONS: Array<{ value: ''; label: string } | { value: LeaveStatus; label: string }> = [
   { value: '', label: 'Все статусы' },
@@ -84,6 +85,8 @@ export default function LeaveRequestListPage() {
   });
 
   const isAdmin = user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN;
+  const { isCompanyAdmin, options: reviewerOptions, isLoading: reviewersLoading } = useReviewerOptions();
+  const lonelyCompanyAdmin = isCompanyAdmin && !reviewersLoading && reviewerOptions.length === 0;
   const { data: teamBalances, isLoading: isTeamBalancesLoading } = useQuery({
     queryKey: ['leave-team-balance', year],
     queryFn: () => apiClient.get<TeamLeaveBalance[]>(API.leave.balanceTeam, { params: { year } }).then(r => r.data),
@@ -171,12 +174,14 @@ export default function LeaveRequestListPage() {
     <main className="mx-auto max-w-6xl space-y-6 p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-primary">Заявки на отсутствие</h1>
-        <Link
-          to="/leave/new"
-          className="inline-flex items-center justify-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
-        >
-          Подать заявку
-        </Link>
+        {lonelyCompanyAdmin ? null : (
+          <Link
+            to="/leave/new"
+            className="inline-flex items-center justify-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
+          >
+            Подать заявку
+          </Link>
+        )}
       </div>
 
       <section className="grid gap-3 rounded-xl border border-default bg-raised p-4 sm:grid-cols-2">
@@ -286,41 +291,60 @@ export default function LeaveRequestListPage() {
                     <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE_CLASS[leave.status])}>
                       {LEAVE_STATUS_LABELS[leave.status] ?? leave.status}
                     </span>
+                    {leave.assigned_reviewer_name ? (
+                      <div className="mt-1 text-xs text-muted">
+                        Согласующий: {leave.assigned_reviewer_name}
+                      </div>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3 text-secondary">{leave.comment || '-'}</td>
                   {isAdmin ? (
                     <td className="px-4 py-3">
-                      {leave.status === LEAVE_STATUSES.PENDING ? (
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            className="rounded-md border border-emerald-700 bg-success-subtle px-2 py-1 text-xs text-success hover:bg-success-subtle"
-                            disabled={reviewMutation.isPending}
-                            onClick={() => openReviewDialog(leave.id, LEAVE_STATUSES.APPROVED, leave.review_comment)}
-                          >
-                            Одобрить
-                          </button>
-                          <button
-                            type="button"
-                            className="rounded-md border border-rose-800 bg-rose-900/30 px-2 py-1 text-xs text-rose-300 hover:bg-rose-900/50"
-                            disabled={reviewMutation.isPending}
-                            onClick={() => openReviewDialog(leave.id, LEAVE_STATUSES.REJECTED, leave.review_comment)}
-                          >
-                            Отклонить
-                          </button>
-                        </div>
-                      ) : leave.status === LEAVE_STATUSES.APPROVED ? (
-                        <button
-                          type="button"
-                          className="rounded-md border border-amber-200 dark:border-amber-800 bg-warning-subtle px-2 py-1 text-xs text-warning hover:bg-warning-subtle"
-                          disabled={reviewMutation.isPending}
-                          onClick={() => openReviewDialog(leave.id, LEAVE_STATUSES.REJECTED, leave.review_comment)}
-                        >
-                          Отменить одобрение
-                        </button>
-                      ) : (
-                        <span className="text-xs text-muted">—</span>
-                      )}
+                      {(() => {
+                        const isOwnLeave = leave.user === user?.id;
+                        const isAssignedToOther =
+                          leave.assigned_reviewer != null && leave.assigned_reviewer !== user?.id;
+                        const canReview =
+                          !isOwnLeave && (user?.role === USER_ROLES.SUPERADMIN || !isAssignedToOther);
+                        if (!canReview) {
+                          return <span className="text-xs text-muted">—</span>;
+                        }
+                        if (leave.status === LEAVE_STATUSES.PENDING) {
+                          return (
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                className="rounded-md border border-emerald-700 bg-success-subtle px-2 py-1 text-xs text-success hover:bg-success-subtle"
+                                disabled={reviewMutation.isPending}
+                                onClick={() => openReviewDialog(leave.id, LEAVE_STATUSES.APPROVED, leave.review_comment)}
+                              >
+                                Одобрить
+                              </button>
+                              <button
+                                type="button"
+                                className="rounded-md border border-rose-800 bg-rose-900/30 px-2 py-1 text-xs text-rose-300 hover:bg-rose-900/50"
+                                disabled={reviewMutation.isPending}
+                                onClick={() => openReviewDialog(leave.id, LEAVE_STATUSES.REJECTED, leave.review_comment)}
+                              >
+                                Отклонить
+                              </button>
+                            </div>
+                          );
+                        }
+                        if (leave.status === LEAVE_STATUSES.APPROVED) {
+                          return (
+                            <button
+                              type="button"
+                              className="rounded-md border border-amber-200 dark:border-amber-800 bg-warning-subtle px-2 py-1 text-xs text-warning hover:bg-warning-subtle"
+                              disabled={reviewMutation.isPending}
+                              onClick={() => openReviewDialog(leave.id, LEAVE_STATUSES.REJECTED, leave.review_comment)}
+                            >
+                              Отменить одобрение
+                            </button>
+                          );
+                        }
+                        return <span className="text-xs text-muted">—</span>;
+                      })()}
                     </td>
                   ) : null}
                   {!isAdmin ? (

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -6,12 +6,14 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { LEAVE_TYPES, LEAVE_TYPE_LABELS, type LeaveType } from '@/shared/config/constants';
 import { getApiError } from '@/shared/lib/getApiError';
+import { useReviewerOptions } from './useReviewerOptions';
 
 type LeaveRequestCreatePayload = {
   leave_type: LeaveType;
   start_date: string;
   end_date: string;
   comment?: string;
+  assigned_reviewer?: number;
 };
 
 const TYPE_OPTIONS: Array<{ value: LeaveType; label: string }> = [
@@ -24,11 +26,22 @@ const TYPE_OPTIONS: Array<{ value: LeaveType; label: string }> = [
 export default function LeaveRequestCreatePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { isCompanyAdmin, options: reviewerOptions, isLoading: reviewersLoading } = useReviewerOptions();
   const [leaveType, setLeaveType] = useState<LeaveType>(LEAVE_TYPES.VACATION);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [comment, setComment] = useState('');
+  const [assignedReviewer, setAssignedReviewer] = useState<string>('');
   const [formError, setFormError] = useState<string | null>(null);
+
+  const reviewerRequired = isCompanyAdmin;
+  const noPeerAvailable = isCompanyAdmin && !reviewersLoading && reviewerOptions.length === 0;
+
+  useEffect(() => {
+    if (noPeerAvailable) {
+      navigate('/leave', { replace: true });
+    }
+  }, [noPeerAvailable, navigate]);
 
   const createLeaveMutation = useMutation({
     mutationFn: async (payload: LeaveRequestCreatePayload) => {
@@ -56,12 +69,17 @@ export default function LeaveRequestCreatePage() {
       setFormError('Дата начала должна быть раньше или равна дате окончания.');
       return;
     }
+    if (reviewerRequired && !assignedReviewer) {
+      setFormError('Укажите согласующего администратора.');
+      return;
+    }
 
     createLeaveMutation.mutate({
       leave_type: leaveType,
       start_date: startDate,
       end_date: endDate,
       comment: comment.trim() || undefined,
+      assigned_reviewer: assignedReviewer ? Number(assignedReviewer) : undefined,
     });
   };
 
@@ -110,6 +128,25 @@ export default function LeaveRequestCreatePage() {
             />
           </label>
         </div>
+
+        {reviewerRequired ? (
+          <label className="block text-sm text-secondary">
+            Согласующий администратор <span className="text-rose-400">*</span>
+            <select
+              value={assignedReviewer}
+              onChange={(event) => setAssignedReviewer(event.target.value)}
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+              required
+            >
+              <option value="">{reviewersLoading ? 'Загрузка...' : 'Выберите согласующего'}</option>
+              {reviewerOptions.map((opt) => (
+                <option key={opt.id} value={String(opt.id)}>
+                  {opt.full_name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
 
         <label className="block text-sm text-secondary">
           Комментарий
