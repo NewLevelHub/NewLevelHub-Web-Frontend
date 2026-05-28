@@ -138,6 +138,7 @@ export const API = {
     detail: (id: string) => `/access/passes/${id}/`,
     revoke: (id: string) => `/access/passes/${id}/revoke/`,
     resend: (id: string) => `/access/passes/${id}/resend/`,
+    validations: (id: string) => `/access/passes/${id}/validations/`,
     export: '/access/passes/export/',
     validate: '/access/validate/',
   },

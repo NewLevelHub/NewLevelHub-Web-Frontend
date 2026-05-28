@@ -10,8 +10,10 @@ import { useUser } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
 import type { GuestPass } from '@/shared/types';
 import { PassStatusBadge } from '@/pages/passes/components/PassStatusBadge';
+import { PassValidationsList } from '@/pages/passes/components/PassValidationsList';
 import { QRCodeView } from '@/pages/passes/components/QRCodeView';
 import { usePassCountdown } from '@/pages/passes/hooks/usePassCountdown';
+import { usePassValidations } from '@/pages/passes/hooks/usePassValidations';
 
 export default function PassDetailPage() {
   const { id } = useParams();
@@ -52,6 +54,13 @@ export default function PassDetailPage() {
   });
 
   const { isNowActive } = usePassCountdown(data?.valid_from);
+
+  const isMultiUse = data?.usage_type === 'multi';
+  const {
+    data: validationsData,
+    isLoading: isLoadingValidations,
+    isError: isValidationsError,
+  } = usePassValidations(id, isMultiUse);
 
   if (isLoading) {
     return <main className="p-3 sm:p-4 md:p-6 text-sm text-secondary">Загрузка пропуска...</main>;
@@ -161,6 +170,15 @@ export default function PassDetailPage() {
           <div>{new Date(data.valid_until).toLocaleString('ru-RU')}</div>
         </div>
       </section>
+
+      {isMultiUse ? (
+        <PassValidationsList
+          total={validationsData?.total ?? data.times_used}
+          results={validationsData?.results ?? []}
+          isLoading={isLoadingValidations}
+          isError={isValidationsError}
+        />
+      ) : null}
 
       <QRCodeView qrImage={data.qr_image} validFrom={data.valid_from} />
     </main>

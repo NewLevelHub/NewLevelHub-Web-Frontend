@@ -502,6 +502,19 @@ export interface PassValidationSuccess {
   valid_until: string;
 }
 
+export interface PassValidationLog {
+  id: number;
+  validated_at: string;
+  validated_by: string | null;
+  method: 'qr' | 'manual' | string;
+  entry_point: string;
+}
+
+export interface PassValidationsResponse {
+  total: number;
+  results: PassValidationLog[];
+}
+
 export interface PassValidationFailure {
   valid: false;
   reason: 'expired' | 'revoked' | 'already_used' | 'not_found';
