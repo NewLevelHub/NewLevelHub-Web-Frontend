@@ -126,6 +126,8 @@ export interface ResourceUsageRow {
   total_bookings: number;
   avg_duration_minutes: number;
   total_booked_minutes: number;
+  peak_hour: number | null;
+  peak_hour_bookings: number;
 }
 
 export interface ResourceUsageResponse {

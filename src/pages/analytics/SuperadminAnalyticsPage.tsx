@@ -48,6 +48,7 @@ import type {
   Company,
   PaginatedResponse,
   ResourceUsageResponse,
+  ServiceFloor,
   SuperadminAnalyticsPeriod,
   SuperadminAnalyticsResponse,
 } from '@/shared/types';
@@ -73,7 +74,8 @@ type ResourceUsageSortKey =
   | 'floor'
   | 'total_bookings'
   | 'avg_duration_minutes'
-  | 'total_booked_minutes';
+  | 'total_booked_minutes'
+  | 'peak_hour_bookings';
 
 const RESOURCE_TYPE_ICONS: Record<string, LucideIcon> = {
   desk: Briefcase,
@@ -186,7 +188,7 @@ function ResourceBookingsRow({
   const params = useMemo(() => {
     const p: Record<string, string | number> = {
       resource_id: resourceId,
-      status: 'confirmed',
+      status_in: 'confirmed,completed',
       page_size: 200,
       ordering: '-start_time',
     };
@@ -303,11 +305,28 @@ function ResourceUsageSection({
     },
   });
 
+  const { data: mapFloors } = useQuery({
+    queryKey: ['analytics', 'superadmin', 'map-floors'],
+    enabled,
+    queryFn: async () => {
+      const { data: body } = await apiClient.get<{ results: ServiceFloor[] }>(API.map.floors);
+      return body.results;
+    },
+  });
+
   const floorOptions = useMemo(() => {
-    const set = new Set<number>();
-    for (const r of resources ?? []) set.add(r.floor);
-    return [...set].sort((a, b) => a - b);
-  }, [resources]);
+    return [...(mapFloors ?? [])]
+      .map((f) => f.number)
+      .sort((a, b) => a - b);
+  }, [mapFloors]);
+
+  const resourceOptions = useMemo(() => {
+    const all = resources ?? [];
+    if (!floorFilter) return all;
+    const n = Number(floorFilter);
+    if (!Number.isInteger(n)) return all;
+    return all.filter((r) => r.floor === n);
+  }, [resources, floorFilter]);
 
   const params = useMemo(() => {
     const p: Record<string, string | number> = { period };
@@ -423,7 +442,7 @@ function ResourceUsageSection({
             className="bg-transparent text-primary outline-none cursor-pointer"
           >
             <option value="">Все</option>
-            {(resources ?? []).map((r) => (
+            {resourceOptions.map((r) => (
               <option key={r.id} value={String(r.id)}>
                 {r.name}
               </option>
@@ -435,7 +454,15 @@ function ResourceUsageSection({
           <span className="text-muted">Этаж:</span>
           <select
             value={floorFilter}
-            onChange={(e) => setFloorFilter(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value;
+              setFloorFilter(next);
+              if (next && resourceFilter) {
+                const n = Number(next);
+                const current = (resources ?? []).find((r) => String(r.id) === resourceFilter);
+                if (current && current.floor !== n) setResourceFilter('');
+              }
+            }}
             className="bg-transparent text-primary outline-none cursor-pointer"
           >
             <option value="">Все</option>
@@ -470,6 +497,7 @@ function ResourceUsageSection({
                 total_bookings: 'по бронированиям',
                 avg_duration_minutes: 'по средней длительности',
                 total_booked_minutes: 'по общему времени',
+                peak_hour_bookings: 'по пиковому часу',
               } as Record<ResourceUsageSortKey, string>
             )[sort.key]}{' '}
             {sort.dir === 'asc' ? '↑' : '↓'}
@@ -550,6 +578,13 @@ function ResourceUsageSection({
                 <SortHeader
                   label="Всего"
                   sortKey="total_booked_minutes"
+                  current={sort}
+                  onClick={toggleSort}
+                  align="right"
+                />
+                <SortHeader
+                  label="Пиковый час"
+                  sortKey="peak_hour_bookings"
                   current={sort}
                   onClick={toggleSort}
                   align="right"
@@ -641,6 +676,18 @@ function ResourceUsageSection({
                       <td className="py-3 pr-3 text-right tabular-nums text-secondary">
                         {fmtMinutes(row.total_booked_minutes)}
                       </td>
+                      <td className="py-3 pr-4 text-right tabular-nums text-secondary">
+                        {row.peak_hour === null ? (
+                          <span className="text-muted">—</span>
+                        ) : (
+                          <span title={`Пик в ${String(row.peak_hour).padStart(2, '0')}:00 — ${row.peak_hour_bookings} брон.`}>
+                            <span className="text-primary">
+                              {String(row.peak_hour).padStart(2, '0')}:00
+                            </span>
+                            <span className="ml-1.5 text-muted">·{' '}{row.peak_hour_bookings}</span>
+                          </span>
+                        )}
+                      </td>
                     </tr>
                     {isExpanded && data && (
                       <ResourceBookingsRow
@@ -648,7 +695,7 @@ function ResourceUsageSection({
                         dateFrom={data.date_from}
                         dateTo={data.date_to}
                         companyId={companyId}
-                        colSpan={7}
+                        colSpan={8}
                       />
                     )}
                   </Fragment>
