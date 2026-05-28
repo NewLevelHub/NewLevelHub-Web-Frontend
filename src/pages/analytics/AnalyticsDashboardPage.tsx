@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
@@ -33,6 +34,7 @@ function formatDateTime(value: string | null) {
 }
 
 export default function AnalyticsDashboardPage() {
+  const { t } = useTranslation();
   const role = useAuthStore((s) => s.user?.role);
   const isCompanyAdmin = role === USER_ROLES.COMPANY_ADMIN;
   const [isExporting, setIsExporting] = useState(false);
@@ -157,7 +159,7 @@ export default function AnalyticsDashboardPage() {
           )}
         >
           <Download size={18} aria-hidden />
-          {isExporting ? 'Выгрузка…' : 'Скачать CSV'}
+          {isExporting ? 'Выгрузка…' : t('common.downloadCsv')}
         </button>
       </div>
 
@@ -194,10 +196,10 @@ export default function AnalyticsDashboardPage() {
           <table className="min-w-full text-left text-sm">
             <thead className="bg-raised text-xs uppercase tracking-wide text-secondary">
               <tr>
-                <th className="px-4 py-3">Сотрудник</th>
+                <th className="px-4 py-3">{t('team.roleEmployee')}</th>
                 <th className="px-4 py-3">Брони (30д)</th>
-                <th className="px-4 py-3">Активные задачи</th>
-                <th className="px-4 py-3">Последний вход</th>
+                <th className="px-4 py-3">{t('common.activeTasks')}</th>
+                <th className="px-4 py-3">{t('common.lastLogin')}</th>
               </tr>
             </thead>
             <tbody>

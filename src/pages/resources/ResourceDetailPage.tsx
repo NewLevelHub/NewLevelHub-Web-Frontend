@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
@@ -9,9 +10,9 @@ import {
   CAPSULE_ZONES,
   PARKING_TYPES,
   RESOURCE_EQUIPMENT_KEYS,
-  RESOURCE_EQUIPMENT_LABELS,
+  RESOURCE_EQUIPMENT_LABEL_KEYS,
   RESOURCE_TYPES,
-  RESOURCE_TYPE_LABELS,
+  RESOURCE_TYPE_LABEL_KEYS,
   type ResourceEquipmentKey,
   type ResourceType,
 } from '@/shared/config/constants';
@@ -116,6 +117,7 @@ function equipmentFromDetail(eq: BookingResourceDetail['equipment']): EquipmentS
 }
 
 export default function ResourceDetailPage() {
+  const { t } = useTranslation();
   const user = useUser();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -445,15 +447,15 @@ export default function ResourceDetailPage() {
       reason: blockForm.reason.trim(),
     };
     if (!startIso || !endIso) {
-      setBlockFormError('Укажите дату и время начала и конца блокировки.');
+      setBlockFormError(t('resources.detail.blockFormError_startEnd'));
       return;
     }
     if (!payload.reason) {
-      setBlockFormError('Укажите причину блокировки.');
+      setBlockFormError(t('resources.detail.blockFormError_reason'));
       return;
     }
     if (new Date(startIso).getTime() >= new Date(endIso).getTime()) {
-      setBlockFormError('Окончание блокировки должно быть позже начала.');
+      setBlockFormError(t('resources.detail.blockFormError_order'));
       return;
     }
     setBlockFormError(null);
@@ -464,7 +466,7 @@ export default function ResourceDetailPage() {
   if (!Number.isFinite(resourceId)) {
     return (
       <main className={resourcePageNarrow}>
-        <p className="text-sm text-red-400">Некорректный идентификатор.</p>
+        <p className="text-sm text-red-400">{t('resources.detail.invalidId')}</p>
       </main>
     );
   }
@@ -472,7 +474,7 @@ export default function ResourceDetailPage() {
   if (isLoading) {
     return (
       <main className={resourcePageNarrow}>
-        <p className="text-sm text-secondary">Загрузка…</p>
+        <p className="text-sm text-secondary">{t('common.loading')}</p>
       </main>
     );
   }
@@ -480,9 +482,9 @@ export default function ResourceDetailPage() {
   if (isError || !data) {
     return (
       <main className={resourcePageNarrow}>
-        <p className="text-sm text-red-400">Ресурс не найден или нет доступа.</p>
+        <p className="text-sm text-red-400">{t('resources.detail.notFound')}</p>
         <Link to="/resources" className={`${resLink} underline`}>
-          К списку
+          {t('resources.detail.toList')}
         </Link>
       </main>
     );
@@ -492,18 +494,18 @@ export default function ResourceDetailPage() {
     <main className={resourcePageNarrow}>
       <Link to="/resources" className={resBackLink}>
         <ArrowLeft className="h-4 w-4" />
-        К списку ресурсов
+        {t('resources.detail.backToList')}
       </Link>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className={resTitle}>{data.name}</h1>
           <p className={resSubtitle}>
-            {RESOURCE_TYPE_LABELS[data.type]} · этаж {data.floor}
+            {t(RESOURCE_TYPE_LABEL_KEYS[data.type])} · {t('resources.detail.floorLabel', { floor: data.floor })}
           </p>
           {activeBlock ? (
             <div className="mt-2 rounded-lg border border-default bg-raised px-3 py-2 text-sm text-secondary">
-              Текущая активная блокировка: {fmtBlockRange(activeBlock.start_time, activeBlock.end_time)}
+              {t('resources.detail.activeBlock', { range: fmtBlockRange(activeBlock.start_time, activeBlock.end_time) })}
               {activeBlock.reason ? ` · ${activeBlock.reason}` : ''}
             </div>
           ) : null}
@@ -529,7 +531,7 @@ export default function ResourceDetailPage() {
       )}
 
       <section className={`${resFormCard} space-y-3`}>
-        <h2 className="text-base font-semibold text-primary">Занятость по дням</h2>
+        <h2 className="text-base font-semibold text-primary">{t('resources.detail.scheduleSection')}</h2>
         <div className="flex flex-wrap items-center gap-2">
           <input
             type="date"
@@ -559,7 +561,7 @@ export default function ResourceDetailPage() {
           </div>
         </div>
         {scheduleLoading ? (
-          <p className="text-sm text-secondary">Загрузка расписания…</p>
+          <p className="text-sm text-secondary">{t('resources.detail.loadingSchedule')}</p>
         ) : (
           <ResourceDayTimeline dayDate={scheduleDay} slots={scheduleSlots} />
         )}
@@ -567,24 +569,26 @@ export default function ResourceDetailPage() {
 
       <section className={`${resFormCard} space-y-4`}>
         <div>
-          <h2 className="text-base font-semibold text-primary">Блокировки ресурса</h2>
+          <h2 className="text-base font-semibold text-primary">{t('resources.detail.blocksSection')}</h2>
           <p className="mt-1 text-sm text-muted">
-            Суперадмин может заблокировать ресурс на период ремонта или мероприятия. Пересекающиеся бронирования будут автоматически отменены.
+            {t('resources.detail.blocksDesc')}
           </p>
         </div>
 
         {activeBlock && (
           <div className="rounded-lg border border-default bg-raised px-4 py-3 text-sm text-secondary">
-            Ресурс сейчас заблокирован{activeBlock.reason ? `: ${activeBlock.reason}` : '.'}
+            {activeBlock.reason
+              ? t('resources.detail.currentlyBlockedReason', { reason: activeBlock.reason })
+              : t('resources.detail.currentlyBlocked')}
           </div>
         )}
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-3">
-            <span className={resLabel}>Начало блокировки</span>
+            <span className={resLabel}>{t('resources.detail.blockStartLabel')}</span>
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="mb-1 block text-xs text-muted">Дата</span>
+                <span className="mb-1 block text-xs text-muted">{t('resources.detail.blockDateLabel')}</span>
                 <input
                   type="date"
                   value={blockForm.start_date}
@@ -596,7 +600,7 @@ export default function ResourceDetailPage() {
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-xs text-muted">Время</span>
+                <span className="mb-1 block text-xs text-muted">{t('resources.detail.blockTimeLabel')}</span>
                 <input
                   type="time"
                   step={300}
@@ -611,10 +615,10 @@ export default function ResourceDetailPage() {
             </div>
           </div>
           <div className="space-y-3">
-            <span className={resLabel}>Конец блокировки</span>
+            <span className={resLabel}>{t('resources.detail.blockEndLabel')}</span>
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="mb-1 block text-xs text-muted">Дата</span>
+                <span className="mb-1 block text-xs text-muted">{t('resources.detail.blockDateLabel')}</span>
                 <input
                   type="date"
                   value={blockForm.end_date}
@@ -626,7 +630,7 @@ export default function ResourceDetailPage() {
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-xs text-muted">Время</span>
+                <span className="mb-1 block text-xs text-muted">{t('resources.detail.blockTimeLabel')}</span>
                 <input
                   type="time"
                   step={300}
@@ -643,7 +647,7 @@ export default function ResourceDetailPage() {
         </div>
 
         <label className="block">
-          <span className={resLabel}>Причина</span>
+          <span className={resLabel}>{t('resources.detail.blockReasonLabel')}</span>
           <textarea
             rows={3}
             value={blockForm.reason}
@@ -651,7 +655,7 @@ export default function ResourceDetailPage() {
               setBlockForm((prev) => ({ ...prev, reason: e.target.value }));
               if (blockFormError) setBlockFormError(null);
             }}
-            placeholder="Например: ремонт кондиционера"
+            placeholder={t('resources.detail.blockReasonPlaceholder')}
             className={resInput}
           />
         </label>
@@ -671,16 +675,16 @@ export default function ResourceDetailPage() {
               'rounded-lg border border-default bg-raised px-4 py-2 text-sm font-medium text-primary hover:bg-hover transition-colors disabled:opacity-50',
             )}
           >
-            {blockMutation.isPending ? 'Блокировка...' : 'Заблокировать ресурс'}
+            {blockMutation.isPending ? t('resources.detail.blockSubmitPending') : t('resources.detail.blockSubmit')}
           </button>
         </div>
 
         <div className="space-y-3 border-t border-default pt-4">
-          <h3 className="text-sm font-semibold text-primary">Список блокировок</h3>
+          <h3 className="text-sm font-semibold text-primary">{t('resources.detail.blockListTitle')}</h3>
           {blocksLoading ? (
-            <p className="text-sm text-muted">Загрузка блокировок...</p>
+            <p className="text-sm text-muted">{t('resources.detail.loadingBlocks')}</p>
           ) : blocks.length === 0 ? (
-            <p className="text-sm text-muted">Для ресурса пока нет блокировок.</p>
+            <p className="text-sm text-muted">{t('resources.detail.noBlocks')}</p>
           ) : (
             <ul className="space-y-3">
               {blocks.map((block) => (
@@ -692,7 +696,7 @@ export default function ResourceDetailPage() {
                     <p className="text-sm font-medium text-primary">
                       {fmtBlockRange(block.start_time, block.end_time)}
                     </p>
-                    <p className="mt-1 text-sm text-muted">{block.reason || 'Без причины'}</p>
+                    <p className="mt-1 text-sm text-muted">{block.reason || t('resources.detail.blockNoReason')}</p>
                   </div>
                   <button
                     type="button"
@@ -700,7 +704,7 @@ export default function ResourceDetailPage() {
                     disabled={unblockMutation.isPending}
                     className="rounded-lg border border-rose-300 px-3 py-2 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
                   >
-                    {unblockMutation.isPending ? 'Снятие...' : 'Снять досрочно'}
+                    {unblockMutation.isPending ? t('resources.detail.unblockPending') : t('resources.detail.unblockBtn')}
                   </button>
                 </li>
               ))}
@@ -718,22 +722,22 @@ export default function ResourceDetailPage() {
         }}
       >
         <div>
-          <label className={resLabel}>Тип</label>
+          <label className={resLabel}>{t('resources.detail.typeLabel')}</label>
           <select
             value={type}
             onChange={(e) => setType(e.target.value as ResourceType)}
             className={resSelect}
           >
-            {Object.values(RESOURCE_TYPES).map((t) => (
-              <option key={t} value={t}>
-                {RESOURCE_TYPE_LABELS[t]}
+            {Object.values(RESOURCE_TYPES).map((resourceType) => (
+              <option key={resourceType} value={resourceType}>
+                {t(RESOURCE_TYPE_LABEL_KEYS[resourceType])}
               </option>
             ))}
           </select>
         </div>
 
         <div>
-          <label className={resLabel}>Название</label>
+          <label className={resLabel}>{t('resources.detail.nameLabel')}</label>
           <input
             required
             value={name}
@@ -744,7 +748,7 @@ export default function ResourceDetailPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className={resLabel}>Этаж</label>
+            <label className={resLabel}>{t('resources.detail.floorFieldLabel')}</label>
             <input
               type="number"
               required
@@ -754,7 +758,7 @@ export default function ResourceDetailPage() {
             />
           </div>
           <div>
-            <label className={resLabel}>Вместимость</label>
+            <label className={resLabel}>{t('resources.detail.capacityLabel')}</label>
             <input
               type="number"
               min={1}
@@ -767,7 +771,7 @@ export default function ResourceDetailPage() {
         </div>
 
         <div>
-          <label className={resLabel}>Зона</label>
+          <label className={resLabel}>{t('resources.detail.zoneLabel')}</label>
           <input
             value={zone}
             onChange={(e) => setZone(e.target.value)}
@@ -776,7 +780,7 @@ export default function ResourceDetailPage() {
         </div>
 
         <div>
-          <label className={resLabel}>Описание</label>
+          <label className={resLabel}>{t('resources.detail.descriptionLabel')}</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -786,7 +790,7 @@ export default function ResourceDetailPage() {
         </div>
 
         <div className="space-y-3">
-          <label className={resLabel}>Фотографии</label>
+          <label className={resLabel}>{t('resources.detail.photosLabel')}</label>
           {(data.photos ?? []).length > 0 && (
             <div className="flex flex-wrap gap-2">
               {(data.photos ?? []).map((p) => (
@@ -812,8 +816,8 @@ export default function ResourceDetailPage() {
             htmlFor="new-photos"
             className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-default bg-raised px-4 py-3 text-sm text-secondary transition-colors hover:bg-hover"
           >
-            <span className="font-medium text-blue-600">Добавить фото</span>
-            <span className="text-muted">— можно выбрать несколько</span>
+            <span className="font-medium text-blue-600">{t('resources.detail.addPhoto')}</span>
+            <span className="text-muted">{t('resources.detail.addPhotoHint')}</span>
             <input
               id="new-photos"
               type="file"
@@ -835,9 +839,7 @@ export default function ResourceDetailPage() {
                     type="button"
                     onClick={() => setNewPhotoFiles((prev) => prev.filter((_, idx) => idx !== i))}
                     className="ml-3 shrink-0 text-red-500 hover:text-red-700"
-                  >
-                    Удалить
-                  </button>
+                  >{t('common.delete')}</button>
                 </div>
               ))}
               <button
@@ -846,7 +848,7 @@ export default function ResourceDetailPage() {
                 disabled={addPhotosMutation.isPending}
                 className="rounded-lg border border-blue-300 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50"
               >
-                {addPhotosMutation.isPending ? 'Загрузка...' : 'Загрузить выбранные'}
+                {addPhotosMutation.isPending ? t('common.loading') : t('resources.detail.uploadSelected')}
               </button>
             </div>
           )}
@@ -858,19 +860,19 @@ export default function ResourceDetailPage() {
             checked={isActive}
             onChange={(e) => setIsActive(e.target.checked)}
           />
-          Активен
+          {t('resources.detail.activeLabel')}
         </label>
 
         {type === RESOURCE_TYPES.DESK && (
           <fieldset className={resFieldset}>
-            <legend className={resLegend}>Стол</legend>
+            <legend className={resLegend}>{t('resources.detail.deskSettings')}</legend>
             <label className={resCheckboxLabel}>
               <input type="checkbox" checked={hasMonitor} onChange={(e) => setHasMonitor(e.target.checked)} />
-              Монитор
+              {t('resources.detail.monitorLabel')}
             </label>
             <label className={resCheckboxLabel}>
               <input type="checkbox" checked={hasDock} onChange={(e) => setHasDock(e.target.checked)} />
-              Док-станция
+              {t('resources.detail.dockLabel')}
             </label>
             <label className={resCheckboxLabel}>
               <input
@@ -878,20 +880,20 @@ export default function ResourceDetailPage() {
                 checked={hasPowerOutlet}
                 onChange={(e) => setHasPowerOutlet(e.target.checked)}
               />
-              Розетка
+              {t('resources.detail.outletLabel')}
             </label>
             <label className={resCheckboxLabel}>
               <input type="checkbox" checked={isHotDesk} onChange={(e) => setIsHotDesk(e.target.checked)} />
-              Hot desk
+              {t('resources.detail.hotDeskLabel')}
             </label>
             <div>
-              <label className={resLabel}>Компания</label>
+              <label className={resLabel}>{t('common.company')}</label>
               <select
                 value={assignedCompanyId}
                 onChange={(e) => setAssignedCompanyId(e.target.value)}
                 className={resSelect}
               >
-                <option value="">— Нет —</option>
+                <option value="">{t('resources.detail.companyNone')}</option>
                 {companies.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -904,7 +906,7 @@ export default function ResourceDetailPage() {
 
         {type === RESOURCE_TYPES.MEETING_ROOM && (
           <fieldset className={`${resFieldset} space-y-4`}>
-            <legend className={resLegend}>Переговорка</legend>
+            <legend className={resLegend}>{t('resources.detail.meetingRoomSettings')}</legend>
             <div className="grid grid-cols-2 gap-2">
               {RESOURCE_EQUIPMENT_KEYS.map((key) => (
                 <label key={key} className={resCheckboxLabel}>
@@ -913,13 +915,13 @@ export default function ResourceDetailPage() {
                     checked={equipment[key]}
                     onChange={() => toggleEquipment(key)}
                   />
-                  {RESOURCE_EQUIPMENT_LABELS[key]}
+                  {t(RESOURCE_EQUIPMENT_LABEL_KEYS[key])}
                 </label>
               ))}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={resLabel}>Мин. (мин)</label>
+                <label className={resLabel}>{t('resources.detail.minMinutesLabel')}</label>
                 <input
                   type="number"
                   min={1}
@@ -929,7 +931,7 @@ export default function ResourceDetailPage() {
                 />
               </div>
               <div>
-                <label className={resLabel}>Макс. (мин)</label>
+                <label className={resLabel}>{t('resources.detail.maxMinutesLabel')}</label>
                 <input
                   type="number"
                   min={1}
@@ -944,13 +946,13 @@ export default function ResourceDetailPage() {
 
         {type === RESOURCE_TYPES.PARKING && (
           <fieldset className={resFieldset}>
-            <legend className={resLegend}>Парковка</legend>
+            <legend className={resLegend}>{t('resources.detail.parkingSettings')}</legend>
             <select
               value={parkingType}
               onChange={(e) => setParkingType(e.target.value as 'regular' | 'vip')}
               className={resSelect}
             >
-              <option value={PARKING_TYPES.REGULAR}>Обычная</option>
+              <option value={PARKING_TYPES.REGULAR}>{t('resources.detail.parkingRegular')}</option>
               <option value={PARKING_TYPES.VIP}>VIP</option>
             </select>
             <select
@@ -958,7 +960,7 @@ export default function ResourceDetailPage() {
               onChange={(e) => setAssignedCompanyId(e.target.value)}
               className={resSelect}
             >
-              <option value="">— Компания не закреплена —</option>
+              <option value="">{t('resources.detail.companyNotAssigned')}</option>
               {companies.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -970,24 +972,24 @@ export default function ResourceDetailPage() {
 
         {type === RESOURCE_TYPES.CAPSULE && (
           <fieldset className={resFieldset}>
-            <legend className={resLegend}>Капсула</legend>
+            <legend className={resLegend}>{t('resources.detail.capsuleSettings')}</legend>
             <select
               value={capsuleZone}
               onChange={(e) => setCapsuleZone(e.target.value as 'quiet' | 'regular')}
               className={`${resSelect} mt-2`}
             >
-              <option value={CAPSULE_ZONES.QUIET}>Тихая</option>
-              <option value={CAPSULE_ZONES.REGULAR}>Обычная</option>
+              <option value={CAPSULE_ZONES.QUIET}>{t('resources.detail.capsuleQuiet')}</option>
+              <option value={CAPSULE_ZONES.REGULAR}>{t('resources.detail.capsuleRegular')}</option>
             </select>
           </fieldset>
         )}
 
         <fieldset className={resFieldset}>
-          <legend className={resLegend}>Политика бронирования</legend>
+          <legend className={resLegend}>{t('resources.detail.bookingPolicyLabel')}</legend>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="advance_booking_days" className={resLabel}>
-                Бронирование вперёд (дней)
+                {t('resources.detail.advanceDaysLabel')}
               </label>
               <input
                 type="number"
@@ -1000,7 +1002,7 @@ export default function ResourceDetailPage() {
             </div>
             <div>
               <label htmlFor="min_cancel_minutes" className={resLabel}>
-                Мин. время отмены (мин)
+                {t('resources.detail.minCancelLabel')}
               </label>
               <input
                 type="number"
@@ -1020,7 +1022,7 @@ export default function ResourceDetailPage() {
             disabled={saveMutation.isPending}
             className={resPrimaryBtn}
           >
-            {saveMutation.isPending ? 'Сохранение…' : 'Сохранить'}
+            {saveMutation.isPending ? t('common.saving') : t('common.save')}
           </button>
           {!isActive && (
             <button
@@ -1030,9 +1032,7 @@ export default function ResourceDetailPage() {
                 setActivateModal(true);
               }}
               className={resActivateBtn}
-            >
-              Активировать
-            </button>
+            >{t('common.activate')}</button>
           )}
           {isActive && (
             <button
@@ -1042,9 +1042,7 @@ export default function ResourceDetailPage() {
                 setDeactivateModal(true);
               }}
               className={resDeactivateBtn}
-            >
-              Деактивировать
-            </button>
+            >{t('common.deactivate')}</button>
           )}
           <button
             type="button"
@@ -1053,9 +1051,7 @@ export default function ResourceDetailPage() {
               setDeleteModal(true);
             }}
             className={resDeleteBtn}
-          >
-            Удалить
-          </button>
+          >{t('common.delete')}</button>
         </div>
       </form>
 
@@ -1063,10 +1059,10 @@ export default function ResourceDetailPage() {
         isOpen={activateModal}
         onClose={() => !activateMutation.isPending && setActivateModal(false)}
         onConfirm={() => activateMutation.mutate()}
-        title="Активировать ресурс?"
-        description="Ресурс снова станет доступен для бронирования."
+        title={t('resources.detail.activateModalTitle')}
+        description={t('resources.detail.activateModalDesc')}
         variant="warning"
-        confirmLabel="Активировать"
+        confirmLabel={t('common.activate')}
         isLoading={activateMutation.isPending}
       />
 
@@ -1074,10 +1070,10 @@ export default function ResourceDetailPage() {
         isOpen={deactivateModal}
         onClose={() => !deactivateMutation.isPending && setDeactivateModal(false)}
         onConfirm={() => deactivateMutation.mutate()}
-        title="Деактивировать ресурс?"
-        description="Будущие подтверждённые бронирования будут отменены, пользователи получат уведомления."
+        title={t('resources.detail.deactivateModalTitle')}
+        description={t('resources.detail.deactivateModalDesc')}
         variant="warning"
-        confirmLabel="Деактивировать"
+        confirmLabel={t('common.deactivate')}
         isLoading={deactivateMutation.isPending}
       />
 
@@ -1085,10 +1081,10 @@ export default function ResourceDetailPage() {
         isOpen={deleteModal}
         onClose={() => !deleteMutation.isPending && setDeleteModal(false)}
         onConfirm={() => deleteMutation.mutate()}
-        title="Удалить ресурс?"
-        description="Удаление возможно только если нет будущих подтверждённых бронирований. Иначе API вернёт ошибку."
+        title={t('resources.detail.deleteModalTitle')}
+        description={t('resources.detail.deleteModalDesc')}
         variant="danger"
-        confirmLabel="Удалить"
+        confirmLabel={t('common.delete')}
         isLoading={deleteMutation.isPending}
       />
     </main>

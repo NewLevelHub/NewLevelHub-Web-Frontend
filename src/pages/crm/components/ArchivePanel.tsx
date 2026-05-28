@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Archive, X, AlertCircle } from 'lucide-react';
@@ -7,7 +8,7 @@ import { apiClient } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
 import { checkWipLimit } from '@/shared/lib/crm-wip-limit';
 import type { CrmColumn, CrmTask } from '@/shared/types';
-import { CRM_PRIORITY_BADGE_CLASS, CRM_PRIORITY_LABELS } from '@/pages/crm/utils/crm-display';
+import { CRM_PRIORITY_BADGE_CLASS, CRM_PRIORITY_LABEL_KEYS } from '@/pages/crm/utils/crm-display';
 
 export interface ArchivePanelProps {
   boardId: string;
@@ -26,6 +27,7 @@ export function ArchivePanel({
   onTaskOpen,
   onRestoreWipBlocked,
 }: ArchivePanelProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const columnMap = new Map(columns.map((c) => [c.id, c.name]));
 
@@ -67,13 +69,13 @@ export function ArchivePanel({
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
-      aria-label="Архив задач"
+      aria-label={t('common.taskArchive')}
     >
       <div className="flex flex-col w-full max-w-md bg-surface border-l border-default shadow-2xl h-full overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-default shrink-0">
           <div className="flex items-center gap-2">
             <Archive size={16} className="text-secondary" />
-            <h2 className="text-base font-semibold text-primary">Архив задач</h2>
+            <h2 className="text-base font-semibold text-primary">{t('common.taskArchive')}</h2>
             {archivedTasks.length > 0 && (
               <span className="inline-flex items-center rounded-md bg-raised border border-default px-1.5 py-0.5 text-xs text-secondary">
                 {archivedTasks.length}
@@ -84,7 +86,7 @@ export function ArchivePanel({
             type="button"
             onClick={onClose}
             className="text-secondary hover:text-primary transition-colors rounded-md p-1 hover:bg-hover"
-            aria-label="Закрыть архив"
+            aria-label={t('common.closeArchive')}
           >
             <X size={18} />
           </button>
@@ -93,7 +95,7 @@ export function ArchivePanel({
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {archiveLoading ? (
             <div className="flex items-center justify-center h-full py-16">
-              <p className="text-sm text-muted">Загрузка...</p>
+              <p className="text-sm text-muted">{t('common.loading')}</p>
             </div>
           ) : archivedTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 py-16 text-center">
@@ -101,7 +103,7 @@ export function ArchivePanel({
               <p className="text-sm text-muted">Здесь пока нет архивных задач</p>
             </div>
           ) : (
-            <ul className="space-y-2" role="list" aria-label="Архивные задачи">
+            <ul className="space-y-2" role="list" aria-label={t('common.archivedTasks')}>
               {archivedTasks.map((task) => {
                 const restoreCheck = checkWipLimit({
                   columns,
@@ -123,7 +125,7 @@ export function ArchivePanel({
                             CRM_PRIORITY_BADGE_CLASS[task.priority],
                           )}
                         >
-                          {CRM_PRIORITY_LABELS[task.priority]}
+                          {t(CRM_PRIORITY_LABEL_KEYS[task.priority])}
                         </span>
                       </div>
                     </div>
@@ -156,7 +158,7 @@ export function ArchivePanel({
                       >
                         {unarchiveMutation.isPending && unarchiveMutation.variables === task.id
                           ? '...'
-                          : 'Разархивировать'}
+                          : t('common.unarchive')}
                       </button>
 
                       <Link

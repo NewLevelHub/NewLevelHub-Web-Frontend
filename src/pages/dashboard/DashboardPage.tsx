@@ -17,7 +17,7 @@ import { SuperadminWidgets } from '@/pages/dashboard/components/SuperadminWidget
 import { CompanyAdminWidgets } from '@/pages/dashboard/components/CompanyAdminWidgets';
 import { EmployeeWidgets } from '@/pages/dashboard/components/EmployeeWidgets';
 import { GuestWidgets } from '@/pages/dashboard/components/GuestWidgets';
-import { LOGO_MAX_BYTES, ONBOARDING_STEP_LABELS } from '@/pages/dashboard/constants';
+import { LOGO_MAX_BYTES, ONBOARDING_STEP_LABEL_KEYS } from '@/pages/dashboard/constants';
 
 interface CompanyOnboardingStep {
   key: string;
@@ -106,7 +106,7 @@ export default function DashboardPage() {
     setResendLoading(true);
     try {
       await apiClient.post(API.auth.resendVerification);
-      setResendMsg('Письмо отправлено. Проверь почту или логи бэкенда.');
+      setResendMsg(t('dashboard.verifyEmail.resendSuccess'));
     } catch (e) {
       setResendErr(getApiError(e).message);
     } finally {
@@ -125,19 +125,19 @@ export default function DashboardPage() {
     setLogoUploadError('');
     if (!file.type.startsWith('image/')) {
       setLogoFile(null);
-      setLogoUploadError('Можно загрузить только изображение.');
+      setLogoUploadError(t('dashboard.logo.imagesOnly'));
       return;
     }
     if (file.size > LOGO_MAX_BYTES) {
       setLogoFile(null);
-      setLogoUploadError('Файл слишком большой. Максимум 10 МБ.');
+      setLogoUploadError(t('dashboard.logo.tooLarge'));
       return;
     }
     setLogoFile(file);
   }
 
   if (!user) {
-    return <div className="text-muted">Загрузка профиля…</div>;
+    return <div className="text-muted">{t('common.loadingProfile')}</div>;
   }
 
   return (
@@ -146,10 +146,10 @@ export default function DashboardPage() {
       {!user.is_email_verified && (
         <div className="rounded-xl border border-amber-200 bg-warning-subtle p-5 dark:border-amber-900/40">
           <p className="text-sm font-medium text-warning">
-            Email не подтверждён — часть функций недоступна
+            {t('dashboard.emailVerification.title')}
           </p>
           <p className="mt-1 text-xs text-warning">
-            Открой ссылку из письма или отправь его снова.
+            {t('dashboard.emailVerification.hint')}
           </p>
           {resendErr && <p className="mt-2 text-xs text-danger">{resendErr}</p>}
           {resendMsg && <p className="mt-2 text-xs text-success">{resendMsg}</p>}
@@ -159,7 +159,7 @@ export default function DashboardPage() {
             onClick={handleResend}
             className={cn(authPrimaryBtn, 'mt-3 max-w-xs')}
           >
-            {resendLoading ? 'Отправка…' : 'Отправить письмо повторно'}
+            {resendLoading ? t('dashboard.verifyEmail.resendPending') : t('dashboard.verifyEmail.resend')}
           </button>
         </div>
       )}
@@ -167,9 +167,9 @@ export default function DashboardPage() {
       {isCompanyAdmin && companyOnboarding && !companyOnboarding.completed && (
         /* ── Онбординг ещё не завершён — показываем шаги ── */
         <section className="rounded-xl border border-blue-200 bg-brand-subtle p-5 dark:border-blue-900/40">
-          <h2 className="text-sm font-semibold text-brand">Онбординг компании не завершён</h2>
+          <h2 className="text-sm font-semibold text-brand">{t('dashboard.companyOnboarding.title')}</h2>
           <p className="mt-1 text-xs text-brand">
-            Завершите обязательные шаги, чтобы закрыть стартовый онбординг.
+            {t('dashboard.companyOnboarding.hint')}
           </p>
           <ul className="mt-3 space-y-1.5 text-sm">
             {companyOnboarding.steps.map((step) => (
@@ -177,14 +177,16 @@ export default function DashboardPage() {
                 <span className={cn('shrink-0 text-base leading-none', step.completed ? 'text-success' : 'text-muted')}>
                   {step.completed ? '✓' : '•'}
                 </span>
-                {ONBOARDING_STEP_LABELS[step.key] ?? step.title}
+                {ONBOARDING_STEP_LABEL_KEYS[step.key]
+                  ? t(ONBOARDING_STEP_LABEL_KEYS[step.key])
+                  : step.title}
               </li>
             ))}
           </ul>
           {uploadLogoStepPending && (
             <div className="mt-4 rounded-lg border border-default bg-raised p-3">
               <p className="text-xs text-secondary">
-                Загрузите логотип компании прямо сейчас:
+                {t('dashboard.companyOnboarding.uploadLogoHint')}
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <input
@@ -203,7 +205,7 @@ export default function DashboardPage() {
                   }}
                   className="rounded-md bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-hover disabled:opacity-50"
                 >
-                  {uploadLogoMutation.isPending ? 'Загрузка...' : 'Загрузить логотип'}
+                  {uploadLogoMutation.isPending ? t('dashboard.logo.uploadPending') : t('dashboard.logo.upload')}
                 </button>
               </div>
               {logoUploadError && <p className="mt-2 text-xs text-danger">{logoUploadError}</p>}
@@ -214,13 +216,13 @@ export default function DashboardPage() {
               to="/crm"
               className="rounded-lg bg-brand px-3 py-2 text-xs font-medium text-white hover:bg-brand-hover transition-colors"
             >
-              Перейти в CRM
+              {t('dashboard.companyOnboarding.openCrm')}
             </Link>
             <Link
               to="/company/settings/members"
               className="rounded-lg border border-default px-3 py-2 text-xs text-secondary hover:bg-hover hover:text-primary transition-colors"
             >
-              Перейти к инвайтам
+              {t('dashboard.companyOnboarding.openInvites')}
             </Link>
           </div>
         </section>

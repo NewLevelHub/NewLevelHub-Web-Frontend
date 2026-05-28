@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/shared/api/client';
@@ -12,6 +13,7 @@ interface ResetPasswordConfirmPayload {
 }
 
 export default function ResetPasswordPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -35,14 +37,10 @@ export default function ResetPasswordPage() {
   if (!token) {
     return (
       <div>
-        <h2 className="mb-1 text-center text-xl font-semibold">Недействительная ссылка</h2>
-        <p className="mb-6 text-center text-sm text-muted">
-          Ссылка для сброса пароля повреждена или устарела. Запросите новую.
-        </p>
+        <h2 className="mb-1 text-center text-xl font-semibold">{t('auth.reset.invalidTitle')}</h2>
+        <p className="mb-6 text-center text-sm text-muted">{t('auth.reset.invalidSubtitle')}</p>
         <p className="mt-4 text-center">
-          <Link to="/forgot-password" className={authLink}>
-            Запросить новую ссылку
-          </Link>
+          <Link to="/forgot-password" className={authLink}>{t('auth.reset.requestNew')}</Link>
         </p>
       </div>
     );
@@ -53,10 +51,8 @@ export default function ResetPasswordPage() {
 
   return (
     <div>
-      <h2 className="mb-1 text-center text-xl font-semibold">Новый пароль</h2>
-      <p className="mb-6 text-center text-sm text-muted">
-        Придумайте новый пароль для вашего аккаунта
-      </p>
+      <h2 className="mb-1 text-center text-xl font-semibold">{t('auth.reset.title')}</h2>
+      <p className="mb-6 text-center text-sm text-muted">{t('auth.reset.subtitle')}</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {errorMessage ? (
@@ -64,18 +60,14 @@ export default function ResetPasswordPage() {
             <p>{errorMessage}</p>
             {showNewLinkPrompt ? (
               <p className="mt-1">
-                <Link to="/forgot-password" className={authLink}>
-                  Запросить новую ссылку
-                </Link>
+                <Link to="/forgot-password" className={authLink}>{t('auth.reset.requestNew')}</Link>
               </p>
             ) : null}
           </div>
         ) : null}
 
         <div>
-          <label htmlFor="reset-new-password" className={authLabel}>
-            Новый пароль
-          </label>
+          <label htmlFor="reset-new-password" className={authLabel}>{t('auth.reset.title')}</label>
           <input
             id="reset-new-password"
             type="password"
@@ -89,14 +81,12 @@ export default function ResetPasswordPage() {
         </div>
 
         <button type="submit" disabled={mutation.isPending} className={authPrimaryBtn}>
-          {mutation.isPending ? 'Сохранение…' : 'Сохранить новый пароль'}
+          {mutation.isPending ? t('common.saving') : t('auth.reset.save')}
         </button>
       </form>
 
       <p className="mt-6 text-center">
-        <Link to="/login" className={authLink}>
-          Вернуться к входу
-        </Link>
+        <Link to="/login" className={authLink}>{t('auth.forgot.backToLogin')}</Link>
       </p>
     </div>
   );

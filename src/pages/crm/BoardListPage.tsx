@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Plus, Archive, Inbox, AlertCircle } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { useBoardList } from '@/pages/crm/hooks/useBoardList';
@@ -7,6 +8,7 @@ import { ArchiveBoardConfirm } from '@/pages/crm/components/ArchiveBoardConfirm'
 import { UnarchiveBoardConfirm } from '@/pages/crm/components/UnarchiveBoardConfirm';
 
 export default function BoardListPage() {
+  const { t } = useTranslation();
   const {
     user,
     canManage,
@@ -75,7 +77,7 @@ export default function BoardListPage() {
                 )}
               >
                 <Archive size={16} />
-                {showArchived ? 'Скрыть архив' : 'Архив'}
+                {showArchived ? t('common.hideArchive') : 'Архив'}
               </button>
             )}
             <button
@@ -86,9 +88,7 @@ export default function BoardListPage() {
                 'bg-blue-600 text-white hover:bg-blue-500',
               )}
             >
-              <Plus size={16} />
-              Создать доску
-            </button>
+              <Plus size={16} />{t('common.createBoard')}</button>
           </div>
         </div>
 
@@ -99,7 +99,7 @@ export default function BoardListPage() {
             </div>
             <div className="text-center">
               <p className="font-medium text-secondary">
-                {showArchived ? 'Нет архивных досок' : 'Нет досок'}
+                {showArchived ? 'Нет архивных досок' : t('common.noBoards')}
               </p>
               <p className="text-sm text-muted mt-1">
                 {showArchived ? 'Архивированные доски появятся здесь.' : 'Создайте первую!'}
@@ -111,9 +111,7 @@ export default function BoardListPage() {
                 onClick={() => setShowCreateModal(true)}
                 className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 transition-colors"
               >
-                <Plus size={16} />
-                Создать доску
-              </button>
+                <Plus size={16} />{t('common.createBoard')}</button>
             )}
           </div>
         )}

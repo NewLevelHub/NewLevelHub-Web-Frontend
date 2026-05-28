@@ -1,9 +1,10 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MapPin } from 'lucide-react';
 
 import type { MapPointSearchResult } from '@/shared/types';
 
-import { POINT_TYPE_LABELS } from '@/pages/map/constants/mapConstants';
+import { POINT_TYPE_LABEL_KEYS } from '@/pages/map/constants/mapConstants';
 
 export interface MapSearchResultsProps {
   results: MapPointSearchResult[];
@@ -11,6 +12,7 @@ export interface MapSearchResultsProps {
 }
 
 export const MapSearchResults = memo<MapSearchResultsProps>(({ results, onSelect }) => {
+  const { t } = useTranslation();
   if (results.length === 0) {
     return (
       <div className="absolute top-full left-0 right-0 z-30 mt-1 rounded-xl border border-default bg-surface p-4 text-center shadow-xl">
@@ -23,7 +25,7 @@ export const MapSearchResults = memo<MapSearchResultsProps>(({ results, onSelect
     <ul
       className="absolute top-full left-0 right-0 z-30 mt-1 max-h-64 overflow-y-auto rounded-xl border border-default bg-surface shadow-xl"
       role="listbox"
-      aria-label="Результаты поиска"
+      aria-label={t('map.searchResults')}
     >
       {results.map((result) => (
         <li key={result.id} role="option" aria-selected={false}>
@@ -39,7 +41,7 @@ export const MapSearchResults = memo<MapSearchResultsProps>(({ results, onSelect
                 <p className="truncate text-xs text-muted">{result.resource_name}</p>
               )}
               <p className="text-xs text-secondary">
-                {result.floor_name} · {POINT_TYPE_LABELS[result.point_type] ?? result.point_type}
+                {result.floor_name} · {t(POINT_TYPE_LABEL_KEYS[result.point_type]) ?? result.point_type}
               </p>
             </div>
           </button>

@@ -1,65 +1,84 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Search, Bookmark, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, ExternalLink, LayoutGrid, Plus, Search } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import {
   BOOKING_RESOURCE_CATALOG_STATUS,
   RESOURCE_TYPES,
-  RESOURCE_TYPE_LABELS,
+  RESOURCE_TYPE_LABEL_KEYS,
+  USER_ROLES,
   type ResourceType,
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
+import { cn } from '@/shared/lib/cn';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
-import {
-  resBadgeOff,
-  resBadgeOn,
-  resEmptyState,
-  resErrorBanner,
-  resInput,
-  resLink,
-  resPageBtn,
-  resPaginationBar,
-  resPaginationMeta,
-  resPanel,
-  resPhotoThumb,
-  resPlaceholderIconBox,
-  resSelect,
-  resSubtitle,
-  resTableShell,
-  resTableBody,
-  resTd,
-  resTr,
-  resTdMuted,
-  resTdStrong,
-  resThead,
-  resourcePageWide,
-  resTitle,
-} from '@/shared/ui/resourcePageStyles';
 import type { BookingResourceListItem, PaginatedResponse } from '@/shared/types';
 
 const PAGE_SIZE = 20;
 
-const TYPE_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: 'Все типы' },
-  ...Object.values(RESOURCE_TYPES).map((t) => ({
-    value: t,
-    label: RESOURCE_TYPE_LABELS[t as ResourceType],
-  })),
-];
+function ResourceStatusBadge({ resource }: { resource: BookingResourceListItem }) {
+  const { t } = useTranslation();
 
-const STATUS_FILTER = [
-  { value: '', label: 'Все статусы' },
-  { value: 'true', label: 'Только активные' },
-  { value: 'false', label: 'Только неактивные' },
-] as const;
+  const { label, colorClass } = useMemo(() => {
+    if (resource.status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED) {
+      return {
+        label: t('catalog.status.blocked'),
+        colorClass: 'bg-[color:var(--status-soon-bg)] text-[color:var(--status-soon-text)]',
+      };
+    }
+    if (resource.is_active) {
+      return {
+        label: t('common.active'),
+        colorClass: 'bg-[color:var(--status-free-bg)] text-[color:var(--status-free-text)]',
+      };
+    }
+    return {
+      label: t('common.inactive'),
+      colorClass: 'bg-[color:var(--status-na-bg)] text-[color:var(--status-na-text)]',
+    };
+  }, [resource.status, resource.is_active, t]);
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium',
+        colorClass,
+      )}
+    >
+      <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" />
+      {label}
+    </span>
+  );
+}
 
 export default function ResourceListPage() {
+  const { t } = useTranslation();
+  const statusFilter = useMemo(
+    () => [
+      { value: '' as const, label: t('common.allStatuses') },
+      { value: 'true' as const, label: t('resources.filters.activeOnly') },
+      { value: 'false' as const, label: t('resources.filters.inactiveOnly') },
+    ],
+    [t],
+  );
+  const typeOptions = useMemo(
+    () => [
+      { value: '', label: t('common.bookingFilter.allTypes') },
+      ...Object.values(RESOURCE_TYPES).map((resourceType) => ({
+        value: resourceType,
+        label: t(RESOURCE_TYPE_LABEL_KEYS[resourceType as ResourceType]),
+      })),
+    ],
+    [t],
+  );
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
   const successMessage =
     typeof location.state === 'object' && location.state && 'successMessage' in location.state
       ? String((location.state as { successMessage?: string }).successMessage ?? '')
@@ -94,18 +113,8 @@ export default function ResourceListPage() {
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const results = data?.results ?? [];
 
-  const getOperationalStatus = (resource: BookingResourceListItem) => {
-    if (resource.status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED) {
-      return {
-        label: 'Заблокирован',
-        className: 'inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-800',
-      };
-    }
-    return {
-      label: resource.is_active ? 'Активен' : 'Неактивен',
-      className: resource.is_active ? resBadgeOn : resBadgeOff,
-    };
-  };
+  const rangeStart = (page - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(page * PAGE_SIZE, totalCount);
 
   useEffect(() => {
     setPage(1);
@@ -113,154 +122,280 @@ export default function ResourceListPage() {
 
   useEffect(() => {
     if (!successMessage) return;
-    // Clear navigation state so alert doesn't reappear on page refresh/back-forward.
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, navigate, successMessage]);
 
   return (
-    <main className={resourcePageWide}>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <main className="mx-auto max-w-7xl space-y-4 px-3 py-4 sm:px-4 sm:py-6">
+      {/* Page header */}
+      <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className={resTitle}>Ресурсы для бронирования</h1>
-          <p className={resSubtitle}>
-            Столы, переговорки, парковка, капсулы. Видны все записи (включая неактивные).
+          <h1 className="text-[22px] font-bold text-[color:var(--text-primary)]">
+            {t('resources.list.title')}
+          </h1>
+          <p className="text-[13px] text-[color:var(--text-muted)] mt-0.5">
+            {t('resources.list.subtitle')}
           </p>
         </div>
-        {user?.role === 'superadmin' && (
+        {isSuperadmin && (
           <Link
             to="/resources/new"
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity"
           >
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            Добавить ресурс
+            <Plus className="w-4 h-4" aria-hidden="true" />
+            {t('dashboard.addResource')}
           </Link>
         )}
       </div>
 
+      {/* Error / success banners */}
       {isError && (
-        <div role="alert" className={resErrorBanner}>
-          Не удалось загрузить ресурсы. Проверьте API и авторизацию.
+        <div
+          role="alert"
+          className="rounded-[var(--radius-sm)] border border-[color:var(--status-busy-bg)] bg-[color:var(--status-busy-bg)] px-4 py-3 text-[13px] text-[color:var(--status-busy-text)]"
+        >
+          {t('resources.list.errorLoad')}
         </div>
       )}
       {successMessage && (
         <div
           role="status"
-          className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+          className="rounded-[var(--radius-sm)] border border-[color:var(--status-free-bg)] bg-[color:var(--status-free-bg)] px-4 py-3 text-[13px] text-[color:var(--status-free-text)]"
         >
           {successMessage}
         </div>
       )}
 
-      <section className={resPanel} aria-label="Фильтры ресурсов">
-        <div className="flex flex-wrap gap-3">
-          <div className="relative min-w-52 flex-1">
+      {/* Card wrapper */}
+      <div className="bg-[color:var(--bg-surface)] border border-[color:var(--border)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
+
+        {/* Filter bar */}
+        <div
+          className="flex items-center gap-1.5 flex-wrap px-4 py-3 border-b border-[color:var(--border)]"
+          aria-label={t('resources.list.filterLabel')}
+        >
+          {/* Search */}
+          <div className="relative flex items-center">
             <Search
-              size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+              className="w-3.5 h-3.5 text-[color:var(--text-muted)] flex-shrink-0 absolute left-2.5 pointer-events-none"
               aria-hidden="true"
             />
             <input
               type="search"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Поиск по названию или зоне..."
-              className={`${resInput} pl-9`}
+              placeholder={t('resources.list.searchPlaceholder')}
+              className="h-[30px] pl-7 pr-2.5 text-[12px] border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-primary)] focus:outline-none placeholder:text-[color:var(--text-muted)] w-44"
             />
           </div>
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className={`${resSelect} min-w-[10rem]`}
-          >
-            {TYPE_OPTIONS.map((o) => (
-              <option key={o.value || 'all'} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+
+          {/* Separator */}
+          <span className="self-stretch w-px bg-[color:var(--border)] flex-shrink-0 my-0.5" aria-hidden="true" />
+
+          {/* Type select */}
+          <div className="relative flex items-center">
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="h-[30px] px-2.5 pr-6 text-[12px] border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] cursor-pointer focus:outline-none appearance-none"
+            >
+              {typeOptions.map((o) => (
+                <option key={o.value || 'all'} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[color:var(--text-muted)]"
+              aria-hidden="true"
+            />
+          </div>
+
+          {/* Floor input */}
           <input
             type="number"
             min={-5}
             max={99}
             value={floorFilter}
             onChange={(e) => setFloorFilter(e.target.value)}
-            placeholder="Этаж"
-            className={`${resInput} w-28`}
+            placeholder={t('catalog.floor')}
+            className="w-20 h-[30px] px-2.5 text-[12px] border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-primary)] focus:outline-none placeholder:text-[color:var(--text-muted)]"
           />
-          <select
-            value={activeFilter}
-            onChange={(e) => setActiveFilter(e.target.value)}
-            className={`${resSelect} min-w-[11rem]`}
-          >
-            {STATUS_FILTER.map((o) => (
-              <option key={o.value || 'all'} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </section>
 
-      <div className={resTableShell}>
+          {/* Separator */}
+          <span className="self-stretch w-px bg-[color:var(--border)] flex-shrink-0 my-0.5" aria-hidden="true" />
+
+          {/* Status chips */}
+          {statusFilter.map((chip) => (
+            <button
+              key={chip.value}
+              type="button"
+              onClick={() => { setActiveFilter(chip.value); setPage(1); }}
+              className={cn(
+                'inline-flex items-center px-2.5 py-1 text-[12px] rounded-full transition-colors',
+                activeFilter === chip.value
+                  ? 'border-transparent bg-[color:var(--brand-subtle)] text-[color:var(--brand-text)] cursor-pointer'
+                  : 'border border-[color:var(--border)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] cursor-pointer',
+              )}
+            >
+              {chip.label}
+            </button>
+          ))}
+
+          {/* Pagination — pushed to right */}
+          {totalCount > 0 && (
+            <div className="ml-auto flex items-center gap-1.5 text-[12px] text-[color:var(--text-muted)]">
+              <span>
+                {t('resources.list.showing', {
+                  start: rangeStart,
+                  end: rangeEnd,
+                  total: totalCount,
+                })}
+              </span>
+              <button
+                type="button"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                aria-label={t('common.previousPage')}
+                className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] disabled:opacity-40 transition-colors"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                aria-label={t('common.nextPage')}
+                className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] disabled:opacity-40 transition-colors"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Table / states */}
         {isLoading ? (
-          <div className={resEmptyState}>Загрузка…</div>
+          <div className="px-4 py-12 text-center text-[13px] text-[color:var(--text-muted)]">
+            {t('common.loading')}
+          </div>
         ) : results.length === 0 ? (
-          <div className={resEmptyState}>Нет ресурсов по фильтрам.</div>
+          <div className="px-4 py-12 text-center text-[13px] text-[color:var(--text-muted)]">
+            {t('resources.list.noResults')}
+          </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className={resThead}>
+            <table className="w-full border-collapse text-[13px]" role="table">
+              <thead className="border-b border-[color:var(--border)]">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Фото</th>
-                  <th className="px-4 py-3 font-medium">Название</th>
-                  <th className="px-4 py-3 font-medium">Тип</th>
-                  <th className="px-4 py-3 font-medium">Этаж</th>
-                  <th className="px-4 py-3 font-medium">Зона</th>
-                  <th className="px-4 py-3 font-medium">Вместимость</th>
-                  <th className="px-4 py-3 font-medium">Компания</th>
-                  <th className="px-4 py-3 font-medium">Статус</th>
-                  <th className="w-28 px-4 py-3 font-medium" />
+                  <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                    {t('resources.list.photo')}
+                  </th>
+                  <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                    {t('resources.list.resourceName')}
+                  </th>
+                  <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                    {t('common.type')}
+                  </th>
+                  <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                    {t('catalog.floor')}
+                  </th>
+                  <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                    {t('resources.list.zone')}
+                  </th>
+                  <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                    {t('catalog.capacityLabel')}
+                  </th>
+                  {isSuperadmin && (
+                    <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                      {t('common.company')}
+                    </th>
+                  )}
+                  <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                    {t('common.status')}
+                  </th>
+                  <th className="w-10 px-3 py-2" />
                 </tr>
               </thead>
-              <tbody className={resTableBody}>
+              <tbody>
                 {results.map((r) => {
-                  const operationalStatus = getOperationalStatus(r);
+                  const firstPhoto = r.photos?.[0];
+                  const photoSrc = firstPhoto
+                    ? (firstPhoto.image_url ?? resolveMediaUrl(firstPhoto.image) ?? firstPhoto.image)
+                    : r.photo
+                      ? (resolveMediaUrl(r.photo) ?? r.photo)
+                      : null;
+
                   return (
-                    <tr key={r.id} className={resTr}>
-                      <td className="px-4 py-2">
-                        {(() => {
-                          const firstPhoto = r.photos?.[0];
-                          const src = firstPhoto
-                            ? (firstPhoto.image_url ?? resolveMediaUrl(firstPhoto.image) ?? firstPhoto.image)
-                            : r.photo
-                              ? (resolveMediaUrl(r.photo) ?? r.photo)
-                              : null;
-                          return src ? (
-                            <img src={src} alt="" className={resPhotoThumb} />
-                          ) : (
-                            <div className={resPlaceholderIconBox}>
-                              <Bookmark className="h-4 w-4 text-muted" />
-                            </div>
-                          );
-                        })()}
+                    <tr
+                      key={r.id}
+                      className="border-b border-[color:var(--border)] hover:bg-[color:var(--bg-hover)] transition-colors"
+                    >
+                      {/* Photo */}
+                      <td className="w-10 px-3 py-2 align-middle">
+                        {photoSrc ? (
+                          <img
+                            src={photoSrc}
+                            alt=""
+                            className="w-8 h-8 rounded object-cover flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded bg-[color:var(--bg-raised)] flex items-center justify-center">
+                            <LayoutGrid className="w-4 h-4 text-[color:var(--text-muted)]" aria-hidden="true" />
+                          </div>
+                        )}
                       </td>
-                      <td className={resTdStrong}>{r.name}</td>
-                      <td className={resTd}>{RESOURCE_TYPE_LABELS[r.type] ?? r.type}</td>
-                      <td className={resTdMuted}>{r.floor}</td>
-                      <td className={resTdMuted}>{r.zone || '—'}</td>
-                      <td className={resTdMuted}>{r.capacity}</td>
-                      <td className={resTdMuted}>{r.assigned_company_name ?? '—'}</td>
-                      <td className="px-4 py-2">
-                        <div className="space-y-1">
-                          <span className={operationalStatus.className}>{operationalStatus.label}</span>
-                          {r.status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED && r.reason && (
-                            <p className="max-w-xs text-xs text-slate-600">{r.reason}</p>
-                          )}
-                        </div>
+
+                      {/* Name */}
+                      <td className="px-3 py-2.5 align-middle font-medium text-[color:var(--text-primary)]">
+                        <Link
+                          to={`/resources/${r.id}`}
+                          className="hover:text-[color:var(--brand)] transition-colors"
+                        >
+                          {r.name}
+                        </Link>
                       </td>
-                      <td className="px-4 py-2">
-                        <Link to={`/resources/${r.id}`} className={resLink}>
-                          Открыть
+
+                      {/* Type */}
+                      <td className="px-3 py-2.5 align-middle text-[color:var(--text-muted)]">
+                        {t(RESOURCE_TYPE_LABEL_KEYS[r.type]) ?? r.type}
+                      </td>
+
+                      {/* Floor */}
+                      <td className="px-3 py-2.5 align-middle text-[color:var(--text-muted)]">
+                        {r.floor}
+                      </td>
+
+                      {/* Zone */}
+                      <td className="px-3 py-2.5 align-middle text-[color:var(--text-muted)]">
+                        {r.zone || '—'}
+                      </td>
+
+                      {/* Capacity */}
+                      <td className="px-3 py-2.5 align-middle text-[color:var(--text-muted)]">
+                        {r.capacity}
+                      </td>
+
+                      {/* Company (superadmin only) */}
+                      {isSuperadmin && (
+                        <td className="px-3 py-2.5 align-middle text-[color:var(--text-muted)]">
+                          {r.assigned_company_name ?? '—'}
+                        </td>
+                      )}
+
+                      {/* Status */}
+                      <td className="px-3 py-2.5 align-middle">
+                        <ResourceStatusBadge resource={r} />
+                      </td>
+
+                      {/* Action */}
+                      <td className="w-10 px-3 py-2.5 align-middle">
+                        <Link
+                          to={`/resources/${r.id}`}
+                          aria-label={t('resources.list.open')}
+                          className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)] hover:bg-[color:var(--bg-hover)] transition-colors"
+                        >
+                          <ExternalLink className="w-4 h-4" />
                         </Link>
                       </td>
                     </tr>
@@ -268,34 +403,6 @@ export default function ResourceListPage() {
                 })}
               </tbody>
             </table>
-          </div>
-        )}
-
-        {totalPages > 1 && (
-          <div className={resPaginationBar}>
-            <p className={resPaginationMeta}>
-              Стр. {page} из {totalPages} · всего {totalCount}
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className={resPageBtn}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Назад
-              </button>
-              <button
-                type="button"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className={resPageBtn}
-              >
-                Вперёд
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
           </div>
         )}
       </div>

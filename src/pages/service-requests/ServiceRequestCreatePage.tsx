@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -6,18 +7,11 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import {
   SERVICE_REQUEST_TYPES,
-  SERVICE_REQUEST_TYPE_LABELS,
+  SERVICE_REQUEST_TYPE_LABEL_KEYS,
   type ServiceRequestType,
 } from '@/shared/config/constants';
 import { getApiError } from '@/shared/lib/getApiError';
 import type { PaginatedResponse, ServiceRequest } from '@/shared/types';
-
-const TYPE_OPTIONS: Array<{ value: ServiceRequestType; label: string }> = [
-  { value: SERVICE_REQUEST_TYPES.GENERAL, label: SERVICE_REQUEST_TYPE_LABELS[SERVICE_REQUEST_TYPES.GENERAL] },
-  { value: SERVICE_REQUEST_TYPES.CLEANING, label: SERVICE_REQUEST_TYPE_LABELS[SERVICE_REQUEST_TYPES.CLEANING] },
-  { value: SERVICE_REQUEST_TYPES.REPAIR, label: SERVICE_REQUEST_TYPE_LABELS[SERVICE_REQUEST_TYPES.REPAIR] },
-  { value: SERVICE_REQUEST_TYPES.SUPPLIES, label: SERVICE_REQUEST_TYPE_LABELS[SERVICE_REQUEST_TYPES.SUPPLIES] },
-];
 
 type ServiceFloorOption = {
   id: number;
@@ -37,6 +31,16 @@ function formatFloorOptionLabel(floor: ServiceFloorOption): string {
 }
 
 export default function ServiceRequestCreatePage() {
+  const { t } = useTranslation();
+  const typeOptions = useMemo(
+    () => [
+      { value: SERVICE_REQUEST_TYPES.GENERAL, label: t(SERVICE_REQUEST_TYPE_LABEL_KEYS[SERVICE_REQUEST_TYPES.GENERAL]) },
+      { value: SERVICE_REQUEST_TYPES.CLEANING, label: t(SERVICE_REQUEST_TYPE_LABEL_KEYS[SERVICE_REQUEST_TYPES.CLEANING]) },
+      { value: SERVICE_REQUEST_TYPES.REPAIR, label: t(SERVICE_REQUEST_TYPE_LABEL_KEYS[SERVICE_REQUEST_TYPES.REPAIR]) },
+      { value: SERVICE_REQUEST_TYPES.SUPPLIES, label: t(SERVICE_REQUEST_TYPE_LABEL_KEYS[SERVICE_REQUEST_TYPES.SUPPLIES]) },
+    ],
+    [t],
+  );
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -79,7 +83,7 @@ export default function ServiceRequestCreatePage() {
     setFormError(null);
 
     if (!floorId) {
-      setFormError('Выберите этаж.');
+      setFormError(t('resources.create.floorRequired'));
       return;
     }
     if (!location.trim()) {
@@ -121,7 +125,7 @@ export default function ServiceRequestCreatePage() {
             onChange={(e) => setRequestType(e.target.value as ServiceRequestType)}
             className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           >
-            {TYPE_OPTIONS.map((opt) => (
+            {typeOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
@@ -230,15 +234,13 @@ export default function ServiceRequestCreatePage() {
           <Link
             to="/service-requests"
             className="inline-flex items-center rounded-lg border border-default bg-transparent px-4 py-2 text-sm font-medium text-secondary hover:bg-hover"
-          >
-            Отмена
-          </Link>
+          >{t('common.cancel')}</Link>
           <button
             type="submit"
             disabled={createMutation.isPending}
             className="inline-flex items-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
           >
-            {createMutation.isPending ? 'Отправка...' : 'Создать заявку'}
+            {createMutation.isPending ? t('common.submittingPlain') : 'Создать заявку'}
           </button>
         </div>
       </form>

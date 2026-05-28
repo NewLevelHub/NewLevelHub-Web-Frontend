@@ -14,7 +14,6 @@ import {
   Megaphone,
   Clock,
   ListTodo,
-  Repeat,
   MailPlus,
   Bell,
   type LucideIcon,
@@ -22,179 +21,168 @@ import {
 import { STAFF_UI_PREFIX, SUPERADMIN_UI_PREFIX, USER_ROLES, type UserRole } from '@/shared/config/constants';
 
 export interface NavItem {
-  label: string;
+  labelKey: string;
   path: string;
   icon: LucideIcon;
 }
 
 export interface NavSection {
-  title?: string;
+  titleKey?: string;
   items: NavItem[];
 }
 
 const superadminNav: NavSection[] = [
   {
-    items: [{ label: 'Дашборд', path: '/', icon: LayoutDashboard }],
+    items: [{ labelKey: 'sidebar.navItem.dashboard', path: '/', icon: LayoutDashboard }],
   },
   {
-    title: 'Управление',
+    titleKey: 'sidebar.navSection.management',
     items: [
-      { label: 'Сотрудники', path: '/team/manage', icon: Users },
-      { label: 'Инвайты', path: '/company/settings/members', icon: MailPlus },
-      { label: 'Компании', path: `${SUPERADMIN_UI_PREFIX}/companies`, icon: Building2 },
-      { label: 'Ресурсы', path: '/resources', icon: Bookmark },
-      { label: 'Бронирования', path: `${STAFF_UI_PREFIX}/bookings`, icon: CalendarDays },
-      { label: 'Пропуска', path: '/passes', icon: ShieldCheck },
-      { label: 'Проверка QR', path: '/access/validate', icon: ShieldCheck },
-      { label: 'Лог доступа', path: '/access/logs', icon: Clock },
+      { labelKey: 'sidebar.navItem.employees',      path: '/team/manage',                          icon: Users },
+      { labelKey: 'sidebar.navItem.invites',         path: '/company/settings/members',             icon: MailPlus },
+      { labelKey: 'sidebar.navItem.companies',       path: `${SUPERADMIN_UI_PREFIX}/companies`,     icon: Building2 },
+      { labelKey: 'sidebar.navItem.resources',       path: '/resources',                            icon: Bookmark },
+      { labelKey: 'sidebar.navItem.bookings',        path: `${STAFF_UI_PREFIX}/bookings`,           icon: CalendarDays },
+      { labelKey: 'sidebar.navItem.passes',          path: '/passes',                               icon: ShieldCheck },
+      { labelKey: 'sidebar.navItem.qrCheck',         path: '/access/validate',                      icon: ShieldCheck },
+      { labelKey: 'sidebar.navItem.accessLog',       path: '/access/logs',                          icon: Clock },
     ],
   },
   {
-    title: 'Здание',
+    titleKey: 'sidebar.navSection.building',
     items: [
-      { label: 'Карта здания', path: '/building/map', icon: Map },
-      { label: 'Сервисные заявки', path: '/service-requests', icon: Wrench },
-      { label: 'Объявления', path: '/announcements', icon: Megaphone },
+      { labelKey: 'sidebar.navItem.buildingMap',     path: '/building/map',                         icon: Map },
+      { labelKey: 'sidebar.navItem.serviceRequests', path: '/service-requests',                     icon: Wrench },
+      { labelKey: 'sidebar.navItem.announcements',   path: '/announcements',                        icon: Megaphone },
     ],
   },
   {
-    title: 'CRM',
+    titleKey: 'sidebar.navSection.crm',
     items: [
-      { label: 'CRM Доски', path: `${SUPERADMIN_UI_PREFIX}/crm/boards`, icon: Columns3 },
+      { labelKey: 'sidebar.navItem.crmBoards',       path: `${SUPERADMIN_UI_PREFIX}/crm/boards`,   icon: Columns3 },
     ],
   },
   {
-    title: 'Аналитика',
-    items: [{ label: 'Аналитика', path: `${SUPERADMIN_UI_PREFIX}/analytics`, icon: BarChart3 }],
+    titleKey: 'sidebar.navSection.analytics',
+    items: [{ labelKey: 'sidebar.navItem.analytics', path: `${SUPERADMIN_UI_PREFIX}/analytics`,    icon: BarChart3 }],
   },
   {
-    title: 'Настройки',
-    items: [{ label: 'Уведомления', path: '/settings/notifications', icon: Bell }],
+    titleKey: 'sidebar.navSection.settings',
+    items: [{ labelKey: 'sidebar.navItem.notifications', path: '/settings/notifications',           icon: Bell }],
   },
 ];
 
 const companyAdminNav: NavSection[] = [
   {
-    items: [{ label: 'Дашборд', path: '/', icon: LayoutDashboard }],
+    items: [{ labelKey: 'sidebar.navItem.dashboard', path: '/', icon: LayoutDashboard }],
   },
   {
-    title: 'Компания',
+    titleKey: 'sidebar.navSection.company',
     items: [
-      { label: 'Моя компания', path: '/companies', icon: Building2 },
-      { label: 'Сотрудники', path: '/team/manage', icon: Users },
-      { label: 'Настройки', path: '/company/settings', icon: Settings },
-      { label: 'Инвайты', path: '/company/settings/members', icon: MailPlus },
-      { label: 'Онбординг шаблоны', path: '/company/settings/onboarding', icon: ListTodo },
+      { labelKey: 'sidebar.navItem.myCompany',           path: '/companies',                        icon: Building2 },
+      { labelKey: 'sidebar.navItem.employees',           path: '/team/manage',                      icon: Users },
+      { labelKey: 'sidebar.navItem.settings',            path: '/company/settings',                 icon: Settings },
+      { labelKey: 'sidebar.navItem.invites',             path: '/company/settings/members',         icon: MailPlus },
+      { labelKey: 'sidebar.navItem.onboardingTemplates', path: '/company/settings/onboarding',      icon: ListTodo },
     ],
   },
   {
-    title: 'Работа',
+    titleKey: 'sidebar.navSection.work',
     items: [
-      { label: 'CRM Доски', path: '/crm', icon: Columns3 },
-      { label: 'Мои задачи', path: '/crm/my-tasks', icon: ListTodo },
-      { label: 'Календарь', path: '/company/calendar', icon: CalendarDays },
+      { labelKey: 'sidebar.navItem.crmBoards',       path: '/crm',                                  icon: Columns3 },
+      { labelKey: 'sidebar.navItem.myTasks',         path: '/crm/my-tasks',                         icon: ListTodo },
+      { labelKey: 'sidebar.navItem.calendar',        path: '/company/calendar',                     icon: CalendarDays },
     ],
   },
   {
-    title: 'Сервисы',
+    titleKey: 'sidebar.navSection.services',
     items: [
-      { label: 'Бронирование', path: '/bookings/catalog', icon: CalendarDays },
-      { label: 'Рекуррентные брони', path: '/bookings/recurring', icon: Repeat },
-      { label: 'Бронирования (админ)', path: `${STAFF_UI_PREFIX}/bookings`, icon: CalendarDays },
-      { label: 'Карта здания', path: '/building/map', icon: Map },
-      { label: 'Гостевые пропуска', path: '/passes', icon: ShieldCheck },
-      { label: 'Лог доступа', path: '/access/logs', icon: Clock },
-      { label: 'Файлы', path: '/storage', icon: FileText },
-      { label: 'Объявления', path: '/announcements', icon: Megaphone },
-      { label: 'Отпуска', path: '/hr/leaves', icon: Clock },
-      { label: 'Сервисные заявки', path: '/service-requests', icon: Wrench },
+      { labelKey: 'sidebar.navItem.bookings',        path: `${STAFF_UI_PREFIX}/bookings`,           icon: CalendarDays },
+      { labelKey: 'sidebar.navItem.buildingMap',     path: '/building/map',                         icon: Map },
+      { labelKey: 'sidebar.navItem.guestPasses',     path: '/passes',                               icon: ShieldCheck },
+      { labelKey: 'sidebar.navItem.accessLog',       path: '/access/logs',                          icon: Clock },
+      { labelKey: 'sidebar.navItem.files',           path: '/storage',                              icon: FileText },
+      { labelKey: 'sidebar.navItem.announcements',   path: '/announcements',                        icon: Megaphone },
+      { labelKey: 'sidebar.navItem.leave',           path: '/hr/leaves',                            icon: Clock },
+      { labelKey: 'sidebar.navItem.serviceRequests', path: '/service-requests',                     icon: Wrench },
     ],
   },
   {
-    title: 'Аналитика',
-    items: [{ label: 'Аналитика', path: '/analytics', icon: BarChart3 }],
+    titleKey: 'sidebar.navSection.analytics',
+    items: [{ labelKey: 'sidebar.navItem.analytics', path: '/analytics',                            icon: BarChart3 }],
   },
   {
-    title: 'Настройки',
-    items: [{ label: 'Уведомления', path: '/settings/notifications', icon: Bell }],
+    titleKey: 'sidebar.navSection.settings',
+    items: [{ labelKey: 'sidebar.navItem.notifications', path: '/settings/notifications',           icon: Bell }],
   },
 ];
 
 const employeeNav: NavSection[] = [
   {
-    items: [{ label: 'Дашборд', path: '/', icon: LayoutDashboard }],
+    items: [{ labelKey: 'sidebar.navItem.dashboard', path: '/', icon: LayoutDashboard }],
   },
   {
-    title: 'Компания',
+    titleKey: 'sidebar.navSection.company',
     items: [
-      { label: 'Моя компания', path: '/companies', icon: Building2 },
+      { labelKey: 'sidebar.navItem.myCompany',       path: '/companies',                            icon: Building2 },
     ],
   },
   {
-    title: 'Работа',
+    titleKey: 'sidebar.navSection.work',
     items: [
-      { label: 'CRM Доски', path: '/crm', icon: Columns3 },
-      { label: 'Мои задачи', path: '/crm/my-tasks', icon: ListTodo },
-      { label: 'Команда', path: '/team', icon: Users },
-      { label: 'Календарь', path: '/company/calendar', icon: CalendarDays },
+      { labelKey: 'sidebar.navItem.crmBoards',       path: '/crm',                                  icon: Columns3 },
+      { labelKey: 'sidebar.navItem.myTasks',         path: '/crm/my-tasks',                         icon: ListTodo },
+      { labelKey: 'sidebar.navItem.team',            path: '/team',                                 icon: Users },
+      { labelKey: 'sidebar.navItem.calendar',        path: '/company/calendar',                     icon: CalendarDays },
     ],
   },
   {
-    title: 'Сервисы',
+    titleKey: 'sidebar.navSection.services',
     items: [
-      { label: 'Бронирование', path: '/bookings/catalog', icon: Bookmark },
-      { label: 'Рекуррентные брони', path: '/bookings/recurring', icon: Repeat },
-      { label: 'Гостевые пропуска', path: '/passes', icon: ShieldCheck },
-      { label: 'Файлы', path: '/storage', icon: FileText },
-      { label: 'Объявления', path: '/announcements', icon: Megaphone },
-      { label: 'Отпуска', path: '/hr/leaves', icon: Clock },
+      { labelKey: 'sidebar.navItem.bookings',        path: '/bookings/my',                          icon: CalendarDays },
+      { labelKey: 'sidebar.navItem.guestPasses',     path: '/passes',                               icon: ShieldCheck },
+      { labelKey: 'sidebar.navItem.files',           path: '/storage',                              icon: FileText },
+      { labelKey: 'sidebar.navItem.announcements',   path: '/announcements',                        icon: Megaphone },
+      { labelKey: 'sidebar.navItem.leave',           path: '/hr/leaves',                            icon: Clock },
     ],
   },
   {
-    title: 'Здание',
+    titleKey: 'sidebar.navSection.building',
     items: [
-      { label: 'Карта здания', path: '/building/map', icon: Map },
-      { label: 'Сервисная заявка', path: '/service-requests', icon: Wrench },
+      { labelKey: 'sidebar.navItem.buildingMap',     path: '/building/map',                         icon: Map },
+      { labelKey: 'sidebar.navItem.serviceRequest',  path: '/service-requests',                     icon: Wrench },
     ],
   },
   {
-    title: 'Настройки',
-    items: [{ label: 'Уведомления', path: '/settings/notifications', icon: Bell }],
+    titleKey: 'sidebar.navSection.settings',
+    items: [{ labelKey: 'sidebar.navItem.notifications', path: '/settings/notifications',           icon: Bell }],
   },
 ];
 
-/**
- * Access matrix for unguarded routes (open to all authenticated roles):
- * /bookings/catalog, /bookings/new, /bookings/:id  — guest ✓ (booking platform)
- * /passes, /passes/new, /passes/:id                — guest ✓ (guest passes feature)
- * /announcements                                   — guest ✓ (read-only info)
- * building/map                                     — guest ✓ (public building info)
- * /service-requests, /service-requests/new         — guest ✗ → RequireRole [SUPERADMIN, COMPANY_ADMIN, EMPLOYEE]
- */
 const guestNav: NavSection[] = [
   {
-    items: [{ label: 'Дашборд', path: '/', icon: LayoutDashboard }],
+    items: [{ labelKey: 'sidebar.navItem.dashboard', path: '/', icon: LayoutDashboard }],
   },
   {
-    title: 'Сервисы',
+    titleKey: 'sidebar.navSection.services',
     items: [
-      { label: 'Объявления', path: '/announcements', icon: Megaphone },
+      { labelKey: 'sidebar.navItem.announcements',   path: '/announcements',                        icon: Megaphone },
     ],
   },
   {
-    title: 'Профиль',
-    items: [{ label: 'Настройки', path: '/profile', icon: Settings }],
+    titleKey: 'sidebar.navSection.profile',
+    items: [{ labelKey: 'sidebar.navItem.settings',  path: '/profile',                              icon: Settings }],
   },
 ];
 
 const receptionNav: NavSection[] = [
   {
-    items: [{ label: 'Дашборд', path: '/', icon: LayoutDashboard }],
+    items: [{ labelKey: 'sidebar.navItem.dashboard', path: '/', icon: LayoutDashboard }],
   },
   {
-    title: 'Доступ',
+    titleKey: 'sidebar.navSection.access',
     items: [
-      { label: 'Проверка QR', path: '/access/validate', icon: ShieldCheck },
+      { labelKey: 'sidebar.navItem.qrCheck',         path: '/access/validate',                      icon: ShieldCheck },
     ],
   },
 ];

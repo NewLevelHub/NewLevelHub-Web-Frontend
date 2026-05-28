@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { useMutation } from '@tanstack/react-query';
 import {
@@ -53,6 +54,7 @@ const basicPlanLimits = COMPANY_PLAN_DEFAULT_LIMITS[COMPANY_TIERS.BASIC];
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function CompanyCreatePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const companiesBasePath =
@@ -375,9 +377,9 @@ export default function CompanyCreatePage() {
               onChange={(e) => handleField('plan', e.target.value)}
               className={inputClass(!!fieldErrors.plan)}
             >
-              <option value={COMPANY_TIERS.BASIC}>Базовый</option>
-              <option value={COMPANY_TIERS.STANDARD}>Стандарт</option>
-              <option value={COMPANY_TIERS.PREMIUM}>Премиум</option>
+              <option value={COMPANY_TIERS.BASIC}>{t('companies.planBasic')}</option>
+              <option value={COMPANY_TIERS.STANDARD}>{t('companies.planStandard')}</option>
+              <option value={COMPANY_TIERS.PREMIUM}>{t('companies.planPremium')}</option>
             </select>
           </div>
 
@@ -442,9 +444,7 @@ export default function CompanyCreatePage() {
                   <span
                     className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin"
                     aria-hidden="true"
-                  />
-                  Создание...
-                </>
+                  />{t('common.creatingPlain')}</>
               ) : (
                 <>
                   <Check size={15} aria-hidden="true" />
@@ -457,9 +457,7 @@ export default function CompanyCreatePage() {
               onClick={() => navigate(companiesBasePath)}
               disabled={isPending}
               className="inline-flex items-center px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
-            >
-              Отмена
-            </button>
+            >{t('common.cancel')}</button>
           </div>
         </form>
       </section>

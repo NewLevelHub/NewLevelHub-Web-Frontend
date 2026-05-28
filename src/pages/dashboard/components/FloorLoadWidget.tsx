@@ -37,7 +37,7 @@ export function FloorLoadWidget({ rows }: FloorLoadWidgetProps) {
   if (rows.length === 0) {
     return (
       <section className="rounded-xl border border-default bg-surface p-5">
-        <p className="text-xs text-muted">Нет данных по этажам</p>
+        <p className="text-xs text-muted">{t('dashboard.floorNoData')}</p>
       </section>
     );
   }

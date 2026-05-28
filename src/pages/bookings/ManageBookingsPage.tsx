@@ -1,15 +1,20 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { BookMarked, Calendar, ChevronLeft, ChevronRight, Filter, MoreHorizontal, Repeat } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import {
   BOOKING_STATUSES,
+  BOOKING_STATUS_LABEL_KEYS,
   RESOURCE_TYPES,
-  RESOURCE_TYPE_LABELS,
+  RESOURCE_TYPE_LABEL_KEYS,
   STAFF_UI_PREFIX,
   USER_ROLES,
+  type BookingStatus,
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
@@ -26,36 +31,6 @@ import type {
 } from '@/shared/types';
 
 const PAGE_SIZE = 20;
-
-const STATUS_LABEL: Record<string, string> = {
-  [BOOKING_STATUSES.CONFIRMED]: 'Подтверждено',
-  [BOOKING_STATUSES.CANCELLED]: 'Отменено',
-  [BOOKING_STATUSES.COMPLETED]: 'Завершено',
-  [BOOKING_STATUSES.NO_SHOW]: 'Неявка',
-};
-
-const STATUS_BADGE_CLASS: Record<string, string> = {
-  [BOOKING_STATUSES.CONFIRMED]: 'bg-success-subtle text-success border-emerald-700',
-  [BOOKING_STATUSES.CANCELLED]: 'bg-rose-900/60 text-rose-300 border-rose-700',
-  [BOOKING_STATUSES.COMPLETED]: 'bg-blue-900/60 text-blue-300 border-blue-700',
-  [BOOKING_STATUSES.NO_SHOW]: 'bg-warning-subtle text-warning border-amber-700',
-};
-
-const RESOURCE_TYPE_OPTIONS = [
-  { value: '', label: 'Все типы' },
-  { value: RESOURCE_TYPES.DESK, label: RESOURCE_TYPE_LABELS[RESOURCE_TYPES.DESK] },
-  { value: RESOURCE_TYPES.MEETING_ROOM, label: RESOURCE_TYPE_LABELS[RESOURCE_TYPES.MEETING_ROOM] },
-  { value: RESOURCE_TYPES.PARKING, label: RESOURCE_TYPE_LABELS[RESOURCE_TYPES.PARKING] },
-  { value: RESOURCE_TYPES.CAPSULE, label: RESOURCE_TYPE_LABELS[RESOURCE_TYPES.CAPSULE] },
-];
-
-const STATUS_OPTIONS = [
-  { value: '', label: 'Все статусы' },
-  { value: BOOKING_STATUSES.CONFIRMED, label: STATUS_LABEL[BOOKING_STATUSES.CONFIRMED] },
-  { value: BOOKING_STATUSES.CANCELLED, label: STATUS_LABEL[BOOKING_STATUSES.CANCELLED] },
-  { value: BOOKING_STATUSES.COMPLETED, label: STATUS_LABEL[BOOKING_STATUSES.COMPLETED] },
-  { value: BOOKING_STATUSES.NO_SHOW, label: STATUS_LABEL[BOOKING_STATUSES.NO_SHOW] },
-];
 
 function localDateTimeToIso(value: string): string | undefined {
   if (!value) return undefined;
@@ -82,7 +57,67 @@ function toDateTimeLocalValue(iso: string): string {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join('');
+}
+
+type StatusBadgeProps = { status: string };
+
+function StatusBadge({ status }: StatusBadgeProps) {
+  const { t } = useTranslation();
+
+  const colorClass = useMemo(() => {
+    switch (status) {
+      case BOOKING_STATUSES.CONFIRMED:
+      case BOOKING_STATUSES.CHECKED_IN:
+        return 'bg-[color:var(--status-free-bg)] text-[color:var(--status-free-text)]';
+      case 'pending':
+        return 'bg-[color:var(--status-soon-bg)] text-[color:var(--status-soon-text)]';
+      case BOOKING_STATUSES.CANCELLED:
+      case BOOKING_STATUSES.NO_SHOW:
+        return 'bg-[color:var(--status-busy-bg)] text-[color:var(--status-busy-text)]';
+      case BOOKING_STATUSES.COMPLETED:
+        return 'bg-[color:var(--status-na-bg)] text-[color:var(--status-na-text)]';
+      default:
+        return 'bg-[color:var(--status-na-bg)] text-[color:var(--status-na-text)]';
+    }
+  }, [status]);
+
+  const label = BOOKING_STATUS_LABEL_KEYS[status as BookingStatus]
+    ? t(BOOKING_STATUS_LABEL_KEYS[status as BookingStatus])
+    : status;
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium',
+        colorClass,
+      )}
+    >
+      <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" />
+      {label}
+    </span>
+  );
+}
+
 export default function ManageBookingsPage() {
+  const { t } = useTranslation();
+  const resourceTypeOptions = useMemo(
+    () => [
+      { value: '', label: t('common.bookingFilter.allTypes') },
+      { value: RESOURCE_TYPES.DESK, label: t(RESOURCE_TYPE_LABEL_KEYS[RESOURCE_TYPES.DESK]) },
+      { value: RESOURCE_TYPES.MEETING_ROOM, label: t(RESOURCE_TYPE_LABEL_KEYS[RESOURCE_TYPES.MEETING_ROOM]) },
+      { value: RESOURCE_TYPES.PARKING, label: t(RESOURCE_TYPE_LABEL_KEYS[RESOURCE_TYPES.PARKING]) },
+      { value: RESOURCE_TYPES.CAPSULE, label: t(RESOURCE_TYPE_LABEL_KEYS[RESOURCE_TYPES.CAPSULE]) },
+    ],
+    [t],
+  );
+
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
@@ -95,6 +130,21 @@ export default function ManageBookingsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+
+  const [openActionsId, setOpenActionsId] = useState<number | null>(null);
+  const [dropdownCoords, setDropdownCoords] = useState<{ top: number; right: number } | null>(null);
+  const actionButtonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+
+  useEffect(() => {
+    if (openActionsId === null) return;
+    const close = () => { setOpenActionsId(null); setDropdownCoords(null); };
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    return () => {
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+    };
+  }, [openActionsId]);
 
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
   const [cancelReason, setCancelReason] = useState('');
@@ -187,7 +237,6 @@ export default function ManageBookingsPage() {
     }
     if (userId) params.user_id = Number(userId);
     if (resourceId) params.resource_id = Number(resourceId);
-
     if (resourceType) params.resource_type = resourceType;
     if (statusFilter) params.status = statusFilter;
 
@@ -282,9 +331,9 @@ export default function ManageBookingsPage() {
   });
 
   const addParticipantMutation = useMutation({
-    mutationFn: async ({ bookingId, userId }: { bookingId: number; userId: number }) => {
+    mutationFn: async ({ bookingId, userId: uid }: { bookingId: number; userId: number }) => {
       await apiClient.post(API.bookings.reservations.addParticipants(String(bookingId)), {
-        user_ids: [userId],
+        user_ids: [uid],
       });
     },
     onSuccess: () => {
@@ -299,8 +348,8 @@ export default function ManageBookingsPage() {
   });
 
   const removeParticipantMutation = useMutation({
-    mutationFn: async ({ bookingId, userId }: { bookingId: number; userId: number }) => {
-      await apiClient.delete(API.bookings.reservations.removeParticipant(String(bookingId), String(userId)));
+    mutationFn: async ({ bookingId, userId: uid }: { bookingId: number; userId: number }) => {
+      await apiClient.delete(API.bookings.reservations.removeParticipant(String(bookingId), String(uid)));
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
@@ -315,6 +364,9 @@ export default function ManageBookingsPage() {
   const rows = data?.results ?? [];
   const totalCount = data?.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  const rangeStart = (page - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(page * PAGE_SIZE, totalCount);
 
   const resetFilters = () => {
     setPage(1);
@@ -331,6 +383,7 @@ export default function ManageBookingsPage() {
     setCancelTarget(booking);
     setCancelReason('');
     setCancelFormError(null);
+
   };
 
   const closeCancelModal = () => {
@@ -338,13 +391,14 @@ export default function ManageBookingsPage() {
     setCancelTarget(null);
     setCancelReason('');
     setCancelFormError(null);
+    setOpenActionsId(null);
   };
 
   const submitAdminCancel = () => {
     if (!cancelTarget) return;
     const reason = cancelReason.trim();
     if (!reason) {
-      setCancelFormError('Укажите причину отмены.');
+      setCancelFormError(t('booking.manage.cancelReasonRequired'));
       return;
     }
     adminCancelMutation.mutate({ bookingId: cancelTarget.id, reason });
@@ -356,6 +410,7 @@ export default function ManageBookingsPage() {
     setEditEnd(toDateTimeLocalValue(booking.end_time));
     setSelectedParticipantId('');
     setEditFormError(null);
+
   };
 
   const closeEditModal = () => {
@@ -365,12 +420,13 @@ export default function ManageBookingsPage() {
     setEditEnd('');
     setSelectedParticipantId('');
     setEditFormError(null);
+    setOpenActionsId(null);
   };
 
   const submitEditTime = () => {
     if (!editTarget) return;
     if (!editStart || !editEnd) {
-      setEditFormError('Укажите start_time и end_time.');
+      setEditFormError(t('booking.detail.startEndRequired'));
       return;
     }
     setEditFormError(null);
@@ -383,289 +439,391 @@ export default function ManageBookingsPage() {
 
   const queryErrorText = isError ? getApiError(error).message : null;
 
+  // Status chip options for filter bar
+  const statusChips = useMemo(() => [
+    { value: '', label: t('common.allStatuses') },
+    { value: BOOKING_STATUSES.CONFIRMED, label: t(BOOKING_STATUS_LABEL_KEYS[BOOKING_STATUSES.CONFIRMED]) },
+    { value: 'pending', label: t('booking.manage.statusPending') },
+    { value: BOOKING_STATUSES.CANCELLED, label: t(BOOKING_STATUS_LABEL_KEYS[BOOKING_STATUSES.CANCELLED]) },
+  ], [t]);
+
+  const selectClass = 'w-full rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-2.5 py-1.5 text-[13px] text-[color:var(--text-primary)] focus:outline-none';
+
   return (
-    <main className="mx-auto max-w-7xl space-y-4 sm:space-y-6 px-3 py-4 sm:px-4 sm:py-6 md:py-8">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <main className="mx-auto max-w-7xl space-y-4 px-3 py-4 sm:px-4 sm:py-6">
+      {/* Page header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-primary">Управление бронированиями</h1>
-          <p className="mt-1 text-sm text-secondary">
-            Фильтрация всех бронирований и административная отмена с обязательной причиной.
-          </p>
+          <h1 className="text-[22px] font-bold text-[color:var(--text-primary)] leading-tight">
+            {t('booking.manage.title')}
+          </h1>
+          {totalCount > 0 && (
+            <p className="mt-0.5 text-[13px] text-[color:var(--text-secondary)]">
+              {t('booking.manage.activeCount', { count: totalCount })}
+            </p>
+          )}
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <Link
-            to="/bookings/catalog"
-            className="inline-flex items-center rounded-lg border border-default bg-raised px-3 py-2 text-sm font-medium text-secondary hover:bg-hover"
-          >
-            Каталог ресурсов
-          </Link>
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Link
             to="/bookings/my"
-            className="inline-flex items-center rounded-lg border border-default bg-raised px-3 py-2 text-sm font-medium text-secondary hover:bg-hover"
+            className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors"
           >
-            Мои бронирования
+            <BookMarked className="w-3.5 h-3.5" />
+            {t('common.myBookings')}
+          </Link>
+          {(user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN) && (
+            <Link
+              to="/bookings/recurring"
+              className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors"
+            >
+              <Repeat className="w-3.5 h-3.5" />
+              {t('sidebar.navItem.recurringBookings')}
+            </Link>
+          )}
+          <Link
+            to="/bookings/catalog"
+            className="inline-flex items-center gap-1.5 h-8 px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity"
+          >
+            {t('booking.manage.createBooking')}
           </Link>
         </div>
       </div>
 
-      <section className="grid gap-3 rounded-2xl border border-default bg-raised p-3 sm:p-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Secondary filter row */}
+      <div className={cn(
+        'grid gap-2 grid-cols-2 sm:grid-cols-3',
+        isSuperadmin ? 'lg:grid-cols-7' : 'lg:grid-cols-6',
+      )}>
         {isSuperadmin && (
-          <label className="text-sm text-secondary">
-            Компания
-            <select
-              value={companyId}
-              onChange={(e) => {
-                setCompanyId(e.target.value);
-                setPage(1);
-              }}
-              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-            >
-              <option value="">Все компании</option>
-              {companyOptions.map((option) => (
-                <option key={option.id} value={String(option.id)}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <select
+            value={companyId}
+            onChange={(e) => { setCompanyId(e.target.value); setPage(1); }}
+            className={selectClass}
+            aria-label={t('common.allCompanies')}
+          >
+            <option value="">{t('common.allCompanies')}</option>
+            {companyOptions.map((option) => (
+              <option key={option.id} value={String(option.id)}>{option.label}</option>
+            ))}
+          </select>
         )}
-        <label className="text-sm text-secondary">
-          Пользователь
-          <select
-            value={userId}
-            onChange={(e) => {
-              setUserId(e.target.value);
-              setPage(1);
-            }}
-            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-          >
-            <option value="">Все пользователи</option>
-            {userOptions.map((option) => (
-              <option key={option.id} value={String(option.id)}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-sm text-secondary">
-          Ресурс
-          <select
-            value={resourceId}
-            onChange={(e) => {
-              setResourceId(e.target.value);
-              setPage(1);
-            }}
-            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-          >
-            <option value="">Все ресурсы</option>
-            {resourceOptions.map((option) => (
-              <option key={option.id} value={String(option.id)}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-sm text-secondary">
-          Тип ресурса
-          <select
-            value={resourceType}
-            onChange={(e) => {
-              setResourceType(e.target.value);
-              setPage(1);
-            }}
-            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-          >
-            {RESOURCE_TYPE_OPTIONS.map((option) => (
-              <option key={option.value || 'all'} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-sm text-secondary">
-          Статус
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
-            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-          >
-            {STATUS_OPTIONS.map((option) => (
-              <option key={option.value || 'all'} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-sm text-secondary">
-          Дата с
-          <input
-            type="datetime-local"
-            value={dateFrom}
-            onChange={(e) => {
-              setDateFrom(e.target.value);
-              setPage(1);
-            }}
-            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-          />
-        </label>
-        <label className="text-sm text-secondary">
-          Дата по
-          <input
-            type="datetime-local"
-            value={dateTo}
-            onChange={(e) => {
-              setDateTo(e.target.value);
-              setPage(1);
-            }}
-            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-          />
-        </label>
-        <div className="flex items-end">
-          <button
-            type="button"
-            onClick={resetFilters}
-            className="w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm font-medium text-secondary hover:bg-hover"
-          >
-            Сбросить фильтры
-          </button>
-        </div>
-      </section>
+        <select
+          value={userId}
+          onChange={(e) => { setUserId(e.target.value); setPage(1); }}
+          className={selectClass}
+          aria-label={t('booking.manage.allUsers')}
+        >
+          <option value="">{t('booking.manage.allUsers')}</option>
+          {userOptions.map((option) => (
+            <option key={option.id} value={String(option.id)}>{option.label}</option>
+          ))}
+        </select>
+        <select
+          value={resourceId}
+          onChange={(e) => { setResourceId(e.target.value); setPage(1); }}
+          className={selectClass}
+          aria-label={t('booking.manage.allResources')}
+        >
+          <option value="">{t('booking.manage.allResources')}</option>
+          {resourceOptions.map((option) => (
+            <option key={option.id} value={String(option.id)}>{option.label}</option>
+          ))}
+        </select>
+        <select
+          value={resourceType}
+          onChange={(e) => { setResourceType(e.target.value); setPage(1); }}
+          className={selectClass}
+          aria-label={t('common.bookingFilter.allTypes')}
+        >
+          {resourceTypeOptions.map((option) => (
+            <option key={option.value || 'all'} value={option.value}>{option.label}</option>
+          ))}
+        </select>
+        <input
+          type="datetime-local"
+          value={dateFrom}
+          onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+          className={selectClass}
+          aria-label={t('common.dateFrom')}
+          title={t('common.dateFrom')}
+        />
+        <input
+          type="datetime-local"
+          value={dateTo}
+          onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+          className={selectClass}
+          aria-label={t('common.dateTo')}
+          title={t('common.dateTo')}
+        />
+        <button
+          type="button"
+          onClick={resetFilters}
+          className={cn(selectClass, 'text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors cursor-pointer')}
+        >
+          {t('common.resetFilters')}
+        </button>
+      </div>
 
       {queryErrorText && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-[var(--radius-sm)] border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700" role="alert">
           {queryErrorText}
         </div>
       )}
 
-      <section className="overflow-hidden rounded-2xl border border-default bg-raised">
-        <div className="border-b border-default px-4 py-3 text-sm text-secondary">
-          Найдено: <span className="font-semibold text-primary">{totalCount}</span>
+      {/* Main card */}
+      <div className="bg-[color:var(--bg-surface)] border border-[color:var(--border)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
+
+        {/* Filter bar */}
+        <div className="flex items-center gap-1.5 flex-wrap px-4 py-3 border-b border-[color:var(--border)]">
+          {/* Date range button (display only) */}
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 h-[30px] px-2.5 text-[12px] border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors"
+          >
+            <Calendar className="w-3 h-3 flex-shrink-0" />
+            {dateFrom || dateTo
+              ? `${dateFrom ? new Date(dateFrom).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : '…'} — ${dateTo ? new Date(dateTo).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : '…'}`
+              : t('booking.manage.allDates')
+            }
+          </button>
+
+          {/* Company filter (superadmin) */}
+          {isSuperadmin && (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 h-[30px] px-2.5 text-[12px] border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors"
+            >
+              <Filter className="w-3 h-3 flex-shrink-0" />
+              {companyId
+                ? (companyNameById.get(Number(companyId)) ?? t('common.allCompanies'))
+                : t('common.allCompanies')
+              }
+            </button>
+          )}
+
+          {/* Resource filter */}
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 h-[30px] px-2.5 text-[12px] border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors"
+          >
+            {resourceId
+              ? (resourceOptions.find((r) => String(r.id) === resourceId)?.label ?? t('booking.manage.allResources'))
+              : t('booking.manage.allResources')
+            }
+          </button>
+
+          {/* Separator */}
+          <span className="self-stretch w-px bg-[color:var(--border)] flex-shrink-0 my-0.5" aria-hidden="true" />
+
+          {/* Status chips */}
+          {statusChips.map((chip) => (
+            <button
+              key={chip.value}
+              type="button"
+              onClick={() => { setStatusFilter(chip.value); setPage(1); }}
+              className={cn(
+                'inline-flex items-center px-2.5 py-1 text-[12px] rounded-full transition-colors',
+                statusFilter === chip.value
+                  ? 'border-transparent bg-[color:var(--brand-subtle)] text-[color:var(--brand-text)] cursor-pointer'
+                  : 'border border-[color:var(--border)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] cursor-pointer',
+              )}
+            >
+              {chip.label}
+            </button>
+          ))}
+
+          {/* Pagination — pushed to right */}
+          {totalCount > 0 && (
+            <div className="ml-auto flex items-center gap-1.5 text-[12px] text-[color:var(--text-muted)]">
+              <span>
+                {t('booking.manage.showing', {
+                  start: rangeStart,
+                  end: rangeEnd,
+                  total: totalCount,
+                })}
+              </span>
+              <button
+                type="button"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                aria-label={t('common.previousPage')}
+                className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                aria-label={t('common.nextPage')}
+                className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
+
+        {/* Table */}
         {isLoading ? (
-          <div className="px-4 py-10 text-sm text-secondary">Загрузка бронирований…</div>
+          <div className="px-4 py-10">
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-10 rounded-[var(--radius-sm)] bg-[color:var(--bg-raised)] animate-pulse"
+                />
+              ))}
+            </div>
+          </div>
         ) : rows.length === 0 ? (
-          <div className="px-4 py-10 text-sm text-secondary">Ничего не найдено по текущим фильтрам.</div>
+          <div className="px-4 py-12 text-center text-[13px] text-[color:var(--text-muted)]">
+            {t('booking.manage.noResults')}
+          </div>
         ) : (
-          <ul className="divide-y divide-[color:var(--border)]/60">
-            {rows.map((booking) => {
-              const statusClass =
-                STATUS_BADGE_CLASS[booking.status] ?? 'bg-gray-100 text-secondary border-default';
-              const canAdminCancel = booking.status === BOOKING_STATUSES.CONFIRMED;
-              const canEdit = booking.status === BOOKING_STATUSES.CONFIRMED;
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-[13px]" role="table">
+              <thead>
+                <tr className="border-b border-[color:var(--border)]">
+                  <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                    {t('dashboard.table.resource')}
+                  </th>
+                  {isSuperadmin && (
+                    <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                      {t('common.company')}
+                    </th>
+                  )}
+                  <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                    {t('dashboard.table.user')}
+                  </th>
+                  <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                    {t('booking.manage.dateTime')}
+                  </th>
+                  <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                    {t('booking.manage.participants')}
+                  </th>
+                  <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                    {t('common.status')}
+                  </th>
+                  <th className="w-8 px-3 py-2" />
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((booking) => {
+                  const canAdminCancel = booking.status === BOOKING_STATUSES.CONFIRMED;
+                  const canEdit = booking.status === BOOKING_STATUSES.CONFIRMED;
+                  const isActionsOpen = openActionsId === booking.id;
+                  const companyLabel = booking.company
+                    ? (companyNameById.get(booking.company) ?? user?.company?.name ?? `#${booking.company}`)
+                    : '—';
 
-              return (
-                <li
-                  key={booking.id}
-                  className="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between"
-                >
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Link
-                        to={`${STAFF_UI_PREFIX}/bookings/${booking.id}`}
-                        className="text-sm font-semibold text-primary hover:text-brand"
-                      >
-                        {booking.resource_name}
-                      </Link>
-                      <span className={cn('rounded-full border px-2 py-0.5 text-xs font-medium', statusClass)}>
-                        {STATUS_LABEL[booking.status] ?? booking.status}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs text-secondary">
-                      Бронирование #{booking.id} · Пользователь: {booking.user_name} · Компания:{' '}
-                      {booking.company
-                        ? (companyNameById.get(booking.company) ??
-                          user?.company?.name ??
-                          `Компания #${booking.company}`)
-                        : '—'}
-                    </p>
-                    <p className="text-xs text-secondary">
-                      {new Date(booking.start_time).toLocaleString('ru-RU')} —{' '}
-                      {new Date(booking.end_time).toLocaleString('ru-RU')}
-                    </p>
-                    {booking.checked_in_at && (
-                      <p className="text-xs text-success">
-                        Check-in: {new Date(booking.checked_in_at).toLocaleString('ru-RU')}
-                      </p>
-                    )}
-                    {booking.cancel_reason ? (
-                      <p className="mt-1 text-xs text-rose-300">Причина отмены: {booking.cancel_reason}</p>
-                    ) : null}
-                  </div>
-                  <div className="shrink-0 w-full lg:w-auto">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                      {canEdit ? (
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(booking)}
-                          className="rounded-lg border border-default px-3 py-2 text-xs font-medium text-brand hover:bg-brand-subtle"
+                  return (
+                    <tr
+                      key={booking.id}
+                      className="border-b border-[color:var(--border)] hover:bg-[color:var(--bg-hover)] transition-colors"
+                    >
+                      <td className="px-3 py-2.5 align-middle">
+                        <Link
+                          to={`${STAFF_UI_PREFIX}/bookings/${booking.id}`}
+                          className="font-medium text-[color:var(--text-primary)] hover:text-[color:var(--brand)] transition-colors"
                         >
-                          Изменить
-                        </button>
-                      ) : null}
-                      {canAdminCancel && (
-                        <button
-                          type="button"
-                          onClick={() => openCancelModal(booking)}
-                          className="rounded-lg border border-rose-800 px-3 py-2 text-xs font-medium text-rose-300 hover:bg-rose-900/30"
-                        >
-                          Админ-отмена
-                        </button>
+                          {booking.resource_name}
+                        </Link>
+                      </td>
+                      {isSuperadmin && (
+                        <td className="px-3 py-2.5 align-middle text-[color:var(--text-muted)]">
+                          {companyLabel}
+                        </td>
                       )}
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                      <td className="px-3 py-2.5 align-middle">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium bg-[color:var(--bg-raised)] text-[color:var(--text-secondary)] flex-shrink-0">
+                            {getInitials(booking.user_name ?? '')}
+                          </span>
+                          <span className="text-[color:var(--text-primary)]">{booking.user_name}</span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5 align-middle font-mono text-[color:var(--text-primary)]">
+                        {new Date(booking.start_time).toLocaleString('ru-RU', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                        {' — '}
+                        {new Date(booking.end_time).toLocaleTimeString('ru-RU', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </td>
+                      <td className="px-3 py-2.5 align-middle text-[color:var(--text-muted)]">
+                        {(booking.participants?.length ?? 0) > 0
+                          ? booking.participants!.length
+                          : '—'
+                        }
+                      </td>
+                      <td className="px-3 py-2.5 align-middle">
+                        <StatusBadge status={booking.status} />
+                      </td>
+                      <td className="w-8 px-3 py-2.5 align-middle">
+                        <button
+                          ref={(el) => {
+                            if (el) actionButtonRefs.current.set(booking.id, el);
+                            else actionButtonRefs.current.delete(booking.id);
+                          }}
+                          type="button"
+                          onClick={() => {
+                            if (isActionsOpen) {
+                              setOpenActionsId(null);
+                              setDropdownCoords(null);
+                            } else {
+                              const btn = actionButtonRefs.current.get(booking.id);
+                              if (btn) {
+                                const rect = btn.getBoundingClientRect();
+                                setDropdownCoords({
+                                  top: rect.bottom + 4,
+                                  right: window.innerWidth - rect.right,
+                                });
+                              }
+                              setOpenActionsId(booking.id);
+                            }
+                          }}
+                          className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors"
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
-      </section>
+      </div>
 
-      {totalPages > 1 && (
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <button
-            type="button"
-            disabled={page <= 1}
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
-            className="rounded-lg border border-default px-4 py-2 text-sm text-secondary disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Назад
-          </button>
-          <span className="text-sm text-muted">
-            Страница {page} из {totalPages}
-          </span>
-          <button
-            type="button"
-            disabled={page >= totalPages}
-            onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-            className="rounded-lg border border-default px-4 py-2 text-sm text-secondary disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Вперёд
-          </button>
-        </div>
-      )}
-
+      {/* Cancel Modal */}
       {cancelTarget && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4"
           role="dialog"
           aria-modal="true"
-          aria-label="Административная отмена бронирования"
+          aria-label={t('booking.manage.adminCancelTitle')}
           onClick={closeCancelModal}
         >
           <div
-            className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-default bg-surface p-4 sm:p-5 shadow-xl"
+            className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-4 sm:p-5 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold text-primary">Административная отмена</h2>
-            <p className="mt-1 text-sm text-muted">
-              Бронирование #{cancelTarget.id} ({cancelTarget.resource_name}, {cancelTarget.user_name})
+            <h2 className="text-lg font-semibold text-[color:var(--text-primary)]">
+              {t('booking.manage.adminCancelTitle')}
+            </h2>
+            <p className="mt-1 text-sm text-[color:var(--text-muted)]">
+              #{cancelTarget.id} ({cancelTarget.resource_name}, {cancelTarget.user_name})
             </p>
 
-            <label className="mt-4 block text-sm text-secondary">
-              Причина отмены
+            <label className="mt-4 block text-sm text-[color:var(--text-secondary)]">
+              {t('booking.manage.cancelReasonLabel')}
               <textarea
                 rows={3}
                 value={cancelReason}
@@ -673,13 +831,13 @@ export default function ManageBookingsPage() {
                   setCancelReason(event.target.value);
                   if (cancelFormError) setCancelFormError(null);
                 }}
-                placeholder="Укажите причину для пользователя"
-                className="mt-1 w-full resize-none rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+                placeholder={t('booking.manage.cancelReasonPlaceholder')}
+                className="mt-1 w-full resize-none rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2 text-sm text-[color:var(--text-primary)]"
               />
             </label>
 
             {cancelFormError && (
-              <p className="mt-2 text-sm text-rose-700" role="alert">
+              <p className="mt-2 text-sm text-[color:var(--status-busy-text)]" role="alert">
                 {cancelFormError}
               </p>
             )}
@@ -689,70 +847,74 @@ export default function ManageBookingsPage() {
                 type="button"
                 onClick={closeCancelModal}
                 disabled={adminCancelMutation.isPending}
-                className="rounded-lg border border-default bg-surface px-4 py-2 text-sm font-medium text-secondary hover:bg-raised disabled:opacity-50"
+                className="rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-4 py-2 text-sm font-medium text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-raised)] disabled:opacity-50"
               >
-                Закрыть
+                {t('common.close')}
               </button>
               <button
                 type="button"
                 onClick={submitAdminCancel}
                 disabled={adminCancelMutation.isPending}
-                className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+                className="rounded-[var(--radius-sm)] bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
               >
-                {adminCancelMutation.isPending ? 'Отмена…' : 'Подтвердить отмену'}
+                {adminCancelMutation.isPending ? t('common.saving') : t('booking.manage.confirmCancel')}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Edit Modal */}
       {editTarget && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4"
           role="dialog"
           aria-modal="true"
-          aria-label="Изменение бронирования"
+          aria-label={t('common.edit')}
           onClick={closeEditModal}
         >
           <div
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-default bg-surface p-4 sm:p-5 shadow-xl"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-4 sm:p-5 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold text-primary">Изменение бронирования #{modalBooking?.id ?? editTarget.id}</h2>
-            <p className="mt-1 text-sm text-muted">
+            <h2 className="text-lg font-semibold text-[color:var(--text-primary)]">
+              {t('booking.manage.editTitle', { id: modalBooking?.id ?? editTarget.id })}
+            </h2>
+            <p className="mt-1 text-sm text-[color:var(--text-muted)]">
               {modalBooking?.resource_name ?? editTarget.resource_name} · {modalBooking?.user_name ?? editTarget.user_name}
             </p>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="text-sm text-secondary">
-                Начало
+              <label className="text-sm text-[color:var(--text-secondary)]">
+                {t('common.start')}
                 <input
                   type="datetime-local"
                   value={editStart}
                   onChange={(event) => setEditStart(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+                  className="mt-1 w-full rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2 text-sm text-[color:var(--text-primary)]"
                 />
               </label>
-              <label className="text-sm text-secondary">
-                Конец
+              <label className="text-sm text-[color:var(--text-secondary)]">
+                {t('common.end')}
                 <input
                   type="datetime-local"
                   value={editEnd}
                   onChange={(event) => setEditEnd(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+                  className="mt-1 w-full rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2 text-sm text-[color:var(--text-primary)]"
                 />
               </label>
             </div>
 
             {editResourceData?.type === RESOURCE_TYPES.MEETING_ROOM ? (
               <div className="mt-4 space-y-3">
-                <label className="text-sm text-secondary">
-                  Добавить участника
+                <label className="text-sm text-[color:var(--text-secondary)]">
+                  {t('common.addMember')}
                   <select
                     value={selectedParticipantId}
                     onChange={(event) => setSelectedParticipantId(event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+                    className="mt-1 w-full rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2 text-sm text-[color:var(--text-primary)]"
                   >
-                    <option value="">Выберите пользователя</option>
+                    <option value="">{t('common.selectEmployee')}</option>
                     {userOptions
                       .filter((option) => option.role === USER_ROLES.EMPLOYEE)
                       .filter((option) => {
@@ -780,17 +942,19 @@ export default function ManageBookingsPage() {
                       userId: Number(selectedParticipantId),
                     });
                   }}
-                  className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+                  className="rounded-[var(--radius-sm)] border border-[color:var(--brand)] px-3 py-2 text-sm font-medium text-[color:var(--brand)] hover:bg-[color:var(--brand-subtle)] disabled:opacity-50"
                 >
-                  Добавить участника
+                  {t('common.addMember')}
                 </button>
                 <ul className="space-y-2">
                   {(modalBooking?.participants ?? []).map((participant) => (
                     <li
                       key={participant.id}
-                      className="flex items-center justify-between rounded-lg border border-default px-3 py-2"
+                      className="flex items-center justify-between rounded-[var(--radius-sm)] border border-[color:var(--border)] px-3 py-2"
                     >
-                      <span className="text-sm text-secondary">{participant.full_name || participant.email}</span>
+                      <span className="text-sm text-[color:var(--text-secondary)]">
+                        {participant.full_name || participant.email}
+                      </span>
                       <button
                         type="button"
                         disabled={removeParticipantMutation.isPending}
@@ -800,22 +964,22 @@ export default function ManageBookingsPage() {
                             userId: participant.id,
                           });
                         }}
-                        className="rounded-lg border border-rose-300 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+                        className="rounded-[var(--radius-sm)] border border-rose-300 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
                       >
-                        Удалить
+                        {t('common.delete')}
                       </button>
                     </li>
                   ))}
                 </ul>
               </div>
             ) : (
-              <p className="mt-4 text-sm text-muted">
-                Управление участниками доступно только для бронирований переговорок.
+              <p className="mt-4 text-sm text-[color:var(--text-muted)]">
+                {t('booking.manage.participantsOnlyMeeting')}
               </p>
             )}
 
             {editFormError && (
-              <p className="mt-3 text-sm text-rose-700" role="alert">
+              <p className="mt-3 text-sm text-[color:var(--status-busy-text)]" role="alert">
                 {editFormError}
               </p>
             )}
@@ -825,22 +989,67 @@ export default function ManageBookingsPage() {
                 type="button"
                 onClick={closeEditModal}
                 disabled={updateTimeMutation.isPending}
-                className="rounded-lg border border-default bg-surface px-4 py-2 text-sm font-medium text-secondary hover:bg-raised disabled:opacity-50"
+                className="rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-4 py-2 text-sm font-medium text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-raised)] disabled:opacity-50"
               >
-                Закрыть
+                {t('common.close')}
               </button>
               <button
                 type="button"
                 onClick={submitEditTime}
                 disabled={updateTimeMutation.isPending}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                className="rounded-[var(--radius-sm)] bg-[color:var(--brand)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
               >
-                {updateTimeMutation.isPending ? 'Сохранение…' : 'Сохранить время'}
+                {updateTimeMutation.isPending ? t('common.saving') : t('booking.myBookings.saveTime')}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {openActionsId !== null && dropdownCoords && (() => {
+        const booking = rows.find((b) => b.id === openActionsId);
+        if (!booking) return null;
+        const canAdminCancelPortal = booking.status === BOOKING_STATUSES.CONFIRMED;
+        const canEditPortal = booking.status === BOOKING_STATUSES.CONFIRMED;
+        return createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[49]"
+              onClick={() => { setOpenActionsId(null); setDropdownCoords(null); }}
+              aria-hidden="true"
+            />
+            <div
+              style={{ top: dropdownCoords.top, right: dropdownCoords.right }}
+              className="fixed z-50 w-40 rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] shadow-[var(--shadow-card)] py-1"
+            >
+              {canEditPortal && (
+                <button
+                  type="button"
+                  onClick={() => { openEditModal(booking); setDropdownCoords(null); }}
+                  className="w-full px-3 py-1.5 text-left text-[13px] text-[color:var(--text-primary)] hover:bg-[color:var(--bg-hover)] transition-colors"
+                >
+                  {t('common.edit')}
+                </button>
+              )}
+              {canAdminCancelPortal && (
+                <button
+                  type="button"
+                  onClick={() => { openCancelModal(booking); setDropdownCoords(null); }}
+                  className="w-full px-3 py-1.5 text-left text-[13px] text-[color:var(--status-busy-text)] hover:bg-[color:var(--bg-hover)] transition-colors"
+                >
+                  {t('booking.manage.adminCancel')}
+                </button>
+              )}
+              {!canEditPortal && !canAdminCancelPortal && (
+                <span className="block px-3 py-1.5 text-[12px] text-[color:var(--text-muted)]">
+                  {t('booking.manage.noActions')}
+                </span>
+              )}
+            </div>
+          </>,
+          document.body,
+        );
+      })()}
     </main>
   );
 }

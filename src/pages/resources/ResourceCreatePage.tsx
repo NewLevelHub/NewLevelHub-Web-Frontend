@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Plus } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -9,7 +11,7 @@ import {
   COMPANY_TIERS,
   PARKING_TYPES,
   RESOURCE_EQUIPMENT_KEYS,
-  RESOURCE_EQUIPMENT_LABELS,
+  RESOURCE_EQUIPMENT_LABEL_KEYS,
   RESOURCE_TYPES,
   type CapsuleZone,
   type ParkingType,
@@ -18,6 +20,7 @@ import {
 import { useUser } from '@/shared/hooks/useAuth';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
+import i18n from '@/shared/lib/i18n';
 import type { Company, PaginatedResponse, Resource, ServiceFloor } from '@/shared/types';
 
 type ResourceTypeValue = (typeof RESOURCE_TYPES)[keyof typeof RESOURCE_TYPES];
@@ -59,15 +62,7 @@ type CreateMutationInput = {
   photoFiles: File[];
 };
 
-const DAY_OPTIONS = [
-  { value: 0, label: 'Пн' },
-  { value: 1, label: 'Вт' },
-  { value: 2, label: 'Ср' },
-  { value: 3, label: 'Чт' },
-  { value: 4, label: 'Пт' },
-  { value: 5, label: 'Сб' },
-  { value: 6, label: 'Вс' },
-];
+const WEEKDAY_VALUES = [0, 1, 2, 3, 4, 5, 6] as const;
 
 function defaultEquipment(): EquipmentState {
   return {
@@ -114,7 +109,7 @@ type BulkState = {
 function parseError(error: unknown): { fieldErrors: Record<string, string>; message: string | null } {
   const fallback = {
     fieldErrors: {},
-    message: 'Не удалось сохранить ресурс. Проверьте данные и попробуйте еще раз.',
+    message: i18n.t('resources.create.saveError'),
   };
 
   const raw = (error as { response?: { data?: unknown } })?.response?.data;
@@ -141,13 +136,17 @@ function parseError(error: unknown): { fieldErrors: Record<string, string>; mess
 
 function inputClass(hasError: boolean) {
   return cn(
-    'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary placeholder:text-placeholder focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors',
+    'w-full h-9 px-3 text-sm border rounded-[var(--radius-sm)] bg-surface focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)] transition-colors',
     hasError ? 'border-red-400 focus:ring-red-500/20' : 'border-default',
   );
 }
 
-
 export default function ResourceCreatePage() {
+  const { t } = useTranslation();
+  const dayOptions = useMemo(() => {
+    const labels = t('common.weekdaysShort', { returnObjects: true }) as string[];
+    return WEEKDAY_VALUES.map((value) => ({ value, label: labels[value] ?? String(value) }));
+  }, [t]);
   const user = useUser();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -181,7 +180,7 @@ export default function ResourceCreatePage() {
     capsule_zone: CAPSULE_ZONES.QUIET,
   });
   const [bulk, setBulk] = useState<BulkState>({
-    name_prefix: 'Стол',
+    name_prefix: t('resources.create.deskPrefix'),
     count: '10',
   });
 
@@ -219,7 +218,7 @@ export default function ResourceCreatePage() {
       await queryClient.invalidateQueries({ queryKey: ['booking-resources'] });
       navigate('/resources', {
         state: {
-          successMessage: `Ресурс "${resource.name}" успешно создан.`,
+          successMessage: t('resources.create.createdOne', { name: resource.name }),
         },
       });
     },
@@ -237,7 +236,7 @@ export default function ResourceCreatePage() {
       await queryClient.invalidateQueries({ queryKey: ['booking-resources'] });
       navigate('/resources', {
         state: {
-          successMessage: `Успешно создано ${variables.count} ресурсов.`,
+          successMessage: t('resources.create.createdMany', { count: variables.count }),
         },
       });
     },
@@ -353,7 +352,7 @@ export default function ResourceCreatePage() {
 
   function validateTypeSpecificFields() {
     if (requiresCapacity && (!form.capacity || Number(form.capacity) < 1)) {
-      setFieldErrors({ capacity: 'Для переговорки вместимость обязательна и должна быть больше 0.' });
+      setFieldErrors({ capacity: t('resources.create.capacityRequired') });
       return false;
     }
 
@@ -361,26 +360,26 @@ export default function ResourceCreatePage() {
       const minDuration = Number(form.min_duration_minutes);
       const maxDuration = Number(form.max_duration_minutes);
       if (!Number.isInteger(minDuration) || minDuration < 1) {
-        setFieldErrors({ min_duration_minutes: 'Минимальная длительность должна быть >= 1.' });
+        setFieldErrors({ min_duration_minutes: t('resources.create.minDuration') });
         return false;
       }
       if (!Number.isInteger(maxDuration) || maxDuration < 1) {
-        setFieldErrors({ max_duration_minutes: 'Максимальная длительность должна быть >= 1.' });
+        setFieldErrors({ max_duration_minutes: t('resources.create.maxDuration') });
         return false;
       }
       if (minDuration > maxDuration) {
-        setFieldErrors({ min_duration_minutes: 'Минимальная длительность не может быть больше максимальной.' });
+        setFieldErrors({ min_duration_minutes: t('resources.create.minMaxOrder') });
         return false;
       }
     }
 
     if (isParking && !form.parking_type) {
-      setFieldErrors({ parking_type: 'Выберите тип парковки.' });
+      setFieldErrors({ parking_type: t('resources.create.parkingTypeRequired') });
       return false;
     }
 
     if (isCapsule && !form.capsule_zone) {
-      setFieldErrors({ capsule_zone: 'Выберите зону капсулы.' });
+      setFieldErrors({ capsule_zone: t('resources.create.capsuleZoneRequired') });
       return false;
     }
 
@@ -393,30 +392,30 @@ export default function ResourceCreatePage() {
     setFieldErrors({});
 
     if (!form.floor) {
-      setFieldErrors({ floor: 'Выберите этаж.' });
+      setFieldErrors({ floor: t('resources.create.floorRequired') });
       return;
     }
 
     if (!validateTypeSpecificFields()) return;
 
     if (availabilityRangeInvalid) {
-      setFieldErrors({ availability_start: 'Время начала должно быть раньше времени окончания.' });
+      setFieldErrors({ availability_start: t('resources.create.availabilityOrder') });
       return;
     }
 
     if (form.availability_days.length === 0) {
-      setFieldErrors({ availability_days: 'Выберите хотя бы один день доступности.' });
+      setFieldErrors({ availability_days: t('resources.create.availabilityDays') });
       return;
     }
 
     if (isBulkMode) {
       if (!bulk.name_prefix.trim()) {
-        setFieldErrors({ name_prefix: 'Укажите префикс имени.' });
+        setFieldErrors({ name_prefix: t('resources.create.namePrefixRequired') });
         return;
       }
       const count = Number(bulk.count);
       if (!bulk.count || Number.isNaN(count) || count < 1) {
-        setFieldErrors({ count: 'Количество должно быть целым числом >= 1.' });
+        setFieldErrors({ count: t('resources.create.countRequired') });
         return;
       }
       bulkCreateMutation.mutate({
@@ -428,7 +427,7 @@ export default function ResourceCreatePage() {
     }
 
     if (!form.name.trim()) {
-      setFieldErrors({ name: 'Название ресурса обязательно.' });
+      setFieldErrors({ name: t('resources.create.nameRequired') });
       return;
     }
 
@@ -447,603 +446,648 @@ export default function ResourceCreatePage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl space-y-6 px-3 py-4 sm:px-4 sm:py-6 md:py-8">
+    <main className="mx-auto max-w-2xl px-4 py-6 md:py-8 space-y-5">
+      {/* Page header */}
       <div className="space-y-1">
         <button
           type="button"
           onClick={() => navigate('/resources')}
           className="text-sm font-medium text-muted transition-colors hover:text-primary"
         >
-          Назад к ресурсам
+          {t('resources.create.backToResources')}
         </button>
-        <h1 className="text-2xl font-bold text-primary">Добавление ресурсов</h1>
-        <p className="text-sm text-muted">Создайте один ресурс или сразу несколько через массовое создание.</p>
+        <h1 className="text-xl font-semibold text-primary">{t('resources.create.pageTitle')}</h1>
+        <p className="text-sm text-muted">{t('resources.create.pageSubtitle')}</p>
       </div>
 
-      <section className="rounded-2xl border border-default bg-surface p-6 shadow-sm">
-        <div className="mb-5 inline-flex rounded-lg border border-default bg-raised p-1">
-          <button
-            type="button"
-            onClick={() => setIsBulkMode(false)}
-            className={cn(
-              'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-              !isBulkMode ? 'bg-surface text-primary shadow-sm' : 'text-muted hover:text-secondary',
-            )}
-          >
-            Один ресурс
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsBulkMode(true)}
-            className={cn(
-              'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-              isBulkMode ? 'bg-surface text-primary shadow-sm' : 'text-muted hover:text-secondary',
-            )}
-          >
-            Массовое создание
-          </button>
+      {/* Card */}
+      <div className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
+        {/* Card header */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[color:var(--border-faint)]">
+          <div>
+            <h2 className="text-base font-semibold text-primary tracking-[-0.015em]">
+              {t('resources.create.pageTitle')}
+            </h2>
+            <p className="text-xs text-muted mt-0.5">{t('resources.create.pageSubtitle')}</p>
+          </div>
+          {/* Mode toggle */}
+          <div className="rounded-lg border border-default bg-raised p-0.5 inline-flex shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsBulkMode(false)}
+              className={cn(
+                'rounded-md px-3 py-1 text-xs font-medium transition-colors',
+                !isBulkMode ? 'bg-surface text-primary shadow-sm' : 'text-muted hover:text-secondary',
+              )}
+            >
+              {t('resources.create.singleMode')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsBulkMode(true)}
+              className={cn(
+                'rounded-md px-3 py-1 text-xs font-medium transition-colors',
+                isBulkMode ? 'bg-surface text-primary shadow-sm' : 'text-muted hover:text-secondary',
+              )}
+            >
+              {t('resources.create.bulkMode')}
+            </button>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} noValidate className="space-y-5">
-          {generalError && (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              {generalError}
-            </div>
-          )}
+        {/* Form body + footer */}
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="px-6 py-5 space-y-4">
+            {/* Global error banner */}
+            {generalError && (
+              <div className="rounded-[var(--radius-sm)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {generalError}
+              </div>
+            )}
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label htmlFor="type" className="mb-1 block text-sm font-medium text-secondary">
-                Тип ресурса
-              </label>
-              <select
-                id="type"
-                value={form.type}
-                onChange={(e) => updateForm('type', e.target.value as ResourceTypeValue)}
-                className={inputClass(!!fieldErrors.type)}
-              >
-                <option value={RESOURCE_TYPES.DESK}>Стол</option>
-                <option value={RESOURCE_TYPES.MEETING_ROOM}>Переговорка</option>
-                <option value={RESOURCE_TYPES.PARKING}>Парковка</option>
-                <option value={RESOURCE_TYPES.CAPSULE}>Капсула</option>
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="floor" className="mb-1 block text-sm font-medium text-secondary">
-                Этаж
-              </label>
-              <select
-                id="floor"
-                value={form.floor}
-                disabled={floorsLoading}
-                onChange={(e) => updateForm('floor', e.target.value)}
-                className={inputClass(!!fieldErrors.floor)}
-              >
-                <option value="">— Выберите этаж —</option>
-                {floors.map((f) => (
-                  <option key={f.id} value={String(f.number)}>
-                    {f.name ? `Этаж ${f.number} — ${f.name}` : `Этаж ${f.number}`}
-                  </option>
-                ))}
-              </select>
-              {fieldErrors.floor && <p className="mt-1 text-xs text-red-600">{fieldErrors.floor}</p>}
-            </div>
-          </div>
-
-          {!isBulkMode && (
-            <div>
-              <label htmlFor="name" className="mb-1 block text-sm font-medium text-secondary">
-                Название ресурса
-              </label>
-              <input
-                id="name"
-                type="text"
-                value={form.name}
-                onChange={(e) => updateForm('name', e.target.value)}
-                placeholder="Стол 12"
-                className={inputClass(!!fieldErrors.name)}
-              />
-              {fieldErrors.name && <p className="mt-1 text-xs text-red-600">{fieldErrors.name}</p>}
-            </div>
-          )}
-
-          {isBulkMode && (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <label htmlFor="name_prefix" className="mb-1 block text-sm font-medium text-secondary">
-                  Префикс имени
+            {/* Row: type + floor */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="type" className="text-xs font-medium text-secondary">
+                  {t('resources.create.resourceTypeLabel')}
                 </label>
-                <input
-                  id="name_prefix"
-                  type="text"
-                  value={bulk.name_prefix}
-                  onChange={(e) => {
-                    setBulk((prev) => ({ ...prev, name_prefix: e.target.value }));
-                    clearError('name_prefix');
-                  }}
-                  placeholder="Стол"
-                  className={inputClass(!!fieldErrors.name_prefix)}
-                />
-                {fieldErrors.name_prefix && (
-                  <p className="mt-1 text-xs text-red-600">{fieldErrors.name_prefix}</p>
+                <select
+                  id="type"
+                  value={form.type}
+                  onChange={(e) => updateForm('type', e.target.value as ResourceTypeValue)}
+                  className={inputClass(!!fieldErrors.type)}
+                >
+                  <option value={RESOURCE_TYPES.DESK}>{t('resources.create.deskPrefix')}</option>
+                  <option value={RESOURCE_TYPES.MEETING_ROOM}>{t('resources.create.meetingRoomOption')}</option>
+                  <option value={RESOURCE_TYPES.PARKING}>{t('resources.create.parkingOption')}</option>
+                  <option value={RESOURCE_TYPES.CAPSULE}>{t('resources.create.capsuleOption')}</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="floor" className="text-xs font-medium text-secondary">
+                  {t('resources.create.floorLabel')}
+                </label>
+                <select
+                  id="floor"
+                  value={form.floor}
+                  disabled={floorsLoading}
+                  onChange={(e) => updateForm('floor', e.target.value)}
+                  className={inputClass(!!fieldErrors.floor)}
+                >
+                  <option value="">{t('resources.create.floorSelectDefault')}</option>
+                  {floors.map((f) => (
+                    <option key={f.id} value={String(f.number)}>
+                      {f.name
+                        ? t('resources.create.floorOptionWithName', { number: f.number, name: f.name })
+                        : t('resources.create.floorOptionNoName', { number: f.number })}
+                    </option>
+                  ))}
+                </select>
+                {fieldErrors.floor && (
+                  <p className="text-xs text-red-600 mt-0.5">{fieldErrors.floor}</p>
                 )}
               </div>
-              <div>
-                <label htmlFor="count" className="mb-1 block text-sm font-medium text-secondary">
-                  Количество
-                </label>
-                <input
-                  id="count"
-                  type="number"
-                  min={1}
-                  value={bulk.count}
-                  onChange={(e) => {
-                    setBulk((prev) => ({ ...prev, count: e.target.value }));
-                    clearError('count');
-                  }}
-                  className={inputClass(!!fieldErrors.count)}
-                />
-                {fieldErrors.count && <p className="mt-1 text-xs text-red-600">{fieldErrors.count}</p>}
-              </div>
             </div>
-          )}
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label htmlFor="zone" className="mb-1 block text-sm font-medium text-secondary">
-                Зона
-              </label>
-              <input
-                id="zone"
-                type="text"
-                value={form.zone}
-                onChange={(e) => updateForm('zone', e.target.value)}
-                placeholder="North"
-                className={inputClass(!!fieldErrors.zone)}
-              />
-            </div>
-            {requiresCapacity && (
-              <div>
-                <label htmlFor="capacity" className="mb-1 block text-sm font-medium text-secondary">
-                  Вместимость
+            {/* Single mode: resource name */}
+            {!isBulkMode && (
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="name" className="text-xs font-medium text-secondary">
+                  {t('resources.create.resourceNameLabel')}
                 </label>
                 <input
-                  id="capacity"
-                  type="number"
-                  min={1}
-                  value={form.capacity}
-                  onChange={(e) => updateForm('capacity', e.target.value)}
-                  className={inputClass(!!fieldErrors.capacity)}
+                  id="name"
+                  type="text"
+                  value={form.name}
+                  onChange={(e) => updateForm('name', e.target.value)}
+                  placeholder={t('resources.create.namePlaceholder')}
+                  className={inputClass(!!fieldErrors.name)}
                 />
-                {fieldErrors.capacity && (
-                  <p className="mt-1 text-xs text-red-600">{fieldErrors.capacity}</p>
+                {fieldErrors.name && (
+                  <p className="text-xs text-red-600 mt-0.5">{fieldErrors.name}</p>
                 )}
               </div>
             )}
-          </div>
 
-          <div>
-            <label htmlFor="description" className="mb-1 block text-sm font-medium text-secondary">
-              Описание
-            </label>
-            <textarea
-              id="description"
-              rows={3}
-              value={form.description}
-              onChange={(e) => updateForm('description', e.target.value)}
-              className={cn(inputClass(false), 'resize-none')}
-              placeholder="Дополнительная информация о ресурсе"
-            />
-          </div>
+            {/* Bulk mode: prefix + count */}
+            {isBulkMode && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="name_prefix" className="text-xs font-medium text-secondary">
+                    {t('resources.create.namePrefixLabel')}
+                  </label>
+                  <input
+                    id="name_prefix"
+                    type="text"
+                    value={bulk.name_prefix}
+                    onChange={(e) => {
+                      setBulk((prev) => ({ ...prev, name_prefix: e.target.value }));
+                      clearError('name_prefix');
+                    }}
+                    placeholder={t('resources.create.prefixPlaceholder')}
+                    className={inputClass(!!fieldErrors.name_prefix)}
+                  />
+                  {fieldErrors.name_prefix && (
+                    <p className="text-xs text-red-600 mt-0.5">{fieldErrors.name_prefix}</p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="count" className="text-xs font-medium text-secondary">
+                    {t('resources.create.countLabel')}
+                  </label>
+                  <input
+                    id="count"
+                    type="number"
+                    min={1}
+                    value={bulk.count}
+                    onChange={(e) => {
+                      setBulk((prev) => ({ ...prev, count: e.target.value }));
+                      clearError('count');
+                    }}
+                    className={inputClass(!!fieldErrors.count)}
+                  />
+                  {fieldErrors.count && (
+                    <p className="text-xs text-red-600 mt-0.5">{fieldErrors.count}</p>
+                  )}
+                </div>
+              </div>
+            )}
 
-          {!isBulkMode && (
-            <div>
-              <label className="mb-1 block text-sm font-medium text-secondary">
-                Фотографии
-              </label>
-              <label
-                htmlFor="photos"
-                className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-default bg-raised px-4 py-3 text-sm text-secondary transition-colors hover:bg-hover"
-              >
-                <span className="font-medium text-blue-600">Выбрать фото</span>
-                <span className="text-muted">или перетащите файлы сюда</span>
+            {/* Row: zone + capacity (capacity only for meeting room) */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="zone" className="text-xs font-medium text-secondary">
+                  {t('resources.create.zoneLabel')}
+                </label>
                 <input
-                  id="photos"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="sr-only"
-                  onChange={(e) => {
-                    addPhotos(Array.from(e.target.files ?? []));
-                    e.target.value = '';
-                  }}
+                  id="zone"
+                  type="text"
+                  value={form.zone}
+                  onChange={(e) => updateForm('zone', e.target.value)}
+                  placeholder="North"
+                  className={inputClass(!!fieldErrors.zone)}
                 />
-              </label>
-              {photoFiles.length > 0 && (
-                <ul className="mt-2 space-y-1">
-                  {photoFiles.map((file, i) => {
-                    const isPrimary = primaryPhotoIndex === i || photoFiles.length === 1;
-                    return (
-                      <li
-                        key={i}
-                        className={cn(
-                          'flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm',
-                          isPrimary
-                            ? 'border-blue-400 bg-blue-50 text-blue-900'
-                            : 'border-default bg-raised text-secondary',
-                        )}
-                      >
-                        {isPrimary ? (
-                          <span className="shrink-0 text-xs font-semibold text-blue-600">Главная</span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setPrimaryPhotoIndex(i)}
-                            className="shrink-0 text-xs text-muted hover:text-blue-600 transition-colors"
-                          >
-                            Сделать главной
-                          </button>
-                        )}
-                        <span className="min-w-0 flex-1 truncate">{file.name}</span>
-                        <button
-                          type="button"
-                          onClick={() => removePhoto(i)}
-                          className="shrink-0 text-red-500 hover:text-red-700"
-                        >
-                          Удалить
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
+              </div>
+              {requiresCapacity && (
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="capacity" className="text-xs font-medium text-secondary">
+                    {t('resources.create.capacityLabel')}
+                  </label>
+                  <input
+                    id="capacity"
+                    type="number"
+                    min={1}
+                    value={form.capacity}
+                    onChange={(e) => updateForm('capacity', e.target.value)}
+                    className={inputClass(!!fieldErrors.capacity)}
+                  />
+                  {fieldErrors.capacity && (
+                    <p className="text-xs text-red-600 mt-0.5">{fieldErrors.capacity}</p>
+                  )}
+                </div>
               )}
             </div>
-          )}
 
-          <label className="flex items-center gap-2 text-sm text-secondary">
-            <input
-              type="checkbox"
-              checked={form.is_active}
-              onChange={(e) => updateForm('is_active', e.target.checked)}
-              className="h-4 w-4 rounded border-default text-blue-600"
-            />
-            Активен (в каталоге)
-          </label>
+            {/* Description */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="description" className="text-xs font-medium text-secondary">
+                {t('resources.create.descriptionLabel')}
+              </label>
+              <textarea
+                id="description"
+                rows={3}
+                value={form.description}
+                onChange={(e) => updateForm('description', e.target.value)}
+                placeholder={t('resources.create.descriptionPlaceholder')}
+                className="w-full px-3 py-2 text-sm border border-default rounded-[var(--radius-sm)] bg-surface focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)] resize-none transition-colors"
+              />
+            </div>
 
-          {isDesk && (
-            <div className="space-y-3 rounded-xl border border-default bg-raised p-4">
-              <p className="text-sm font-semibold text-secondary">Настройки стола</p>
-              <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                <label className="flex items-center gap-2 text-sm text-secondary">
-                  <input
-                    type="checkbox"
-                    checked={form.has_monitor}
-                    onChange={(e) => updateForm('has_monitor', e.target.checked)}
-                    className="h-4 w-4 rounded border-default text-blue-600"
-                  />
-                  Монитор
+            {/* Photo upload (single mode only) */}
+            {!isBulkMode && (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-secondary">
+                  {t('resources.create.photosLabel')}
                 </label>
-                <label className="flex items-center gap-2 text-sm text-secondary">
-                  <input
-                    type="checkbox"
-                    checked={form.has_dock}
-                    onChange={(e) => updateForm('has_dock', e.target.checked)}
-                    className="h-4 w-4 rounded border-default text-blue-600"
-                  />
-                  Док-станция
-                </label>
-                <label className="flex items-center gap-2 text-sm text-secondary">
-                  <input
-                    type="checkbox"
-                    checked={form.has_power_outlet}
-                    onChange={(e) => updateForm('has_power_outlet', e.target.checked)}
-                    className="h-4 w-4 rounded border-default text-blue-600"
-                  />
-                  Розетка
-                </label>
-                <label className="flex items-center gap-2 text-sm text-secondary">
-                  <input
-                    type="checkbox"
-                    checked={form.is_hot_desk}
-                    onChange={(e) => updateForm('is_hot_desk', e.target.checked)}
-                    className="h-4 w-4 rounded border-default text-blue-600"
-                  />
-                  Hot desk
-                </label>
-              </div>
-              <div>
-                <label htmlFor="desk_assigned_company" className="mb-1 block text-sm font-medium text-secondary">
-                  Закрепить за компанией (необязательно)
-                </label>
-                <select
-                  id="desk_assigned_company"
-                  value={form.assigned_company_id}
-                  onChange={(e) => updateForm('assigned_company_id', e.target.value)}
-                  className={inputClass(!!fieldErrors.assigned_company)}
+                <label
+                  htmlFor="photos"
+                  className="flex cursor-pointer items-center gap-2 rounded-[var(--radius-sm)] border border-dashed border-default bg-raised px-4 py-3 text-sm text-secondary hover:bg-hover transition-colors"
                 >
-                  <option value="">— Не закреплять —</option>
-                  {companies.map((company) => (
-                    <option key={company.id} value={company.id}>
-                      {company.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
-
-          {/* Политика бронирования — для всех типов ресурсов */}
-          <div className="space-y-3 rounded-xl border border-default bg-raised p-4">
-            <p className="text-sm font-semibold text-secondary">Политика бронирования</p>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <label htmlFor="advance_booking_days" className="mb-1 block text-sm font-medium text-secondary">
-                  Бронирование вперёд (дней)
+                  <span className="font-medium text-[color:var(--brand)]">{t('resources.create.choosePhoto')}</span>
+                  <span className="text-muted">{t('resources.create.dropFilesHint')}</span>
+                  <input
+                    id="photos"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="sr-only"
+                    onChange={(e) => {
+                      addPhotos(Array.from(e.target.files ?? []));
+                      e.target.value = '';
+                    }}
+                  />
                 </label>
-                <input
-                  type="number"
-                  id="advance_booking_days"
-                  min={1}
-                  placeholder="14"
-                  value={form.advance_booking_days}
-                  onChange={(e) => updateForm('advance_booking_days', e.target.value)}
-                  className={inputClass(false)}
-                />
+                {photoFiles.length > 0 && (
+                  <ul className="mt-1 space-y-1">
+                    {photoFiles.map((file, i) => {
+                      const isPrimary = primaryPhotoIndex === i || photoFiles.length === 1;
+                      return (
+                        <li
+                          key={i}
+                          className={cn(
+                            'flex items-center gap-2 rounded-[var(--radius-sm)] border px-3 py-1.5 text-sm',
+                            isPrimary
+                              ? 'border-[color:var(--brand)] bg-[color:var(--brand-subtle)] text-primary'
+                              : 'border-default bg-raised text-secondary',
+                          )}
+                        >
+                          {isPrimary ? (
+                            <span className="shrink-0 text-xs font-semibold text-[color:var(--brand-text)]">
+                              {t('resources.create.photoPrimary')}
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setPrimaryPhotoIndex(i)}
+                              className="shrink-0 text-xs text-muted hover:text-[color:var(--brand)] transition-colors"
+                            >
+                              {t('resources.create.photoMakePrimary')}
+                            </button>
+                          )}
+                          <span className="min-w-0 flex-1 truncate">{file.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => removePhoto(i)}
+                            className="shrink-0 text-xs text-red-500 hover:text-red-700 transition-colors"
+                          >
+                            {t('common.delete')}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
-              <div>
-                <label htmlFor="min_cancel_minutes" className="mb-1 block text-sm font-medium text-secondary">
-                  Минимум для отмены (минут)
-                </label>
-                <input
-                  type="number"
-                  id="min_cancel_minutes"
-                  min={1}
-                  placeholder="30"
-                  value={form.min_cancel_minutes}
-                  onChange={(e) => updateForm('min_cancel_minutes', e.target.value)}
-                  className={inputClass(false)}
-                />
-              </div>
-            </div>
-          </div>
+            )}
 
-          {requiresCapacity && (
-            <div className="space-y-3 rounded-xl border border-default bg-raised p-4">
-              <p className="text-sm font-semibold text-secondary">Настройки переговорной</p>
-              <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                {RESOURCE_EQUIPMENT_KEYS.map((key) => (
-                  <label key={key} className="flex items-center gap-2 text-sm text-secondary">
+            {/* is_active checkbox */}
+            <label className="inline-flex items-center gap-2 text-xs text-secondary cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.is_active}
+                onChange={(e) => updateForm('is_active', e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-default text-[color:var(--brand)]"
+              />
+              {t('resources.create.activeInCatalog')}
+            </label>
+
+            {/* Desk settings sub-card */}
+            {isDesk && (
+              <div className="rounded-xl border border-[color:var(--border-faint)] bg-raised px-4 py-3 space-y-3">
+                <p className="text-xs font-semibold text-secondary mb-2">{t('resources.create.deskSettings')}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="inline-flex items-center gap-2 text-xs text-secondary cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={form.equipment[key]}
-                      onChange={() => toggleEquipment(key)}
-                      className="h-4 w-4 rounded border-default text-blue-600"
+                      checked={form.has_monitor}
+                      onChange={(e) => updateForm('has_monitor', e.target.checked)}
+                      className="h-3.5 w-3.5 rounded border-default text-[color:var(--brand)]"
                     />
-                    {RESOURCE_EQUIPMENT_LABELS[key]}
+                    {t('resources.create.monitorLabel')}
                   </label>
-                ))}
-              </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <label htmlFor="min_duration_minutes" className="mb-1 block text-sm font-medium text-secondary">
-                    Мин. длительность (мин)
+                  <label className="inline-flex items-center gap-2 text-xs text-secondary cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.has_dock}
+                      onChange={(e) => updateForm('has_dock', e.target.checked)}
+                      className="h-3.5 w-3.5 rounded border-default text-[color:var(--brand)]"
+                    />
+                    {t('resources.create.dockLabel')}
                   </label>
-                  <input
-                    id="min_duration_minutes"
-                    type="number"
-                    min={1}
-                    value={form.min_duration_minutes}
-                    onChange={(e) => updateForm('min_duration_minutes', e.target.value)}
-                    className={inputClass(!!fieldErrors.min_duration_minutes)}
-                  />
-                  {fieldErrors.min_duration_minutes && (
-                    <p className="mt-1 text-xs text-red-600">{fieldErrors.min_duration_minutes}</p>
-                  )}
+                  <label className="inline-flex items-center gap-2 text-xs text-secondary cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.has_power_outlet}
+                      onChange={(e) => updateForm('has_power_outlet', e.target.checked)}
+                      className="h-3.5 w-3.5 rounded border-default text-[color:var(--brand)]"
+                    />
+                    {t('resources.create.outletLabel')}
+                  </label>
+                  <label className="inline-flex items-center gap-2 text-xs text-secondary cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.is_hot_desk}
+                      onChange={(e) => updateForm('is_hot_desk', e.target.checked)}
+                      className="h-3.5 w-3.5 rounded border-default text-[color:var(--brand)]"
+                    />
+                    {t('resources.create.hotDeskLabel')}
+                  </label>
                 </div>
-                <div>
-                  <label htmlFor="max_duration_minutes" className="mb-1 block text-sm font-medium text-secondary">
-                    Макс. длительность (мин)
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="desk_assigned_company" className="text-xs font-medium text-secondary">
+                    {t('resources.create.assignCompanyLabel')}
                   </label>
-                  <input
-                    id="max_duration_minutes"
-                    type="number"
-                    min={1}
-                    value={form.max_duration_minutes}
-                    onChange={(e) => updateForm('max_duration_minutes', e.target.value)}
-                    className={inputClass(!!fieldErrors.max_duration_minutes)}
-                  />
-                  {fieldErrors.max_duration_minutes && (
-                    <p className="mt-1 text-xs text-red-600">{fieldErrors.max_duration_minutes}</p>
-                  )}
-                </div>
-              </div>
-              <div>
-                <label htmlFor="meeting_room_assigned_company" className="mb-1 block text-sm font-medium text-secondary">
-                  Закрепить за компанией (необязательно)
-                </label>
-                <select
-                  id="meeting_room_assigned_company"
-                  value={form.assigned_company_id}
-                  onChange={(e) => updateForm('assigned_company_id', e.target.value)}
-                  className={inputClass(!!fieldErrors.assigned_company)}
-                >
-                  <option value="">— Не закреплять —</option>
-                  {companies.map((company) => (
-                    <option key={company.id} value={company.id}>
-                      {company.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
-
-          {isParking && (
-            <div className="space-y-3 rounded-xl border border-default bg-raised p-4">
-              <p className="text-sm font-semibold text-secondary">Настройки парковки</p>
-              <div>
-                <label htmlFor="parking_type" className="mb-1 block text-sm font-medium text-secondary">
-                  Тип парковки
-                </label>
-                <select
-                  id="parking_type"
-                  value={form.parking_type}
-                  onChange={(e) => updateForm('parking_type', e.target.value as ParkingType)}
-                  className={inputClass(!!fieldErrors.parking_type)}
-                >
-                  <option value={PARKING_TYPES.REGULAR}>Обычная</option>
-                  <option value={PARKING_TYPES.VIP}>VIP</option>
-                </select>
-                {fieldErrors.parking_type && (
-                  <p className="mt-1 text-xs text-red-600">{fieldErrors.parking_type}</p>
-                )}
-              </div>
-              <div>
-                <label htmlFor="parking_assigned_company" className="mb-1 block text-sm font-medium text-secondary">
-                  Закрепить за компанией (необязательно)
-                </label>
-                <select
-                  id="parking_assigned_company"
-                  value={form.assigned_company_id}
-                  onChange={(e) => updateForm('assigned_company_id', e.target.value)}
-                  className={inputClass(!!fieldErrors.assigned_company)}
-                >
-                  <option value="">— Не закреплять —</option>
-                  {companies.map((company) => (
-                    <option key={company.id} value={company.id}>
-                      {company.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
-
-          {isCapsule && (
-            <div className="space-y-3 rounded-xl border border-default bg-raised p-4">
-              <p className="text-sm font-semibold text-secondary">Настройки капсулы</p>
-              <div>
-                <label htmlFor="capsule_zone" className="mb-1 block text-sm font-medium text-secondary">
-                  Зона капсулы
-                </label>
-                <select
-                  id="capsule_zone"
-                  value={form.capsule_zone}
-                  onChange={(e) => updateForm('capsule_zone', e.target.value as CapsuleZone)}
-                  className={inputClass(!!fieldErrors.capsule_zone)}
-                >
-                  <option value={CAPSULE_ZONES.QUIET}>Тихая</option>
-                  <option value={CAPSULE_ZONES.REGULAR}>Обычная</option>
-                </select>
-                {fieldErrors.capsule_zone && (
-                  <p className="mt-1 text-xs text-red-600">{fieldErrors.capsule_zone}</p>
-                )}
-              </div>
-              <div>
-                <label htmlFor="capsule_assigned_company" className="mb-1 block text-sm font-medium text-secondary">
-                  Закрепить за компанией (необязательно)
-                </label>
-                <select
-                  id="capsule_assigned_company"
-                  value={form.assigned_company_id}
-                  onChange={(e) => updateForm('assigned_company_id', e.target.value)}
-                  className={inputClass(!!fieldErrors.assigned_company)}
-                >
-                  <option value="">— Не закреплять —</option>
-                  {companies.map((company) => (
-                    <option key={company.id} value={company.id}>
-                      {company.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
-
-          <hr className="border-default" />
-          <p className="text-sm font-semibold text-secondary">Доступность ресурса</p>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label htmlFor="availability_start" className="mb-1 block text-sm font-medium text-secondary">
-                Начало
-              </label>
-              <input
-                id="availability_start"
-                type="time"
-                value={form.availability_start}
-                onChange={(e) => updateForm('availability_start', e.target.value)}
-                className={inputClass(!!fieldErrors.availability_start || availabilityRangeInvalid)}
-              />
-            </div>
-            <div>
-              <label htmlFor="availability_end" className="mb-1 block text-sm font-medium text-secondary">
-                Конец
-              </label>
-              <input
-                id="availability_end"
-                type="time"
-                value={form.availability_end}
-                onChange={(e) => updateForm('availability_end', e.target.value)}
-                className={inputClass(!!fieldErrors.availability_end || availabilityRangeInvalid)}
-              />
-            </div>
-          </div>
-          {(fieldErrors.availability_start || availabilityRangeInvalid) && (
-            <p className="text-xs text-red-600">
-              {fieldErrors.availability_start || 'Время начала должно быть раньше времени окончания.'}
-            </p>
-          )}
-
-          <div>
-            <p className="mb-2 text-sm font-medium text-secondary">Дни доступности</p>
-            <div className="flex flex-wrap gap-2">
-              {DAY_OPTIONS.map((day) => {
-                const active = form.availability_days.includes(day.value);
-                return (
-                  <button
-                    key={day.value}
-                    type="button"
-                    onClick={() => toggleDay(day.value)}
-                    className={cn(
-                      'rounded-md border px-3 py-1.5 text-sm transition-colors',
-                      active
-                        ? 'border-blue-600 bg-blue-50 text-blue-700'
-                        : 'border-default text-secondary hover:bg-raised',
-                    )}
+                  <select
+                    id="desk_assigned_company"
+                    value={form.assigned_company_id}
+                    onChange={(e) => updateForm('assigned_company_id', e.target.value)}
+                    className={inputClass(!!fieldErrors.assigned_company)}
                   >
-                    {day.label}
-                  </button>
-                );
-              })}
-            </div>
-            {fieldErrors.availability_days && (
-              <p className="mt-1 text-xs text-red-600">{fieldErrors.availability_days}</p>
+                    <option value="">{t('resources.create.noAssignCompany')}</option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             )}
+
+            {/* Meeting room settings sub-card */}
+            {requiresCapacity && (
+              <div className="rounded-xl border border-[color:var(--border-faint)] bg-raised px-4 py-3 space-y-3">
+                <p className="text-xs font-semibold text-secondary mb-2">{t('resources.create.meetingSettings')}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {RESOURCE_EQUIPMENT_KEYS.map((key) => (
+                    <label key={key} className="inline-flex items-center gap-2 text-xs text-secondary cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.equipment[key]}
+                        onChange={() => toggleEquipment(key)}
+                        className="h-3.5 w-3.5 rounded border-default text-[color:var(--brand)]"
+                      />
+                      {t(RESOURCE_EQUIPMENT_LABEL_KEYS[key])}
+                    </label>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="min_duration_minutes" className="text-xs font-medium text-secondary">
+                      {t('resources.create.minDurationLabel')}
+                    </label>
+                    <input
+                      id="min_duration_minutes"
+                      type="number"
+                      min={1}
+                      value={form.min_duration_minutes}
+                      onChange={(e) => updateForm('min_duration_minutes', e.target.value)}
+                      className={inputClass(!!fieldErrors.min_duration_minutes)}
+                    />
+                    {fieldErrors.min_duration_minutes && (
+                      <p className="text-xs text-red-600 mt-0.5">{fieldErrors.min_duration_minutes}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="max_duration_minutes" className="text-xs font-medium text-secondary">
+                      {t('resources.create.maxDurationLabel')}
+                    </label>
+                    <input
+                      id="max_duration_minutes"
+                      type="number"
+                      min={1}
+                      value={form.max_duration_minutes}
+                      onChange={(e) => updateForm('max_duration_minutes', e.target.value)}
+                      className={inputClass(!!fieldErrors.max_duration_minutes)}
+                    />
+                    {fieldErrors.max_duration_minutes && (
+                      <p className="text-xs text-red-600 mt-0.5">{fieldErrors.max_duration_minutes}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="meeting_room_assigned_company" className="text-xs font-medium text-secondary">
+                    {t('resources.create.assignCompanyLabel')}
+                  </label>
+                  <select
+                    id="meeting_room_assigned_company"
+                    value={form.assigned_company_id}
+                    onChange={(e) => updateForm('assigned_company_id', e.target.value)}
+                    className={inputClass(!!fieldErrors.assigned_company)}
+                  >
+                    <option value="">{t('resources.create.noAssignCompany')}</option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Parking settings sub-card */}
+            {isParking && (
+              <div className="rounded-xl border border-[color:var(--border-faint)] bg-raised px-4 py-3 space-y-3">
+                <p className="text-xs font-semibold text-secondary mb-2">{t('resources.create.parkingSettings')}</p>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="parking_type" className="text-xs font-medium text-secondary">
+                    {t('resources.create.parkingTypeLabel')}
+                  </label>
+                  <select
+                    id="parking_type"
+                    value={form.parking_type}
+                    onChange={(e) => updateForm('parking_type', e.target.value as ParkingType)}
+                    className={inputClass(!!fieldErrors.parking_type)}
+                  >
+                    <option value={PARKING_TYPES.REGULAR}>{t('resources.create.parkingRegular')}</option>
+                    <option value={PARKING_TYPES.VIP}>VIP</option>
+                  </select>
+                  {fieldErrors.parking_type && (
+                    <p className="text-xs text-red-600 mt-0.5">{fieldErrors.parking_type}</p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="parking_assigned_company" className="text-xs font-medium text-secondary">
+                    {t('resources.create.assignCompanyLabel')}
+                  </label>
+                  <select
+                    id="parking_assigned_company"
+                    value={form.assigned_company_id}
+                    onChange={(e) => updateForm('assigned_company_id', e.target.value)}
+                    className={inputClass(!!fieldErrors.assigned_company)}
+                  >
+                    <option value="">{t('resources.create.noAssignCompany')}</option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Capsule settings sub-card */}
+            {isCapsule && (
+              <div className="rounded-xl border border-[color:var(--border-faint)] bg-raised px-4 py-3 space-y-3">
+                <p className="text-xs font-semibold text-secondary mb-2">{t('resources.create.capsuleSettings')}</p>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="capsule_zone" className="text-xs font-medium text-secondary">
+                    {t('resources.create.capsuleZoneLabel')}
+                  </label>
+                  <select
+                    id="capsule_zone"
+                    value={form.capsule_zone}
+                    onChange={(e) => updateForm('capsule_zone', e.target.value as CapsuleZone)}
+                    className={inputClass(!!fieldErrors.capsule_zone)}
+                  >
+                    <option value={CAPSULE_ZONES.QUIET}>{t('resources.create.capsuleQuiet')}</option>
+                    <option value={CAPSULE_ZONES.REGULAR}>{t('resources.create.capsuleRegular')}</option>
+                  </select>
+                  {fieldErrors.capsule_zone && (
+                    <p className="text-xs text-red-600 mt-0.5">{fieldErrors.capsule_zone}</p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="capsule_assigned_company" className="text-xs font-medium text-secondary">
+                    {t('resources.create.assignCompanyLabel')}
+                  </label>
+                  <select
+                    id="capsule_assigned_company"
+                    value={form.assigned_company_id}
+                    onChange={(e) => updateForm('assigned_company_id', e.target.value)}
+                    className={inputClass(!!fieldErrors.assigned_company)}
+                  >
+                    <option value="">{t('resources.create.noAssignCompany')}</option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Booking policy sub-card */}
+            <div className="rounded-xl border border-[color:var(--border-faint)] bg-raised px-4 py-3 space-y-3">
+              <p className="text-xs font-semibold text-secondary mb-2">{t('resources.create.bookingPolicyLabel')}</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="advance_booking_days" className="text-xs font-medium text-secondary">
+                    {t('resources.create.advanceDaysLabel')}
+                  </label>
+                  <input
+                    type="number"
+                    id="advance_booking_days"
+                    min={1}
+                    placeholder="14"
+                    value={form.advance_booking_days}
+                    onChange={(e) => updateForm('advance_booking_days', e.target.value)}
+                    className={inputClass(false)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="min_cancel_minutes" className="text-xs font-medium text-secondary">
+                    {t('resources.create.minCancelLabel')}
+                  </label>
+                  <input
+                    type="number"
+                    id="min_cancel_minutes"
+                    min={1}
+                    placeholder="30"
+                    value={form.min_cancel_minutes}
+                    onChange={(e) => updateForm('min_cancel_minutes', e.target.value)}
+                    className={inputClass(false)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Availability section */}
+            <div className="rounded-xl border border-[color:var(--border-faint)] bg-raised px-4 py-3 space-y-3">
+              <p className="text-xs font-semibold text-secondary mb-2">{t('resources.create.availabilitySection')}</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="availability_start" className="text-xs font-medium text-secondary">
+                    {t('common.start')}
+                  </label>
+                  <input
+                    id="availability_start"
+                    type="time"
+                    value={form.availability_start}
+                    onChange={(e) => updateForm('availability_start', e.target.value)}
+                    className={inputClass(!!fieldErrors.availability_start || availabilityRangeInvalid)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="availability_end" className="text-xs font-medium text-secondary">
+                    {t('resources.create.endLabel')}
+                  </label>
+                  <input
+                    id="availability_end"
+                    type="time"
+                    value={form.availability_end}
+                    onChange={(e) => updateForm('availability_end', e.target.value)}
+                    className={inputClass(!!fieldErrors.availability_end || availabilityRangeInvalid)}
+                  />
+                </div>
+              </div>
+              {(fieldErrors.availability_start || availabilityRangeInvalid) && (
+                <p className="text-xs text-red-600 mt-0.5">
+                  {fieldErrors.availability_start || t('resources.create.availabilityOrder')}
+                </p>
+              )}
+
+              <div>
+                <p className="text-xs font-medium text-secondary mb-2">{t('resources.create.availabilityDaysLabel')}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {dayOptions.map((day) => {
+                    const active = form.availability_days.includes(day.value);
+                    return (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() => toggleDay(day.value)}
+                        className={cn(
+                          'h-7 px-2.5 text-xs font-medium rounded-[var(--radius-sm)] border transition-colors',
+                          active
+                            ? 'border-[color:var(--brand)] bg-[color:var(--brand-subtle)] text-[color:var(--brand-text)]'
+                            : 'border-default text-secondary hover:bg-raised',
+                        )}
+                      >
+                        {day.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {fieldErrors.availability_days && (
+                  <p className="text-xs text-red-600 mt-1">{fieldErrors.availability_days}</p>
+                )}
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3 pt-2">
+          {/* Footer */}
+          <div className="flex justify-end gap-2 border-t border-[color:var(--border-faint)] px-6 pt-4 pb-5 mt-0">
+            <button
+              type="button"
+              onClick={() => navigate('/resources')}
+              className="h-8 px-4 text-sm font-medium text-secondary hover:bg-raised rounded-[var(--radius-sm)] transition-colors"
+            >
+              {t('common.cancel')}
+            </button>
             <button
               type="submit"
               disabled={isPending}
               className={cn(
-                'rounded-lg px-5 py-2.5 text-sm font-semibold text-primary transition-colors',
-                isPending ? 'cursor-not-allowed bg-blue-300' : 'bg-blue-600 hover:bg-blue-700',
+                'inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] transition-colors',
+                'text-[color:var(--text-onbrand)] bg-[color:var(--brand)] hover:bg-[color:var(--brand-hover)]',
+                'disabled:opacity-60 disabled:cursor-not-allowed',
               )}
             >
-              {isPending ? 'Сохранение...' : isBulkMode ? 'Создать пачку ресурсов' : 'Создать ресурс'}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/resources')}
-              className="rounded-lg px-4 py-2.5 text-sm font-medium text-secondary transition-colors hover:bg-hover"
-            >
-              Отмена
+              <Plus size={14} />
+              {isPending
+                ? t('common.savingPlain')
+                : isBulkMode
+                  ? t('resources.create.submitBulk')
+                  : t('resources.create.submit')}
             </button>
           </div>
         </form>
-      </section>
+      </div>
     </main>
   );
 }

@@ -1,9 +1,11 @@
+import { useTranslation } from 'react-i18next';
 import { useNotifications } from '@/pages/notifications/hooks/useNotifications';
 import { NotificationItem } from '@/pages/notifications/components/NotificationItem';
 import { NotificationEmptyState } from '@/pages/notifications/components/NotificationEmptyState';
 import { NotificationFilters } from '@/pages/notifications/components/NotificationFilters';
 
 export default function NotificationListPage() {
+  const { t } = useTranslation();
   const {
     rows,
     isLoading,

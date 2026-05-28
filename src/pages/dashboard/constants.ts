@@ -2,11 +2,11 @@ import { STAFF_UI_PREFIX, SUPERADMIN_UI_PREFIX } from '@/shared/config/constants
 
 export const LOGO_MAX_BYTES = 10 * 1024 * 1024;
 
-export const ONBOARDING_STEP_LABELS: Record<string, string> = {
-  upload_logo: 'Загрузить логотип компании',
-  fill_description: 'Заполнить описание компании',
-  create_first_board: 'Создать первую CRM-доску',
-  invite_first_employee: 'Пригласить первого сотрудника',
+export const ONBOARDING_STEP_LABEL_KEYS: Record<string, string> = {
+  upload_logo: 'dashboard.onboarding.upload_logo',
+  fill_description: 'dashboard.onboarding.fill_description',
+  create_first_board: 'dashboard.onboarding.create_first_board',
+  invite_first_employee: 'dashboard.onboarding.invite_first_employee',
 };
 
 export const SPARKLINE_DATA = {
@@ -55,20 +55,20 @@ export const BOOKING_STATUS_CLASS: Record<string, string> = {
   no_show: 'bg-warning-subtle text-warning',
 };
 
-export const QUICK_ACTION_CONFIG: Record<string, { label: string; to: string }> = {
-  invite_user: { label: 'Пригласить пользователя', to: '/company/settings/members' },
-  create_announcement: { label: 'Создать объявление', to: '/announcements' },
-  manage_bookings: { label: 'Управление бронями', to: `${STAFF_UI_PREFIX}/bookings` },
-  view_analytics: { label: 'Аналитика', to: `${SUPERADMIN_UI_PREFIX}/analytics` },
-  manage_companies: { label: 'Компании', to: '/companies' },
+export const QUICK_ACTION_CONFIG: Record<string, { labelKey: string; to: string }> = {
+  invite_user: { labelKey: 'dashboard.quickActions.invite_user', to: '/company/settings/members' },
+  create_announcement: { labelKey: 'dashboard.quickActions.create_announcement', to: '/announcements' },
+  manage_bookings: { labelKey: 'dashboard.quickActions.manage_bookings', to: `${STAFF_UI_PREFIX}/bookings` },
+  view_analytics: { labelKey: 'dashboard.quickActions.view_analytics', to: `${SUPERADMIN_UI_PREFIX}/analytics` },
+  manage_companies: { labelKey: 'dashboard.quickActions.manage_companies', to: '/companies' },
 };
 
-export const roleLabel: Record<string, string> = {
-  superadmin: 'Супер-администратор',
-  company_admin: 'Администратор компании',
-  employee: 'Сотрудник',
-  reception: 'Ресепшен',
-  guest: 'Гость',
+export const ROLE_LABEL_KEYS: Record<string, string> = {
+  superadmin: 'profile.roles.superadmin',
+  company_admin: 'profile.roles.company_admin',
+  employee: 'profile.roles.employee',
+  reception: 'profile.roles.reception',
+  guest: 'profile.roles.guest',
 };
 
 export function toPolylinePoints(values: number[]): string {

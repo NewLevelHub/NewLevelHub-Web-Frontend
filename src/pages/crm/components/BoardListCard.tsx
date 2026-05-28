@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Archive, ArchiveRestore, LayoutGrid, Calendar } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import type { CrmBoard } from '@/shared/types';

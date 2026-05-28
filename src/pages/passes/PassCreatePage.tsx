@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -26,6 +27,7 @@ type GuestPassCreatePayload = {
 };
 
 export default function PassCreatePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -55,7 +57,7 @@ export default function PassCreatePage() {
     event.preventDefault();
     setFormError(null);
     if (!guestName.trim() || !guestEmail.trim() || !purpose.trim()) {
-      setFormError('Заполните обязательные поля: имя, email и цель.');
+      setFormError(t('passes.requiredFields'));
       return;
     }
     createPassMutation.mutate({
@@ -72,13 +74,13 @@ export default function PassCreatePage() {
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-primary">Создание гостевого пропуска</h1>
-        <p className="text-sm text-secondary">Можно отправить инвайт на любой email гостя.</p>
+        <h1 className="text-2xl font-bold text-primary">{t('passes.pageTitle')}</h1>
+        <p className="text-sm text-secondary">{t('passes.pageSubtitle')}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-default bg-raised p-5">
         <label className="block text-sm text-secondary">
-          Имя гостя
+          {t('passes.guestName')}
           <input
             value={guestName}
             onChange={(event) => setGuestName(event.target.value)}
@@ -87,7 +89,7 @@ export default function PassCreatePage() {
           />
         </label>
         <label className="block text-sm text-secondary">
-          Email гостя
+          {t('passes.guestEmail')}
           <input
             type="email"
             value={guestEmail}
@@ -97,7 +99,7 @@ export default function PassCreatePage() {
           />
         </label>
         <label className="block text-sm text-secondary">
-          Телефон (необязательно)
+          {t('passes.guestPhone')}
           <input
             value={guestPhone}
             onChange={(event) => setGuestPhone(event.target.value)}
@@ -105,7 +107,7 @@ export default function PassCreatePage() {
           />
         </label>
         <label className="block text-sm text-secondary">
-          Цель визита
+          {t('passes.visitPurpose')}
           <textarea
             value={purpose}
             onChange={(event) => setPurpose(event.target.value)}
@@ -117,7 +119,7 @@ export default function PassCreatePage() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block text-sm text-secondary">
-            Начало действия
+            {t('passes.validFromLabel')}
             <input
               type="datetime-local"
               value={validFrom}
@@ -126,12 +128,12 @@ export default function PassCreatePage() {
               className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               required
             />
-            <p className="mt-1 text-xs text-muted">Код станет активным начиная с этого момента</p>
+            <p className="mt-1 text-xs text-muted">{t('passes.validFromHint')}</p>
           </label>
           <div className="block text-sm text-secondary">
-            Действует до
+            {t('passes.validUntilLabel')}
             <div className="mt-1 rounded-lg border border-default bg-surface px-3 py-2 text-sm text-secondary">
-              Автоматически: +30 дней от даты начала
+              {t('passes.autoUntil')}
             </div>
           </div>
         </div>
@@ -142,9 +144,7 @@ export default function PassCreatePage() {
             checked={isSingleUse}
             onChange={(event) => setIsSingleUse(event.target.checked)}
             className="h-4 w-4 rounded border-default bg-surface text-brand"
-          />
-          Одноразовый пропуск
-        </label>
+          />{t('passes.oneTime')}</label>
 
         {formError ? (
           <div className="rounded-lg border border-rose-800 bg-rose-950/30 px-3 py-2 text-sm text-rose-300">{formError}</div>
@@ -154,15 +154,13 @@ export default function PassCreatePage() {
           <Link
             to="/passes"
             className="inline-flex items-center rounded-lg border border-default px-4 py-2 text-sm font-medium text-secondary hover:bg-hover"
-          >
-            Отмена
-          </Link>
+          >{t('common.cancel')}</Link>
           <button
             type="submit"
             disabled={createPassMutation.isPending}
             className="inline-flex items-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
           >
-            {createPassMutation.isPending ? 'Создание...' : 'Создать пропуск'}
+            {createPassMutation.isPending ? t('common.creatingPlain') : t('passes.create')}
           </button>
         </div>
       </form>

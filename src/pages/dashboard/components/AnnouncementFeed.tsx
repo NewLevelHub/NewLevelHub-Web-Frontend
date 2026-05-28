@@ -1,13 +1,15 @@
 import { Link } from 'react-router';
 import { Megaphone } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { DashboardAnnouncementItem } from '@/shared/types';
 
 export interface AnnouncementFeedProps {
   items: DashboardAnnouncementItem[];
-  title?: string;
+  title: string;
 }
 
-export function AnnouncementFeed({ items, title = 'Объявления' }: AnnouncementFeedProps) {
+export function AnnouncementFeed({ items, title }: AnnouncementFeedProps) {
+  const { t } = useTranslation();
   if (items.length === 0) return null;
   return (
     <section className="rounded-xl border border-default bg-surface p-5">
@@ -17,7 +19,7 @@ export function AnnouncementFeed({ items, title = 'Объявления' }: Anno
           {title}
         </h2>
         <Link to="/announcements" className="text-xs text-brand hover:text-brand-hover transition-colors">
-          Все →
+          {t('dashboard.all')} →
         </Link>
       </div>
       <ul className="space-y-3">

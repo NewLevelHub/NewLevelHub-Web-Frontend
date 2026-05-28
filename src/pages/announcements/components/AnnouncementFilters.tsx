@@ -1,6 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import {
   ANNOUNCEMENT_CATEGORIES,
-  ANNOUNCEMENT_CATEGORY_LABELS,
+  ANNOUNCEMENT_CATEGORY_LABEL_KEYS,
   type AnnouncementCategory,
 } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
@@ -9,9 +10,9 @@ type CategoryFilter = AnnouncementCategory | 'all';
 
 const CATEGORY_FILTERS: Array<{ value: CategoryFilter; label: string }> = [
   { value: 'all', label: 'Все' },
-  { value: ANNOUNCEMENT_CATEGORIES.INFO, label: ANNOUNCEMENT_CATEGORY_LABELS.info },
-  { value: ANNOUNCEMENT_CATEGORIES.IMPORTANT, label: ANNOUNCEMENT_CATEGORY_LABELS.important },
-  { value: ANNOUNCEMENT_CATEGORIES.EVENT, label: ANNOUNCEMENT_CATEGORY_LABELS.event },
+  { value: ANNOUNCEMENT_CATEGORIES.INFO, label: ANNOUNCEMENT_CATEGORY_LABEL_KEYS.info },
+  { value: ANNOUNCEMENT_CATEGORIES.IMPORTANT, label: ANNOUNCEMENT_CATEGORY_LABEL_KEYS.important },
+  { value: ANNOUNCEMENT_CATEGORIES.EVENT, label: ANNOUNCEMENT_CATEGORY_LABEL_KEYS.event },
 ];
 
 interface AnnouncementFiltersProps {
@@ -20,6 +21,7 @@ interface AnnouncementFiltersProps {
 }
 
 export function AnnouncementFilters({ category, onCategoryChange }: AnnouncementFiltersProps) {
+  const { t } = useTranslation();
   return (
     <nav className="flex flex-wrap gap-2" aria-label="Фильтр по категории">
       {CATEGORY_FILTERS.map((opt) => (

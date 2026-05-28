@@ -1,12 +1,6 @@
-import { PASS_STATUSES, type PassStatus } from '@/shared/config/constants';
-
-const STATUS_OPTIONS: Array<{ label: string; value: PassStatus | '' }> = [
-  { label: 'Все', value: '' },
-  { label: 'Активные', value: PASS_STATUSES.ACTIVE },
-  { label: 'Использованные', value: PASS_STATUSES.USED },
-  { label: 'Истекшие', value: PASS_STATUSES.EXPIRED },
-  { label: 'Отозванные', value: PASS_STATUSES.REVOKED },
-];
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { PASS_STATUSES, PASS_STATUS_LABEL_KEYS, type PassStatus } from '@/shared/config/constants';
 
 interface PassFiltersProps {
   isAdminView: boolean;
@@ -41,18 +35,27 @@ export function PassFilters({
   onDateToChange,
   onReset,
 }: PassFiltersProps) {
+  const { t } = useTranslation();
+  const statusOptions = useMemo(
+    () => [
+      { label: t('passes.filters.all'), value: '' as const },
+      { label: t('passes.filters.active'), value: PASS_STATUSES.ACTIVE },
+      { label: t(PASS_STATUS_LABEL_KEYS[PASS_STATUSES.USED]), value: PASS_STATUSES.USED },
+      { label: t('passes.filters.expired'), value: PASS_STATUSES.EXPIRED },
+      { label: t('passes.filters.revoked'), value: PASS_STATUSES.REVOKED },
+    ],
+    [t],
+  );
   return (
     <div className="rounded-xl border border-default bg-raised p-4">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {isAdminView ? (
-          <label className="text-sm text-secondary">
-            Статус
-            <select
+          <label className="text-sm text-secondary">{t('common.status')}<select
               value={statusFilter}
               onChange={(event) => onStatusChange(event.target.value as PassStatus | '')}
               className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             >
-              {STATUS_OPTIONS.map(option => (
+              {statusOptions.map(option => (
                 <option key={option.label} value={option.value}>
                   {option.label}
                 </option>
@@ -75,9 +78,7 @@ export function PassFilters({
         ) : null}
 
         {isSuperadmin ? (
-          <label className="text-sm text-secondary">
-            Компания
-            <input
+          <label className="text-sm text-secondary">{t('common.company')}<input
               type="text"
               value={companyNameFilter}
               onChange={(event) => onCompanyNameChange(event.target.value)}
@@ -119,9 +120,7 @@ export function PassFilters({
             onClick={onReset}
             disabled={!hasActiveFilters}
             className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Сбросить фильтры
-          </button>
+          >{t('common.resetFilters')}</button>
         </div>
       ) : null}
     </div>

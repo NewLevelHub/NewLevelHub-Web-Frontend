@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams, useNavigate } from 'react-router';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -28,6 +29,7 @@ function verifyTokenOnce(token: string): Promise<VerifyResult> {
 }
 
 export default function VerifyEmailPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -39,7 +41,7 @@ export default function VerifyEmailPage() {
   useEffect(() => {
     if (!token) {
       setStatus('error');
-      setErrorMessage('Ссылка не содержит токен подтверждения.');
+      setErrorMessage(t('auth.verify.noToken'));
       return;
     }
     const verificationToken = token;
@@ -75,7 +77,7 @@ export default function VerifyEmailPage() {
       {status === 'loading' && (
         <div className="space-y-4">
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-default border-t-brand" />
-          <p className="text-gray-400">Подтверждаем ваш email...</p>
+          <p className="text-gray-400">{t('auth.verify.loading')}</p>
         </div>
       )}
 
@@ -86,8 +88,8 @@ export default function VerifyEmailPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold">Email подтверждён</h2>
-          <p className="text-gray-400">Сейчас вы будете перенаправлены на страницу входа...</p>
+          <h2 className="text-xl font-semibold">{t('auth.verify.successTitle')}</h2>
+          <p className="text-gray-400">{t('auth.verify.successRedirect')}</p>
         </div>
       )}
 
@@ -98,7 +100,7 @@ export default function VerifyEmailPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold">Ошибка подтверждения</h2>
+          <h2 className="text-xl font-semibold">{t('auth.verify.errorTitle')}</h2>
           <p className="text-gray-400">{errorMessage}</p>
           <button
             onClick={() => navigate('/login', { replace: true })}
@@ -106,9 +108,7 @@ export default function VerifyEmailPage() {
               'mt-4 rounded-lg px-6 py-2 text-sm font-medium',
               'bg-surface text-primary hover:bg-gray-200 transition-colors',
             )}
-          >
-            Войти
-          </button>
+          >{t('common.signIn')}</button>
         </div>
       )}
     </div>

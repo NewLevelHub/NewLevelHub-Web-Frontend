@@ -1,13 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { X } from 'lucide-react';
+import { Bed, Calendar, Car, Clock, DoorOpen, LayoutGrid, Plus, X } from 'lucide-react';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { RESOURCE_TYPE_LABELS, RESOURCE_TYPES, USER_ROLES } from '@/shared/config/constants';
+import {
+  CAPSULE_ZONE_LABEL_KEYS,
+  PARKING_TYPE_LABEL_KEYS,
+  PARKING_TYPES,
+  CAPSULE_ZONES,
+  RESOURCE_TYPES,
+  USER_ROLES,
+} from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
@@ -18,7 +26,7 @@ dayjs.extend(timezone);
 
 const TZ = 'Asia/Almaty';
 
-/** Format a datetime-local string with Asia/Almaty offset (e.g. "2025-04-20T09:00:00+05:00") */
+/** Format a combined date+time string with Asia/Almaty offset */
 function toAlmatyIso(localDatetime: string): string {
   if (!localDatetime) return '';
   const d = dayjs.tz(localDatetime, TZ);
@@ -31,7 +39,6 @@ function maxDateStr(days: number): string {
   return dayjs().tz(TZ).add(days, 'day').format('YYYY-MM-DD');
 }
 
-
 interface BookingModalProps {
   resource: BookingResourceListItem;
   open: boolean;
@@ -39,6 +46,7 @@ interface BookingModalProps {
 }
 
 export function BookingModal({ resource, open, onClose }: BookingModalProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
@@ -48,27 +56,23 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
   const isCapsule = resource.type === RESOURCE_TYPES.CAPSULE;
 
   const [selectedDate, setSelectedDate] = useState('');
-  const [startLocal, setStartLocal] = useState('');
-  const [endLocal, setEndLocal] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [description, setDescription] = useState('');
   const [participantIds, setParticipantIds] = useState<number[]>([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [showMemberDropdown, setShowMemberDropdown] = useState(false);
 
   const overlayRef = useRef<HTMLDivElement>(null);
   const firstFocusableRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const todayStr = dayjs().tz(TZ).format('YYYY-MM-DD');
   const maxDateDesk = maxDateStr(14);
   const maxDateParking = maxDateStr(7);
-
   const maxDate = isDesk ? maxDateDesk : isParking ? maxDateParking : undefined;
-
-  // Min step for datetime-local (current moment in local time)
-  const minStep = useMemo(() => {
-    return dayjs().tz(TZ).format('YYYY-MM-DDTHH:mm');
-  }, []);
 
   // Fetch company members for participant multi-select (only for meeting rooms)
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
@@ -105,13 +109,14 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
   useEffect(() => {
     if (open) {
       setSelectedDate('');
-      setStartLocal('');
-      setEndLocal('');
+      setStartTime('');
+      setEndTime('');
       setDescription('');
       setParticipantIds([]);
       setSelectedCompanyId(null);
       setErrorMsg(null);
       setSuccessMsg(null);
+      setShowMemberDropdown(false);
       setTimeout(() => {
         firstFocusableRef.current?.focus();
       }, 50);
@@ -126,9 +131,8 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
   // Auto-set parking times when date is selected
   useEffect(() => {
     if (isParking && selectedDate) {
-      // start = 00:00, end = 23:59 in Asia/Almaty
-      setStartLocal(`${selectedDate}T00:00`);
-      setEndLocal(`${selectedDate}T23:59`);
+      setStartTime('00:00');
+      setEndTime('23:59');
     }
   }, [isParking, selectedDate]);
 
@@ -154,33 +158,48 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
     };
   }, [open]);
 
+  // Close member dropdown on click outside
+  useEffect(() => {
+    if (!showMemberDropdown) return;
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowMemberDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showMemberDropdown]);
+
   /** Client-side validation before submit */
   function validateBooking(): string | null {
-    const start = dayjs.tz(isParking ? `${selectedDate}T00:00` : startLocal, TZ);
-    const end = dayjs.tz(isParking ? `${selectedDate}T23:59` : endLocal, TZ);
+    const startDatetime = isParking ? `${selectedDate}T00:00` : `${selectedDate}T${startTime}`;
+    const endDatetime = isParking ? `${selectedDate}T23:59` : `${selectedDate}T${endTime}`;
 
-    if (!start.isValid() || !end.isValid()) return 'Укажите начало и конец бронирования.';
+    const start = dayjs.tz(startDatetime, TZ);
+    const end = dayjs.tz(endDatetime, TZ);
+
+    if (!start.isValid() || !end.isValid()) return t('booking.modal.errors.timesRequired');
 
     const durationMin = end.diff(start, 'minute');
 
     if (isDesk) {
       const maxDesk = dayjs().tz(TZ).add(14, 'day');
-      if (start.isAfter(maxDesk)) return 'Можно бронировать не более чем на 14 дней вперёд';
+      if (start.isAfter(maxDesk)) return t('booking.modal.errors.deskMaxDays');
     }
 
     if (isParking) {
       const maxParking = dayjs().tz(TZ).add(7, 'day');
-      if (start.isAfter(maxParking)) return 'Можно бронировать не более чем на 7 дней вперёд';
+      if (start.isAfter(maxParking)) return t('booking.modal.errors.parkingMaxDays');
     }
 
     if (isMeetingRoom) {
-      if (durationMin < 30) return 'Минимальная длительность — 30 минут';
-      if (durationMin > 240) return 'Максимальная длительность — 4 часа';
+      if (durationMin < 30) return t('booking.modal.errors.min30');
+      if (durationMin > 240) return t('booking.modal.errors.max240');
     }
 
     if (isCapsule) {
-      if (durationMin < 60) return 'Минимальная длительность — 1 час';
-      if (durationMin > 480) return 'Максимальная длительность — 8 часов';
+      if (durationMin < 60) return t('booking.modal.errors.min60');
+      if (durationMin > 480) return t('booking.modal.errors.max480');
     }
 
     return null;
@@ -188,13 +207,13 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const startDatetime = isParking ? `${selectedDate}T00:00` : startLocal;
-      const endDatetime = isParking ? `${selectedDate}T23:59` : endLocal;
+      const startDatetime = isParking ? `${selectedDate}T00:00` : `${selectedDate}T${startTime}`;
+      const endDatetime = isParking ? `${selectedDate}T23:59` : `${selectedDate}T${endTime}`;
 
       const start_time = toAlmatyIso(startDatetime);
       const end_time = toAlmatyIso(endDatetime);
 
-      if (!start_time || !end_time) throw new Error('Укажите начало и конец бронирования.');
+      if (!start_time || !end_time) throw new Error(t('booking.modal.errors.timesRequired'));
 
       const payload: Record<string, unknown> = {
         resource_id: resource.id,
@@ -214,7 +233,7 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
       queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['booking-resource-schedule', resource.id], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ['resource-week-schedule', resource.id], refetchType: 'all' });
-      setSuccessMsg('Бронирование успешно создано!');
+      setSuccessMsg(t('booking.modal.success'));
       setTimeout(() => {
         onClose();
       }, 1500);
@@ -249,26 +268,49 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
   };
 
   const floorZoneInfo = [
-    `Этаж ${resource.floor}`,
+    t('common.floor', { floor: resource.floor }),
     resource.zone || null,
-    resource.parking_type ? (resource.parking_type === 'vip' ? 'VIP' : 'Обычная') : null,
+    resource.parking_type
+      ? t(PARKING_TYPE_LABEL_KEYS[resource.parking_type === PARKING_TYPES.VIP ? PARKING_TYPES.VIP : PARKING_TYPES.REGULAR])
+      : null,
     resource.capsule_zone
-      ? resource.capsule_zone === 'quiet'
-        ? 'тихая зона'
-        : 'обычная'
+      ? t(CAPSULE_ZONE_LABEL_KEYS[resource.capsule_zone === CAPSULE_ZONES.QUIET ? CAPSULE_ZONES.QUIET : CAPSULE_ZONES.REGULAR])
       : null,
   ]
     .filter(Boolean)
     .join(' · ');
 
-  const fieldClass =
-    'w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-surface text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-blue-500';
+  // Sub-line hint per resource type
+  const subLineHint = isParking
+    ? `${t('common.resourceType.parking')} · ${t('booking.modal.parkingFullDay')}`
+    : isDesk
+      ? `${t('common.resourceType.desk')} · ${t('booking.modal.deskMaxHint')}`
+      : isCapsule
+        ? `${t('common.resourceType.capsule')} · ${t('booking.modal.capsuleHint')}`
+        : `${t('common.resourceType.meeting_room')} · ${t('booking.modal.meetingHint')}`;
 
-  // Determine if current user is admin/superadmin for display logic
-  const isAdmin =
-    user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN;
+  // Type-specific icon for resource pill
+  const ResourceIcon = isParking
+    ? Car
+    : isDesk
+      ? LayoutGrid
+      : isCapsule
+        ? Bed
+        : DoorOpen;
+
+  // Type-specific hint for date/time section
+  const dateHint = isParking
+    ? t('booking.modal.parkingFullDay')
+    : isDesk
+      ? t('booking.modal.deskMaxHint')
+      : isCapsule
+        ? t('booking.modal.capsuleHint')
+        : t('booking.modal.meetingHint');
 
   if (!open) return null;
+
+  const inputClass =
+    'w-full h-9 pl-8 pr-3 text-sm border border-default rounded-[var(--radius-sm)] bg-surface focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)]';
 
   return (
     <div
@@ -277,35 +319,32 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
       onClick={handleOverlayClick}
       aria-modal="true"
       role="dialog"
-      aria-label={`Бронирование: ${resource.name}`}
+      aria-label={t('booking.modal.title', { name: resource.name })}
     >
       <div
-        className="relative w-full max-w-md rounded-2xl border border-default bg-surface shadow-xl overflow-y-auto max-h-[90vh]"
+        className="relative w-full max-w-[560px] rounded-2xl border border-default bg-surface shadow-xl overflow-y-auto max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-start justify-between border-b border-default px-6 py-4">
+        <div className="flex items-start justify-between px-[22px] pt-[18px] pb-[14px]">
           <div className="min-w-0 pr-4">
-            <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">
-              {RESOURCE_TYPE_LABELS[resource.type]}
-            </p>
-            <h2 className="mt-0.5 text-lg font-bold text-primary leading-snug">
-              {resource.name}
+            <h2 className="text-base font-semibold text-primary tracking-[-0.015em]">
+              {t('booking.modal.newBooking')}
             </h2>
-            <p className="mt-0.5 text-xs text-muted">{floorZoneInfo}</p>
+            <p className="text-xs text-muted mt-0.5">{subLineHint}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-lg p-1.5 text-secondary hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label="Закрыть"
+            className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg text-secondary hover:bg-raised hover:text-primary focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)]"
+            aria-label={t('common.close')}
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Form */}
-        <form className="px-6 py-5 space-y-4" onSubmit={handleSubmit}>
+        <form id="booking-modal-form" className="px-[22px] pb-0 space-y-3" onSubmit={handleSubmit}>
           {errorMsg && (
             <div
               role="alert"
@@ -324,217 +363,243 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
             </div>
           )}
 
-          {/* Parking: date-only picker */}
-          {isParking ? (
-            <div>
-              <label
-                className="mb-1 block text-sm font-semibold text-primary"
-                htmlFor="modal-booking-date"
-              >
-                Дата бронирования
-              </label>
-              <input
-                ref={firstFocusableRef}
-                id="modal-booking-date"
-                type="date"
-                required
-                min={todayStr}
-                max={maxDateParking}
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className={fieldClass}
-              />
-              <p className="mt-1 text-xs text-muted">
-                Парковка бронируется на весь день (00:00 — 23:59)
-              </p>
+          {/* Resource pill */}
+          <div className="flex items-center gap-2.5 h-10 px-2.5 rounded-[var(--radius-sm)] border border-default bg-raised">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[5px] bg-[color:var(--brand-subtle)] text-[color:var(--brand-text)]">
+              <ResourceIcon size={13} />
+            </span>
+            <div className="flex flex-col leading-none min-w-0">
+              <span className="text-[13px] font-medium text-primary truncate">{resource.name}</span>
+              <span className="text-[11px] text-muted mt-0.5">{floorZoneInfo}</span>
             </div>
+          </div>
+
+          {/* Superadmin company selector */}
+          {isMeetingRoom && isSuperadmin && (
+            <select
+              value={selectedCompanyId ?? ''}
+              onChange={(e) => setSelectedCompanyId(e.target.value || null)}
+              className="w-full h-9 px-3 text-sm border border-default rounded-[var(--radius-sm)] bg-surface focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)]"
+              aria-label={t('common.selectCompany')}
+            >
+              <option value="">{t('common.selectCompany')}</option>
+              {(companiesData ?? []).map((c) => (
+                <option key={c.id} value={String(c.id)}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {/* Date / time grid */}
+          {isParking ? (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-secondary" htmlFor="modal-booking-date">
+                  {t('booking.modal.date')}
+                </label>
+                <div className="relative flex items-center">
+                  <Calendar size={13} className="absolute left-3 text-muted pointer-events-none" />
+                  <input
+                    ref={firstFocusableRef}
+                    id="modal-booking-date"
+                    type="date"
+                    required
+                    min={todayStr}
+                    max={maxDateParking}
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-muted -mt-1">{dateHint}</p>
+            </>
           ) : (
             <>
-              {/* Date limits hint for desk */}
-              {isDesk && (
-                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                  Рабочее место можно бронировать не более чем на 14 дней вперёд.
-                </p>
-              )}
-              {isCapsule && (
-                <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
-                  Капсула: от 1 до 8 часов.
-                </p>
-              )}
-              {isMeetingRoom && (
-                <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
-                  Переговорка: от 30 минут до 4 часов.
-                </p>
-              )}
-
-              <div>
-                <label
-                  className="mb-1 block text-sm font-semibold text-primary"
-                  htmlFor="modal-booking-start"
-                >
-                  Начало
-                </label>
-                <input
-                  ref={firstFocusableRef}
-                  id="modal-booking-start"
-                  type="datetime-local"
-                  required
-                  min={minStep}
-                  max={maxDate ? `${maxDate}T23:59` : undefined}
-                  value={startLocal}
-                  onChange={(e) => setStartLocal(e.target.value)}
-                  className={fieldClass}
-                />
+              <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-2.5">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-secondary" htmlFor="modal-booking-date">
+                    {t('booking.modal.date')}
+                  </label>
+                  <div className="relative flex items-center">
+                    <Calendar size={13} className="absolute left-3 text-muted pointer-events-none" />
+                    <input
+                      ref={firstFocusableRef}
+                      id="modal-booking-date"
+                      type="date"
+                      required
+                      min={todayStr}
+                      max={maxDate}
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-secondary" htmlFor="modal-booking-start">
+                    {t('common.start')}
+                  </label>
+                  <div className="relative flex items-center">
+                    <Clock size={13} className="absolute left-3 text-muted pointer-events-none" />
+                    <input
+                      id="modal-booking-start"
+                      type="time"
+                      required
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-secondary" htmlFor="modal-booking-end">
+                    {t('common.end')}
+                  </label>
+                  <div className="relative flex items-center">
+                    <Clock size={13} className="absolute left-3 text-muted pointer-events-none" />
+                    <input
+                      id="modal-booking-end"
+                      type="time"
+                      required
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
               </div>
-
-              <div>
-                <label
-                  className="mb-1 block text-sm font-semibold text-primary"
-                  htmlFor="modal-booking-end"
-                >
-                  Окончание
-                </label>
-                <input
-                  id="modal-booking-end"
-                  type="datetime-local"
-                  required
-                  min={startLocal || minStep}
-                  max={maxDate ? `${maxDate}T23:59` : undefined}
-                  value={endLocal}
-                  onChange={(e) => setEndLocal(e.target.value)}
-                  className={fieldClass}
-                />
-              </div>
+              <p className="text-[11px] text-muted -mt-1">{dateHint}</p>
             </>
           )}
 
-          {/* Participants multi-select for meeting rooms */}
+          {/* Participants token-input (meeting room only) */}
           {isMeetingRoom && (
-            <div>
-              <p className="mb-2 text-sm font-semibold text-primary">
-                Участники{' '}
-                <span className="font-normal text-muted">(необязательно)</span>
-              </p>
-
-              {isSuperadmin && (
-                <select
-                  value={selectedCompanyId ?? ''}
-                  onChange={(e) => setSelectedCompanyId(e.target.value || null)}
-                  className={cn(fieldClass, 'mb-2')}
-                  aria-label="Выберите компанию"
-                >
-                  <option value="">Выберите компанию</option>
-                  {(companiesData ?? []).map((c) => (
-                    <option key={c.id} value={String(c.id)}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-
+            <div className="flex flex-col gap-1.5">
               {isSuperadmin && !selectedCompanyId ? (
-                <p className="text-sm text-secondary">Выберите компанию для добавления участников</p>
+                <p className="text-sm text-secondary">{t('booking.modal.selectCompanyForParticipants')}</p>
               ) : loadingParticipants ? (
-                <p className="text-sm text-muted">Загрузка участников…</p>
-              ) : userOptions.filter((u) => u.id !== user?.id).length === 0 ? (
-                <p className="text-sm text-secondary">Нет доступных участников</p>
+                <p className="text-sm text-muted">{t('booking.modal.loadingParticipants')}</p>
               ) : (
                 <>
-                  <div
-                    className="max-h-40 overflow-y-auto rounded-lg border border-gray-300 bg-surface divide-y divide-[color:var(--border)]"
-                    role="listbox"
-                    aria-multiselectable="true"
-                    aria-label="Выберите участников"
-                  >
-                    {userOptions
-                      .filter((u) => u.id !== user?.id)
-                      .map((u) => {
-                        const selected = participantIds.includes(u.id);
-                        return (
+                  <p className="text-xs font-medium text-secondary">
+                    {t('booking.modal.participants')}
+                    <span className="font-normal text-muted">
+                      {' '}· {participantIds.length} {t('booking.modal.participantsOf')}{' '}
+                      {userOptions.filter((u) => u.id !== user?.id).length}
+                    </span>
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 min-h-9 p-1.5 border border-default rounded-[var(--radius-sm)] bg-surface">
+                    {participantIds.map((id) => {
+                      const member = userOptions.find((u) => u.id === id);
+                      if (!member) return null;
+                      const initials = (member.full_name || member.email).slice(0, 2).toUpperCase();
+                      const displayName = member.full_name?.split(' ')[1]
+                        ? `${member.full_name.split(' ')[0][0]}. ${member.full_name.split(' ')[1]}`
+                        : member.full_name || member.email;
+                      return (
+                        <span
+                          key={id}
+                          className="inline-flex items-center gap-1.5 pl-1 pr-2 py-0.5 bg-raised rounded-full text-xs font-medium text-primary"
+                        >
+                          <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-surface text-[9px] font-semibold text-secondary border border-default">
+                            {initials}
+                          </span>
+                          <span>{displayName}</span>
                           <button
-                            key={u.id}
                             type="button"
-                            role="option"
-                            aria-selected={selected}
-                            onClick={() => toggleParticipant(u.id)}
-                            className={cn(
-                              'flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-raised transition-colors',
-                              selected && 'bg-blue-50',
-                            )}
+                            onClick={() => toggleParticipant(id)}
+                            className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-muted/30 text-[10px] text-secondary hover:bg-muted/50"
+                            aria-label={`Remove ${displayName}`}
                           >
-                            <span
-                              className={cn(
-                                'flex h-4 w-4 shrink-0 items-center justify-center rounded border text-xs font-bold',
-                                selected
-                                  ? 'border-blue-600 bg-blue-600 text-white'
-                                  : 'border-gray-300 text-transparent',
-                              )}
-                              aria-hidden="true"
-                            >
-                              ✓
-                            </span>
-                            <span className="text-primary">{u.full_name || u.email}</span>
-                            <span className="ml-auto text-xs text-secondary">{u.email}</span>
+                            ×
                           </button>
-                        );
-                      })}
+                        </span>
+                      );
+                    })}
+                    {/* Add participant dropdown trigger */}
+                    <div className="relative" ref={dropdownRef}>
+                      <button
+                        type="button"
+                        onClick={() => setShowMemberDropdown((p) => !p)}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-secondary"
+                      >
+                        <Plus size={12} />
+                        {t('booking.modal.addParticipant')}
+                      </button>
+                      {showMemberDropdown && (
+                        <div className="absolute left-0 top-full mt-1 z-10 w-52 max-h-44 overflow-y-auto rounded-[var(--radius-sm)] border border-default bg-surface shadow-lg">
+                          {userOptions
+                            .filter((u) => u.id !== user?.id && !participantIds.includes(u.id))
+                            .map((u) => (
+                              <button
+                                key={u.id}
+                                type="button"
+                                onClick={() => {
+                                  toggleParticipant(u.id);
+                                  setShowMemberDropdown(false);
+                                }}
+                                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-primary hover:bg-raised text-left"
+                              >
+                                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-raised text-[9px] font-semibold">
+                                  {(u.full_name || u.email).slice(0, 2).toUpperCase()}
+                                </span>
+                                <span className="truncate">{u.full_name || u.email}</span>
+                              </button>
+                            ))}
+                          {userOptions.filter((u) => u.id !== user?.id && !participantIds.includes(u.id)).length === 0 && (
+                            <p className="px-3 py-2 text-xs text-muted">{t('booking.modal.noParticipants')}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  {participantIds.length > 0 && (
-                    <p className="mt-1 text-xs text-blue-600">
-                      Выбрано: {participantIds.length}
-                    </p>
-                  )}
                 </>
               )}
             </div>
           )}
 
-          <div>
-            <label
-              className="mb-1 block text-sm font-semibold text-primary"
-              htmlFor="modal-booking-desc"
-            >
-              Комментарий{' '}
-              <span className="font-normal text-muted">(необязательно)</span>
+          {/* Comment field */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-secondary" htmlFor="modal-booking-desc">
+              {t('booking.modal.comment')}{' '}
+              <span className="font-normal text-muted">· {t('common.optional')}</span>
             </label>
             <textarea
               id="modal-booking-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
-              placeholder="Например, еженедельный стендап"
-              className={cn(fieldClass, 'resize-none')}
+              placeholder={t('booking.modal.descriptionPlaceholder')}
+              className="w-full px-3 py-2 text-sm border border-default rounded-[var(--radius-sm)] bg-surface text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)] resize-none"
             />
           </div>
-
-          {!isAdmin && (
-            <p className="text-xs text-muted leading-relaxed">
-              Требуется подтверждённый email. Время отправляется с часовым поясом Asia/Almaty (+05:00).
-            </p>
-          )}
-
-          <div className="flex gap-3 pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 rounded-lg border border-gray-300 bg-gray-50 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              disabled={createMutation.isPending || successMsg !== null}
-              className={cn(
-                'flex-1 rounded-lg py-2.5 text-sm font-medium text-primary focus:outline-none focus:ring-2 focus:ring-blue-500',
-                createMutation.isPending || successMsg !== null
-                  ? 'bg-blue-400 cursor-not-allowed opacity-70'
-                  : 'bg-blue-600 hover:bg-blue-700',
-              )}
-            >
-              {createMutation.isPending ? 'Отправка…' : 'Забронировать'}
-            </button>
-          </div>
         </form>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-2 border-t border-[color:var(--border-faint)] px-[22px] pt-[14px] pb-[18px] mt-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-8 px-4 text-sm font-medium text-secondary hover:bg-raised rounded-[var(--radius-sm)] transition-colors"
+          >
+            {t('common.cancel')}
+          </button>
+          <button
+            type="submit"
+            form="booking-modal-form"
+            disabled={createMutation.isPending || successMsg !== null}
+            className={cn(
+              'inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] transition-colors',
+              'text-[color:var(--text-onbrand)] bg-[color:var(--brand)] hover:bg-[color:var(--brand-hover)]',
+              'disabled:opacity-60 disabled:cursor-not-allowed',
+            )}
+          >
+            <Calendar size={14} />
+            {createMutation.isPending ? t('common.submitting') : t('catalog.book')}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { HTMLAttributes } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -36,6 +37,7 @@ export function CrmKanbanColumn({
   dragHandleProps,
   isDragOverlay,
 }: CrmKanbanColumnProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);

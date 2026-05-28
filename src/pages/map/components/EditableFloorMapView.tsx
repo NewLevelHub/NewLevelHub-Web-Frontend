@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MapPin } from 'lucide-react';
 
 import type { FloorMap, MapPoint } from '@/shared/types';
@@ -28,20 +29,21 @@ export const EditableFloorMapView = memo<EditableFloorMapViewProps>(
     onMovePoint,
     onMapClick,
   }) => {
+    const { t } = useTranslation();
     return (
       <div className="relative w-full select-none overflow-hidden rounded-xl border-2 border-dashed border-indigo-300 bg-gray-50">
         <div className="aspect-video w-full bg-gradient-to-br from-indigo-50/40 to-gray-100">
           <div
             className="relative h-full w-full cursor-crosshair"
             role="img"
-            aria-label={`Карта этажа ${floorMap.floor_name} (режим редактирования)`}
+            aria-label={t('map.floorMapEdit', { name: floorMap.floor_name })}
             onClick={onMapClick}
           >
             {floorMap.points.length === 0 && !ghostPin && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="text-center">
                   <MapPin className="mx-auto mb-2 h-10 w-10 text-brand" />
-                  <p className="text-sm text-brand">Нажмите на карту, чтобы разместить точку</p>
+                  <p className="text-sm text-brand">{t('map.clickToPlace')}</p>
                 </div>
               </div>
             )}

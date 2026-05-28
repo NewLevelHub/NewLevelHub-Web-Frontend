@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, PartyPopper } from 'lucide-react';
@@ -8,6 +9,7 @@ import { cn } from '@/shared/lib/cn';
 import type { OnboardingStatus } from '@/shared/types';
 
 export default function OnboardingWizardPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isDone, setIsDone] = useState(false);
@@ -157,7 +159,7 @@ export default function OnboardingWizardPage() {
                     className="ml-2 shrink-0 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
                     aria-label={`Отметить шаг выполненным: ${step.title}`}
                   >
-                    {completeStepMutation.isPending ? 'Сохранение...' : 'Выполнено'}
+                    {completeStepMutation.isPending ? t('common.savingPlain') : 'Выполнено'}
                   </button>
                 )}
               </div>

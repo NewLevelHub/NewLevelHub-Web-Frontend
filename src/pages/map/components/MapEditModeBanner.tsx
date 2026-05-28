@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Move, Pencil } from 'lucide-react';
 
 import { cn } from '@/shared/lib/cn';

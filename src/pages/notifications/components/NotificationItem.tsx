@@ -1,31 +1,11 @@
 import { memo } from 'react';
 import { Bell, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/shared/lib/cn';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import type { Notification } from '@/shared/types';
 import { NotificationBadge } from '@/pages/notifications/components/NotificationBadge';
-
-export const NOTIFICATION_TYPE_LABELS: Record<string, string> = {
-  booking_confirmed: 'Бронь подтверждена',
-  booking_reminder: 'Напоминание о брони',
-  booking_cancelled: 'Бронь отменена',
-  task_assigned: 'Задача назначена',
-  task_moved: 'Задача перемещена',
-  task_comment: 'Комментарий к задаче',
-  task_deadline: 'Дедлайн задачи',
-  task_deadline_overdue: 'Просрочен дедлайн',
-  guest_validated: 'Гость подтверждён',
-  guest_pass_expiring: 'Пропуск истекает',
-  service_request_update: 'Обновление заявки',
-  announcement: 'Новое объявление',
-  announcement_building: 'Объявление для здания',
-  announcement_company: 'Объявление компании',
-  invitation: 'Приглашение',
-  leave_review: 'Проверка отпуска',
-  leave_approved: 'Отпуск одобрен',
-  leave_rejected: 'Отпуск отклонён',
-  system: 'Системное',
-};
 
 function notificationType(n: Notification): string {
   return n.type ?? n.notification_type ?? '';
@@ -40,6 +20,9 @@ interface NotificationItemProps {
 
 export const NotificationItem = memo<NotificationItemProps>(
   ({ notification: n, onDelete, onClick, isDeleting }) => {
+    const { t, i18n } = useTranslation();
+    const locale = dateLocaleTag(i18n.language);
+
     return (
       <li
         onClick={() => onClick(n)}
@@ -62,7 +45,7 @@ export const NotificationItem = memo<NotificationItemProps>(
           <p className="font-medium text-sm text-primary">{n.title}</p>
           <p className="text-sm text-muted mt-0.5 whitespace-pre-line">{n.message ?? n.body}</p>
           <p className="text-xs text-secondary mt-1">
-            {new Date(n.created_at).toLocaleString('ru-RU')}
+            {new Date(n.created_at).toLocaleString(locale)}
           </p>
         </div>
         {!n.is_read && <NotificationBadge />}
@@ -71,7 +54,7 @@ export const NotificationItem = memo<NotificationItemProps>(
           onClick={e => onDelete(e, n.id)}
           disabled={isDeleting}
           className="shrink-0 mt-0.5 p-1 rounded text-secondary hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
-          aria-label="Удалить уведомление"
+          aria-label={t('common.deleteNotification')}
         >
           <Trash2 size={15} aria-hidden="true" />
         </button>

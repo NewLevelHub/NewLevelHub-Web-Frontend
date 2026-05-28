@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/shared/lib/cn';
 import type { ResourceScheduleSlot } from '@/shared/types';
@@ -44,8 +45,8 @@ type NormalizedInterval = {
 
 function slotLabel(sl: ResourceScheduleSlot): string {
   return sl.booking_id != null
-    ? (sl.user_name?.trim() || `Бронь #${sl.booking_id}`)
-    : 'Блокировка';
+    ? (sl.user_name?.trim() || `#${sl.booking_id}`)
+    : '__block__';
 }
 
 function normalizeIntervals(
@@ -113,7 +114,14 @@ function normalizeIntervals(
   return merged;
 }
 
+function resolveLabel(label: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  if (label === '__block__') return t('booking.timeline.blockLabel');
+  if (label.startsWith('#')) return t('booking.timeline.bookingLabel', { id: label.slice(1) });
+  return label;
+}
+
 export function ResourceDayTimeline({ dayDate, slots, className }: Props) {
+  const { t } = useTranslation();
   const { dayStart, dayEnd } = useMemo(() => parseLocalDayBounds(dayDate), [dayDate]);
   const dayStartMs = dayStart.getTime();
   const dayEndMs = dayEnd.getTime();
@@ -155,9 +163,9 @@ export function ResourceDayTimeline({ dayDate, slots, className }: Props) {
               seg.isBlock ? 'bg-amber-700/95' : seg.isSoonAvailable ? 'bg-amber-500/95' : 'bg-rose-600/95',
             )}
             style={{ left: `${seg.left}%`, width: `${Math.max(seg.width, 0.35)}%` }}
-            title={seg.label}
+            title={resolveLabel(seg.label, t)}
           >
-            <span className="truncate">{seg.label}</span>
+            <span className="truncate">{resolveLabel(seg.label, t)}</span>
           </div>
         ))}
       </div>

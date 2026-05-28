@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Camera, Trash2, User, Building2, BadgeCheck, BadgeAlert, Pencil, X, Check } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { USER_ROLES } from '@/shared/config/constants';
+import { USER_ROLES, USER_ROLE_LABEL_KEYS } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
 import { mapApiUser } from '@/shared/lib/mapUser';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
@@ -16,13 +17,6 @@ import type { User as UserType } from '@/shared/types';
 
 const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_AVATAR_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-
-const ROLE_LABELS: Record<string, string> = {
-  [USER_ROLES.SUPERADMIN]: 'Суперадмин',
-  [USER_ROLES.COMPANY_ADMIN]: 'Администратор компании',
-  [USER_ROLES.EMPLOYEE]: 'Сотрудник',
-  [USER_ROLES.GUEST]: 'Гость',
-};
 
 const ROLE_BADGE_COLORS: Record<string, string> = {
   [USER_ROLES.SUPERADMIN]: 'bg-purple-100 text-purple-800',
@@ -107,6 +101,7 @@ function Alert({ type, message }: AlertProps) {
 // ---------------------------------------------------------------------------
 
 export default function ProfilePage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { fetchMe } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -173,10 +168,10 @@ export default function ProfilePage() {
       await queryClient.invalidateQueries({ queryKey: ['profile'] });
       await fetchMe();
       setIsEditing(false);
-      setFormAlert({ type: 'success', message: 'Профиль успешно обновлён.' });
+      setFormAlert({ type: 'success', message: t('profile.updateSuccess') });
     },
     onError: () => {
-      setFormAlert({ type: 'error', message: 'Не удалось сохранить изменения. Попробуйте снова.' });
+      setFormAlert({ type: 'error', message: t('profile.updateError') });
     },
   });
 
@@ -274,7 +269,7 @@ export default function ProfilePage() {
     );
   }
 
-  const roleLabel = ROLE_LABELS[profile.role] ?? profile.role;
+  const roleLabel = t(USER_ROLE_LABEL_KEYS[profile.role as keyof typeof USER_ROLE_LABEL_KEYS] ?? profile.role);
   const roleBadgeColor = ROLE_BADGE_COLORS[profile.role] ?? 'bg-gray-100 text-gray-700';
   const isAvatarBusy = avatarUploadMutation.isPending || deleteAvatarMutation.isPending;
   const companyName = profile.company?.name ?? profile.company_name;
@@ -379,7 +374,7 @@ export default function ProfilePage() {
                 profile.is_email_verified ? 'text-green-700' : 'text-amber-600',
               )}
             >
-              {profile.is_email_verified ? 'Email подтверждён' : 'Email не подтверждён'}
+              {profile.is_email_verified ? t('auth.verify.successTitle') : t('common.notVerifiedEmail')}
             </span>
           </div>
 
@@ -412,9 +407,7 @@ export default function ProfilePage() {
               onClick={startEditing}
               className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
             >
-              <Pencil size={14} aria-hidden="true" />
-              Редактировать
-            </button>
+              <Pencil size={14} aria-hidden="true" />{t('common.edit')}</button>
           )}
         </div>
 
@@ -432,9 +425,7 @@ export default function ProfilePage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Имя
-                </label>
+                <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">{t('common.firstName')}</label>
                 <input
                   id="first_name"
                   name="first_name"
@@ -444,14 +435,12 @@ export default function ProfilePage() {
                   autoComplete="given-name"
                   required
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-primary placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Имя"
+                  placeholder={t('common.firstName')}
                 />
               </div>
 
               <div>
-                <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Фамилия
-                </label>
+                <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">{t('common.lastName')}</label>
                 <input
                   id="last_name"
                   name="last_name"
@@ -461,7 +450,7 @@ export default function ProfilePage() {
                   autoComplete="family-name"
                   required
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-primary placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Фамилия"
+                  placeholder={t('common.lastName')}
                 />
               </div>
             </div>
@@ -483,9 +472,7 @@ export default function ProfilePage() {
             </div>
 
             <div>
-              <label htmlFor="position" className="block text-sm font-medium text-gray-700 mb-1">
-                Должность
-              </label>
+              <label htmlFor="position" className="block text-sm font-medium text-gray-700 mb-1">{t('team.position')}</label>
               <input
                 id="position"
                 name="position"
@@ -493,7 +480,7 @@ export default function ProfilePage() {
                 value={form.position}
                 onChange={handleFormChange}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-primary placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Например: Frontend Developer"
+                placeholder={t('common.positionExample')}
               />
             </div>
 
@@ -529,9 +516,7 @@ export default function ProfilePage() {
                   </>
                 ) : (
                   <>
-                    <Check size={15} aria-hidden="true" />
-                    Сохранить
-                  </>
+                    <Check size={15} aria-hidden="true" />{t('common.save')}</>
                 )}
               </button>
 
@@ -550,11 +535,11 @@ export default function ProfilePage() {
           <dl className="space-y-4 text-sm">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <dt className="text-muted mb-0.5">Имя</dt>
+                <dt className="text-muted mb-0.5">{t('common.firstName')}</dt>
                 <dd className="font-medium text-primary">{profile.first_name || '—'}</dd>
               </div>
               <div>
-                <dt className="text-muted mb-0.5">Фамилия</dt>
+                <dt className="text-muted mb-0.5">{t('common.lastName')}</dt>
                 <dd className="font-medium text-primary">{profile.last_name || '—'}</dd>
               </div>
             </div>
@@ -573,7 +558,7 @@ export default function ProfilePage() {
             </div>
 
             <div>
-              <dt className="text-muted mb-0.5">Должность</dt>
+              <dt className="text-muted mb-0.5">{t('team.position')}</dt>
               <dd className="font-medium text-primary">{profile.position || '—'}</dd>
             </div>
           </dl>

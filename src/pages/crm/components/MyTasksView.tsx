@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import {
   Search,
@@ -7,7 +8,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
-import { CRM_PRIORITY_BADGE_CLASS, CRM_PRIORITY_LABELS, formatDeadline, isOverdue } from '@/pages/crm/utils/crm-display';
+import { CRM_PRIORITY_BADGE_CLASS, CRM_PRIORITY_LABEL_KEYS, formatDeadline, isOverdue } from '@/pages/crm/utils/crm-display';
 import { useMyTasks } from '@/pages/crm/hooks/useMyTasks';
 
 export type MyTasksViewProps = ReturnType<typeof useMyTasks>;
@@ -28,6 +29,7 @@ function MyTasksSkeleton() {
 }
 
 export function MyTasksView(props: MyTasksViewProps) {
+  const { t } = useTranslation();
   const {
     filters,
     setFilters,
@@ -59,12 +61,12 @@ export function MyTasksView(props: MyTasksViewProps) {
             type="text"
             value={filters.search}
             onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
-            placeholder="Поиск по названию..."
+            placeholder={t('common.searchByTitle')}
             className={cn(
               'w-full rounded-lg border border-default bg-raised pl-8 pr-3 py-2 text-sm text-primary placeholder-gray-500',
               'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
             )}
-            aria-label="Поиск задач"
+            aria-label={t('common.searchTasks')}
           />
         </div>
 
@@ -75,13 +77,13 @@ export function MyTasksView(props: MyTasksViewProps) {
             'rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary',
             'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
           )}
-          aria-label="Фильтр по приоритету"
+          aria-label={t('common.filterPriority')}
         >
           <option value="">Все приоритеты</option>
-          <option value="low">Низкий</option>
-          <option value="medium">Средний</option>
-          <option value="high">Высокий</option>
-          <option value="critical">Критический</option>
+          <option value="low">{t('crm.priority.low')}</option>
+          <option value="medium">{t('crm.priority.medium')}</option>
+          <option value="high">{t('crm.priority.high')}</option>
+          <option value="critical">{t('crm.priority.critical')}</option>
         </select>
 
         <select
@@ -91,11 +93,11 @@ export function MyTasksView(props: MyTasksViewProps) {
             'rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary',
             'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
           )}
-          aria-label="Фильтр по дедлайну"
+          aria-label={t('common.filterDeadline')}
         >
           <option value="">Все дедлайны</option>
-          <option value="overdue">Просрочено</option>
-          <option value="today">Сегодня</option>
+          <option value="overdue">{t('common.overdue')}</option>
+          <option value="today">{t('common.today')}</option>
           <option value="this_week">На этой неделе</option>
         </select>
 
@@ -106,10 +108,10 @@ export function MyTasksView(props: MyTasksViewProps) {
             'rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary',
             'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
           )}
-          aria-label="Сортировка"
+          aria-label={t('common.sort')}
         >
-          <option value="-created_at">Новые сначала</option>
-          <option value="created_at">Старые сначала</option>
+          <option value="-created_at">{t('team.directory.newest')}</option>
+          <option value="created_at">{t('team.directory.oldest')}</option>
           <option value="deadline">Дедлайн (ближайший)</option>
           <option value="-deadline">Дедлайн (поздний)</option>
           <option value="priority">Приоритет (низкий)</option>
@@ -124,9 +126,7 @@ export function MyTasksView(props: MyTasksViewProps) {
               'rounded-lg border border-default px-3 py-2 text-sm font-medium',
               'text-secondary hover:text-primary hover:border-gray-500 transition-colors',
             )}
-          >
-            Сбросить
-          </button>
+          >{t('common.reset')}</button>
         )}
       </div>
 
@@ -151,9 +151,7 @@ export function MyTasksView(props: MyTasksViewProps) {
               type="button"
               onClick={handleReset}
               className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
-            >
-              Сбросить фильтры
-            </button>
+            >{t('common.resetFilters')}</button>
           )}
         </div>
       ) : (
@@ -203,7 +201,7 @@ export function MyTasksView(props: MyTasksViewProps) {
                             <Link
                               to={`/crm/tasks/${task.id}`}
                               className="group inline-flex items-center gap-1.5 text-primary hover:text-blue-400 transition-colors font-medium"
-                              title="Открыть задачу"
+                              title={t('common.openTask')}
                             >
                               <span className="line-clamp-1">{task.title}</span>
                               <ExternalLink
@@ -219,7 +217,7 @@ export function MyTasksView(props: MyTasksViewProps) {
                                 CRM_PRIORITY_BADGE_CLASS[task.priority],
                               )}
                             >
-                              {CRM_PRIORITY_LABELS[task.priority]}
+                              {t(CRM_PRIORITY_LABEL_KEYS[task.priority])}
                             </span>
                           </td>
                           <td className="px-4 py-3">
@@ -259,7 +257,7 @@ export function MyTasksView(props: MyTasksViewProps) {
                   )}
                 >
                   {loadingMoreBoard === group.board_id
-                    ? 'Загрузка...'
+                    ? t('common.loading')
                     : `Показать ещё (${group.total - group.tasks.length})`}
                 </button>
               )}

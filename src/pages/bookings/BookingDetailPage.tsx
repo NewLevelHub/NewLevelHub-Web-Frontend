@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -10,13 +11,6 @@ import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import type { Booking, BookingResourceDetail, CompanyMember, PaginatedResponse } from '@/shared/types';
 
-const STATUS_LABEL: Record<string, string> = {
-  [BOOKING_STATUSES.CONFIRMED]: 'Подтверждено',
-  [BOOKING_STATUSES.CHECKED_IN]: 'Отмечен',
-  [BOOKING_STATUSES.CANCELLED]: 'Отменено',
-  [BOOKING_STATUSES.COMPLETED]: 'Завершено',
-  [BOOKING_STATUSES.NO_SHOW]: 'Неявка',
-};
 
 const STATUS_BADGE_CLASS: Record<string, string> = {
   [BOOKING_STATUSES.CONFIRMED]: 'bg-blue-100 text-blue-800',
@@ -38,6 +32,7 @@ function toDateTimeLocalValue(iso: string): string {
 }
 
 export default function BookingDetailPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { id } = useParams<{ id: string }>();
@@ -99,7 +94,7 @@ export default function BookingDetailPage() {
     },
     onSuccess: async () => {
       setFormError(null);
-      setFormSuccess('Время бронирования обновлено.');
+      setFormSuccess(t('booking.detail.timeUpdated'));
       await queryClient.invalidateQueries({ queryKey: ['booking-reservation', bookingId] });
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
       await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
@@ -118,7 +113,7 @@ export default function BookingDetailPage() {
     },
     onSuccess: async () => {
       setFormError(null);
-      setFormSuccess('Участник добавлен.');
+      setFormSuccess(t('booking.detail.participantAdded'));
       setSelectedUserId('');
       await queryClient.invalidateQueries({ queryKey: ['booking-reservation', bookingId] });
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
@@ -136,7 +131,7 @@ export default function BookingDetailPage() {
     },
     onSuccess: async () => {
       setFormError(null);
-      setFormSuccess('Участник удален.');
+      setFormSuccess(t('booking.detail.participantRemoved'));
       await queryClient.invalidateQueries({ queryKey: ['booking-reservation', bookingId] });
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
       await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
@@ -153,7 +148,7 @@ export default function BookingDetailPage() {
     },
     onSuccess: async () => {
       setFormError(null);
-      setFormSuccess('Бронирование отменено.');
+      setFormSuccess(t('booking.detail.cancelled'));
       await queryClient.invalidateQueries({ queryKey: ['booking-reservation', bookingId] });
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
       await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
@@ -170,7 +165,7 @@ export default function BookingDetailPage() {
     },
     onSuccess: async () => {
       setFormError(null);
-      setFormSuccess('Чек-ин выполнен успешно.');
+      setFormSuccess(t('booking.detail.checkInSuccess'));
       await queryClient.invalidateQueries({ queryKey: ['booking-reservation', bookingId] });
       await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
       await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
@@ -200,7 +195,7 @@ export default function BookingDetailPage() {
   if (!bookingId) {
     return (
       <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto">
-        <p className="text-sm text-red-600">Некорректная ссылка.</p>
+        <p className="text-sm text-red-600">{t('booking.detail.invalidLink')}</p>
       </main>
     );
   }
@@ -208,7 +203,7 @@ export default function BookingDetailPage() {
   if (isLoading) {
     return (
       <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto">
-        <p className="text-sm text-muted">Загрузка...</p>
+        <p className="text-sm text-muted">{t('common.loading')}</p>
       </main>
     );
   }
@@ -216,10 +211,8 @@ export default function BookingDetailPage() {
   if (isError || !data) {
     return (
       <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto space-y-3">
-        <p className="text-sm text-red-600">Бронирование не найдено.</p>
-        <Link to="/bookings/my" className="text-sm text-blue-600 hover:underline">
-          Мои бронирования
-        </Link>
+        <p className="text-sm text-red-600">{t('booking.detail.notFound')}</p>
+        <Link to="/bookings/my" className="text-sm text-blue-600 hover:underline">{t('common.myBookings')}</Link>
       </main>
     );
   }
@@ -251,7 +244,7 @@ export default function BookingDetailPage() {
     <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-lg mx-auto space-y-6">
       {isOwner ? (
         <Link to="/bookings/my" className="text-sm text-blue-600 hover:underline">
-          ← Мои бронирования
+          {t('booking.detail.myBookings')}
         </Link>
       ) : null}
 
@@ -261,31 +254,31 @@ export default function BookingDetailPage() {
           {start.toLocaleString('ru-RU')} — {end.toLocaleString('ru-RU')}
         </p>
         <p className="text-sm">
-          <span className="font-medium text-secondary">Статус: </span>
+          <span className="font-medium text-secondary">{t('booking.detail.statusLabel')} </span>
           <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE_CLASS[data.status] ?? 'bg-gray-100 text-muted')}>
-            {STATUS_LABEL[data.status] ?? data.status}
+            {t(`common.bookingStatus.${data.status}`, { defaultValue: data.status })}
           </span>
         </p>
         {data.status === BOOKING_STATUSES.CANCELLED && data.cancel_reason?.trim() ? (
           <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-primary">
             <p className="font-medium text-rose-900">
               {data.cancelled_by != null && data.cancelled_by !== data.user
-                ? 'Комментарий администратора'
-                : 'Причина отмены'}
+                ? t('booking.detail.adminComment')
+                : t('booking.detail.cancelReason')}
             </p>
             <p className="mt-1 whitespace-pre-wrap text-primary">{data.cancel_reason.trim()}</p>
           </div>
         ) : null}
         {data.checked_in_at ? (
           <p className="text-sm text-muted">
-            <span className="font-medium text-secondary">Чек-ин: </span>
-            {new Date(data.checked_in_at).toLocaleString('ru-RU')}
+            <span className="font-medium text-secondary">{t('booking.detail.checkInLabel')} </span>
+            {new Date(data.checked_in_at).toLocaleString()}
           </p>
         ) : null}
         {data.description ? <p className="text-sm text-muted">{data.description}</p> : null}
         {data.user_name ? (
           <p className="text-sm text-muted">
-            <span className="font-medium text-secondary">Забронировал: </span>
+            <span className="font-medium text-secondary">{t('booking.detail.bookedBy')} </span>
             {data.user_name}
           </p>
         ) : null}
@@ -311,7 +304,7 @@ export default function BookingDetailPage() {
           }}
           className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
         >
-          {checkInMutation.isPending ? 'Выполняется чек-ин…' : 'Отметить чек-ин'}
+          {checkInMutation.isPending ? t('booking.detail.checkInPending') : t('booking.detail.checkInBtn')}
         </button>
       ) : null}
 
@@ -326,17 +319,15 @@ export default function BookingDetailPage() {
           }}
           className="w-full rounded-lg border border-red-300 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
         >
-          Отменить бронирование
+          {t('booking.detail.cancelBtn')}
         </button>
       ) : null}
 
       {canEditTime ? (
         <section className="rounded-2xl border border-default bg-surface p-6 shadow-sm space-y-4">
-          <h2 className="text-lg font-semibold text-primary">Изменить время</h2>
+          <h2 className="text-lg font-semibold text-primary">{t('booking.detail.updateTimeTitle')}</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="text-sm text-secondary">
-              Начало
-              <input
+            <label className="text-sm text-secondary">{t('common.start')}<input
                 type="datetime-local"
                 value={startInput}
                 onChange={(event) => setStartInput(event.target.value)}
@@ -344,7 +335,7 @@ export default function BookingDetailPage() {
               />
             </label>
             <label className="text-sm text-secondary">
-              Конец
+              {t('booking.detail.endLabel')}
               <input
                 type="datetime-local"
                 value={endInput}
@@ -360,21 +351,21 @@ export default function BookingDetailPage() {
               setFormError(null);
               setFormSuccess(null);
               if (!startInput || !endInput) {
-                setFormError('Укажите start_time и end_time.');
+                setFormError(t('booking.detail.startEndRequired'));
                 return;
               }
               updateTimeMutation.mutate({ startTime: startInput, endTime: endInput });
             }}
             className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50"
           >
-            Сохранить время
+            {t('booking.detail.saveTime')}
           </button>
         </section>
       ) : null}
 
       {isMeetingRoom ? (
         <section className="rounded-2xl border border-default bg-surface p-6 shadow-sm space-y-4">
-          <h2 className="text-lg font-semibold text-primary">Участники встречи</h2>
+          <h2 className="text-lg font-semibold text-primary">{t('booking.detail.meetingParticipants')}</h2>
           <ul className="space-y-2">
             {data.participants.length > 0 ? (
               data.participants.map((participant) => (
@@ -390,27 +381,23 @@ export default function BookingDetailPage() {
                         removeParticipantMutation.mutate({ userId: participant.id });
                       }}
                       className="rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-                    >
-                      Удалить
-                    </button>
+                    >{t('common.delete')}</button>
                   ) : null}
                 </li>
               ))
             ) : (
-              <li className="text-sm text-muted">Пока нет участников.</li>
+              <li className="text-sm text-muted">{t('booking.detail.noParticipants')}</li>
             )}
           </ul>
 
           {canManageParticipants ? (
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-              <label className="text-sm text-secondary sm:min-w-72">
-                Добавить участника
-                <select
+              <label className="text-sm text-secondary sm:min-w-72">{t('common.addMember')}<select
                   value={selectedUserId}
                   onChange={(event) => setSelectedUserId(event.target.value)}
                   className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
                 >
-                  <option value="">Выберите пользователя</option>
+                  <option value="">{t('booking.detail.selectUser')}</option>
                   {candidateMembers.map((member) => (
                     <option key={member.id} value={member.id}>
                       {member.full_name} ({member.email})
@@ -428,12 +415,12 @@ export default function BookingDetailPage() {
                 }}
                 className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50"
               >
-                Добавить
+                {t('booking.detail.addBtn')}
               </button>
             </div>
           ) : (
             <p className="text-sm text-muted">
-              Управление участниками доступно только администраторам компании.
+              {t('booking.detail.participantsAdminOnly')}
             </p>
           )}
         </section>

@@ -1,4 +1,6 @@
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/shared/lib/i18n';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Paperclip, FileText, FileSpreadsheet, Image, File, Trash2, Loader2 } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
@@ -33,7 +35,7 @@ function getFileIcon(mimeType: string) {
 }
 
 function extractUploadError(error: unknown): string {
-  if (!error || typeof error !== 'object') return 'Ошибка загрузки файла';
+  if (!error || typeof error !== 'object') return i18n.t('common.uploadError');
   const e = error as { response?: { data?: { detail?: unknown; message?: string } } };
   const detail = e.response?.data?.detail;
   if (typeof detail === 'string') return detail;
@@ -42,7 +44,7 @@ function extractUploadError(error: unknown): string {
     if (Array.isArray(firstKey) && typeof firstKey[0] === 'string') return firstKey[0];
     if (typeof firstKey === 'string') return firstKey;
   }
-  return e.response?.data?.message ?? 'Ошибка загрузки файла';
+  return e.response?.data?.message ?? i18n.t('common.uploadError');
 }
 
 interface AttachmentsSectionProps {
@@ -51,6 +53,7 @@ interface AttachmentsSectionProps {
 }
 
 export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -137,7 +140,7 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploadMutation.isPending}
-          aria-label="Прикрепить файл"
+          aria-label={t('common.attachFile')}
           className={cn(
             'flex items-center gap-1.5 text-xs text-secondary hover:text-secondary transition-colors',
             'disabled:opacity-50 disabled:cursor-not-allowed',
@@ -148,7 +151,7 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
           ) : (
             <Paperclip size={13} />
           )}
-          {uploadMutation.isPending ? 'Загрузка...' : 'Прикрепить файл'}
+          {uploadMutation.isPending ? t('common.loading') : t('common.attachFile')}
         </button>
         <input
           ref={fileInputRef}
@@ -186,7 +189,7 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
       )}
 
       {!isLoading && !isError && attachments && attachments.length > 0 && (
-        <ul className="space-y-1.5" role="list" aria-label="Список вложений">
+        <ul className="space-y-1.5" role="list" aria-label={t('common.attachmentsList')}>
           {attachments.map((attachment) => {
             const IconComponent = getFileIcon(attachment.mime_type);
             const formattedDate = new Date(attachment.created_at).toLocaleDateString('ru-RU', {
@@ -211,7 +214,7 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
                     disabled={isDownloading}
                     className="text-sm text-secondary hover:text-primary truncate block max-w-full text-left disabled:opacity-50"
                   >
-                    {isDownloading ? 'Открытие…' : attachment.filename}
+                    {isDownloading ? t('common.opening') : attachment.filename}
                   </button>
                   <p className="text-xs text-muted truncate">
                     {formatFileSize(attachment.size)} · {attachment.uploaded_by.full_name} · {formattedDate}
@@ -250,10 +253,10 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
           const id = pendingDeleteAttachmentId;
           deleteMutation.mutate(id, { onSettled: () => setPendingDeleteAttachmentId(null) });
         }}
-        title="Удалить вложение?"
-        description="Файл будет удалён из задачи без возможности восстановления."
+        title={t('common.deleteAttachment')}
+        description={t('common.deleteAttachmentDesc')}
         variant="danger"
-        confirmLabel="Удалить"
+        confirmLabel={t('common.delete')}
         isLoading={deleteMutation.isPending}
       />
     </div>

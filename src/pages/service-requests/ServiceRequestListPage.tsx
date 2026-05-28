@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Star } from 'lucide-react';
 import { useLocation } from 'react-router';
@@ -9,10 +10,10 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import {
   SERVICE_REQUEST_STATUSES,
-  SERVICE_REQUEST_STATUS_LABELS,
+  SERVICE_REQUEST_STATUS_LABEL_KEYS,
   SERVICE_REQUEST_STATUS_TRANSITIONS,
   SERVICE_REQUEST_TYPES,
-  SERVICE_REQUEST_TYPE_LABELS,
+  SERVICE_REQUEST_TYPE_LABEL_KEYS,
   USER_ROLES,
   type ServiceRequestStatus,
   type ServiceRequestType,
@@ -34,22 +35,6 @@ const STATUS_BADGE_CLASS: Record<ServiceRequestStatus, string> = {
   [SERVICE_REQUEST_STATUSES.COMPLETED]: 'bg-success-subtle text-success',
 };
 
-const TYPE_OPTIONS: Array<{ value: ServiceRequestType | ''; label: string }> = [
-  { value: '', label: 'Все типы' },
-  { value: SERVICE_REQUEST_TYPES.CLEANING, label: SERVICE_REQUEST_TYPE_LABELS[SERVICE_REQUEST_TYPES.CLEANING] },
-  { value: SERVICE_REQUEST_TYPES.REPAIR, label: SERVICE_REQUEST_TYPE_LABELS[SERVICE_REQUEST_TYPES.REPAIR] },
-  { value: SERVICE_REQUEST_TYPES.SUPPLIES, label: SERVICE_REQUEST_TYPE_LABELS[SERVICE_REQUEST_TYPES.SUPPLIES] },
-  { value: SERVICE_REQUEST_TYPES.GENERAL, label: SERVICE_REQUEST_TYPE_LABELS[SERVICE_REQUEST_TYPES.GENERAL] },
-];
-
-const STATUS_OPTIONS: Array<{ value: ServiceRequestStatus | ''; label: string }> = [
-  { value: '', label: 'Все статусы' },
-  { value: SERVICE_REQUEST_STATUSES.NEW, label: SERVICE_REQUEST_STATUS_LABELS[SERVICE_REQUEST_STATUSES.NEW] },
-  { value: SERVICE_REQUEST_STATUSES.ACCEPTED, label: SERVICE_REQUEST_STATUS_LABELS[SERVICE_REQUEST_STATUSES.ACCEPTED] },
-  { value: SERVICE_REQUEST_STATUSES.IN_PROGRESS, label: SERVICE_REQUEST_STATUS_LABELS[SERVICE_REQUEST_STATUSES.IN_PROGRESS] },
-  { value: SERVICE_REQUEST_STATUSES.COMPLETED, label: SERVICE_REQUEST_STATUS_LABELS[SERVICE_REQUEST_STATUSES.COMPLETED] },
-];
-
 type ServiceFloorOption = {
   id: number;
   number?: number;
@@ -61,22 +46,26 @@ function normalizeServiceFloors(payload: ServiceFloorOption[] | PaginatedRespons
   return Array.isArray(payload) ? payload : payload.results;
 }
 
-function formatFloorOptionLabel(floor: ServiceFloorOption): string {
+function formatFloorOptionLabel(floor: ServiceFloorOption, tFn: (key: string, opts?: Record<string, unknown>) => string): string {
   const floorNumber = floor.number ?? floor.floor_number ?? floor.id;
   const floorName = floor.name?.trim();
-  return floorName ? `Этаж ${floorNumber} — ${floorName}` : `Этаж ${floorNumber}`;
+  return floorName
+    ? tFn('resources.create.floorOptionWithName', { number: floorNumber, name: floorName })
+    : tFn('resources.create.floorOptionNoName', { number: floorNumber });
 }
 
 /** Prefer API floor_number/floor_name; otherwise resolve Floor id against loaded floors (never show raw DB id). */
-function formatServiceRequestFloorCell(req: ServiceRequest, floors: ServiceFloorOption[]): string {
+function formatServiceRequestFloorCell(req: ServiceRequest, floors: ServiceFloorOption[], tFn: (key: string, opts?: Record<string, unknown>) => string): string {
   const n = req.floor_number;
   const name = req.floor_name?.trim();
   if (n != null) {
-    return name ? `Этаж ${n} — ${name}` : `Этаж ${n}`;
+    return name
+      ? tFn('resources.create.floorOptionWithName', { number: n, name })
+      : tFn('resources.create.floorOptionNoName', { number: n });
   }
   if (req.floor != null) {
     const match = floors.find((f) => f.id === req.floor);
-    if (match) return formatFloorOptionLabel(match);
+    if (match) return formatFloorOptionLabel(match, tFn);
   }
   return '—';
 }
@@ -98,6 +87,27 @@ function getRequestOwnerName(request: ServiceRequest): string | null {
 }
 
 export default function ServiceRequestListPage() {
+  const { t } = useTranslation();
+  const typeOptions = useMemo(
+    () => [
+      { value: '' as const, label: t('common.bookingFilter.allTypes') },
+      { value: SERVICE_REQUEST_TYPES.CLEANING, label: t(SERVICE_REQUEST_TYPE_LABEL_KEYS[SERVICE_REQUEST_TYPES.CLEANING]) },
+      { value: SERVICE_REQUEST_TYPES.REPAIR, label: t(SERVICE_REQUEST_TYPE_LABEL_KEYS[SERVICE_REQUEST_TYPES.REPAIR]) },
+      { value: SERVICE_REQUEST_TYPES.SUPPLIES, label: t(SERVICE_REQUEST_TYPE_LABEL_KEYS[SERVICE_REQUEST_TYPES.SUPPLIES]) },
+      { value: SERVICE_REQUEST_TYPES.GENERAL, label: t(SERVICE_REQUEST_TYPE_LABEL_KEYS[SERVICE_REQUEST_TYPES.GENERAL]) },
+    ],
+    [t],
+  );
+  const statusOptions = useMemo(
+    () => [
+      { value: '' as const, label: t('serviceRequests.filters.allStatuses') },
+      { value: SERVICE_REQUEST_STATUSES.NEW, label: t(SERVICE_REQUEST_STATUS_LABEL_KEYS[SERVICE_REQUEST_STATUSES.NEW]) },
+      { value: SERVICE_REQUEST_STATUSES.ACCEPTED, label: t(SERVICE_REQUEST_STATUS_LABEL_KEYS[SERVICE_REQUEST_STATUSES.ACCEPTED]) },
+      { value: SERVICE_REQUEST_STATUSES.IN_PROGRESS, label: t(SERVICE_REQUEST_STATUS_LABEL_KEYS[SERVICE_REQUEST_STATUSES.IN_PROGRESS]) },
+      { value: SERVICE_REQUEST_STATUSES.COMPLETED, label: t(SERVICE_REQUEST_STATUS_LABEL_KEYS[SERVICE_REQUEST_STATUSES.COMPLETED]) },
+    ],
+    [t],
+  );
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -241,15 +251,15 @@ export default function ServiceRequestListPage() {
 
     if (!createModal) return;
     if (!createFloorId) {
-      setMutationError('Выберите этаж.');
+      setMutationError(t('resources.create.floorRequired'));
       return;
     }
     if (!createLocation.trim()) {
-      setMutationError('Укажите место.');
+      setMutationError(t('serviceRequests.locationRequired'));
       return;
     }
     if (!createDescription.trim()) {
-      setMutationError('Добавьте описание заявки.');
+      setMutationError(t('serviceRequests.descriptionRequired'));
       return;
     }
 
@@ -292,21 +302,19 @@ export default function ServiceRequestListPage() {
     <main className="mx-auto max-w-6xl space-y-6 p-6">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-primary">Сервисные заявки</h1>
+        <h1 className="text-2xl font-bold text-primary">{t('serviceRequests.title')}</h1>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={openCleaningModal}
             className="inline-flex items-center justify-center rounded-lg border border-sky-700 bg-sky-900/30 px-4 py-2 text-sm font-medium text-sky-300 hover:bg-sky-900/50"
-          >
-            Вызвать уборку
-          </button>
+          >{t('serviceRequests.cleaning.call')}</button>
           <button
             type="button"
             onClick={openGeneralModal}
             className="inline-flex items-center justify-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
           >
-            Создать заявку
+            {t('serviceRequests.createRequest')}
           </button>
         </div>
       </div>
@@ -314,27 +322,25 @@ export default function ServiceRequestListPage() {
       {/* Filters */}
       <section className="grid gap-3 rounded-xl border border-default bg-raised p-4 sm:grid-cols-2">
         <label className="text-sm text-secondary">
-          Тип
+          {t('serviceRequests.filterType')}
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as ServiceRequestType | '')}
             className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           >
-            {TYPE_OPTIONS.map((opt) => (
+            {typeOptions.map((opt) => (
               <option key={opt.value || 'all-types'} value={opt.value}>
                 {opt.label}
               </option>
             ))}
           </select>
         </label>
-        <label className="text-sm text-secondary">
-          Статус
-          <select
+        <label className="text-sm text-secondary">{t('common.status')}<select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as ServiceRequestStatus | '')}
             className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           >
-            {STATUS_OPTIONS.map((opt) => (
+            {statusOptions.map((opt) => (
               <option key={opt.value || 'all-statuses'} value={opt.value}>
                 {opt.label}
               </option>
@@ -365,26 +371,26 @@ export default function ServiceRequestListPage() {
 
       {/* List */}
       {isLoading ? (
-        <p className="text-sm text-secondary">Загрузка...</p>
+        <p className="text-sm text-secondary">{t('common.loading')}</p>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-secondary">Заявок пока нет.</p>
+        <p className="text-sm text-secondary">{t('serviceRequests.noRequests')}</p>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-default bg-raised">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-[color:var(--border)]/60">
               <thead className="bg-surface/60">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Тип</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Статус</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('serviceRequests.columnType')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('common.status')}</th>
                   {isAdmin && (
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Сотрудник</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('team.roleEmployee')}</th>
                   )}
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Описание</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Фото</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Этаж</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Создана</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Оценка</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Действия</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('serviceRequests.columnDescription')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('serviceRequests.columnPhoto')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('serviceRequests.columnFloor')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('serviceRequests.columnCreated')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('serviceRequests.columnRating')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('serviceRequests.columnActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[color:var(--border)]/60">
@@ -400,7 +406,7 @@ export default function ServiceRequestListPage() {
                   return (
                     <tr key={req.id} className="text-sm text-secondary">
                       <td className="px-4 py-3">
-                        {SERVICE_REQUEST_TYPE_LABELS[req.request_type] ?? req.request_type}
+                        {t(SERVICE_REQUEST_TYPE_LABEL_KEYS[req.request_type]) ?? req.request_type}
                       </td>
                       <td className="px-4 py-3">
                         <span
@@ -409,7 +415,7 @@ export default function ServiceRequestListPage() {
                             STATUS_BADGE_CLASS[req.status],
                           )}
                         >
-                          {SERVICE_REQUEST_STATUS_LABELS[req.status] ?? req.status}
+                          {t(SERVICE_REQUEST_STATUS_LABEL_KEYS[req.status]) ?? req.status}
                         </span>
                       </td>
                       {isAdmin && (
@@ -430,16 +436,16 @@ export default function ServiceRequestListPage() {
                           >
                             <img
                               src={req.photo}
-                              alt="Фото заявки"
+                              alt={t('serviceRequests.photoAlt')}
                               className="h-8 w-8 rounded object-cover ring-1 ring-gray-600"
                             />
-                            Открыть
+                            {t('serviceRequests.openPhoto')}
                           </a>
                         ) : (
                           <span className="text-muted">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3">{formatServiceRequestFloorCell(req, floors)}</td>
+                      <td className="px-4 py-3">{formatServiceRequestFloorCell(req, floors, t)}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-secondary">
                         {new Date(req.created_at).toLocaleDateString('ru-RU')}
                       </td>
@@ -463,7 +469,7 @@ export default function ServiceRequestListPage() {
                               onClick={() => handleUpdateStatus(req)}
                               className="rounded-md border border-default bg-brand-subtle px-2 py-1 text-xs text-brand hover:bg-brand-subtle disabled:opacity-50"
                             >
-                              {SERVICE_REQUEST_STATUS_LABELS[nextStatus]}
+                              {t(SERVICE_REQUEST_STATUS_LABEL_KEYS[nextStatus])}
                             </button>
                           ) : null}
 
@@ -473,11 +479,11 @@ export default function ServiceRequestListPage() {
                               type="button"
                               disabled={isPendingMutation}
                               onClick={() => openRateModal(req.id)}
-                              aria-label="Оценить выполненную заявку"
+                              aria-label={t('serviceRequests.rateAriaLabel')}
                               className="inline-flex items-center gap-1.5 rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-primary shadow-sm hover:bg-amber-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 disabled:opacity-50"
                             >
                               <Star className="h-3.5 w-3.5 fill-gray-900" aria-hidden="true" />
-                              Оценить
+                              {t('serviceRequests.rateRequest')}
                             </button>
                           ) : null}
 
@@ -514,18 +520,18 @@ export default function ServiceRequestListPage() {
             className="w-full max-w-lg rounded-xl border border-default bg-raised p-5"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold text-primary">Новая сервисная заявка</h2>
+            <h2 className="text-lg font-semibold text-primary">{t('serviceRequests.newRequestTitle')}</h2>
 
             <form onSubmit={handleCreateSubmit} className="mt-4 space-y-4">
               {/* Type selector */}
               <label className="block text-sm text-secondary">
-                Тип заявки
+                {t('serviceRequests.requestTypeLabel')}
                 <select
                   value={createType}
                   onChange={(e) => setCreateType(e.target.value as ServiceRequestType)}
                   className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
                 >
-                  {TYPE_OPTIONS.filter((opt) => opt.value !== '').map((opt) => (
+                  {typeOptions.filter((opt) => opt.value !== '').map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
                     </option>
@@ -535,11 +541,8 @@ export default function ServiceRequestListPage() {
 
               {/* Floor */}
               <label className="block text-sm text-secondary">
-                Выбор этажа
-                <p className="mt-1 text-xs text-muted">
-                  Справочник этажей здания; не путать с полем «этаж» в настройках компании. Пустой
-                  список — в БД нет записей Floor (их создаёт супер-админ).
-                </p>
+                {t('serviceRequests.floorSelect')}
+                <p className="mt-1 text-xs text-muted">{t('serviceRequests.floorHint')}</p>
                 <select
                   value={createFloorId}
                   onChange={(e) => setCreateFloorId(e.target.value)}
@@ -548,18 +551,18 @@ export default function ServiceRequestListPage() {
                   className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
                 >
                   {isFloorsLoading ? (
-                    <option value="">Загрузка этажей...</option>
+                    <option value="">{t('serviceRequests.floorLoading')}</option>
                   ) : (
                     <>
-                      <option value="">Выберите этаж</option>
+                      <option value="">{t('serviceRequests.selectFloor')}</option>
                       {floors.length === 0 ? (
                         <option value="__no_floors" disabled>
-                          Этажи не настроены
+                          {t('serviceRequests.noFloors')}
                         </option>
                       ) : (
                         floors.map((floor) => (
                           <option key={floor.id} value={String(floor.id)}>
-                            {formatFloorOptionLabel(floor)}
+                            {formatFloorOptionLabel(floor, t)}
                           </option>
                         ))
                       )}
@@ -567,39 +570,37 @@ export default function ServiceRequestListPage() {
                   )}
                 </select>
                 {floorsError ? (
-                  <p className="mt-1 text-xs text-warning">
-                    Не удалось загрузить этажи. Без этажа отправка невозможна.
-                  </p>
+                  <p className="mt-1 text-xs text-warning">{t('serviceRequests.floorLoadError')}</p>
                 ) : null}
               </label>
 
               <label className="block text-sm text-secondary">
-                Место
+                {t('serviceRequests.locationLabel')}
                 <input
                   type="text"
                   value={createLocation}
                   onChange={(e) => setCreateLocation(e.target.value)}
                   required
                   className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-                  placeholder="Переговорка A, туалет, кухня..."
+                  placeholder={t('serviceRequests.locationPlaceholder')}
                 />
               </label>
 
               {/* Description */}
               <label className="block text-sm text-secondary">
-                Описание
+                {t('serviceRequests.descriptionLabel')}
                 <textarea
                   value={createDescription}
                   onChange={(e) => setCreateDescription(e.target.value)}
                   rows={3}
                   required
                   className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted"
-                  placeholder="Опишите проблему или запрос"
+                  placeholder={t('serviceRequests.descriptionPlaceholder')}
                 />
               </label>
 
               <label className="block text-sm text-secondary">
-                Фото (необязательно)
+                {t('serviceRequests.photoLabel')}
                 <input
                   type="file"
                   accept="image/*"
@@ -607,20 +608,20 @@ export default function ServiceRequestListPage() {
                   className="mt-1 block w-full cursor-pointer rounded-lg border border-default bg-surface px-3 py-2 text-sm text-secondary file:mr-3 file:rounded-md file:border-0 file:bg-hover file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-primary hover:file:bg-gray-600"
                 />
                 {createPhoto ? (
-                  <p className="mt-1 text-xs text-secondary">Выбрано: {createPhoto.name}</p>
+                  <p className="mt-1 text-xs text-secondary">{t('serviceRequests.selectedFile', { name: createPhoto.name })}</p>
                 ) : null}
               </label>
 
               {/* Urgency */}
               <label className="block text-sm text-secondary">
-                Срочность
+                {t('serviceRequests.urgencyLabel')}
                 <select
                   value={createUrgency}
                   onChange={(e) => setCreateUrgency(e.target.value as 'normal' | 'urgent')}
                   className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
                 >
-                  <option value="normal">Обычная</option>
-                  <option value="urgent">Срочная</option>
+                  <option value="normal">{t('serviceRequests.urgencyNormal')}</option>
+                  <option value="urgent">{t('serviceRequests.urgencyUrgent')}</option>
                 </select>
               </label>
 
@@ -639,15 +640,13 @@ export default function ServiceRequestListPage() {
                   onClick={() => closeCreateModal()}
                   disabled={createMutation.isPending}
                   className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover"
-                >
-                  Отмена
-                </button>
+                >{t('common.cancel')}</button>
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
                   className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
                 >
-                  {createMutation.isPending ? 'Отправка...' : 'Создать заявку'}
+                  {createMutation.isPending ? t('common.submittingPlain') : t('serviceRequests.createRequest')}
                 </button>
               </div>
             </form>
@@ -668,12 +667,12 @@ export default function ServiceRequestListPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-semibold text-primary">
-              {rateModal.autoOpened ? 'Заявка выполнена!' : 'Оценить заявку'}
+              {rateModal.autoOpened ? t('serviceRequests.rateAuto') : t('serviceRequests.rateTitle')}
             </h2>
             <p className="mt-1 text-sm text-secondary">
               {rateModal.autoOpened
-                ? 'Пожалуйста, оцените качество выполненной работы'
-                : 'Выберите оценку от 1 до 5'}
+                ? t('serviceRequests.rateAutoHint')
+                : t('serviceRequests.ratePrompt')}
             </p>
 
             <div className="mt-4 flex items-center justify-center gap-2">
@@ -712,9 +711,7 @@ export default function ServiceRequestListPage() {
                 onClick={closeRateModal}
                 disabled={rateMutation.isPending}
                 className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover"
-              >
-                Отмена
-              </button>
+              >{t('common.cancel')}</button>
               <button
                 type="button"
                 disabled={rateMutation.isPending}

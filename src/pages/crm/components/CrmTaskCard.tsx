@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import {
   MoreHorizontal,
@@ -11,7 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import type { CrmTask } from '@/shared/types';
-import { CRM_PRIORITY_BADGE_CLASS, CRM_PRIORITY_LABELS, formatDeadline, isOverdue } from '@/pages/crm/utils/crm-display';
+import { CRM_PRIORITY_BADGE_CLASS, CRM_PRIORITY_LABEL_KEYS, formatDeadline, isOverdue } from '@/pages/crm/utils/crm-display';
 import { CrmAssigneeAvatar } from '@/pages/crm/components/CrmAssigneeAvatar';
 
 export interface CrmTaskCardProps {
@@ -21,6 +22,7 @@ export interface CrmTaskCardProps {
 }
 
 export const CrmTaskCard = memo(function CrmTaskCard({ task, onClick, onArchive }: CrmTaskCardProps) {
+  const { t } = useTranslation();
   const overdue = task.deadline ? isOverdue(task.deadline) : false;
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -78,9 +80,7 @@ export const CrmTaskCard = memo(function CrmTaskCard({ task, onClick, onArchive 
               }}
               className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-secondary hover:bg-hover hover:text-primary transition-colors"
             >
-              <ExternalLink size={13} />
-              Открыть задачу
-            </Link>
+              <ExternalLink size={13} />{t('common.openTask')}</Link>
             <button
               type="button"
               onClick={(e) => {
@@ -90,9 +90,7 @@ export const CrmTaskCard = memo(function CrmTaskCard({ task, onClick, onArchive 
               }}
               className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-secondary hover:bg-hover hover:text-primary transition-colors"
             >
-              <Pencil size={13} />
-              Редактировать
-            </button>
+              <Pencil size={13} />{t('common.edit')}</button>
             {onArchive && (
               <button
                 type="button"
@@ -102,11 +100,9 @@ export const CrmTaskCard = memo(function CrmTaskCard({ task, onClick, onArchive 
                   onArchive();
                 }}
                 className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-red-400 hover:bg-hover hover:text-danger transition-colors"
-                title="Архивировать"
+                title={t('common.archive')}
               >
-                <Archive size={13} />
-                Архивировать
-              </button>
+                <Archive size={13} />{t('common.archive')}</button>
             )}
           </div>
         )}
@@ -134,7 +130,7 @@ export const CrmTaskCard = memo(function CrmTaskCard({ task, onClick, onArchive 
           CRM_PRIORITY_BADGE_CLASS[task.priority],
         )}
       >
-        {CRM_PRIORITY_LABELS[task.priority]}
+        {t(CRM_PRIORITY_LABEL_KEYS[task.priority])}
       </span>
 
       <div className="flex items-center justify-between gap-2">
@@ -145,7 +141,7 @@ export const CrmTaskCard = memo(function CrmTaskCard({ task, onClick, onArchive 
                 'flex items-center gap-1 text-xs',
                 overdue ? 'text-red-400' : 'text-secondary',
               )}
-              title={overdue ? 'Просрочено' : undefined}
+              title={overdue ? t('common.overdue') : undefined}
             >
               <Calendar size={11} className="shrink-0" />
               {formatDeadline(task.deadline)}

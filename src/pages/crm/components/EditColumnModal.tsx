@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
@@ -14,6 +15,7 @@ export interface EditColumnModalProps {
 }
 
 export function EditColumnModal({ boardId, column, taskCount, onClose }: EditColumnModalProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [name, setName] = useState(column.name);
   const [wipLimit, setWipLimit] = useState(column.wip_limit !== null ? String(column.wip_limit) : '');
@@ -81,7 +83,7 @@ export function EditColumnModal({ boardId, column, taskCount, onClose }: EditCol
             type="button"
             onClick={onClose}
             className="text-secondary hover:text-primary transition-colors rounded-md p-1 hover:bg-hover"
-            aria-label="Закрыть"
+            aria-label={t('common.close')}
           >
             <X size={18} />
           </button>
@@ -110,7 +112,7 @@ export function EditColumnModal({ boardId, column, taskCount, onClose }: EditCol
 
           <div className="space-y-1.5">
             <label htmlFor="edit-column-wip" className="block text-sm font-medium text-secondary">
-              Лимит WIP <span className="text-muted font-normal">(необязательно)</span>
+              Лимит WIP <span className="text-muted font-normal">{t('common.optional')}</span>
             </label>
             <input
               id="edit-column-wip"
@@ -118,7 +120,7 @@ export function EditColumnModal({ boardId, column, taskCount, onClose }: EditCol
               min={0}
               value={wipLimit}
               onChange={(e) => setWipLimit(e.target.value)}
-              placeholder="Без ограничений"
+              placeholder={t('common.noLimit')}
               aria-describedby={wipLimitError ? 'edit-column-wip-error' : undefined}
               aria-invalid={wipLimitError ? true : undefined}
               className={cn(
@@ -159,9 +161,7 @@ export function EditColumnModal({ boardId, column, taskCount, onClose }: EditCol
               type="button"
               onClick={onClose}
               className="rounded-lg px-4 py-2 text-sm font-medium text-secondary hover:text-primary hover:bg-hover transition-colors"
-            >
-              Отмена
-            </button>
+            >{t('common.cancel')}</button>
             <button
               type="submit"
               disabled={!name.trim() || !!wipLimitError || mutation.isPending}
@@ -171,7 +171,7 @@ export function EditColumnModal({ boardId, column, taskCount, onClose }: EditCol
                 'disabled:opacity-50 disabled:cursor-not-allowed',
               )}
             >
-              {mutation.isPending ? 'Сохранение...' : 'Сохранить'}
+              {mutation.isPending ? t('common.savingPlain') : t('common.save')}
             </button>
           </div>
         </form>

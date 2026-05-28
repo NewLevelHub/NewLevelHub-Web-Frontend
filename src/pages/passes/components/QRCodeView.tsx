@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/shared/lib/cn';
 import { usePassCountdown } from '@/pages/passes/hooks/usePassCountdown';
 
@@ -7,6 +8,7 @@ interface QRCodeViewProps {
 }
 
 export function QRCodeView({ qrImage, validFrom }: QRCodeViewProps) {
+  const { t } = useTranslation();
   const { countdownDisplay, isNowActive } = usePassCountdown(validFrom);
   const activatesAt = new Date(validFrom);
   const isNotYetActive = !isNowActive && activatesAt > new Date();

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 
@@ -6,6 +7,8 @@ export interface AddColumnButtonProps {
 }
 
 export function AddColumnButton({ onClick }: AddColumnButtonProps) {
+  const { t } = useTranslation();
+
   return (
     <button
       type="button"
@@ -16,10 +19,10 @@ export function AddColumnButton({ onClick }: AddColumnButtonProps) {
         'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
         'min-h-[200px] justify-center flex-col',
       )}
-      aria-label="Добавить колонку"
+      aria-label={t('common.addColumn')}
     >
       <Plus size={20} />
-      <span>Добавить колонку</span>
+      <span>{t('common.addColumn')}</span>
     </button>
   );
 }

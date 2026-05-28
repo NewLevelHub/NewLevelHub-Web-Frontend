@@ -1,26 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router';
-import { Bell, User, Menu, Sun, Moon } from 'lucide-react';
+import { Bell, User, Menu } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/shared/store/auth';
-import { useTheme } from '@/shared/hooks/useTheme';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { cn } from '@/shared/lib/cn';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import type { Notification, PaginatedResponse } from '@/shared/types';
-
-function formatRelativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const minutes = Math.floor(diff / 60_000);
-  if (minutes < 1) return 'только что';
-  if (minutes < 60) return `${minutes} мин. назад`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} ч. назад`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days} д. назад`;
-  return new Date(dateStr).toLocaleDateString('ru-RU');
-}
 
 interface HeaderProps {
   onOpenMobileNav: () => void;
@@ -28,11 +17,22 @@ interface HeaderProps {
 }
 
 export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
+  const { t, i18n } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { toggle, isDark } = useTheme();
 
+  function formatRelativeTime(dateStr: string): string {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const minutes = Math.floor(diff / 60_000);
+    if (minutes < 1) return t('common.timeJustNow');
+    if (minutes < 60) return t('common.timeMinutesAgo', { count: minutes });
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return t('common.timeHoursAgo', { count: hours });
+    const days = Math.floor(hours / 24);
+    if (days < 7) return t('common.timeDaysAgo', { count: days });
+    return new Date(dateStr).toLocaleDateString(dateLocaleTag(i18n.language));
+  }
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -115,7 +115,7 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
         type="button"
         onClick={onOpenMobileNav}
         className="inline-flex items-center justify-center rounded-md p-2 text-secondary hover:bg-hover transition-colors md:hidden"
-        aria-label="Открыть боковое меню"
+        aria-label={t('common.openSidebar')}
         aria-controls="app-sidebar"
         aria-expanded={isMobileNavOpen}
       >
@@ -123,16 +123,6 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
       </button>
 
       <div className="flex items-center gap-1 sm:gap-1.5">
-        {/* Theme toggle */}
-        <button
-          type="button"
-          onClick={toggle}
-          className="rounded-md p-2 text-secondary hover:bg-hover hover:text-primary transition-colors"
-          aria-label={isDark ? 'Включить светлую тему' : 'Включить тёмную тему'}
-        >
-          {isDark ? <Sun size={17} /> : <Moon size={17} />}
-        </button>
-
         {/* Notifications */}
         <div className="relative">
           <button
@@ -142,8 +132,8 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
             className="relative rounded-md p-2 text-secondary hover:bg-hover hover:text-primary transition-colors"
             aria-label={
               unreadCount > 0
-                ? `Уведомления (${unreadCount} непрочитанных)`
-                : 'Уведомления'
+                ? t('common.notificationsUnread', { count: unreadCount })
+                : t('common.notifications')
             }
             aria-expanded={open}
             aria-haspopup="true"
@@ -162,10 +152,10 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
               style={{ top: dropdownPos.top, right: dropdownPos.right }}
               className="fixed z-[9999] w-[calc(100vw-1rem)] max-w-sm max-h-[28rem] overflow-y-auto rounded-xl border border-default bg-surface shadow-lg"
               role="dialog"
-              aria-label="Уведомления"
+              aria-label={t('common.notifications')}
             >
               <div className="flex items-center justify-between border-b border-default px-4 py-3">
-                <span className="text-sm font-semibold text-primary">Уведомления</span>
+                <span className="text-sm font-semibold text-primary">{t('common.notifications')}</span>
                 {hasUnread && (
                   <button
                     type="button"
@@ -173,7 +163,7 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
                     disabled={markAllReadMutation.isPending}
                     className="text-xs text-brand hover:text-brand-hover disabled:opacity-50 transition-colors"
                   >
-                    Прочитать все
+                    {t('header.markAllRead')}
                   </button>
                 )}
               </div>
@@ -188,7 +178,7 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
                   ))}
                 </div>
               ) : recentItems.length === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-muted">Нет уведомлений</p>
+                <p className="px-4 py-6 text-center text-sm text-muted">{t('header.noNotifications')}</p>
               ) : (
                 <ul>
                   {recentItems.map(n => (
@@ -201,7 +191,7 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
                         {!n.is_read && (
                           <span
                             className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-500"
-                            aria-label="Непрочитанное"
+                            aria-label={t('common.unreadNotification')}
                           />
                         )}
                         <div className={cn('flex-1 min-w-0', n.is_read && 'ml-4')}>
@@ -225,7 +215,7 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
                   onClick={() => setOpen(false)}
                   className="block text-center text-xs text-brand hover:text-brand-hover transition-colors"
                 >
-                  Смотреть все уведомления
+                  {t('header.viewAllNotifications')}
                 </Link>
               </div>
             </div>,
@@ -239,7 +229,7 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
           className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-secondary hover:bg-hover hover:text-primary transition-colors"
         >
           <User size={17} />
-          <span className="hidden sm:inline">{user?.first_name || 'Профиль'}</span>
+          <span className="hidden sm:inline">{user?.first_name || t('common.profile')}</span>
         </Link>
       </div>
     </header>

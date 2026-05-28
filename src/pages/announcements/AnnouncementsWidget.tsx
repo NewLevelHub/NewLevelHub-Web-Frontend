@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { Megaphone, Pin, Building2, AlertTriangle, Calendar } from 'lucide-react';
@@ -5,7 +6,7 @@ import { Megaphone, Pin, Building2, AlertTriangle, Calendar } from 'lucide-react
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import {
-  ANNOUNCEMENT_CATEGORY_LABELS,
+  ANNOUNCEMENT_CATEGORY_LABEL_KEYS,
   type AnnouncementCategory,
 } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
@@ -33,6 +34,7 @@ const WIDGET_LIMIT = 5;
  * recent) so the widget surfaces the most relevant items.
  */
 export function AnnouncementsWidget() {
+  const { t } = useTranslation();
   const { data, isLoading, isError } = useQuery({
     queryKey: ['announcements-widget'],
     queryFn: async () => {
@@ -58,13 +60,11 @@ export function AnnouncementsWidget() {
         <Link
           to="/announcements"
           className="text-sm text-brand hover:text-brand hover:underline"
-        >
-          Вся лента →
-        </Link>
+        >{t('common.allFeed')}</Link>
       </header>
 
       {isLoading ? (
-        <p className="text-sm text-muted">Загрузка…</p>
+        <p className="text-sm text-muted">{t('common.loading')}</p>
       ) : isError ? (
         <p className="text-sm text-rose-300">Не удалось загрузить ленту.</p>
       ) : items.length === 0 ? (
@@ -87,7 +87,7 @@ export function AnnouncementsWidget() {
                     'mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded',
                     CATEGORY_BADGE_CLASS[a.category],
                   )}
-                  aria-label={ANNOUNCEMENT_CATEGORY_LABELS[a.category]}
+                  aria-label={t(ANNOUNCEMENT_CATEGORY_LABEL_KEYS[a.category])}
                 >
                   <Icon size={13} aria-hidden="true" />
                 </span>

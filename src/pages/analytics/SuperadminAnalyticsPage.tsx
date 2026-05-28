@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import {
   BarChart3,
@@ -23,7 +24,14 @@ import {
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { RESOURCE_TYPES, RESOURCE_TYPE_LABELS, USER_ROLES } from '@/shared/config/constants';
+import {
+  RESOURCE_TYPES,
+  RESOURCE_TYPE_LABEL_KEYS,
+  SERVICE_REQUEST_TYPE_LABEL_KEYS,
+  USER_ROLES,
+} from '@/shared/config/constants';
+import i18n from '@/shared/lib/i18n';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { getApiError } from '@/shared/lib/getApiError';
@@ -31,23 +39,8 @@ import { cn } from '@/shared/lib/cn';
 import { filenameFromContentDisposition, triggerCsvFileDownload } from '@/shared/lib/csvDownload';
 import type { Company, PaginatedResponse, SuperadminAnalyticsPeriod, SuperadminAnalyticsResponse } from '@/shared/types';
 
-const PERIOD_OPTIONS: { value: SuperadminAnalyticsPeriod; label: string }[] = [
-  { value: '7d', label: '7 дн.' },
-  { value: '30d', label: '30 дн.' },
-  { value: '90d', label: '90 дн.' },
-  { value: 'custom', label: 'Свой' },
-];
-
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const WEEKDAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const HEATMAP_PALETTE = ['#111827', '#1e3a6e', '#1d4ed8', '#2563eb', '#3b82f6', '#60a5fa'];
-
-const SR_TYPE_LABELS: Record<string, string> = {
-  cleaning: 'Уборка',
-  repair: 'Ремонт',
-  supplies: 'Снабжение',
-  general: 'Общая',
-};
 
 /** "2026-05-04" → "4 мая" */
 function fmtDate(dateStr: string): string {
@@ -65,13 +58,14 @@ function fmtWeek(weekStr: string): string {
   const jan4 = new Date(Number(year), 0, 4);
   const monday = new Date(jan4);
   monday.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7) + (Number(week) - 1) * 7);
-  const dayStr = monday.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  const dayStr = monday.toLocaleDateString(dateLocaleTag(i18n.language), { day: 'numeric', month: 'short' });
   return `${dayStr}`;
 }
 
 /** "cleaning" → "Уборка" */
 function fmtType(type: string): string {
-  return SR_TYPE_LABELS[type] ?? type;
+  const key = SERVICE_REQUEST_TYPE_LABEL_KEYS[type as keyof typeof SERVICE_REQUEST_TYPE_LABEL_KEYS];
+  return key ? i18n.t(key) : type;
 }
 
 function isValidIsoDate(v: string): boolean {
@@ -116,6 +110,11 @@ function PeakHoursHeatmap({
 }: {
   data: Array<{ day_of_week: number; hour: number; booking_count: number }>;
 }) {
+  const { t } = useTranslation();
+  const weekdayLabels = useMemo(
+    () => t('common.weekdaysShort', { returnObjects: true }) as string[],
+    [t],
+  );
   const lookup = useMemo(() => {
     const m = new Map<string, number>();
     for (const item of data) m.set(`${item.day_of_week}-${item.hour}`, item.booking_count);
@@ -153,7 +152,7 @@ function PeakHoursHeatmap({
           <thead>
             <tr>
               <th className="w-12 pr-2 text-right font-normal text-muted" />
-              {WEEKDAY_LABELS.map((d) => (
+              {weekdayLabels.map((d) => (
                 <th key={d} className="pb-1 text-center font-normal text-secondary">
                   {d}
                 </th>
@@ -173,7 +172,11 @@ function PeakHoursHeatmap({
                       <div
                         className="flex h-6 w-full items-center justify-center rounded"
                         style={{ backgroundColor: cellBg(count) }}
-                        title={`${WEEKDAY_LABELS[day]} ${String(hour).padStart(2, '0')}:00 — ${count} бр.`}
+                        title={t('analytics.heatmapCell', {
+                          day: weekdayLabels[day],
+                          hour: String(hour).padStart(2, '0'),
+                          count,
+                        })}
                       >
                         {count > 0 && (
                           <span className="text-[9px] font-medium text-white/80">{count}</span>
@@ -200,6 +203,20 @@ function PeakHoursHeatmap({
 }
 
 export default function SuperadminAnalyticsPage() {
+  const { t } = useTranslation();
+  const periodOptions = useMemo(
+    () => [
+      { value: '7d' as const, label: t('analytics.period.7d') },
+      { value: '30d' as const, label: t('analytics.period.30d') },
+      { value: '90d' as const, label: t('analytics.period.90d') },
+      { value: 'custom' as const, label: t('analytics.period.custom') },
+    ],
+    [t],
+  );
+  const weekdayLabels = useMemo(
+    () => t('common.weekdaysShort', { returnObjects: true }) as string[],
+    [t],
+  );
   const { user, isLoading: authLoading } = useAuth();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
 
@@ -303,7 +320,7 @@ export default function SuperadminAnalyticsPage() {
   if (authLoading) {
     return (
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <p className="text-sm text-muted">Загрузка…</p>
+        <p className="text-sm text-muted">{t('common.loading')}</p>
       </main>
     );
   }
@@ -327,7 +344,7 @@ export default function SuperadminAnalyticsPage() {
           <p className="text-sm text-secondary mt-1">Обзор по платформе (суперадмин)</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {PERIOD_OPTIONS.map((opt) => (
+          {periodOptions.map((opt) => (
             <button
               key={opt.value}
               type="button"
@@ -354,7 +371,7 @@ export default function SuperadminAnalyticsPage() {
             )}
           >
             <Download size={16} aria-hidden />
-            {isExporting ? 'Выгрузка…' : 'Скачать CSV'}
+            {isExporting ? 'Выгрузка…' : t('common.downloadCsv')}
           </button>
         </div>
       </header>
@@ -391,13 +408,13 @@ export default function SuperadminAnalyticsPage() {
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-end sm:gap-4">
         <label className="flex flex-col gap-1 text-sm text-secondary min-w-[200px]">
-          <span className="text-secondary">Компания</span>
+          <span className="text-secondary">{t('common.company')}</span>
           <select
             value={companyId}
             onChange={(e) => setCompanyId(e.target.value)}
             className="rounded-lg border border-default bg-raised px-3 py-2 text-primary"
           >
-            <option value="">Все компании</option>
+            <option value="">{t('common.allCompanies')}</option>
             {(companiesData ?? []).map((c) => (
               <option key={c.id} value={String(c.id)}>
                 {c.name}
@@ -412,11 +429,11 @@ export default function SuperadminAnalyticsPage() {
             onChange={(e) => setResourceType(e.target.value)}
             className="rounded-lg border border-default bg-raised px-3 py-2 text-primary"
           >
-            <option value="">Все типы</option>
-            <option value={RESOURCE_TYPES.DESK}>{RESOURCE_TYPE_LABELS[RESOURCE_TYPES.DESK]}</option>
-            <option value={RESOURCE_TYPES.MEETING_ROOM}>{RESOURCE_TYPE_LABELS[RESOURCE_TYPES.MEETING_ROOM]}</option>
-            <option value={RESOURCE_TYPES.PARKING}>{RESOURCE_TYPE_LABELS[RESOURCE_TYPES.PARKING]}</option>
-            <option value={RESOURCE_TYPES.CAPSULE}>{RESOURCE_TYPE_LABELS[RESOURCE_TYPES.CAPSULE]}</option>
+            <option value="">{t('common.allTypes')}</option>
+            <option value={RESOURCE_TYPES.DESK}>{t(RESOURCE_TYPE_LABEL_KEYS[RESOURCE_TYPES.DESK])}</option>
+            <option value={RESOURCE_TYPES.MEETING_ROOM}>{t(RESOURCE_TYPE_LABEL_KEYS[RESOURCE_TYPES.MEETING_ROOM])}</option>
+            <option value={RESOURCE_TYPES.PARKING}>{t(RESOURCE_TYPE_LABEL_KEYS[RESOURCE_TYPES.PARKING])}</option>
+            <option value={RESOURCE_TYPES.CAPSULE}>{t(RESOURCE_TYPE_LABEL_KEYS[RESOURCE_TYPES.CAPSULE])}</option>
           </select>
         </label>
         <button
@@ -429,9 +446,7 @@ export default function SuperadminAnalyticsPage() {
             setDateTo('');
           }}
           className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:border-gray-500 self-start sm:self-end"
-        >
-          Сбросить фильтры
-        </button>
+        >{t('common.resetFilters')}</button>
       </div>
 
       {data && (
@@ -451,9 +466,7 @@ export default function SuperadminAnalyticsPage() {
             type="button"
             onClick={() => void refetch()}
             className="rounded-lg bg-rose-900/80 px-3 py-1.5 text-sm font-medium text-white hover:bg-rose-800 shrink-0"
-          >
-            Повторить
-          </button>
+          >{t('common.retry')}</button>
         </div>
       )}
 

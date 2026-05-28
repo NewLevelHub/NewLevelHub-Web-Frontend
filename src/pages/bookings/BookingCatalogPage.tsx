@@ -1,7 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Bookmark, Building2, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Search, Settings2, X } from 'lucide-react';
+import {
+  Bookmark,
+  Building2,
+  ChevronLeft,
+  ChevronRight,
+  DoorOpen,
+  Filter,
+  Search,
+  X,
+} from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
@@ -16,9 +26,9 @@ import { API } from '@/shared/api/endpoints';
 import {
   BOOKING_RESOURCE_CATALOG_STATUS,
   RESOURCE_TYPES,
-  RESOURCE_TYPE_LABELS,
+  RESOURCE_TYPE_LABEL_KEYS,
   RESOURCE_EQUIPMENT_KEYS,
-  RESOURCE_EQUIPMENT_LABELS,
+  RESOURCE_EQUIPMENT_LABEL_KEYS,
   STAFF_UI_PREFIX,
   USER_ROLES,
   type ResourceEquipmentKey,
@@ -28,32 +38,14 @@ import { useAuth } from '@/shared/hooks/useAuth';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import { cn } from '@/shared/lib/cn';
 import type { BookingResourceDetail, BookingResourceListItem, PaginatedResponse } from '@/shared/types';
-import { ResourceWeekMiniTimeline } from '@/pages/bookings/components/ResourceWeekMiniTimeline';
 
 const PAGE_SIZE = 24;
 
-const TYPE_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: 'Все типы' },
-  ...Object.values(RESOURCE_TYPES).map((t) => ({
-    value: t,
-    label: RESOURCE_TYPE_LABELS[t as ResourceType],
-  })),
-];
-
-const ORDERING_OPTIONS: { value: string; label: string }[] = [
-  { value: 'name', label: 'Название (А–Я)' },
-  { value: '-name', label: 'Название (Я–А)' },
-  { value: 'floor', label: 'Этаж ↑' },
-  { value: '-floor', label: 'Этаж ↓' },
-  { value: 'capacity', label: 'Вместимость ↑' },
-  { value: '-capacity', label: 'Вместимость ↓' },
-];
-
-const STATUS_LABELS: Record<string, string> = {
-  [BOOKING_RESOURCE_CATALOG_STATUS.FREE]: 'Свободен',
-  [BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED]: 'Занят',
-  [BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED]: 'Заблокирован',
-  [BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE]: 'Скоро свободен',
+const statusDotClass: Record<string, string> = {
+  [BOOKING_RESOURCE_CATALOG_STATUS.FREE]: 'bg-emerald-400',
+  [BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED]: 'bg-rose-400',
+  [BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED]: 'bg-slate-400',
+  [BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE]: 'bg-amber-400',
 };
 
 const STATUS_BADGE_CLASS: Record<string, string> = {
@@ -69,13 +61,6 @@ function emptyEquipmentFilters(): Record<ResourceEquipmentKey, boolean> {
   ) as Record<ResourceEquipmentKey, boolean>;
 }
 
-/** Подписи и поля в сайдбаре в тёмной теме. */
-const sbLabel = 'text-sm font-medium text-secondary';
-const sbInput =
-  'mt-1 w-full px-3 py-2 text-sm rounded-lg border border-default bg-surface text-primary placeholder:text-muted [color-scheme:dark]';
-const sbSelect =
-  'mt-1 w-full px-3 py-2 text-sm rounded-lg border border-default bg-surface text-primary [&>option]:bg-surface [&>option]:text-white';
-
 function formatAvailableAt(iso: string | null): string | null {
   if (!iso) return null;
   try {
@@ -87,15 +72,17 @@ function formatAvailableAt(iso: string | null): string | null {
 }
 
 export default function BookingCatalogPage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const preselectResourceId = Number(searchParams.get('resource'));
   const { user } = useAuth();
   const [page, setPage] = useState(1);
   const [selectedResource, setSelectedResource] = useState<BookingResourceListItem | null>(null);
-  const [expandedScheduleId, setExpandedScheduleId] = useState<number | null>(null);
   const [panelResource, setPanelResource] = useState<BookingResourceListItem | null>(null);
   const [photoIdx, setPhotoIdx] = useState(0);
   const autoOpenedForRef = useRef<number | null>(null);
+
+  // Filter state — all kept, sidebar removed
   const [typeFilter, setTypeFilter] = useState('');
   const [floorFilter, setFloorFilter] = useState('');
   const [capacityMin, setCapacityMin] = useState('');
@@ -105,7 +92,27 @@ export default function BookingCatalogPage() {
   const [searchInput, setSearchInput] = useState('');
   const [availFromLocal, setAvailFromLocal] = useState('');
   const [availToLocal, setAvailToLocal] = useState('');
+  const [showOnlyFree, setShowOnlyFree] = useState(false);
+  const [showAvailFilter, setShowAvailFilter] = useState(false);
+
   const debouncedSearch = useDebouncedValue(searchInput, 350);
+
+  const TYPE_OPTIONS: { value: string; label: string }[] = [
+    { value: '', label: t('catalog.typeAll') },
+    ...Object.values(RESOURCE_TYPES).map((rt) => ({
+      value: rt,
+      label: t(RESOURCE_TYPE_LABEL_KEYS[rt as ResourceType]),
+    })),
+  ];
+
+  const ORDERING_OPTIONS: { value: string; label: string }[] = [
+    { value: 'name', label: 'A → Z' },
+    { value: '-name', label: 'Z → A' },
+    { value: 'floor', label: `${t('catalog.floor')} ↑` },
+    { value: '-floor', label: `${t('catalog.floor')} ↓` },
+    { value: 'capacity', label: `${t('catalog.capacity')} ↑` },
+    { value: '-capacity', label: `${t('catalog.capacity')} ↓` },
+  ];
 
   const queryParams: Record<string, string | number> = { page, page_size: PAGE_SIZE, ordering };
   if (typeFilter) queryParams.type = typeFilter;
@@ -144,18 +151,23 @@ export default function BookingCatalogPage() {
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const results = data?.results ?? [];
 
+  const freeCount = useMemo(() => results.filter((r) => r.status === BOOKING_RESOURCE_CATALOG_STATUS.FREE).length, [results]);
+
   const myCompanyId =
     user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.EMPLOYEE
       ? (user?.company_id ?? null)
       : null;
 
   const sortedResults = useMemo(() => {
-    if (!myCompanyId) return results;
-    return [
-      ...results.filter((r) => r.assigned_company === myCompanyId),
-      ...results.filter((r) => r.assigned_company !== myCompanyId),
-    ];
-  }, [results, myCompanyId]);
+    const base = myCompanyId
+      ? [
+          ...results.filter((r) => r.assigned_company === myCompanyId),
+          ...results.filter((r) => r.assigned_company !== myCompanyId),
+        ]
+      : results;
+    if (showOnlyFree) return base.filter((r) => r.status === BOOKING_RESOURCE_CATALOG_STATUS.FREE);
+    return base;
+  }, [results, myCompanyId, showOnlyFree]);
 
   const { data: panelDetail } = useQuery({
     queryKey: ['booking-resource-panel-detail', panelResource?.id],
@@ -227,9 +239,7 @@ export default function BookingCatalogPage() {
   }, [(data?.meeting_room_equipment_keys ?? []).slice().sort().join('|')]);
 
   useEffect(() => {
-    // Пока нет ответа (смена страницы / новый queryKey), не трогаем чекбоксы — иначе [] фасетов сбрасывает всё.
     if (data === undefined) return;
-
     if (equipmentFacetKeys.length === 0) {
       setEquipmentNeed(emptyEquipmentFilters());
       return;
@@ -272,53 +282,37 @@ export default function BookingCatalogPage() {
     setSearchInput('');
     setAvailFromLocal('');
     setAvailToLocal('');
+    setShowOnlyFree(false);
+    setShowAvailFilter(false);
   };
 
+  const hasAvailFilter = availFromLocal !== '' || availToLocal !== '';
+
   return (
-    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-primary">Каталог ресурсов</h1>
-          <p className="mt-1 text-sm text-secondary">
-            Подбор площадок и мест для бронирования. Фильтры слева, карточки справа.
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          {(user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN) && (
-            <Link
-              to={`${STAFF_UI_PREFIX}/bookings`}
-              className="inline-flex items-center gap-2 rounded-lg border border-default bg-raised px-3 py-2 text-sm font-medium text-secondary hover:bg-hover"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Назад в бронирования (админ)
-            </Link>
-          )}
-          {user?.role === USER_ROLES.SUPERADMIN && (
-            <Link
-              to="/resources"
-              className="inline-flex items-center gap-2 rounded-lg border border-default bg-raised px-3 py-2 text-sm font-medium text-secondary hover:bg-hover"
-            >
-              <Settings2 className="h-4 w-4" />
-              Управление ресурсами
-            </Link>
-          )}
+    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-7xl mx-auto space-y-5">
+      {/* ── Page header ── */}
+      <div>
+        <h1 className="text-xl font-bold text-primary">{t('catalog.title')}</h1>
+        <p className="mt-0.5 text-sm text-muted">
+          {t('catalog.subtitle', { total: totalCount, free: freeCount })}
+        </p>
+        {user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN ? (
+          <Link
+            to={`${STAFF_UI_PREFIX}/bookings`}
+            className="inline-flex items-center gap-1 text-[13px] text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)] transition-colors mt-1"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+            {t('catalog.back')}
+          </Link>
+        ) : (
           <Link
             to="/bookings/my"
-            className="inline-flex items-center gap-2 rounded-lg border border-default bg-raised px-3 py-2 text-sm font-medium text-secondary hover:bg-hover"
+            className="inline-flex items-center gap-1 text-[13px] text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)] transition-colors mt-1"
           >
-            Мои бронирования
+            <ChevronLeft className="w-3.5 h-3.5" />
+            {t('common.myBookings')}
           </Link>
-          {(user?.role === USER_ROLES.SUPERADMIN
-            || user?.role === USER_ROLES.COMPANY_ADMIN
-            || user?.role === USER_ROLES.EMPLOYEE) && (
-            <Link
-              to="/bookings/recurring"
-              className="inline-flex items-center gap-2 rounded-lg border border-default bg-raised px-3 py-2 text-sm font-medium text-secondary hover:bg-hover"
-            >
-              Рекуррентные брони
-            </Link>
-          )}
-        </div>
+        )}
       </div>
 
       {isError && (
@@ -326,348 +320,362 @@ export default function BookingCatalogPage() {
           role="alert"
           className="rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-4 py-3 text-sm text-danger"
         >
-          Не удалось загрузить каталог. Проверьте сеть и токен.
+          {t('catalog.errorLoad')}
         </div>
       )}
 
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-        <aside
-          className={cn(
-            'w-full shrink-0 rounded-2xl border border-default bg-raised p-4 text-secondary',
-            'lg:w-80 lg:sticky lg:top-4',
-          )}
-        >
-          <h2 className="text-sm font-semibold text-primary">Фильтры</h2>
-          <div className="mt-4 space-y-4">
-            <label className="block">
-              <span className={sbLabel}>Поиск по названию</span>
-              <div className="relative mt-1">
-                <Search
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
-                />
-                <input
-                  type="search"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="Например, Байтерек"
-                  className={cn(
-                    'w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-default bg-surface text-primary placeholder:text-muted',
-                    'focus:outline-none focus:ring-2 focus:ring-blue-500/20',
-                  )}
-                />
-              </div>
-            </label>
-
-            <label className="block">
-              <span className={sbLabel}>Тип</span>
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className={cn(sbSelect, 'focus:ring-2 focus:ring-blue-500/20 focus:outline-none')}
+      {/* ── Inline filter bar ── */}
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Type chips */}
+          <div className="flex flex-wrap gap-1.5">
+            {TYPE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value || 'all'}
+                type="button"
+                onClick={() => setTypeFilter(opt.value)}
+                className={cn(
+                  'rounded-full border px-3 py-1 text-sm font-medium transition-colors',
+                  typeFilter === opt.value
+                    ? 'border-brand bg-brand/10 text-brand'
+                    : 'border-default text-secondary hover:bg-hover hover:text-primary',
+                )}
               >
-                {TYPE_OPTIONS.map((o) => (
-                  <option key={o.value || 'all'} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+                {opt.label}
+              </button>
+            ))}
+          </div>
 
-            <label className="block">
-              <span className={sbLabel}>Этаж</span>
+          {/* Separator */}
+          <span className="hidden sm:block h-4 w-px bg-border" />
+
+          {/* Floor button */}
+          <button
+            type="button"
+            onClick={() => {
+              const val = window.prompt(t('catalog.floor'), floorFilter || '');
+              if (val === null) return;
+              setFloorFilter(val.trim());
+            }}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
+              floorFilter
+                ? 'border-brand bg-brand/10 text-brand'
+                : 'border-default text-secondary hover:bg-hover',
+            )}
+          >
+            <Filter size={13} />
+            {floorFilter ? `${t('catalog.floor')}: ${floorFilter}` : t('catalog.floorAll')}
+          </button>
+
+          {/* Availability window toggle */}
+          <button
+            type="button"
+            onClick={() => setShowAvailFilter((v) => !v)}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
+              hasAvailFilter
+                ? 'border-brand bg-brand/10 text-brand'
+                : 'border-default text-secondary hover:bg-hover',
+            )}
+          >
+            {hasAvailFilter
+              ? `${t('catalog.availFrom')} ${availFromLocal.slice(11, 16)} ${t('catalog.availTo')} ${availToLocal.slice(11, 16)}`
+              : t('catalog.availWindow')}
+          </button>
+
+          {/* Only free chip */}
+          <button
+            type="button"
+            onClick={() => setShowOnlyFree((v) => !v)}
+            className={cn(
+              'rounded-full border px-3 py-1 text-sm font-medium transition-colors',
+              showOnlyFree
+                ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500'
+                : 'border-default text-secondary hover:bg-hover hover:text-primary',
+            )}
+          >
+            {t('catalog.onlyFree')}
+          </button>
+
+          {/* Right-side controls */}
+          <div className="ml-auto flex items-center gap-2">
+            {/* Search */}
+            <div className="relative">
+              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
               <input
-                type="number"
-                value={floorFilter}
-                onChange={(e) => setFloorFilter(e.target.value)}
-                placeholder="Любой"
-                className={cn(sbInput, 'focus:ring-2 focus:ring-blue-500/20 focus:outline-none')}
+                type="search"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder={t('catalog.searchPlaceholder')}
+                className="h-8 w-44 rounded-lg border border-default bg-surface pl-8 pr-3 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/20"
               />
-            </label>
-
-            <div className="grid grid-cols-2 gap-2">
-              <label className="block min-w-0">
-                <span className={sbLabel}>Вместимость от</span>
-                <input
-                  type="number"
-                  min={1}
-                  value={capacityMin}
-                  onChange={(e) => setCapacityMin(e.target.value)}
-                  placeholder="—"
-                  className={cn(sbInput, 'px-2 focus:ring-2 focus:ring-blue-500/20 focus:outline-none')}
-                />
-              </label>
-              <label className="block min-w-0">
-                <span className={sbLabel}>до</span>
-                <input
-                  type="number"
-                  min={1}
-                  value={capacityMax}
-                  onChange={(e) => setCapacityMax(e.target.value)}
-                  placeholder="—"
-                  className={cn(sbInput, 'px-2 focus:ring-2 focus:ring-blue-500/20 focus:outline-none')}
-                />
-              </label>
             </div>
 
-            <fieldset className="min-w-0">
-              <legend className={sbLabel}>Оборудование в переговорке</legend>
-              {equipmentFacetKeys.length === 0 ? (
-                <p className="mt-3 text-sm text-secondary">
-                  Нет переговорок с оборудованием в этой выборке — смените фильтры или тип «Переговорка».
-                </p>
-              ) : (
-                <div className="mt-3 max-h-52 space-y-2 overflow-y-auto pr-1">
-                  {equipmentFacetKeys.map((key) => (
-                    <label
-                      key={key}
-                      className="flex cursor-pointer items-center gap-2 text-sm text-secondary"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={equipmentNeed[key]}
-                        onChange={() =>
-                          setEquipmentNeed((prev) => ({ ...prev, [key]: !prev[key] }))
-                        }
-                        className="size-4 shrink-0 rounded border-default bg-surface text-brand focus:ring-blue-500/20"
-                      />
-                      {RESOURCE_EQUIPMENT_LABELS[key]}
-                    </label>
-                  ))}
-                </div>
-              )}
-            </fieldset>
+            {/* Ordering */}
+            <select
+              value={ordering}
+              onChange={(e) => setOrdering(e.target.value)}
+              className="h-8 rounded-lg border border-default bg-surface px-2 text-sm text-secondary focus:outline-none focus:ring-2 focus:ring-brand/20 [&>option]:bg-surface [&>option]:text-primary"
+            >
+              {ORDERING_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
 
-            <div className="space-y-2 rounded-lg border border-default bg-surface/60 p-3">
-              <span className={sbLabel}>Свободен в интервале</span>
-              <p className="text-xs text-secondary">
-                Укажите «с» и «до» (локальное время). Отфильтруются ресурсы без пересечений с
-                бронированиями и блокировками.
-              </p>
-              <label className="block">
-                <span className="text-xs text-secondary">С</span>
-                <input
-                  type="datetime-local"
-                  value={availFromLocal}
-                  onChange={(e) => setAvailFromLocal(e.target.value)}
-                  className={cn(sbInput, 'focus:ring-2 focus:ring-blue-500/20 focus:outline-none')}
-                />
-              </label>
-              <label className="block">
-                <span className="text-xs text-secondary">До</span>
-                <input
-                  type="datetime-local"
-                  value={availToLocal}
-                  onChange={(e) => setAvailToLocal(e.target.value)}
-                  className={cn(sbInput, 'focus:ring-2 focus:ring-blue-500/20 focus:outline-none')}
-                />
-              </label>
-            </div>
-
-            <label className="block">
-              <span className={sbLabel}>Сортировка</span>
-              <select
-                value={ordering}
-                onChange={(e) => setOrdering(e.target.value)}
-                className={cn(sbSelect, 'focus:ring-2 focus:ring-blue-500/20 focus:outline-none')}
-              >
-                {ORDERING_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
+            {/* Reset */}
             <button
               type="button"
               onClick={resetFilters}
-              className="w-full rounded-lg border border-default bg-surface py-2 text-sm font-medium text-secondary hover:bg-hover"
+              className="h-8 px-3 rounded-lg border border-default text-xs text-secondary hover:bg-hover transition-colors"
             >
-              Сбросить
+              {t('catalog.reset')}
             </button>
           </div>
-        </aside>
-
-        <div className="min-w-0 flex-1 space-y-4">
-          {isLoading ? (
-            <div className="py-20 text-center text-sm text-secondary">Загрузка каталога…</div>
-          ) : sortedResults.length === 0 ? (
-            <div className="py-20 text-center text-sm text-secondary">Нет ресурсов по заданным условиям.</div>
-          ) : (
-            <ul className="grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {sortedResults.map((r) => {
-                const firstPhotoSrc = r.photos?.[0]?.image_url ?? r.photos?.[0]?.image ?? null;
-                const imgSrc =
-                  firstPhotoSrc ??
-                  resolveMediaUrl(r.photo_url ?? r.photo ?? '') ??
-                  r.photo_url ??
-                  r.photo ??
-                  '';
-                const statusLabel = STATUS_LABELS[r.status] ?? r.status;
-                const badgeClass = STATUS_BADGE_CLASS[r.status] ?? 'bg-black/60';
-                const whenFree = formatAvailableAt(r.available_at);
-                const isMyCompany = myCompanyId !== null && r.assigned_company === myCompanyId;
-                return (
-                  <li key={r.id}>
-                    <article
-                      onClick={() => setPanelResource(r)}
-                      className={cn(
-                        'h-full flex flex-col overflow-hidden rounded-2xl border bg-raised shadow-sm transition-all cursor-pointer',
-                        isMyCompany
-                          ? 'border-indigo-500/40 hover:border-indigo-400/70 hover:shadow-indigo-900/30'
-                          : 'border-default hover:border-blue-500/50 hover:shadow-indigo-900/20',
-                        'hover:-translate-y-0.5',
-                        !r.is_active && 'opacity-60',
-                      )}
-                    >
-                      <div className="relative aspect-[16/10] overflow-hidden bg-surface">
-                        {imgSrc ? (
-                          <img src={imgSrc} alt="" className="absolute inset-0 h-full w-full object-cover" />
-                        ) : (
-                          <div className="flex h-full items-center justify-center">
-                            <Bookmark className="h-10 w-10 text-muted" />
-                          </div>
-                        )}
-                        <span className="absolute left-2 top-2 rounded-full border border-white/15 bg-black/60 px-2 py-0.5 text-xs font-medium text-primary">
-                          {RESOURCE_TYPE_LABELS[r.type]}
-                        </span>
-                        <span
-                          className={cn(
-                            'absolute right-2 top-2 rounded-full px-2 py-0.5 text-xs font-medium text-primary',
-                            badgeClass,
-                          )}
-                        >
-                          {statusLabel}
-                        </span>
-                      </div>
-                      <div className="flex flex-1 flex-col gap-2 p-4">
-                        <h2 className="font-semibold text-primary">{r.name}</h2>
-                        {isMyCompany && (
-                          <span className="inline-flex w-fit items-center gap-1 rounded-full border border-indigo-500/30 bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-300">
-                            <Building2 size={10} />
-                            Закреплён за вашей компанией
-                          </span>
-                        )}
-                        <p className="text-xs text-secondary">
-                          Этаж {r.floor}
-                          {r.zone ? ` · ${r.zone}` : ''}
-                          {r.parking_type ? ` · ${r.parking_type === 'vip' ? 'VIP' : 'Обычная'}` : ''}
-                          {r.capsule_zone ? ` · ${r.capsule_zone === 'quiet' ? 'тихая зона' : 'обычная'}` : ''}
-                        </p>
-                        <p className="text-xs text-secondary">Вместимость: {r.capacity}</p>
-                        {r.equipment && r.type === RESOURCE_TYPES.MEETING_ROOM && (
-                          <ul className="flex flex-wrap gap-1">
-                            {Object.entries(r.equipment)
-                              .filter(([, v]) => v)
-                              .map(([key]) => (
-                                <li
-                                  key={key}
-                                  className="rounded border border-default bg-hover px-2 py-0.5 text-[10px] font-medium text-secondary"
-                                >
-                                  {RESOURCE_EQUIPMENT_LABELS[key as keyof typeof RESOURCE_EQUIPMENT_LABELS] ?? key}
-                                </li>
-                              ))}
-                          </ul>
-                        )}
-                        {whenFree && r.status === BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE && (
-                          <p className="text-xs text-warning">Освободится: {whenFree}</p>
-                        )}
-                        {r.status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED && r.reason && (
-                          <p className="text-xs text-slate-300">Причина блокировки: {r.reason}</p>
-                        )}
-                        {r.is_hot_desk && r.type === RESOURCE_TYPES.DESK && (
-                          <span className="text-xs font-medium text-blue-300">Hot desk</span>
-                        )}
-
-                        {/* ── Weekly schedule toggle ── */}
-                        <div className="mt-auto border-t border-default/60 pt-2" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setExpandedScheduleId((prev) => (prev === r.id ? null : r.id))
-                            }
-                            className="flex w-full items-center justify-between gap-2 rounded-lg px-1 py-1 text-xs font-medium text-secondary hover:bg-hover/50 hover:text-secondary transition-colors"
-                          >
-                            <span className="flex items-center gap-1.5">
-                              <CalendarDays size={13} />
-                              Расписание на неделю
-                            </span>
-                            {expandedScheduleId === r.id ? (
-                              <ChevronUp size={13} />
-                            ) : (
-                              <ChevronDown size={13} />
-                            )}
-                          </button>
-
-                          {expandedScheduleId === r.id && (
-                            <div className="mt-2 rounded-lg border border-default/60 bg-surface/50 px-2 py-2">
-                              <ResourceWeekMiniTimeline resourceId={r.id} />
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="pt-1" onClick={(e) => e.stopPropagation()}>
-                          {r.status === BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED ? (
-                            <button
-                              type="button"
-                              disabled
-                              className="inline-flex w-full cursor-not-allowed justify-center rounded-lg bg-hover px-3 py-2 text-sm font-medium text-secondary"
-                            >
-                              Занят
-                            </button>
-                          ) : r.status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED ? (
-                            <button
-                              type="button"
-                              disabled
-                              className="inline-flex w-full cursor-not-allowed justify-center rounded-lg bg-slate-700 px-3 py-2 text-sm font-medium text-slate-300"
-                            >
-                              Заблокирован
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => setSelectedResource(r)}
-                              className="inline-flex w-full justify-center rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                            >
-                              Забронировать
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </article>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-
-          {totalPages > 1 && (
-            <div className="flex flex-wrap justify-center gap-2 pt-2">
-              <button
-                type="button"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="rounded-lg border border-default px-4 py-2 text-sm text-secondary disabled:opacity-40"
-              >
-                Назад
-              </button>
-              <span className="self-center text-sm text-secondary">
-                {page} / {totalPages}
-              </span>
-              <button
-                type="button"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="rounded-lg border border-default px-4 py-2 text-sm text-secondary disabled:opacity-40"
-              >
-                Вперёд
-              </button>
-            </div>
-          )}
         </div>
+
+        {/* Availability date inputs — shown when toggled or has values */}
+        {showAvailFilter && (
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-default bg-raised p-3">
+            <span className="text-xs font-medium text-secondary">{t('catalog.availFrom')}</span>
+            <input
+              type="datetime-local"
+              value={availFromLocal}
+              onChange={(e) => setAvailFromLocal(e.target.value)}
+              className="h-8 rounded-lg border border-default bg-surface px-2 text-xs text-primary [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-brand/20"
+            />
+            <span className="text-xs text-muted">{t('catalog.availTo')}</span>
+            <input
+              type="datetime-local"
+              value={availToLocal}
+              onChange={(e) => setAvailToLocal(e.target.value)}
+              className="h-8 rounded-lg border border-default bg-surface px-2 text-xs text-primary [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-brand/20"
+            />
+            {hasAvailFilter && (
+              <button
+                type="button"
+                onClick={() => { setAvailFromLocal(''); setAvailToLocal(''); }}
+                className="ml-1 rounded-full p-0.5 text-muted hover:text-secondary"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Equipment facets — only shown when meeting_room type selected and facets available */}
+        {typeFilter === RESOURCE_TYPES.MEETING_ROOM && equipmentFacetKeys.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-default bg-raised px-3 py-2">
+            <span className="text-xs font-medium text-muted">{t('catalog.equipment')}:</span>
+            {equipmentFacetKeys.map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setEquipmentNeed((prev) => ({ ...prev, [key]: !prev[key] }))}
+                className={cn(
+                  'rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors',
+                  equipmentNeed[key]
+                    ? 'border-brand bg-brand/10 text-brand'
+                    : 'border-default text-secondary hover:bg-hover',
+                )}
+              >
+                {t(RESOURCE_EQUIPMENT_LABEL_KEYS[key])}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
+      {/* ── Resource grid ── */}
+      {isLoading ? (
+        <div className="py-20 text-center text-sm text-secondary">{t('catalog.loading')}</div>
+      ) : sortedResults.length === 0 ? (
+        <div className="py-20 text-center text-sm text-secondary">{t('catalog.noResults')}</div>
+      ) : (
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {sortedResults.map((r) => {
+            const firstPhotoSrc = r.photos?.[0]?.image_url ?? r.photos?.[0]?.image ?? null;
+            const imgSrc =
+              firstPhotoSrc ??
+              resolveMediaUrl(r.photo_url ?? r.photo ?? '') ??
+              r.photo_url ??
+              r.photo ??
+              '';
+            const isMyCompany = myCompanyId !== null && r.assigned_company === myCompanyId;
+            const whenFree = formatAvailableAt(r.available_at);
+
+            return (
+              <li key={r.id}>
+                <article
+                  className={cn(
+                    'flex flex-col overflow-hidden rounded-2xl border bg-surface shadow-sm transition-all cursor-pointer',
+                    'hover:-translate-y-0.5 hover:shadow-md',
+                    isMyCompany ? 'border-indigo-500/40' : 'border-default',
+                    !r.is_active && 'opacity-60',
+                  )}
+                >
+                  {/* Image area */}
+                  <div
+                    className="relative aspect-[16/10] overflow-hidden bg-raised"
+                    onClick={() => setPanelResource(r)}
+                  >
+                    {imgSrc ? (
+                      <img
+                        src={imgSrc}
+                        alt={r.name}
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <DoorOpen size={32} className="text-muted" />
+                      </div>
+                    )}
+
+                    {/* Resource type badge — top left */}
+                    <span className="absolute left-2 top-2 rounded-full border border-white/15 bg-black/50 px-2 py-0.5 text-[11px] font-medium text-white">
+                      {t(RESOURCE_TYPE_LABEL_KEYS[r.type])}
+                    </span>
+
+                    {/* Status badge — top right */}
+                    <span
+                      className="absolute right-2 top-2 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold text-white"
+                      style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+                    >
+                      <span className={cn('h-2 w-2 rounded-full', statusDotClass[r.status] ?? 'bg-slate-400')} />
+                      {t(`catalog.status.${r.status}`, { defaultValue: r.status })}
+                    </span>
+                  </div>
+
+                  {/* Card body */}
+                  <div
+                    className="flex flex-1 flex-col gap-2 p-4"
+                    onClick={() => setPanelResource(r)}
+                  >
+                    <h2 className="text-sm font-semibold text-primary leading-snug">{r.name}</h2>
+
+                    {isMyCompany && (
+                      <span className="inline-flex w-fit items-center gap-1 rounded-full border border-indigo-500/30 bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-300">
+                        <Building2 size={10} />
+                        {t('catalog.assignedToCompany')}
+                      </span>
+                    )}
+
+                    <div className="flex flex-col gap-1">
+                      <span className="flex items-center gap-1.5 text-xs text-muted">
+                        <DoorOpen size={12} />
+                        {t(RESOURCE_TYPE_LABEL_KEYS[r.type])}
+                        {r.capacity ? ` · ${r.capacity} ${t('catalog.people')}` : ''}
+                      </span>
+                      <span className="flex items-center gap-1.5 text-xs text-muted">
+                        <Building2 size={12} />
+                        {t('catalog.floor')} {r.floor}
+                        {r.zone ? ` · ${r.zone}` : ''}
+                        {r.parking_type ? ` · ${r.parking_type === 'vip' ? 'VIP' : 'Regular'}` : ''}
+                        {r.capsule_zone ? ` · ${r.capsule_zone === 'quiet' ? 'Quiet' : 'Regular'}` : ''}
+                      </span>
+                    </div>
+
+                    {r.is_hot_desk && r.type === RESOURCE_TYPES.DESK && (
+                      <span className="text-xs font-medium text-blue-400">{t('catalog.hotDesk')}</span>
+                    )}
+
+                    {whenFree && r.status === BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE && (
+                      <p className="text-xs text-warning">{t('catalog.freeAt', { time: whenFree })}</p>
+                    )}
+
+                    {r.status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED && r.reason && (
+                      <p className="text-xs text-muted">{t('catalog.blockReason', { reason: r.reason })}</p>
+                    )}
+
+                    {/* Equipment chips — meeting rooms only, max 3 */}
+                    {r.type === RESOURCE_TYPES.MEETING_ROOM && r.equipment && (
+                      <div className="flex flex-wrap gap-1 mt-auto">
+                        {Object.entries(r.equipment)
+                          .filter(([, v]) => v)
+                          .slice(0, 3)
+                          .map(([key]) => (
+                            <span
+                              key={key}
+                              className="rounded border border-default bg-raised px-1.5 py-0.5 text-[10px] text-muted"
+                            >
+                              {t(RESOURCE_EQUIPMENT_LABEL_KEYS[key as ResourceEquipmentKey]) ?? key}
+                            </span>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div
+                    className="flex gap-2 px-4 pb-4 pt-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {r.status === BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED ? (
+                      <button
+                        type="button"
+                        disabled
+                        className="flex-1 rounded-lg bg-raised px-3 py-2 text-sm font-medium text-muted cursor-not-allowed"
+                      >
+                        {t('catalog.occupied')}
+                      </button>
+                    ) : r.status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED ? (
+                      <button
+                        type="button"
+                        disabled
+                        className="flex-1 rounded-lg bg-raised px-3 py-2 text-sm font-medium text-muted cursor-not-allowed"
+                      >
+                        {t('catalog.blocked')}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedResource(r)}
+                        className="flex-1 rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-hover transition-colors"
+                      >
+                        {t('catalog.book')}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setPanelResource(r)}
+                      className="rounded-lg border border-default px-3 py-2 text-sm font-medium text-secondary hover:bg-hover transition-colors"
+                    >
+                      {t('catalog.details')}
+                    </button>
+                  </div>
+                </article>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {/* ── Pagination ── */}
+      {totalPages > 1 && (
+        <div className="flex flex-wrap justify-center gap-2 pt-2">
+          <button
+            type="button"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="rounded-lg border border-default px-4 py-2 text-sm text-secondary disabled:opacity-40"
+          >
+            {t('catalog.prev')}
+          </button>
+          <span className="self-center text-sm text-secondary">
+            {t('catalog.pageOf', { page, total: totalPages })}
+          </span>
+          <button
+            type="button"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            className="rounded-lg border border-default px-4 py-2 text-sm text-secondary disabled:opacity-40"
+          >
+            {t('catalog.next')}
+          </button>
+        </div>
+      )}
+
+      {/* ── Detail panel modal ── */}
       {panelResource && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -713,20 +721,23 @@ export default function BookingCatalogPage() {
                 <div className="relative shrink-0 aspect-[16/9] bg-black overflow-hidden">
                   <img key={photoIdx} src={currentSrc ?? ''} alt="" className="h-full w-full object-cover" />
 
-                  {/* gradient overlay for badges */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
 
-                  {/* type + status badges bottom */}
                   <div className="absolute bottom-3 left-4 flex items-center gap-2">
                     <span className="rounded-full border border-white/20 bg-black/50 px-2.5 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
-                      {RESOURCE_TYPE_LABELS[panelResource.type]}
+                      {t(RESOURCE_TYPE_LABEL_KEYS[panelResource.type])}
                     </span>
-                    <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium text-white', STATUS_BADGE_CLASS[panelResource.status] ?? 'bg-black/60')}>
-                      {STATUS_LABELS[panelResource.status] ?? panelResource.status}
+                    <span
+                      className={cn(
+                        'flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium text-white',
+                        STATUS_BADGE_CLASS[panelResource.status] ?? 'bg-black/60',
+                      )}
+                    >
+                      <span className={cn('h-1.5 w-1.5 rounded-full', statusDotClass[panelResource.status] ?? 'bg-slate-400')} />
+                      {t(`catalog.status.${panelResource.status}`, { defaultValue: panelResource.status })}
                     </span>
                   </div>
 
-                  {/* slider arrows */}
                   {photos.length > 1 && (
                     <>
                       <button
@@ -744,7 +755,6 @@ export default function BookingCatalogPage() {
                         <ChevronRight size={18} />
                       </button>
 
-                      {/* dot indicators */}
                       <div className="absolute bottom-3 right-4 flex items-center gap-1">
                         {photos.map((_, i) => (
                           <button
@@ -766,42 +776,40 @@ export default function BookingCatalogPage() {
 
             {/* Scrollable body */}
             <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-5">
-              {/* Title row */}
               <div>
                 <h2 className="text-xl font-bold text-primary">{panelResource.name}</h2>
                 <p className="mt-0.5 text-sm text-secondary">
-                  Этаж {panelResource.floor}
+                  {t('catalog.floor')} {panelResource.floor}
                   {panelResource.zone ? ` · ${panelResource.zone}` : ''}
-                  {panelResource.parking_type ? ` · ${panelResource.parking_type === 'vip' ? 'VIP' : 'Обычная'}` : ''}
-                  {panelResource.capsule_zone ? ` · ${panelResource.capsule_zone === 'quiet' ? 'Тихая зона' : 'Обычная зона'}` : ''}
+                  {panelResource.parking_type ? ` · ${panelResource.parking_type === 'vip' ? 'VIP' : 'Regular'}` : ''}
+                  {panelResource.capsule_zone ? ` · ${panelResource.capsule_zone === 'quiet' ? 'Quiet' : 'Regular'}` : ''}
                 </p>
               </div>
 
-              {/* Description */}
               {panelDetail === undefined ? (
-                <p className="text-sm text-muted italic">Загрузка…</p>
+                <p className="text-sm text-muted italic">{t('catalog.detailLoading')}</p>
               ) : panelDetail.description ? (
                 <p className="text-sm text-secondary leading-relaxed">{panelDetail.description}</p>
               ) : null}
 
-              {/* Stats */}
               <div className="flex flex-wrap gap-3">
                 <div className="rounded-xl border border-default bg-raised px-4 py-2.5 text-center">
-                  <p className="text-xs text-muted">Вместимость</p>
+                  <p className="text-xs text-muted">{t('catalog.capacityLabel')}</p>
                   <p className="mt-0.5 text-lg font-semibold text-primary">{panelResource.capacity}</p>
                 </div>
                 {panelResource.is_hot_desk && panelResource.type === RESOURCE_TYPES.DESK && (
                   <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-center">
-                    <p className="text-xs text-blue-400">Режим</p>
-                    <p className="mt-0.5 text-sm font-semibold text-blue-300">Hot desk</p>
+                    <p className="text-xs text-blue-400">{t('catalog.modeLabel')}</p>
+                    <p className="mt-0.5 text-sm font-semibold text-blue-300">{t('catalog.hotDesk')}</p>
                   </div>
                 )}
               </div>
 
-              {/* Equipment */}
               {panelResource.equipment && panelResource.type === RESOURCE_TYPES.MEETING_ROOM && (
                 <div>
-                  <p className="mb-2 text-xs font-medium text-muted uppercase tracking-wide">Оборудование</p>
+                  <p className="mb-2 text-xs font-medium text-muted uppercase tracking-wide">
+                    {t('catalog.equipment')}
+                  </p>
                   <ul className="flex flex-wrap gap-1.5">
                     {Object.entries(panelResource.equipment)
                       .filter(([, v]) => v)
@@ -810,7 +818,7 @@ export default function BookingCatalogPage() {
                           key={key}
                           className="rounded-lg border border-default bg-hover px-2.5 py-1 text-xs font-medium text-secondary"
                         >
-                          {RESOURCE_EQUIPMENT_LABELS[key as keyof typeof RESOURCE_EQUIPMENT_LABELS] ?? key}
+                          {t(RESOURCE_EQUIPMENT_LABEL_KEYS[key as ResourceEquipmentKey]) ?? key}
                         </li>
                       ))}
                   </ul>
@@ -824,17 +832,17 @@ export default function BookingCatalogPage() {
                 <button
                   type="button"
                   disabled
-                  className="inline-flex w-full cursor-not-allowed justify-center rounded-xl bg-hover px-4 py-3 text-sm font-semibold text-secondary"
+                  className="inline-flex w-full cursor-not-allowed justify-center rounded-xl bg-raised px-4 py-3 text-sm font-semibold text-muted"
                 >
-                  Занят
+                  {t('catalog.occupied')}
                 </button>
               ) : panelResource.status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED ? (
                 <button
                   type="button"
                   disabled
-                  className="inline-flex w-full cursor-not-allowed justify-center rounded-xl bg-slate-700 px-4 py-3 text-sm font-semibold text-slate-300"
+                  className="inline-flex w-full cursor-not-allowed justify-center rounded-xl bg-raised px-4 py-3 text-sm font-semibold text-muted"
                 >
-                  Заблокирован
+                  {t('catalog.blocked')}
                 </button>
               ) : (
                 <button
@@ -843,9 +851,9 @@ export default function BookingCatalogPage() {
                     setSelectedResource(panelResource);
                     setPanelResource(null);
                   }}
-                  className="inline-flex w-full justify-center rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-white hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors"
+                  className="inline-flex w-full justify-center rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-white hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-brand/30 transition-colors"
                 >
-                  Забронировать
+                  {t('catalog.book')}
                 </button>
               )}
             </div>
@@ -853,7 +861,8 @@ export default function BookingCatalogPage() {
         </div>
       )}
 
-      {selectedResource !== null && (
+      {/* ── Booking modal ── */}
+      {selectedResource !== null && (selectedResource as Partial<BookingResourceListItem>).id !== undefined && (
         <BookingModal
           resource={selectedResource}
           open={selectedResource !== null}

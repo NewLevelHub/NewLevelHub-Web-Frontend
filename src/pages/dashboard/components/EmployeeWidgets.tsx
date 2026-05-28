@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import { DoorOpen, ExternalLink, Megaphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/shared/lib/cn';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import type { EmployeeDashboardData } from '@/shared/types';
 
 const PRIORITY_STYLE: Record<string, string> = {
@@ -13,18 +14,18 @@ const PRIORITY_STYLE: Record<string, string> = {
   low:      'bg-subtle',
 };
 
-const fmtTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-
 export function EmployeeWidgets({
   data,
 }: {
   data: EmployeeDashboardData;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = dateLocaleTag(i18n.language);
+  const fmtTime = (iso: string) =>
+    new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 
   const today = new Date();
-  const dateStr = today.toLocaleDateString('ru-RU', {
+  const dateStr = today.toLocaleDateString(locale, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -141,8 +142,10 @@ export function EmployeeWidgets({
                 const timeStr = `${fmtTime(booking.start_time)} — ${fmtTime(booking.end_time)}`;
                 const desc =
                   booking.resource_type === 'meeting_room'
-                    ? `Переговорка · ${booking.resource_capacity ?? '?'} чел.`
-                    : 'Рабочее место';
+                    ? t('dashboard.employee.meetingRoomCapacity', {
+                        count: booking.resource_capacity ?? '?',
+                      })
+                    : t('dashboard.employee.deskResource');
                 return (
                   <li
                     key={booking.id}
@@ -248,7 +251,7 @@ export function EmployeeWidgets({
                 to="/announcements"
                 className="text-xs text-brand hover:text-brand-hover transition-colors"
               >
-                {t('dashboard.employee.allAnnouncements')} →
+                {t('dashboard.employee.allAnnouncements')}
               </Link>
             </div>
 

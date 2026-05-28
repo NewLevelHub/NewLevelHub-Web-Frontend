@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Settings2, Plus, Trash2 } from 'lucide-react';
@@ -15,6 +16,7 @@ function normalizeTimeInput(value: string): string {
 }
 
 export default function CompanySettingsPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -125,16 +127,14 @@ export default function CompanySettingsPage() {
 
   const companySelector = (
     <section className="rounded-xl border border-default bg-surface/50 p-4">
-      <label className="block text-sm font-medium text-secondary" htmlFor="company-select-settings">
-        Компания
-      </label>
+      <label className="block text-sm font-medium text-secondary" htmlFor="company-select-settings">{t('common.company')}</label>
       <select
         id="company-select-settings"
         value={selectedCompanyId}
         onChange={(e) => setSelectedCompanyId(e.target.value)}
         className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
       >
-        <option value="">Выберите компанию</option>
+        <option value="">{t('common.selectCompany')}</option>
         {(companiesData?.results ?? []).map((company) => (
           <option key={company.id} value={String(company.id)}>
             {company.name}
@@ -236,9 +236,7 @@ export default function CompanySettingsPage() {
             checked={onboardingEnabled}
             onChange={(e) => setOnboardingEnabled(e.target.checked)}
             className="h-4 w-4 rounded border-default bg-surface text-brand"
-          />
-          Включить onboarding-процесс
-        </label>
+          />{t('announcements.enableOnboarding')}</label>
       </section>
 
       <section className="space-y-5 rounded-xl border border-default bg-surface/50 p-6">
@@ -349,7 +347,7 @@ export default function CompanySettingsPage() {
         disabled={saveMutation.isPending}
         className="inline-flex items-center rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-60"
       >
-        {saveMutation.isPending ? 'Сохранение...' : 'Сохранить настройки'}
+        {saveMutation.isPending ? t('common.savingPlain') : 'Сохранить настройки'}
       </button>
     </div>
   );

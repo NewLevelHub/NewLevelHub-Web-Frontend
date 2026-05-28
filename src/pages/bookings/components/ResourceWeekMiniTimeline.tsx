@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 
@@ -16,7 +17,6 @@ const VIEW_END_H = 18;
 const VIEW_RANGE_MS = (VIEW_END_H - VIEW_START_H) * 60 * 60 * 1000;
 const HOUR_TICKS = [9, 12, 15, 18];
 
-const DAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -77,8 +77,8 @@ function buildSegments(slots: ResourceScheduleSlot[], dayStartMs: number): Segme
       isSoonAvailable: sl.status === 'soon_available',
       label:
         sl.booking_id != null
-          ? sl.user_name?.trim() || `Бронь #${sl.booking_id}`
-          : 'Блокировка',
+          ? sl.user_name?.trim() || `#${sl.booking_id}`
+          : '__block__',
       slotIndices: [idx],
     });
   });
@@ -108,11 +108,11 @@ const STATUS_DOT: Record<BookingResourceCatalogStatus, string> = {
   [BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE]: 'bg-amber-400',
 };
 
-const STATUS_LABEL_SHORT: Record<BookingResourceCatalogStatus, string> = {
-  [BOOKING_RESOURCE_CATALOG_STATUS.FREE]:           'Свободен',
-  [BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED]:       'Занят',
-  [BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED]:        'Заблок.',
-  [BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE]: 'Скоро свободен',
+const STATUS_LABEL_KEYS: Record<BookingResourceCatalogStatus, string> = {
+  [BOOKING_RESOURCE_CATALOG_STATUS.FREE]:           'catalog.status.free',
+  [BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED]:       'catalog.status.occupied',
+  [BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED]:        'catalog.status.blocked',
+  [BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE]: 'catalog.status.soon_available',
 };
 
 // ─── Slot detail popup ────────────────────────────────────────────────────────
@@ -124,6 +124,7 @@ interface SlotDetailPanelProps {
 }
 
 function SlotDetailPanel({ isoDay, slots, onClose }: SlotDetailPanelProps) {
+  const { t } = useTranslation();
   const [, m, d] = isoDay.split('-');
   const dateStr = `${d}.${m}`;
 
@@ -131,7 +132,7 @@ function SlotDetailPanel({ isoDay, slots, onClose }: SlotDetailPanelProps) {
     <div className="mt-1 rounded-lg border border-default bg-gray-850 shadow-lg text-xs overflow-hidden"
          style={{ background: 'rgb(17 24 39)' }}>
       <div className="flex items-center justify-between px-3 py-2 border-b border-default">
-        <span className="font-medium text-secondary">Занятость {dateStr}</span>
+        <span className="font-medium text-secondary">{t('booking.timeline.occupancy', { date: dateStr })}</span>
         <button
           type="button"
           onClick={onClose}
@@ -155,7 +156,7 @@ function SlotDetailPanel({ isoDay, slots, onClose }: SlotDetailPanelProps) {
               />
               <div className="min-w-0">
                 <p className="font-medium text-secondary truncate">
-                  {isBlock ? 'Блокировка' : (sl.user_name?.trim() || `Бронь #${sl.booking_id}`)}
+                  {isBlock ? t('booking.timeline.blockLabel') : (sl.user_name?.trim() || t('booking.timeline.bookingLabel', { id: sl.booking_id }))}
                 </p>
                 <p className="text-muted tabular-nums">
                   {fmtTime(startMs)} – {fmtTime(endMs)}
@@ -183,6 +184,7 @@ interface DayRowProps {
 }
 
 function DayRow({ slots, isLoading, isoDay, label, dateLabel, isToday, nowPct, currentStatus }: DayRowProps) {
+  const { t } = useTranslation();
   const [detailOpen, setDetailOpen] = useState(false);
 
   const [y, m, d] = isoDay.split('-').map(Number);
@@ -200,7 +202,7 @@ function DayRow({ slots, isLoading, isoDay, label, dateLabel, isToday, nowPct, c
             {isToday && currentStatus && (
               <span
                 className={cn('inline-block h-1.5 w-1.5 rounded-full shrink-0', STATUS_DOT[currentStatus])}
-                title={STATUS_LABEL_SHORT[currentStatus]}
+                title={t(STATUS_LABEL_KEYS[currentStatus])}
               />
             )}
             <span className={cn('text-[11px] font-semibold leading-tight', isToday ? 'text-brand' : 'text-secondary')}>
@@ -220,7 +222,7 @@ function DayRow({ slots, isLoading, isoDay, label, dateLabel, isToday, nowPct, c
             hasBusy && 'cursor-pointer',
           )}
           onClick={() => hasBusy && setDetailOpen((v) => !v)}
-          title={hasBusy ? 'Нажмите, чтобы посмотреть детали' : undefined}
+          title={hasBusy ? t('booking.timeline.clickToToggle') : undefined}
         >
           {isLoading ? (
             <div className="h-full w-full animate-pulse bg-hover/50 rounded" />
@@ -247,7 +249,7 @@ function DayRow({ slots, isLoading, isoDay, label, dateLabel, isToday, nowPct, c
               {/* Free label */}
               {isCompletelyFree && (
                 <div className="absolute inset-0 flex items-center pl-2">
-                  <span className="text-[10px] font-medium text-emerald-500/70">свободно</span>
+                  <span className="text-[10px] font-medium text-emerald-500/70">{t('booking.timeline.freeLabel')}</span>
                 </div>
               )}
 
@@ -286,6 +288,11 @@ interface Props {
 }
 
 export function ResourceWeekMiniTimeline({ resourceId, currentStatus, className }: Props) {
+  const { t } = useTranslation();
+  const dayLabels = useMemo(
+    () => t('common.weekdaysShort', { returnObjects: true }) as string[],
+    [t],
+  );
   const now = new Date();
   const todayIso = isoDate(now);
   const monday = getMondayIso(now);
@@ -330,7 +337,7 @@ export function ResourceWeekMiniTimeline({ resourceId, currentStatus, className 
           slots={weekSlots.filter((sl) => sl.start.startsWith(iso))}
           isLoading={isLoading}
           isoDay={iso}
-          label={DAY_LABELS[idx]}
+          label={dayLabels[idx]}
           dateLabel={shortDate(iso)}
           isToday={iso === todayIso}
           nowPct={iso === todayIso ? nowPct : undefined}
@@ -344,31 +351,31 @@ export function ResourceWeekMiniTimeline({ resourceId, currentStatus, className 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="flex items-center gap-1 text-[10px] text-muted">
             <span className="inline-block h-2 w-3 rounded-sm bg-rose-500/80" />
-            Бронь
+            {t('booking.timeline.booking')}
           </span>
           <span className="flex items-center gap-1 text-[9px] text-muted">
             <span className="inline-block h-2 w-3 rounded-sm bg-amber-400/90" />
-            Скоро свободен
+            {t('booking.timeline.soonAvailable')}
           </span>
           <span className="flex items-center gap-1 text-[9px] text-muted">
             <span className="inline-block h-2 w-3 rounded-sm bg-amber-600/80" />
-            Блок
+            {t('booking.timeline.block')}
           </span>
           <span className="flex items-center gap-1 text-[10px] text-muted">
             <span className="inline-block h-2 w-3 rounded-sm bg-success-subtle border border-emerald-700/40" />
-            Свободно
+            {t('booking.timeline.free')}
           </span>
           {currentStatus && (
             <span className="flex items-center gap-1 text-[10px] text-muted">
               <span className={cn('inline-block h-2 w-2 rounded-full', STATUS_DOT[currentStatus])} />
-              Сейчас: {STATUS_LABEL_SHORT[currentStatus]}
+              {t('booking.timeline.nowStatus', { status: t(STATUS_LABEL_KEYS[currentStatus]) })}
             </span>
           )}
         </div>
       </div>
       <div className="flex items-center gap-2 pt-0.5">
         <div className="w-16 shrink-0" />
-        <p className="text-[9px] text-muted">Нажмите на занятый день, чтобы увидеть детали</p>
+        <p className="text-[9px] text-muted">{t('booking.timeline.clickForDetails')}</p>
       </div>
     </div>
   );

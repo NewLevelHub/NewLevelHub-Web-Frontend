@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -6,7 +7,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import {
   ANNOUNCEMENT_CATEGORIES,
-  ANNOUNCEMENT_CATEGORY_LABELS,
+  ANNOUNCEMENT_CATEGORY_LABEL_KEYS,
   USER_ROLES,
   type AnnouncementCategory,
 } from '@/shared/config/constants';
@@ -18,6 +19,7 @@ import type { Announcement, Company, PaginatedResponse } from '@/shared/types';
 type AudienceMode = 'building' | 'company';
 
 export default function AnnouncementCreatePage() {
+  const { t } = useTranslation();
   const user = useUser();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -154,7 +156,7 @@ export default function AnnouncementCreatePage() {
           >
             {Object.values(ANNOUNCEMENT_CATEGORIES).map((value) => (
               <option key={value} value={value}>
-                {ANNOUNCEMENT_CATEGORY_LABELS[value]}
+                {t(ANNOUNCEMENT_CATEGORY_LABEL_KEYS[value])}
               </option>
             ))}
           </select>
@@ -219,9 +221,7 @@ export default function AnnouncementCreatePage() {
             checked={isPinned}
             onChange={(event) => setIsPinned(event.target.checked)}
             className="h-4 w-4 rounded border-default bg-surface text-brand"
-          />
-          Закрепить наверху ленты
-        </label>
+          />{t('common.pinToTop')}</label>
 
         <label className="flex items-center gap-2 text-sm text-secondary">
           <input
@@ -243,9 +243,7 @@ export default function AnnouncementCreatePage() {
           <Link
             to="/announcements"
             className="inline-flex items-center rounded-lg border border-default px-4 py-2 text-sm font-medium text-secondary hover:bg-hover"
-          >
-            Отмена
-          </Link>
+          >{t('common.cancel')}</Link>
           <button
             type="submit"
             disabled={createMutation.isPending}

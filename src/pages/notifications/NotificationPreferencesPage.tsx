@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { useNotificationSettings } from '@/pages/notifications/hooks/useNotificationSettings';
@@ -6,6 +7,7 @@ import { PreferencesTable } from '@/pages/notifications/components/PreferencesTa
 import { PreferencesSkeleton } from '@/pages/notifications/components/PreferencesSkeleton';
 
 export default function NotificationPreferencesPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { preferences, isLoading, isError, pendingKeys, handleToggle } = useNotificationSettings();
 

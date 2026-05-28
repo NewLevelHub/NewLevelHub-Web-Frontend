@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -15,21 +16,23 @@ import type {
   RecurringBookingCreateResponse,
 } from '@/shared/types';
 
-const WEEKDAY_OPTIONS = [
-  { value: 0, label: 'Понедельник' },
-  { value: 1, label: 'Вторник' },
-  { value: 2, label: 'Среда' },
-  { value: 3, label: 'Четверг' },
-  { value: 4, label: 'Пятница' },
-  { value: 5, label: 'Суббота' },
-  { value: 6, label: 'Воскресенье' },
-];
+const WEEKDAY_KEYS = [
+  'booking.recurring.monday',
+  'booking.recurring.tuesday',
+  'booking.recurring.wednesday',
+  'booking.recurring.thursday',
+  'booking.recurring.friday',
+  'booking.recurring.saturday',
+  'booking.recurring.sunday',
+] as const;
 
 function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
 export default function RecurringBookingsPage() {
+  const { t } = useTranslation();
+  const WEEKDAY_OPTIONS = WEEKDAY_KEYS.map((key, idx) => ({ value: idx, label: t(key) }));
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [resourceId, setResourceId] = useState('');
@@ -114,7 +117,7 @@ export default function RecurringBookingsPage() {
           // Если откат не удался, всё равно показываем понятную причину пользователю.
         }
         setLastSkippedDates(skippedDates);
-        setErrorMessage('Серия не создана: обнаружены конфликты в выбранном диапазоне.');
+        setErrorMessage(t('booking.recurring.conflictError'));
         await queryClient.invalidateQueries({ queryKey: ['recurring-bookings', 'list'] });
         return;
       }
@@ -166,13 +169,11 @@ export default function RecurringBookingsPage() {
   return (
     <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-5xl mx-auto space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-primary">Рекуррентные бронирования</h1>
+        <h1 className="text-2xl font-bold text-primary">{t('booking.recurring.title')}</h1>
         <Link
           to="/bookings/catalog"
           className="rounded-lg border border-default bg-raised px-3 py-2 text-sm font-medium text-secondary hover:bg-hover"
-        >
-          В каталог
-        </Link>
+        >{t('common.goToCatalog')}</Link>
       </div>
 
       {errorMessage && (
@@ -183,13 +184,13 @@ export default function RecurringBookingsPage() {
 
       {lastSkippedDates.length > 0 && (
         <div className="rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-4 py-3 text-sm text-danger">
-          <p className="font-medium">Конфликты на датах:</p>
+          <p className="font-medium">{t('booking.recurring.conflictsTitle')}</p>
           <p className="mt-1">{lastSkippedDates.join(', ')}</p>
         </div>
       )}
 
       <section className="rounded-2xl border border-default bg-raised p-5">
-        <h2 className="text-lg font-semibold text-primary">Создать серию</h2>
+        <h2 className="text-lg font-semibold text-primary">{t('booking.recurring.createSection')}</h2>
         <form
           className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
           onSubmit={(event) => {
@@ -206,7 +207,7 @@ export default function RecurringBookingsPage() {
           }}
         >
           <label className="text-sm text-secondary">
-            Ресурс
+            {t('booking.recurring.resourceLabel')}
             <select
               required
               value={resourceId}
@@ -214,7 +215,7 @@ export default function RecurringBookingsPage() {
               className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               disabled={resourcesLoading}
             >
-              <option value="">Выберите ресурс</option>
+              <option value="">{t('booking.recurring.selectResource')}</option>
               {(resourcesData ?? []).map((resource) => (
                 <option key={resource.id} value={resource.id}>
                   {resource.name}
@@ -224,7 +225,7 @@ export default function RecurringBookingsPage() {
           </label>
 
           <label className="text-sm text-secondary">
-            День недели
+            {t('booking.recurring.dayOfWeekLabel')}
             <select
               required
               value={dayOfWeek}
@@ -241,7 +242,7 @@ export default function RecurringBookingsPage() {
           </label>
 
           <label className="text-sm text-secondary">
-            Повторять до
+            {t('booking.recurring.repeatUntilLabel')}
             <input
               type="date"
               required
@@ -252,9 +253,7 @@ export default function RecurringBookingsPage() {
             />
           </label>
 
-          <label className="text-sm text-secondary">
-            Начало
-            <input
+          <label className="text-sm text-secondary">{t('common.start')}<input
               type="time"
               required
               value={startTime}
@@ -263,9 +262,7 @@ export default function RecurringBookingsPage() {
             />
           </label>
 
-          <label className="text-sm text-secondary">
-            Окончание
-            <input
+          <label className="text-sm text-secondary">{t('common.end')}<input
               type="time"
               required
               value={endTime}
@@ -280,72 +277,113 @@ export default function RecurringBookingsPage() {
               disabled={createMutation.isPending || !resourceId || allowedWeekdayOptions.length === 0}
               className="w-full rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
             >
-              {createMutation.isPending ? 'Создание…' : 'Создать серию'}
+              {createMutation.isPending ? t('common.creating') : t('booking.recurring.createBtn')}
             </button>
           </div>
 
           {resourceId && (
             <p className="sm:col-span-2 lg:col-span-3 text-xs text-secondary">
-              Доступные дни ресурса:{' '}
+              {t('booking.recurring.availableDaysHint')}{' '}
               {allowedWeekdayOptions.length > 0
                 ? allowedWeekdayOptions.map((option) => option.label).join(', ')
-                : 'не настроены'}
+                : t('booking.recurring.noDays')}
             </p>
           )}
         </form>
       </section>
 
-      <section className="rounded-2xl border border-default bg-raised p-5">
-        <h2 className="text-lg font-semibold text-primary">
+      <div>
+        <h2 className="text-[15px] font-semibold text-[color:var(--text-primary)] mb-3">
           {user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN
-            ? 'Доступные серии'
-            : 'Мои серии'}
+            ? t('booking.recurring.listSectionAdmin')
+            : t('booking.recurring.listSectionMy')}
         </h2>
 
-        {recurringError ? (
-          <p className="mt-3 text-sm text-danger">Не удалось загрузить список серий.</p>
-        ) : recurringLoading ? (
-          <p className="mt-3 text-sm text-secondary">Загрузка…</p>
-        ) : visibleRecurringRows.length === 0 ? (
-          <p className="mt-3 text-sm text-secondary">Серий пока нет.</p>
-        ) : (
-          <ul className="mt-4 divide-y divide-[color:var(--border)] rounded-xl border border-default">
-            {visibleRecurringRows.map((row) => (
-              <li
-                key={row.id}
-                className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                    <p className="font-medium text-primary">
-                    {resourceNameById.get(row.resource_id) ?? `Ресурс #${row.resource_id}`}
-                  </p>
-                  <p className="text-xs text-secondary">
-                    {WEEKDAY_OPTIONS[row.day_of_week]?.label ?? `День ${row.day_of_week}`},{' '}
-                    {row.start_time.slice(0, 5)}-{row.end_time.slice(0, 5)} · до {row.valid_until ?? 'без даты'}
-                  </p>
-                  {user?.role === USER_ROLES.COMPANY_ADMIN && row.user_name && (
-                    <p className="text-xs text-secondary">Сотрудник: {row.user_name}</p>
-                  )}
-                </div>
-                {canCancelSeries(row) ? (
-                  <button
-                    type="button"
-                    onClick={() => deleteMutation.mutate(row.id)}
-                    disabled={deleteMutation.isPending}
-                    className="rounded-lg border border-red-200 dark:border-red-800 px-3 py-2 text-xs font-medium text-danger hover:bg-danger-subtle disabled:opacity-50"
-                  >
-                    Отменить серию
-                  </button>
-                ) : (
-                  <span className="rounded-lg border border-default px-3 py-2 text-xs text-secondary">
-                    Нет доступа к отмене
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+        <div className="bg-[color:var(--bg-surface)] border border-[color:var(--border)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
+          {recurringError ? (
+            <div className="px-4 py-12 text-center text-[13px] text-[color:var(--text-muted)]">
+              {t('booking.recurring.loadError')}
+            </div>
+          ) : recurringLoading ? (
+            <div className="px-4 py-12 text-center text-[13px] text-[color:var(--text-muted)]">
+              {t('common.loading')}
+            </div>
+          ) : visibleRecurringRows.length === 0 ? (
+            <div className="px-4 py-12 text-center text-[13px] text-[color:var(--text-muted)]">
+              {t('booking.recurring.noSeries')}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-[13px]" role="table">
+                <thead>
+                  <tr className="border-b border-[color:var(--border)]">
+                    <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                      {t('dashboard.table.resource')}
+                    </th>
+                    <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                      {t('booking.recurring.dayOfWeekLabel')}
+                    </th>
+                    <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                      {t('booking.manage.dateTime')}
+                    </th>
+                    <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                      {t('booking.recurring.repeatUntilLabel')}
+                    </th>
+                    {(user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN) && (
+                      <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                        {t('dashboard.table.user')}
+                      </th>
+                    )}
+                    <th className="px-3 py-2" aria-label={t('booking.manage.actions')} />
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleRecurringRows.map((row) => (
+                    <tr
+                      key={row.id}
+                      className="border-b border-[color:var(--border)] hover:bg-[color:var(--bg-hover)] transition-colors last:border-0"
+                    >
+                      <td className="px-3 py-2.5 align-middle text-[13px] font-medium text-[color:var(--text-primary)]">
+                        {resourceNameById.get(row.resource_id) ?? t('booking.recurring.resourcePrefix', { id: row.resource_id })}
+                      </td>
+                      <td className="px-3 py-2.5 align-middle text-[13px] text-[color:var(--text-muted)]">
+                        {WEEKDAY_OPTIONS[row.day_of_week]?.label ?? String(row.day_of_week)}
+                      </td>
+                      <td className="px-3 py-2.5 align-middle text-[13px] font-mono text-[color:var(--text-primary)]">
+                        {row.start_time.slice(0, 5)}–{row.end_time.slice(0, 5)}
+                      </td>
+                      <td className="px-3 py-2.5 align-middle text-[13px] text-[color:var(--text-muted)]">
+                        {row.valid_until ?? t('common.noDate')}
+                      </td>
+                      {(user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN) && (
+                        <td className="px-3 py-2.5 align-middle text-[13px] text-[color:var(--text-muted)]">
+                          {row.user_name ?? '—'}
+                        </td>
+                      )}
+                      <td className="px-3 py-2.5 align-middle">
+                        {canCancelSeries(row) ? (
+                          <button
+                            type="button"
+                            onClick={() => deleteMutation.mutate(row.id)}
+                            disabled={deleteMutation.isPending}
+                            className="inline-flex items-center gap-1 h-7 px-2.5 text-[12px] rounded-[var(--radius-sm)] border border-[color:var(--status-busy-bg)] text-[color:var(--status-busy-text)] hover:bg-[color:var(--status-busy-bg)] disabled:opacity-50 transition-colors"
+                          >
+                            {t('booking.recurring.cancelSeries')}
+                          </button>
+                        ) : (
+                          <span className="text-[12px] text-[color:var(--text-muted)]">
+                            {t('booking.recurring.noAccess')}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
     </main>
   );
 }

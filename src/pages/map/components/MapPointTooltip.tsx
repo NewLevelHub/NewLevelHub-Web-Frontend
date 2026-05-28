@@ -1,22 +1,25 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/shared/lib/cn';
 import type { MapPoint } from '@/shared/types';
 import {
-  POINT_STATUS_LABEL,
+  POINT_STATUS_LABEL_KEYS,
   STATUS_LABEL_CLASS,
   formatNextFreeAt,
+  getPointStatusLabel,
   getPointStatusReasonLabel,
   normalizePointStatus,
 } from '@/pages/map/lib/status';
 
-import { POINT_TYPE_LABELS } from '@/pages/map/constants/mapConstants';
+import { POINT_TYPE_LABEL_KEYS } from '@/pages/map/constants/mapConstants';
 
 export interface MapPointTooltipProps {
   point: MapPoint;
 }
 
 export const MapPointTooltip = memo<MapPointTooltipProps>(({ point }) => {
+  const { t } = useTranslation();
   const status = normalizePointStatus(point.resource_status);
   const nextFreeAt = formatNextFreeAt(point.next_free_at);
   const reasonLabel = getPointStatusReasonLabel(point);
@@ -29,18 +32,18 @@ export const MapPointTooltip = memo<MapPointTooltipProps>(({ point }) => {
       {point.resource_name && (
         <p className="mt-0.5 text-xs text-secondary">{point.resource_name}</p>
       )}
-      <p className="mt-0.5 text-xs text-secondary">{POINT_TYPE_LABELS[point.point_type] ?? point.point_type}</p>
+      <p className="mt-0.5 text-xs text-secondary">{t(POINT_TYPE_LABEL_KEYS[point.point_type]) ?? point.point_type}</p>
       {status === 'none' ? (
         <p className={cn('mt-1 text-xs font-medium', STATUS_LABEL_CLASS.none)}>
-          {POINT_STATUS_LABEL.none}
+          {getPointStatusLabel('none')}
         </p>
       ) : point.resource_status ? (
         <p className={cn('mt-1 text-xs font-medium', STATUS_LABEL_CLASS[status])}>
-          {POINT_STATUS_LABEL[status]}
+          {t(POINT_STATUS_LABEL_KEYS[status])}
         </p>
       ) : null}
       {status === 'soon_available' && nextFreeAt ? (
-        <p className="mt-0.5 text-[11px] text-warning">Свободен в {nextFreeAt}</p>
+        <p className="mt-0.5 text-[11px] text-warning">{t('map.freeAt', { time: nextFreeAt })}</p>
       ) : null}
       {reasonLabel ? <p className="mt-0.5 text-[11px] text-muted">{reasonLabel}</p> : null}
       <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />

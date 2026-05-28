@@ -18,7 +18,8 @@ import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
 import { checkWipLimit } from '@/shared/lib/crm-wip-limit';
-import { useWipLimitToast, WIP_LIMIT_VIOLATION_MESSAGE } from '@/pages/crm/hooks/useWipLimitToast';
+import { useWipLimitToast, WIP_LIMIT_VIOLATION_MESSAGE_KEY } from '@/pages/crm/hooks/useWipLimitToast';
+import i18n from '@/shared/lib/i18n';
 import { useDebounce } from '@/pages/crm/hooks/useDebounce';
 import type { BoardFilters } from '@/pages/crm/components/BoardFilterBar';
 import { DEFAULT_BOARD_FILTERS } from '@/pages/crm/components/BoardFilterBar';
@@ -181,7 +182,7 @@ export function useBoardDetail() {
         const raw = data?.detail ?? (data?.non_field_errors as unknown[])?.[0];
         const detail = typeof raw === 'string' ? raw : JSON.stringify(raw ?? '');
         if (detail.toLowerCase().includes('wip')) {
-          message = WIP_LIMIT_VIOLATION_MESSAGE;
+          message = i18n.t(WIP_LIMIT_VIOLATION_MESSAGE_KEY);
         }
       }
       setTaskMoveError(message);

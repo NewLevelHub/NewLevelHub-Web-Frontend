@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { Bookmark, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { RESOURCE_TYPE_LABELS, type ResourceType } from '@/shared/config/constants';
+import { RESOURCE_TYPE_LABEL_KEYS, type ResourceType } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import {
@@ -34,6 +35,7 @@ import type { BookingResourceListItem, PaginatedResponse } from '@/shared/types'
 const PAGE_SIZE = 20;
 
 export default function CompanyResourcesPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [page, setPage] = useState(1);
 
@@ -70,7 +72,7 @@ export default function CompanyResourcesPage() {
 
       <div className={resTableShell}>
         {isLoading ? (
-          <div className={resEmptyState}>Загрузка…</div>
+          <div className={resEmptyState}>{t('common.loading')}</div>
         ) : results.length === 0 ? (
           <div className={resEmptyState}>
             За вашей компанией не закреплено ни одного ресурса.
@@ -86,7 +88,7 @@ export default function CompanyResourcesPage() {
                   <th className="px-4 py-3 font-medium">Этаж</th>
                   <th className="px-4 py-3 font-medium">Зона</th>
                   <th className="px-4 py-3 font-medium">Вместимость</th>
-                  <th className="px-4 py-3 font-medium">Статус</th>
+                  <th className="px-4 py-3 font-medium">{t('common.status')}</th>
                   <th className="w-28 px-4 py-3 font-medium" />
                 </tr>
               </thead>
@@ -109,7 +111,7 @@ export default function CompanyResourcesPage() {
                       })()}
                     </td>
                     <td className={resTdStrong}>{r.name}</td>
-                    <td className={resTd}>{RESOURCE_TYPE_LABELS[r.type as ResourceType] ?? r.type}</td>
+                    <td className={resTd}>{t(RESOURCE_TYPE_LABEL_KEYS[r.type as ResourceType]) ?? r.type}</td>
                     <td className={resTdMuted}>{r.floor}</td>
                     <td className={resTdMuted}>{r.zone || '—'}</td>
                     <td className={resTdMuted}>{r.capacity}</td>
@@ -145,9 +147,7 @@ export default function CompanyResourcesPage() {
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 className={resPageBtn}
               >
-                <ChevronLeft className="h-4 w-4" />
-                Назад
-              </button>
+                <ChevronLeft className="h-4 w-4" />{t('common.back')}</button>
               <button
                 type="button"
                 disabled={page >= totalPages}
