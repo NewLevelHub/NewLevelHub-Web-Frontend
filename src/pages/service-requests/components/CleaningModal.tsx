@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -33,7 +34,8 @@ export interface CleaningModalProps {
 }
 
 export function CleaningModal({ isOpen, onClose, onSuccess }: CleaningModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const queryClient = useQueryClient();
 
   const [description, setDescription] = useState('');
@@ -203,6 +205,7 @@ export function CleaningModal({ isOpen, onClose, onSuccess }: CleaningModalProps
             <input
               type="file"
               accept="image/*"
+              lang={dateLocale}
               onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
               className="mt-1 block w-full cursor-pointer rounded-lg border border-default bg-surface px-3 py-2 text-sm text-secondary file:mr-3 file:rounded-md file:border-0 file:bg-hover file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-primary hover:file:bg-gray-600"
             />

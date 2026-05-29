@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useNavigate } from 'react-router';
 import { useMutation } from '@tanstack/react-query';
 import {
@@ -54,7 +55,8 @@ const basicPlanLimits = COMPANY_PLAN_DEFAULT_LIMITS[COMPANY_TIERS.BASIC];
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function CompanyCreatePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const navigate = useNavigate();
   const { user } = useAuth();
   const companiesBasePath =
@@ -239,6 +241,7 @@ export default function CompanyCreatePage() {
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
+                lang={dateLocale}
                 onChange={handleLogoChange}
                 className="sr-only"
                 aria-label="Выбрать файл логотипа"

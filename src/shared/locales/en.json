@@ -131,7 +131,9 @@
       "imagesOnly": "Only image files are allowed.",
       "tooLarge": "File is too large. Maximum 10 MB.",
       "uploadPending": "Uploading...",
-      "upload": "Upload logo"
+      "upload": "Upload logo",
+      "selectFile": "Select file",
+      "noFileSelected": "No file selected"
     },
     "emailVerification": {
       "title": "Email not verified — some features are unavailable",

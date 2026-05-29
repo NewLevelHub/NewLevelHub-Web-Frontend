@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
@@ -31,7 +32,8 @@ function formatFloorOptionLabel(floor: ServiceFloorOption): string {
 }
 
 export default function ServiceRequestCreatePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const typeOptions = useMemo(
     () => [
       { value: SERVICE_REQUEST_TYPES.GENERAL, label: t(SERVICE_REQUEST_TYPE_LABEL_KEYS[SERVICE_REQUEST_TYPES.GENERAL]) },
@@ -203,6 +205,7 @@ export default function ServiceRequestCreatePage() {
           <input
             type="file"
             accept="image/*"
+            lang={dateLocale}
             onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
             className="mt-1 block w-full cursor-pointer rounded-lg border border-default bg-surface px-3 py-2 text-sm text-secondary file:mr-3 file:rounded-md file:border-0 file:bg-hover file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-primary hover:file:bg-gray-600"
           />

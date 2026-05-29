@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { PromptModal } from '@/shared/ui/PromptModal';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -51,7 +52,8 @@ function formatFileSize(size: number) {
 }
 
 export default function FileBrowserPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [scope, setScope] = useState<StorageScope>('personal');
@@ -584,6 +586,7 @@ export default function FileBrowserPage() {
         <input
           key={uploadInputKey}
           type="file"
+          lang={dateLocale}
           onChange={(e) => handleUploadInputChange(e.target.files?.[0] ?? null)}
           className="w-full max-w-sm rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-300"
         />

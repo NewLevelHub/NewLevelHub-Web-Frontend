@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useParams, useNavigate, Link } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -265,7 +266,8 @@ interface EditFormProps {
 }
 
 function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const queryClient = useQueryClient();
 
   const [form, setForm] = useState<EditFormData>({
@@ -464,6 +466,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
               ref={fileInputRef}
               type="file"
               accept="image/*"
+              lang={dateLocale}
               onChange={handleLogoChange}
               className="sr-only"
               aria-label={t('companies.selectLogoFile')}

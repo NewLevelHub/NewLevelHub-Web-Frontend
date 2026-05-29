@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/shared/lib/i18n';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Paperclip, FileText, FileSpreadsheet, Image, File, Trash2, Loader2 } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
@@ -53,7 +54,8 @@ interface AttachmentsSectionProps {
 }
 
 export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps) {
-  const { t } = useTranslation();
+  const { t, i18n: i18nHook } = useTranslation();
+  const dateLocale = dateLocaleTag(i18nHook.language);
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -158,6 +160,7 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
           type="file"
           accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif"
           className="hidden"
+          lang={dateLocale}
           onChange={handleFileChange}
         />
       </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
@@ -19,7 +20,8 @@ import type { Announcement, Company, PaginatedResponse } from '@/shared/types';
 type AudienceMode = 'building' | 'company';
 
 export default function AnnouncementCreatePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const user = useUser();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -210,6 +212,7 @@ export default function AnnouncementCreatePage() {
           <input
             type="file"
             accept="image/*"
+            lang={dateLocale}
             onChange={(event) => setImage(event.target.files?.[0] ?? null)}
             className="mt-1 block w-full text-sm text-secondary"
           />

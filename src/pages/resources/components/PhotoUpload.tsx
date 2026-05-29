@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/shared/lib/cn';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import type { ResourcePhoto } from '@/shared/types';
 
 // ─── PhotoUploadCreate ────────────────────────────────────────────────────────
@@ -21,7 +22,8 @@ export function PhotoUploadCreate({
   onRemovePhoto,
   onSetPrimary,
 }: PhotoUploadCreateProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -42,6 +44,7 @@ export function PhotoUploadCreate({
           accept="image/*"
           multiple
           className="sr-only"
+          lang={dateLocale}
           onChange={(e) => {
             onAddPhotos(Array.from(e.target.files ?? []));
             e.target.value = '';
@@ -115,7 +118,8 @@ export function PhotoUploadDetail({
   onUploadNew,
   onDeleteExisting,
 }: PhotoUploadDetailProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
 
   return (
     <div className="space-y-3">
@@ -157,6 +161,7 @@ export function PhotoUploadDetail({
           accept="image/*"
           multiple
           className="sr-only"
+          lang={dateLocale}
           onChange={(e) => {
             onAddNewFiles(Array.from(e.target.files ?? []));
           }}

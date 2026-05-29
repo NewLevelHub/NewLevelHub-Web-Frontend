@@ -1,7 +1,8 @@
-import { useEffect, useState, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useAuthStore } from '@/shared/store/auth';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -31,7 +32,8 @@ interface CompanyOnboardingStatus {
 }
 
 export default function DashboardPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
@@ -78,6 +80,7 @@ export default function DashboardPage() {
 
   const [logoUploadError, setLogoUploadError] = useState('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const uploadLogoMutation = useMutation({
     mutationFn: (file: File) => {
@@ -164,7 +167,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {isCompanyAdmin && companyOnboarding && !companyOnboarding.completed && (
+      {isCompanyAdmin && companyOnboarding /*&& !companyOnboarding.completed &&*/ && (
         /* ── Онбординг ещё не завершён — показываем шаги ── */
         <section className="rounded-xl border border-blue-200 bg-brand-subtle p-5 dark:border-blue-900/40">
           <h2 className="text-sm font-semibold text-brand">{t('dashboard.companyOnboarding.title')}</h2>
@@ -189,13 +192,28 @@ export default function DashboardPage() {
                 {t('dashboard.companyOnboarding.uploadLogoHint')}
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
+                {/* Hidden file input */}
                 <input
+                  ref={logoInputRef}
                   id="onboarding-logo-upload"
                   type="file"
                   accept="image/*"
                   onChange={handleLogoSelect}
-                  className="text-xs text-secondary file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-2.5 file:py-1.5 file:text-xs file:font-medium file:text-white hover:file:bg-brand-hover"
+                  className="hidden"
                 />
+                {/* Custom select button */}
+                <button
+                  type="button"
+                  onClick={() => logoInputRef.current?.click()}
+                  className="rounded-md border border-default px-2.5 py-1.5 text-xs font-medium text-secondary hover:bg-hover transition-colors"
+                >
+                  {t('dashboard.logo.selectFile')}
+                </button>
+                {/* Selected filename */}
+                <span className="text-xs text-muted">
+                  {logoFile ? logoFile.name : t('dashboard.logo.noFileSelected')}
+                </span>
+                {/* Upload button */}
                 <button
                   type="button"
                   disabled={!logoFile || uploadLogoMutation.isPending}

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Camera, Trash2, User, Building2, BadgeCheck, BadgeAlert, Pencil, X, Check } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
@@ -101,7 +102,8 @@ function Alert({ type, message }: AlertProps) {
 // ---------------------------------------------------------------------------
 
 export default function ProfilePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const queryClient = useQueryClient();
   const { fetchMe } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -324,6 +326,7 @@ export default function ProfilePage() {
             type="file"
             accept="image/jpeg,image/png,image/webp"
             className="sr-only"
+            lang={dateLocale}
             aria-label="Выбрать файл аватара"
             onChange={handleAvatarFileChange}
           />
