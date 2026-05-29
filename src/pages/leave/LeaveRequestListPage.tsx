@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -6,9 +7,9 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import {
   LEAVE_STATUSES,
-  LEAVE_STATUS_LABELS,
+  LEAVE_STATUS_LABEL_KEYS,
   LEAVE_TYPES,
-  LEAVE_TYPE_LABELS,
+  LEAVE_TYPE_LABEL_KEYS,
   USER_ROLES,
   type LeaveStatus,
   type LeaveType,
@@ -19,21 +20,6 @@ import { cn } from '@/shared/lib/cn';
 import type { LeaveBalance, LeaveRequest, PaginatedResponse, TeamLeaveBalance } from '@/shared/types';
 import { useReviewerOptions } from './useReviewerOptions';
 
-const STATUS_OPTIONS: Array<{ value: ''; label: string } | { value: LeaveStatus; label: string }> = [
-  { value: '', label: 'Все статусы' },
-  { value: LEAVE_STATUSES.PENDING, label: LEAVE_STATUS_LABELS[LEAVE_STATUSES.PENDING] },
-  { value: LEAVE_STATUSES.APPROVED, label: LEAVE_STATUS_LABELS[LEAVE_STATUSES.APPROVED] },
-  { value: LEAVE_STATUSES.REJECTED, label: LEAVE_STATUS_LABELS[LEAVE_STATUSES.REJECTED] },
-  { value: LEAVE_STATUSES.CANCELLED, label: LEAVE_STATUS_LABELS[LEAVE_STATUSES.CANCELLED] },
-];
-
-const TYPE_OPTIONS: Array<{ value: ''; label: string } | { value: LeaveType; label: string }> = [
-  { value: '', label: 'Все типы' },
-  { value: LEAVE_TYPES.VACATION, label: LEAVE_TYPE_LABELS[LEAVE_TYPES.VACATION] },
-  { value: LEAVE_TYPES.DAY_OFF, label: LEAVE_TYPE_LABELS[LEAVE_TYPES.DAY_OFF] },
-  { value: LEAVE_TYPES.SICK_LEAVE, label: LEAVE_TYPE_LABELS[LEAVE_TYPES.SICK_LEAVE] },
-  { value: LEAVE_TYPES.REMOTE, label: LEAVE_TYPE_LABELS[LEAVE_TYPES.REMOTE] },
-];
 
 const STATUS_BADGE_CLASS: Record<LeaveStatus, string> = {
   [LEAVE_STATUSES.PENDING]: 'bg-warning-subtle text-warning',
@@ -49,6 +35,7 @@ type ReviewDialogState = {
 };
 
 export default function LeaveRequestListPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -60,6 +47,28 @@ export default function LeaveRequestListPage() {
   const [reviewDialog, setReviewDialog] = useState<ReviewDialogState | null>(null);
   const [reviewCommentInput, setReviewCommentInput] = useState('');
   const [cancelConfirmId, setCancelConfirmId] = useState<number | null>(null);
+
+  const statusOptions = useMemo(
+    () => [
+      { value: '' as const, label: t('leave.filters.allStatuses') },
+      { value: LEAVE_STATUSES.PENDING, label: t(LEAVE_STATUS_LABEL_KEYS[LEAVE_STATUSES.PENDING]) },
+      { value: LEAVE_STATUSES.APPROVED, label: t(LEAVE_STATUS_LABEL_KEYS[LEAVE_STATUSES.APPROVED]) },
+      { value: LEAVE_STATUSES.REJECTED, label: t(LEAVE_STATUS_LABEL_KEYS[LEAVE_STATUSES.REJECTED]) },
+      { value: LEAVE_STATUSES.CANCELLED, label: t(LEAVE_STATUS_LABEL_KEYS[LEAVE_STATUSES.CANCELLED]) },
+    ],
+    [t],
+  );
+
+  const typeOptions = useMemo(
+    () => [
+      { value: '' as const, label: t('leave.filters.allTypes') },
+      { value: LEAVE_TYPES.VACATION, label: t(LEAVE_TYPE_LABEL_KEYS[LEAVE_TYPES.VACATION]) },
+      { value: LEAVE_TYPES.DAY_OFF, label: t(LEAVE_TYPE_LABEL_KEYS[LEAVE_TYPES.DAY_OFF]) },
+      { value: LEAVE_TYPES.SICK_LEAVE, label: t(LEAVE_TYPE_LABEL_KEYS[LEAVE_TYPES.SICK_LEAVE]) },
+      { value: LEAVE_TYPES.REMOTE, label: t(LEAVE_TYPE_LABEL_KEYS[LEAVE_TYPES.REMOTE]) },
+    ],
+    [t],
+  );
 
   const queryParams = useMemo(() => {
     const params: Record<string, string> = {};
@@ -178,21 +187,17 @@ export default function LeaveRequestListPage() {
           <Link
             to="/leave/new"
             className="inline-flex items-center justify-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
-          >
-            Подать заявку
-          </Link>
+          >{t('common.submitRequest')}</Link>
         )}
       </div>
 
       <section className="grid gap-3 rounded-xl border border-default bg-raised p-4 sm:grid-cols-2">
-        <label className="text-sm text-secondary">
-          Статус
-          <select
+        <label className="text-sm text-secondary">{t('common.status')}<select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value as LeaveStatus | '')}
             className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           >
-            {STATUS_OPTIONS.map(option => (
+            {statusOptions.map(option => (
               <option key={option.value || 'all'} value={option.value}>
                 {option.label}
               </option>
@@ -206,7 +211,7 @@ export default function LeaveRequestListPage() {
             onChange={(event) => setTypeFilter(event.target.value as LeaveType | '')}
             className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           >
-            {TYPE_OPTIONS.map(option => (
+            {typeOptions.map(option => (
               <option key={option.value || 'all'} value={option.value}>
                 {option.label}
               </option>
@@ -254,7 +259,7 @@ export default function LeaveRequestListPage() {
       ) : null}
 
       {isLoading ? (
-        <p className="text-sm text-secondary">Загрузка...</p>
+        <p className="text-sm text-secondary">{t('common.loading')}</p>
       ) : rows.length === 0 ? (
         <p className="text-sm text-secondary">Заявок пока нет.</p>
       ) : (
@@ -262,11 +267,11 @@ export default function LeaveRequestListPage() {
           <table className="min-w-full divide-y divide-[color:var(--border)]/60">
             <thead className="bg-surface/60">
               <tr>
-                {showUserColumn ? <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Сотрудник</th> : null}
+                {showUserColumn ? <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('team.roleEmployee')}</th> : null}
                 <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Тип</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Период</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Статус</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Комментарий</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('common.status')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('common.comment')}</th>
                 {isAdmin ? <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Действия</th> : null}
                 {!isAdmin ? <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Действия</th> : null}
               </tr>
@@ -280,7 +285,7 @@ export default function LeaveRequestListPage() {
                     </td>
                   ) : null}
                   <td className="px-4 py-3">
-                    {LEAVE_TYPE_LABELS[leave.leave_type] ?? leave.leave_type}
+                    {t(LEAVE_TYPE_LABEL_KEYS[leave.leave_type]) ?? leave.leave_type}
                   </td>
                   <td className="px-4 py-3">
                     {new Date(leave.start_date).toLocaleDateString('ru-RU')}
@@ -289,7 +294,7 @@ export default function LeaveRequestListPage() {
                   </td>
                   <td className="px-4 py-3">
                     <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE_CLASS[leave.status])}>
-                      {LEAVE_STATUS_LABELS[leave.status] ?? leave.status}
+                      {t(LEAVE_STATUS_LABEL_KEYS[leave.status]) ?? leave.status}
                     </span>
                     {leave.assigned_reviewer_name ? (
                       <div className="mt-1 text-xs text-muted">
@@ -393,7 +398,7 @@ export default function LeaveRequestListPage() {
               <table className="min-w-full divide-y divide-[color:var(--border)]/60">
                 <thead className="bg-surface/60">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Сотрудник</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('team.roleEmployee')}</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Всего</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Использовано</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Осталось</th>
@@ -440,9 +445,7 @@ export default function LeaveRequestListPage() {
                                   totalDays: Number(teamTotals[row.user_id] ?? row.total_days),
                                 })
                               }
-                            >
-                              Сохранить
-                            </button>
+                            >{t('common.save')}</button>
                             {isBalanceLocked ? (
                               <span className="text-xs text-warning">Лимит уже израсходован</span>
                             ) : null}
@@ -490,9 +493,7 @@ export default function LeaveRequestListPage() {
                 className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover"
                 onClick={closeReviewDialog}
                 disabled={reviewMutation.isPending}
-              >
-                Отмена
-              </button>
+              >{t('common.cancel')}</button>
               <button
                 type="button"
                 className={cn(

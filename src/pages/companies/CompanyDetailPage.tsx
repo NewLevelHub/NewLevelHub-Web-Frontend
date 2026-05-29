@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useParams, useNavigate, Link } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -25,6 +27,7 @@ import { API } from '@/shared/api/endpoints';
 import {
   COMPANY_PLAN_DEFAULT_LIMITS,
   COMPANY_TIERS,
+  COMPANY_TIER_LABEL_KEYS,
   SUPERADMIN_UI_PREFIX,
   USER_ROLES,
   type CompanyTier,
@@ -35,12 +38,6 @@ import { cn } from '@/shared/lib/cn';
 import type { CompanyDetail, CompanyLimits } from '@/shared/types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const PLAN_LABELS: Record<string, string> = {
-  [COMPANY_TIERS.BASIC]: 'Базовый',
-  [COMPANY_TIERS.STANDARD]: 'Стандарт',
-  [COMPANY_TIERS.PREMIUM]: 'Премиум',
-};
 
 const PLAN_BADGE_COLORS: Record<string, string> = {
   [COMPANY_TIERS.BASIC]: 'bg-hover text-secondary',
@@ -269,6 +266,8 @@ interface EditFormProps {
 }
 
 function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const queryClient = useQueryClient();
 
   const [form, setForm] = useState<EditFormData>({
@@ -355,11 +354,11 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      setFieldErrors((prev) => ({ ...prev, logo: 'Можно загрузить только изображение.' }));
+      setFieldErrors((prev) => ({ ...prev, logo: t('companies.imagesOnly') }));
       return;
     }
     if (file.size > LOGO_MAX_BYTES) {
-      setFieldErrors((prev) => ({ ...prev, logo: 'Файл слишком большой. Максимум 10 МБ.' }));
+      setFieldErrors((prev) => ({ ...prev, logo: t('companies.logoTooLarge') }));
       return;
     }
     if (logoPreview) URL.revokeObjectURL(logoPreview);
@@ -421,7 +420,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
     );
 
   return (
-    <form onSubmit={handleSubmit} noValidate aria-label="Редактирование компании">
+    <form onSubmit={handleSubmit} noValidate aria-label={t('companies.editForm')}>
       <div className="space-y-4">
         {generalError && (
           <div
@@ -435,12 +434,12 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
 
         {/* Logo upload */}
         <div>
-          <p className="text-xs text-muted mb-2">Логотип</p>
+          <p className="text-xs text-muted mb-2">{t('companies.logoLabel')}</p>
           <div className="flex items-center gap-4">
             {company.logo ? (
               <img
                 src={company.logo}
-                alt="Текущий логотип компании"
+                alt={t('companies.currentLogo')}
                 className="w-16 h-16 rounded-xl object-cover border border-default"
               />
             ) : (
@@ -451,7 +450,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
             {logoPreview ? (
               <img
                 src={logoPreview}
-                alt="Новый логотип (предпросмотр)"
+                alt={t('companies.logoNewPreview')}
                 className="w-16 h-16 rounded-xl object-cover border border-indigo-400"
               />
             ) : null}
@@ -461,20 +460,21 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
               className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-secondary bg-hover border border-default rounded-lg hover:bg-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors"
             >
               <Upload size={14} aria-hidden="true" />
-              Загрузить логотип
+              {t('companies.uploadLogo')}
             </button>
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
+              lang={dateLocale}
               onChange={handleLogoChange}
               className="sr-only"
-              aria-label="Выбрать файл логотипа"
+              aria-label={t('companies.selectLogoFile')}
             />
           </div>
           {logoPreview ? (
             <p className="mt-1 text-xs text-brand">
-              Новый логотип применится только после нажатия «Сохранить».
+              {t('companies.logoApplyHint')}
             </p>
           ) : null}
           {fieldErrors.logo ? (
@@ -485,7 +485,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
         {/* Name */}
         <div>
           <label htmlFor="edit-name" className="block text-xs text-muted mb-1">
-            Название <span className="text-red-500" aria-hidden="true">*</span>
+            {t('companies.nameLabel')} <span className="text-red-500" aria-hidden="true">*</span>
           </label>
           <input
             id="edit-name"
@@ -503,7 +503,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
         {/* Description */}
         <div>
           <label htmlFor="edit-description" className="block text-xs text-muted mb-1">
-            Описание
+            {t('companies.descriptionLabel')}
           </label>
           <textarea
             id="edit-description"
@@ -517,7 +517,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
         {/* Contact email */}
         <div>
           <label htmlFor="edit-contact-email" className="block text-xs text-muted mb-1">
-            Контактный email
+            {t('companies.contactEmail')}
           </label>
           <input
             id="edit-contact-email"
@@ -534,7 +534,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
         {/* Contact phone */}
         <div>
           <label htmlFor="edit-contact-phone" className="block text-xs text-muted mb-1">
-            Контактный телефон
+            {t('companies.contactPhone')}
           </label>
           <input
             id="edit-contact-phone"
@@ -555,7 +555,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
               {/* Floor */}
               <div>
                 <label htmlFor="edit-floor" className="block text-xs text-muted mb-1">
-                  Этаж
+                  {t('companies.floorLabel')}
                 </label>
                 <input
                   id="edit-floor"
@@ -570,7 +570,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
               {/* Office number */}
               <div>
                 <label htmlFor="edit-office-number" className="block text-xs text-muted mb-1">
-                  Номер офиса
+                  {t('companies.officeNumberLabel')}
                 </label>
                 <input
                   id="edit-office-number"
@@ -585,7 +585,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
             {/* Plan */}
             <div>
               <label htmlFor="edit-plan" className="block text-xs text-muted mb-1">
-                Тариф
+                {t('companies.planLabel')}
               </label>
               <select
                 id="edit-plan"
@@ -593,9 +593,9 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
                 onChange={(e) => handleField('plan', e.target.value)}
                 className={inputClass('plan')}
               >
-                <option value={COMPANY_TIERS.BASIC}>Базовый</option>
-                <option value={COMPANY_TIERS.STANDARD}>Стандарт</option>
-                <option value={COMPANY_TIERS.PREMIUM}>Премиум</option>
+                <option value={COMPANY_TIERS.BASIC}>{t('companies.planBasic')}</option>
+                <option value={COMPANY_TIERS.STANDARD}>{t('companies.planStandard')}</option>
+                <option value={COMPANY_TIERS.PREMIUM}>{t('companies.planPremium')}</option>
               </select>
             </div>
 
@@ -603,7 +603,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
               {/* Max employees */}
               <div>
                 <label htmlFor="edit-max-employees" className="block text-xs text-muted mb-1">
-                  Макс. сотрудников
+                  {t('companies.maxEmployeesLabel')}
                 </label>
                 <input
                   id="edit-max-employees"
@@ -618,7 +618,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
               {/* Max boards */}
               <div>
                 <label htmlFor="edit-max-boards" className="block text-xs text-muted mb-1">
-                  Макс. досок
+                  {t('companies.maxBoardsLabel')}
                 </label>
                 <input
                   id="edit-max-boards"
@@ -633,7 +633,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
               {/* Storage limit */}
               <div>
                 <label htmlFor="edit-storage" className="block text-xs text-muted mb-1">
-                  Хранилище (ГБ)
+                  {t('companies.storageLabel')}
                 </label>
                 <input
                   id="edit-storage"
@@ -665,14 +665,10 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
                 <span
                   className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin"
                   aria-hidden="true"
-                />
-                Сохранение...
-              </>
+                />{t('common.savingPlain')}</>
             ) : (
               <>
-                <Check size={15} aria-hidden="true" />
-                Сохранить
-              </>
+                <Check size={15} aria-hidden="true" />{t('common.save')}</>
             )}
           </button>
           <button
@@ -681,9 +677,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
             disabled={isPending}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-secondary border border-default hover:bg-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:opacity-50"
           >
-            <X size={15} aria-hidden="true" />
-            Отмена
-          </button>
+            <X size={15} aria-hidden="true" />{t('common.cancel')}</button>
         </div>
       </div>
     </form>
@@ -693,6 +687,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function CompanyDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -746,7 +741,7 @@ export default function CompanyDetailPage() {
     );
   }
 
-  const planLabel = PLAN_LABELS[company.plan] ?? company.plan;
+  const planLabel = t(COMPANY_TIER_LABEL_KEYS[company.plan as keyof typeof COMPANY_TIER_LABEL_KEYS] ?? company.plan);
   const planBadgeColor = PLAN_BADGE_COLORS[company.plan] ?? 'bg-gray-100 text-gray-700';
 
   const fallbackStorageUsedGb = Number(company.storage_used ?? 0) / (1024 * 1024 * 1024);
@@ -798,9 +793,7 @@ export default function CompanyDetailPage() {
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-brand hover:bg-brand-hover text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 shrink-0"
                 aria-label="Редактировать компанию"
               >
-                <Pencil size={15} aria-hidden="true" />
-                Редактировать
-              </button>
+                <Pencil size={15} aria-hidden="true" />{t('common.edit')}</button>
             )}
           </div>
         )}

@@ -1,3 +1,5 @@
+import i18n from '@/shared/lib/i18n';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import type { MapPoint, MapPointStatus } from '@/shared/types';
 
 /**
@@ -13,11 +15,11 @@ export const POINT_STATUS_CLASS: Record<PointUiStatus, string> = {
   none: 'bg-stone-500 border-stone-600 hover:bg-stone-400',
 };
 
-export const POINT_STATUS_LABEL: Record<PointUiStatus, string> = {
-  free: 'Свободно',
-  occupied: 'Занято',
-  soon_available: 'Скоро освободится',
-  none: 'Статус не применим',
+export const POINT_STATUS_LABEL_KEYS: Record<PointUiStatus, string> = {
+  free: 'map.status.free',
+  occupied: 'map.status.occupied',
+  soon_available: 'map.status.soon_available',
+  none: 'map.status.none',
 };
 
 export const STATUS_LABEL_CLASS: Record<PointUiStatus, string> = {
@@ -27,14 +29,24 @@ export const STATUS_LABEL_CLASS: Record<PointUiStatus, string> = {
   none: 'text-stone-400',
 };
 
-export const LEGEND_ITEMS: Array<{ status: PointUiStatus; label: string; color: string }> = [
-  { status: 'free', label: 'Свободно', color: 'bg-emerald-500' },
-  { status: 'occupied', label: 'Занято', color: 'bg-rose-500' },
-  { status: 'soon_available', label: 'Скоро освободится', color: 'bg-amber-500' },
-  { status: 'none', label: 'Статус не применим', color: 'bg-stone-500' },
-];
+export const LEGEND_STATUS_KEYS: PointUiStatus[] = ['free', 'occupied', 'soon_available', 'none'];
+
+export const LEGEND_ITEM_COLORS: Record<PointUiStatus, string> = {
+  free: 'bg-emerald-500',
+  occupied: 'bg-rose-500',
+  soon_available: 'bg-amber-500',
+  none: 'bg-stone-500',
+};
 
 const BOOKABLE_STATUSES: readonly PointUiStatus[] = ['free', 'occupied', 'soon_available'];
+
+const REASON_LABEL_KEYS: Record<string, string> = {
+  active_block: 'map.reason.active_block',
+  active_booking: 'map.reason.active_booking',
+  active_booking_ends_within_threshold: 'map.reason.active_booking_ends_within_threshold',
+  no_active_booking_or_block: 'map.reason.no_active_booking_or_block',
+  not_a_bookable_resource: 'map.reason.not_a_bookable_resource',
+};
 
 function isBookableUiStatus(value: string): value is Exclude<PointUiStatus, 'none'> {
   return (BOOKABLE_STATUSES as readonly string[]).includes(value);
@@ -51,28 +63,22 @@ export function normalizePointStatus(status: MapPointStatus | string | null | un
   return 'none';
 }
 
+export function getPointStatusLabel(status: PointUiStatus): string {
+  return i18n.t(POINT_STATUS_LABEL_KEYS[status]);
+}
+
 export function formatNextFreeAt(value: string | null): string | null {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleTimeString(dateLocaleTag(i18n.language), { hour: '2-digit', minute: '2-digit' });
 }
 
 export function getPointStatusReasonLabel(point: MapPoint): string | null {
-  switch (point.resource_status_reason) {
-    case 'active_block':
-      return 'Ресурс на обслуживании';
-    case 'active_booking':
-      return 'Ресурс занят активным бронированием';
-    case 'active_booking_ends_within_threshold':
-      return 'Ресурс скоро освободится';
-    case 'no_active_booking_or_block':
-      return 'Ресурс доступен';
-    case 'not_a_bookable_resource':
-      return 'Для этой точки статус бронирования не применяется';
-    default:
-      return null;
-  }
+  const key = point.resource_status_reason;
+  if (!key) return null;
+  const labelKey = REASON_LABEL_KEYS[key];
+  return labelKey ? i18n.t(labelKey) : null;
 }
 
 export function isBookablePoint(point: MapPoint): boolean {

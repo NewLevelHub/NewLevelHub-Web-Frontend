@@ -1,4 +1,6 @@
+import { useTranslation } from 'react-i18next';
 export function PreferencesSkeleton() {
+  const { t } = useTranslation();
   return (
     <div className="space-y-2" aria-busy="true" aria-label="Загрузка настроек">
       {Array.from({ length: 14 }).map((_, i) => (

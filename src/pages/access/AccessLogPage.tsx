@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
@@ -19,6 +20,7 @@ function fmt(value: string | null | undefined) {
 }
 
 export default function AccessLogPage() {
+  const { t } = useTranslation();
   const user = useUser();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
 
@@ -140,15 +142,13 @@ export default function AccessLogPage() {
           disabled={isExporting}
           className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isExporting ? 'Экспорт...' : 'Экспорт CSV'}
+          {isExporting ? 'Экспорт...' : t('common.exportCsv')}
         </button>
       </div>
 
       <section className="rounded-xl border border-default bg-raised p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <label className="text-sm text-secondary">
-            Поиск
-            <input
+          <label className="text-sm text-secondary">{t('common.search')}<input
               type="search"
               value={search}
               onChange={(event) => {
@@ -187,9 +187,7 @@ export default function AccessLogPage() {
           </label>
 
           {isSuperadmin ? (
-            <label className="text-sm text-secondary">
-              Компания
-              <select
+            <label className="text-sm text-secondary">{t('common.company')}<select
                 value={companyId}
                 onChange={(event) => {
                   setCompanyId(event.target.value);
@@ -197,7 +195,7 @@ export default function AccessLogPage() {
                 }}
                 className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               >
-                <option value="">{isCompaniesLoading ? 'Загрузка компаний...' : 'Все компании'}</option>
+                <option value="">{isCompaniesLoading ? 'Загрузка компаний...' : t('common.allCompanies')}</option>
                 {(companiesData?.results ?? []).map((company) => (
                   <option key={company.id} value={String(company.id)}>
                     {company.name}
@@ -217,8 +215,8 @@ export default function AccessLogPage() {
           <table className="w-full min-w-[900px] divide-y divide-[color:var(--border)] text-sm">
             <thead className="bg-surface text-left text-secondary">
               <tr>
-                <th className="px-4 py-3">Гость</th>
-                <th className="px-4 py-3">Компания</th>
+                <th className="px-4 py-3">{t('team.roleGuest')}</th>
+                <th className="px-4 py-3">{t('common.company')}</th>
                 <th className="px-4 py-3">Пригласил</th>
                 <th className="px-4 py-3">Проверил</th>
                 <th className="px-4 py-3">Валидирован</th>
@@ -278,9 +276,7 @@ export default function AccessLogPage() {
             disabled={page <= 1 || isLoading}
             onClick={() => setPage((prev) => Math.max(1, prev - 1))}
             className="rounded-lg border border-default px-3 py-2 text-secondary hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Назад
-          </button>
+          >{t('common.back')}</button>
           <span className="text-secondary">
             Страница {page} из {totalPages}
           </span>

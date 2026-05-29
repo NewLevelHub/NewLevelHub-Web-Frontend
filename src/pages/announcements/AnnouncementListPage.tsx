@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import { USER_ROLES } from '@/shared/config/constants';
@@ -11,6 +12,7 @@ import { AnnouncementSkeleton } from '@/pages/announcements/components/Announcem
 import { useAnnouncements } from '@/pages/announcements/hooks/useAnnouncements';
 
 export default function AnnouncementListPage() {
+  const { t } = useTranslation();
   const user = useUser();
   const isAdmin =
     user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN;
@@ -93,7 +95,7 @@ export default function AnnouncementListPage() {
       <div ref={sentinelCallbackRef} />
 
       {isFetchingNextPage ? (
-        <p className="text-center text-sm text-muted">Загрузка…</p>
+        <p className="text-center text-sm text-muted">{t('common.loading')}</p>
       ) : null}
 
       {!isLoading && !isFetchingNextPage && hasNextPage ? (

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Archive } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import type { CrmBoard } from '@/shared/types';
@@ -10,6 +11,7 @@ export interface ArchiveBoardConfirmProps {
 }
 
 export function ArchiveBoardConfirm({ board, onCancel, onConfirm, isPending }: ArchiveBoardConfirmProps) {
+  const { t } = useTranslation();
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) onCancel();
   };
@@ -40,9 +42,7 @@ export function ArchiveBoardConfirm({ board, onCancel, onConfirm, isPending }: A
             type="button"
             onClick={onCancel}
             className="rounded-lg px-4 py-2 text-sm font-medium text-secondary hover:text-primary hover:bg-hover transition-colors"
-          >
-            Отмена
-          </button>
+          >{t('common.cancel')}</button>
           <button
             type="button"
             onClick={onConfirm}
@@ -53,7 +53,7 @@ export function ArchiveBoardConfirm({ board, onCancel, onConfirm, isPending }: A
               'disabled:opacity-50 disabled:cursor-not-allowed',
             )}
           >
-            {isPending ? 'Архивирование...' : 'Архивировать'}
+            {isPending ? t('common.archivingPlain') : t('common.archive')}
           </button>
         </div>
       </div>

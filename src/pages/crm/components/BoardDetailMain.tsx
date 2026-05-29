@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
@@ -27,6 +28,7 @@ export interface BoardDetailMainProps {
 }
 
 export function BoardDetailMain({ ctx }: BoardDetailMainProps) {
+  const { t } = useTranslation();
   const location = useLocation();
   const backTo = (location.state as { backTo?: string; companyName?: string } | null)?.backTo ?? '/crm';
   const companyName = (location.state as { backTo?: string; companyName?: string } | null)?.companyName;
@@ -71,9 +73,7 @@ export function BoardDetailMain({ ctx }: BoardDetailMainProps) {
         to={backTo}
         className="inline-flex items-center gap-1.5 text-sm text-secondary hover:text-primary transition-colors"
       >
-        <ChevronLeft size={16} />
-        Назад к доскам
-      </Link>
+        <ChevronLeft size={16} />{t('common.backToBoards')}</Link>
 
       <div className="flex items-center gap-3">
         <div className="rounded-lg bg-blue-600/20 p-2 shrink-0">
@@ -96,7 +96,7 @@ export function BoardDetailMain({ ctx }: BoardDetailMainProps) {
             'flex items-center gap-2 rounded-lg border border-default px-3 py-2 text-sm font-medium shrink-0',
             'text-secondary hover:text-primary hover:border-gray-500 transition-colors',
           )}
-          aria-label="Открыть архив задач"
+          aria-label={t('common.openArchive')}
         >
           <Archive size={15} />
           Архив
@@ -148,9 +148,7 @@ export function BoardDetailMain({ ctx }: BoardDetailMainProps) {
                   'bg-blue-600 text-white hover:bg-blue-500',
                 )}
               >
-                <Plus size={16} />
-                Добавить колонку
-              </button>
+                <Plus size={16} />{t('common.addColumn')}</button>
             </div>
           ) : (
             <DndContext

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, memo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -33,6 +34,8 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
+import i18n from '@/shared/lib/i18n';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { getApiError } from '@/shared/lib/getApiError';
 import { mapApiUser } from '@/shared/lib/mapUser';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
@@ -142,13 +145,14 @@ interface RoleBadgeProps {
 }
 
 const RoleBadge = memo<RoleBadgeProps>(({ role }) => {
+  const { t } = useTranslation();
   const label =
     role === USER_ROLES.COMPANY_ADMIN
-      ? 'Админ'
+      ? t('team.roleAdmin')
       : role === USER_ROLES.EMPLOYEE
-        ? 'Сотрудник'
+        ? t('team.roleEmployee')
         : role === USER_ROLES.SUPERADMIN
-          ? 'Супер'
+          ? t('team.roleSuper')
           : role;
 
   const colorClass =
@@ -171,43 +175,47 @@ interface StatusBadgeProps {
   isActive: boolean;
 }
 
-const StatusBadge = memo<StatusBadgeProps>(({ isActive }) => (
+const StatusBadge = memo<StatusBadgeProps>(({ isActive }) => {
+  const { t } = useTranslation();
+  return (
   <span
     className={cn(
       'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium',
       isActive ? 'bg-success-subtle text-emerald-400' : 'bg-danger-subtle text-red-400',
     )}
-    aria-label={isActive ? 'Активен' : 'Неактивен'}
+    aria-label={isActive ? t('common.active') : t('common.inactive')}
   >
     {isActive ? (
       <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
     ) : (
       <XCircle className="h-3 w-3" aria-hidden="true" />
     )}
-    {isActive ? 'Активен' : 'Неактивен'}
+    {isActive ? t('common.active') : t('common.inactive')}
   </span>
-));
+);});
 
 interface EmailVerifiedBadgeProps {
   isVerified: boolean;
 }
 
-const EmailVerifiedBadge = memo<EmailVerifiedBadgeProps>(({ isVerified }) => (
+const EmailVerifiedBadge = memo<EmailVerifiedBadgeProps>(({ isVerified }) => {
+  const { t } = useTranslation();
+  return (
   <span
     className={cn(
       'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium',
       isVerified ? 'bg-success-subtle text-emerald-400' : 'bg-warning-subtle text-warning',
     )}
-    aria-label={isVerified ? 'Email подтверждён' : 'Email не подтверждён'}
+    aria-label={isVerified ? t('common.verified') : t('common.notVerified')}
   >
     {isVerified ? (
       <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
     ) : (
       <XCircle className="h-3 w-3" aria-hidden="true" />
     )}
-    {isVerified ? 'Подтверждён' : 'Не подтверждён'}
+    {isVerified ? t('common.verified') : t('common.notVerified')}
   </span>
-));
+);});
 
 // ---------------------------------------------------------------------------
 // Activity panel
@@ -219,6 +227,7 @@ interface ActivityPanelProps {
 }
 
 const ActivityPanel = memo<ActivityPanelProps>(({ companyId, memberId }) => {
+  const { t } = useTranslation();
   const { data, isLoading, isError } = useQuery<MemberActivity>({
     queryKey: ['memberActivity', companyId, memberId],
     queryFn: () =>
@@ -231,37 +240,35 @@ const ActivityPanel = memo<ActivityPanelProps>(({ companyId, memberId }) => {
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 py-4 text-sm text-secondary">
-        <Activity className="h-4 w-4 animate-pulse" aria-hidden="true" />
-        Загрузка активности…
-      </div>
+        <Activity className="h-4 w-4 animate-pulse" aria-hidden="true" />{t('common.loading')}</div>
     );
   }
 
   if (isError || !data) {
     return (
-      <p className="py-3 text-sm text-red-400">Не удалось загрузить данные активности.</p>
+      <p className="py-3 text-sm text-red-400">{t('team.activityLoadError')}</p>
     );
   }
 
   const stats: { icon: React.ReactNode; label: string; value: string | number }[] = [
     {
       icon: <LogIn className="h-4 w-4 text-brand" aria-hidden="true" />,
-      label: 'Последний вход',
+      label: t('common.lastLogin'),
       value: formatDate(data.last_login),
     },
     {
       icon: <ClipboardList className="h-4 w-4 text-amber-400" aria-hidden="true" />,
-      label: 'Активные задачи',
+      label: t('common.activeTasks'),
       value: data.active_tasks_count,
     },
     {
       icon: <CheckCircle2 className="h-4 w-4 text-emerald-400" aria-hidden="true" />,
-      label: 'Завершённые задачи',
+      label: t('common.completedTasks'),
       value: data.completed_tasks_count,
     },
     {
       icon: <Calendar className="h-4 w-4 text-sky-400" aria-hidden="true" />,
-      label: 'Брони за 30 дней',
+      label: t('common.bookingsLast30'),
       value: data.bookings_last_30_days,
     },
   ];
@@ -270,7 +277,7 @@ const ActivityPanel = memo<ActivityPanelProps>(({ companyId, memberId }) => {
     <div
       className="grid grid-cols-2 gap-3 sm:grid-cols-4"
       role="region"
-      aria-label="Активность сотрудника"
+      aria-label={t('common.employeeActivity')}
     >
       {stats.map((s) => (
         <div
@@ -323,6 +330,7 @@ const MemberRow = memo<MemberRowProps>(({
   onBlock,
   onImpersonate,
 }) => {
+  const { t } = useTranslation();
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -396,9 +404,7 @@ const MemberRow = memo<MemberRowProps>(({
                       onClick={() => onDeactivate(member)}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-amber-700 bg-warning-subtle px-3 py-1.5 text-xs font-medium text-warning hover:bg-warning-subtle disabled:opacity-60"
                     >
-                      <UserX className="h-3.5 w-3.5" aria-hidden="true" />
-                      Деактивировать
-                    </button>
+                      <UserX className="h-3.5 w-3.5" aria-hidden="true" />{t('common.deactivate')}</button>
                   ) : (
                     <button
                       type="button"
@@ -406,9 +412,7 @@ const MemberRow = memo<MemberRowProps>(({
                       onClick={() => onActivate(member)}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-700 bg-success-subtle px-3 py-1.5 text-xs font-medium text-success hover:bg-success-subtle disabled:opacity-60"
                     >
-                      <UserCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                      Активировать
-                    </button>
+                      <UserCheck className="h-3.5 w-3.5" aria-hidden="true" />{t('common.activate')}</button>
                   )}
                   <button
                     type="button"
@@ -416,9 +420,7 @@ const MemberRow = memo<MemberRowProps>(({
                     onClick={() => onRemove(member)}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger-subtle disabled:opacity-60"
                   >
-                    <UserMinus className="h-3.5 w-3.5" aria-hidden="true" />
-                    Удалить из компании
-                  </button>
+                    <UserMinus className="h-3.5 w-3.5" aria-hidden="true" />{t('common.removeFromCompany')}</button>
                 </div>
               )}
               {isSuperadmin && member.role !== USER_ROLES.SUPERADMIN && (
@@ -444,9 +446,7 @@ const MemberRow = memo<MemberRowProps>(({
                       onClick={() => onImpersonate(member)}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-amber-700 bg-warning-subtle px-3 py-1.5 text-xs font-medium text-warning hover:bg-warning-subtle disabled:opacity-60"
                     >
-                      <LogIn className="h-3.5 w-3.5" aria-hidden="true" />
-                      Войти от имени
-                    </button>
+                      <LogIn className="h-3.5 w-3.5" aria-hidden="true" />{t('common.impersonate')}</button>
                   )}
                 </div>
               )}
@@ -504,10 +504,10 @@ const DIR_PAGE_SIZE = 12;
 const DIR_DEBOUNCE_MS = 350;
 
 function roleLabelDir(role: string): string {
-  if (role === USER_ROLES.COMPANY_ADMIN) return 'Админ компании';
-  if (role === USER_ROLES.EMPLOYEE) return 'Сотрудник';
-  if (role === USER_ROLES.SUPERADMIN) return 'Суперадмин';
-  if (role === USER_ROLES.GUEST) return 'Гость';
+  if (role === USER_ROLES.COMPANY_ADMIN) return i18n.t('team.roleCompanyAdmin');
+  if (role === USER_ROLES.EMPLOYEE) return i18n.t('team.roleEmployee');
+  if (role === USER_ROLES.SUPERADMIN) return i18n.t('team.roleSuperadmin');
+  if (role === USER_ROLES.GUEST) return i18n.t('team.roleGuest');
   return role;
 }
 
@@ -520,7 +520,7 @@ function roleBadgeClassDir(role: string): string {
 
 function formatDateTime(iso: string | null | undefined): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleString('ru-RU', {
+  return new Date(iso).toLocaleString(dateLocaleTag(i18n.language), {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -534,6 +534,7 @@ interface DirectoryTabProps {
 }
 
 function DirectoryTab({ companyId }: DirectoryTabProps) {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [position, setPosition] = useState('');
@@ -605,9 +606,7 @@ function DirectoryTab({ companyId }: DirectoryTabProps) {
       <div className="rounded-xl border border-default bg-raised p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-end">
           <div className="flex-1">
-            <label htmlFor="dir-search" className="mb-1 block text-xs font-medium text-secondary">
-              Поиск
-            </label>
+            <label htmlFor="dir-search" className="mb-1 block text-xs font-medium text-secondary">{t('common.search')}</label>
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden="true" />
               <input
@@ -615,55 +614,49 @@ function DirectoryTab({ companyId }: DirectoryTabProps) {
                 type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Имя или email"
+                placeholder={t('common.nameOrEmail')}
                 className={cn(inputClass, 'pl-9')}
               />
             </div>
           </div>
           <div>
-            <label htmlFor="dir-position" className="mb-1 block text-xs font-medium text-secondary">
-              Должность
-            </label>
+            <label htmlFor="dir-position" className="mb-1 block text-xs font-medium text-secondary">{t('team.position')}</label>
             <input
               id="dir-position"
               type="text"
               value={position}
               onChange={(e) => { setPosition(e.target.value); setPage(1); }}
-              placeholder="Например: Designer"
+              placeholder={t('common.positionPlaceholder')}
               className={inputClass}
             />
           </div>
           <div>
-            <label htmlFor="dir-role" className="mb-1 block text-xs font-medium text-secondary">
-              Роль
-            </label>
+            <label htmlFor="dir-role" className="mb-1 block text-xs font-medium text-secondary">{t('common.role')}</label>
             <select
               id="dir-role"
               value={role}
               onChange={(e) => { setRole(e.target.value); setPage(1); }}
               className={selectClass}
             >
-              <option value="">Все роли</option>
-              <option value={USER_ROLES.EMPLOYEE}>Сотрудник</option>
-              <option value={USER_ROLES.COMPANY_ADMIN}>Админ компании</option>
-              <option value={USER_ROLES.SUPERADMIN}>Суперадмин</option>
-              <option value={USER_ROLES.GUEST}>Гость</option>
+              <option value="">{t('common.allRoles')}</option>
+              <option value={USER_ROLES.EMPLOYEE}>{t('team.roleEmployee')}</option>
+              <option value={USER_ROLES.COMPANY_ADMIN}>{t('team.roleCompanyAdmin')}</option>
+              <option value={USER_ROLES.SUPERADMIN}>{t('team.roleSuperadmin')}</option>
+              <option value={USER_ROLES.GUEST}>{t('team.roleGuest')}</option>
             </select>
           </div>
           <div>
-            <label htmlFor="dir-ordering" className="mb-1 block text-xs font-medium text-secondary">
-              Сортировка
-            </label>
+            <label htmlFor="dir-ordering" className="mb-1 block text-xs font-medium text-secondary">{t('common.sort')}</label>
             <select
               id="dir-ordering"
               value={ordering}
               onChange={(e) => { setOrdering(e.target.value as typeof ordering); setPage(1); }}
               className={selectClass}
             >
-              <option value="full_name">Имя (А-Я)</option>
-              <option value="-full_name">Имя (Я-А)</option>
-              <option value="-date_joined">Новые сначала</option>
-              <option value="date_joined">Старые сначала</option>
+              <option value="full_name">{t('team.directory.nameAsc')}</option>
+              <option value="-full_name">{t('team.directory.nameDesc')}</option>
+              <option value="-date_joined">{t('team.directory.newest')}</option>
+              <option value="date_joined">{t('team.directory.oldest')}</option>
             </select>
           </div>
         </div>
@@ -737,9 +730,7 @@ function DirectoryTab({ companyId }: DirectoryTabProps) {
           <span>Страница {page} из {totalPages} ({directoryData?.count ?? 0} сотрудников)</span>
           <div className="flex gap-2">
             <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}
-              className={cn('rounded-lg border border-default px-3 py-1.5', page <= 1 ? 'cursor-not-allowed opacity-50' : 'hover:bg-hover text-primary')}>
-              Назад
-            </button>
+              className={cn('rounded-lg border border-default px-3 py-1.5', page <= 1 ? 'cursor-not-allowed opacity-50' : 'hover:bg-hover text-primary')}>{t('common.back')}</button>
             <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}
               className={cn('rounded-lg border border-default px-3 py-1.5', page >= totalPages ? 'cursor-not-allowed opacity-50' : 'hover:bg-hover text-primary')}>
               Вперёд
@@ -754,9 +745,7 @@ function DirectoryTab({ companyId }: DirectoryTabProps) {
           <h2 className="text-base font-semibold text-primary">Профиль сотрудника</h2>
           {isProfileLoading ? (
             <div className="mt-3 flex items-center gap-2 text-sm text-secondary">
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              Загрузка…
-            </div>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />{t('common.loading')}</div>
           ) : isProfileError || !profileData ? (
             <p className="mt-3 text-sm text-danger">Не удалось загрузить профиль.</p>
           ) : (
@@ -819,6 +808,7 @@ function ReassignMemberModal({
   excludeMemberId,
   isLoading,
 }: ReassignMemberModalProps) {
+  const { t } = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const [selectedId, setSelectedId] = useState('');
@@ -883,19 +873,15 @@ function ReassignMemberModal({
         {/* Header */}
         <div className="flex items-start justify-between p-6 pb-3">
           <div>
-            <h2 id="reassign-modal-title" className="text-base font-semibold text-primary">
-              Переназначение задач CRM
-            </h2>
-            <p className="mt-1 text-sm text-muted">
-              Выберите сотрудника для передачи задач или оставьте без выбора, чтобы снять исполнителя.
-            </p>
+            <h2 id="reassign-modal-title" className="text-base font-semibold text-primary">{t('common.crmReassignTitle')}</h2>
+            <p className="mt-1 text-sm text-muted">{t('common.crmReassignDesc')}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
             disabled={isLoading}
             className="ml-3 shrink-0 rounded-lg p-1 text-secondary hover:bg-hover disabled:pointer-events-none disabled:opacity-50"
-            aria-label="Закрыть"
+            aria-label={t('common.close')}
           >
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -910,7 +896,7 @@ function ReassignMemberModal({
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Поиск по имени или email…"
+              placeholder={t('common.searchByNameEmail')}
               className="w-full rounded-lg border border-default bg-raised py-2 pl-9 pr-3 text-sm text-primary placeholder:text-muted focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20"
               disabled={isLoading}
             />
@@ -920,11 +906,11 @@ function ReassignMemberModal({
         {/* Member list */}
         <div className="mx-6 mb-4 max-h-56 overflow-y-auto rounded-lg border border-default">
           {isFetching ? (
-            <p className="py-6 text-center text-sm text-muted">Загрузка…</p>
+            <p className="py-6 text-center text-sm text-muted">{t('common.loading')}</p>
           ) : filtered.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted">Сотрудники не найдены</p>
+            <p className="py-6 text-center text-sm text-muted">{t('common.employeesNotFound')}</p>
           ) : (
-            <ul role="listbox" aria-label="Выберите сотрудника">
+            <ul role="listbox" aria-label={t('common.selectEmployee')}>
               {filtered.map((m) => {
                 const isSelected = selectedId === String(m.id);
                 return (
@@ -965,9 +951,7 @@ function ReassignMemberModal({
             onClick={onClose}
             disabled={isLoading}
             className="rounded-lg border border-default bg-surface px-4 py-2 text-sm font-medium text-secondary hover:bg-raised disabled:pointer-events-none disabled:opacity-50"
-          >
-            Отмена
-          </button>
+          >{t('common.cancel')}</button>
           <button
             type="button"
             disabled={isLoading}
@@ -994,6 +978,7 @@ const DEBOUNCE_MS = 350;
 type ViewTab = 'manage' | 'directory';
 
 export default function TeamManagePage() {
+  const { t } = useTranslation();
   const { user, isImpersonating, startImpersonation } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -1290,9 +1275,7 @@ export default function TeamManagePage() {
           <label
             htmlFor="company-select"
             className="mb-1 block text-xs font-medium text-secondary"
-          >
-            Компания
-          </label>
+          >{t('common.company')}</label>
           <select
             id="company-select"
             value={selectedCompanyId}
@@ -1302,9 +1285,9 @@ export default function TeamManagePage() {
               setExpandedId(null);
             }}
             className={cn(selectClass, 'w-full sm:w-80')}
-            aria-label="Выберите компанию"
+            aria-label={t('common.selectCompany')}
           >
-            <option value="">Выберите компанию</option>
+            <option value="">{t('common.selectCompany')}</option>
             {companiesData?.results.map((company) => (
               <option key={company.id} value={String(company.id)}>
                 {company.name}
@@ -1332,9 +1315,7 @@ export default function TeamManagePage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
           {/* Search */}
           <div className="flex-1 min-w-48">
-            <label htmlFor="member-search" className="mb-1 block text-xs font-medium text-secondary">
-              Поиск
-            </label>
+            <label htmlFor="member-search" className="mb-1 block text-xs font-medium text-secondary">{t('common.search')}</label>
             <div className="relative">
               <Search
                 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
@@ -1354,9 +1335,7 @@ export default function TeamManagePage() {
 
           {/* Role filter */}
           <div>
-            <label htmlFor="role-filter" className="mb-1 block text-xs font-medium text-secondary">
-              Роль
-            </label>
+            <label htmlFor="role-filter" className="mb-1 block text-xs font-medium text-secondary">{t('common.role')}</label>
             <select
               id="role-filter"
               value={filters.role}
@@ -1370,17 +1349,15 @@ export default function TeamManagePage() {
               className={selectClass}
               aria-label="Фильтр по роли"
             >
-              <option value="">Все роли</option>
-              <option value="employee">Сотрудник</option>
-              <option value="company_admin">Админ компании</option>
+              <option value="">{t('common.allRoles')}</option>
+              <option value="employee">{t('team.roleEmployee')}</option>
+              <option value="company_admin">{t('team.roleCompanyAdmin')}</option>
             </select>
           </div>
 
           {/* Active status filter */}
           <div>
-            <label htmlFor="status-filter" className="mb-1 block text-xs font-medium text-secondary">
-              Статус
-            </label>
+            <label htmlFor="status-filter" className="mb-1 block text-xs font-medium text-secondary">{t('common.status')}</label>
             <select
               id="status-filter"
               value={filters.is_active}
@@ -1395,7 +1372,7 @@ export default function TeamManagePage() {
               aria-label="Фильтр по статусу активности"
             >
               <option value="">Все</option>
-              <option value="true">Активные</option>
+              <option value="true">{t('passes.filters.active')}</option>
               <option value="false">Неактивные</option>
             </select>
           </div>
@@ -1406,19 +1383,19 @@ export default function TeamManagePage() {
           <span className="text-xs font-medium text-secondary">Сортировка:</span>
           <OrderingButton
             field="full_name"
-            label="По имени"
+            label={t('common.byName')}
             current={{ field: filters.orderingField, dir: filters.orderingDir }}
             onChange={handleOrderingFieldChange}
           />
           <OrderingButton
             field="date_joined"
-            label="По дате вступления"
+            label={t('common.joinedAt')}
             current={{ field: filters.orderingField, dir: filters.orderingDir }}
             onChange={handleOrderingFieldChange}
           />
           <OrderingButton
             field="last_login"
-            label="По последнему входу"
+            label={t('common.byLastLogin')}
             current={{ field: filters.orderingField, dir: filters.orderingDir }}
             onChange={handleOrderingFieldChange}
           />
@@ -1448,33 +1425,25 @@ export default function TeamManagePage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left" role="table" aria-label="Список сотрудников">
+            <table className="w-full text-left" role="table" aria-label={t('common.employeeList')}>
               <thead>
                 <tr className="border-b border-default">
                   <th
                     scope="col"
                     className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary"
-                  >
-                    Сотрудник
-                  </th>
+                  >{t('team.roleEmployee')}</th>
                   <th
                     scope="col"
                     className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary sm:table-cell"
-                  >
-                    Роль
-                  </th>
+                  >{t('common.role')}</th>
                   <th
                     scope="col"
                     className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary md:table-cell"
-                  >
-                    Должность
-                  </th>
+                  >{t('team.position')}</th>
                   <th
                     scope="col"
                     className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary lg:table-cell"
-                  >
-                    Статус
-                  </th>
+                  >{t('common.status')}</th>
                   <th
                     scope="col"
                     className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary lg:table-cell"
@@ -1490,9 +1459,7 @@ export default function TeamManagePage() {
                   <th
                     scope="col"
                     className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary xl:table-cell"
-                  >
-                    Последний вход
-                  </th>
+                  >{t('common.lastLogin')}</th>
                   <th scope="col" className="px-4 py-3">
                     <span className="sr-only">Действия</span>
                   </th>
@@ -1528,7 +1495,7 @@ export default function TeamManagePage() {
         <div
           className="flex items-center justify-between text-sm text-secondary"
           role="navigation"
-          aria-label="Пагинация"
+          aria-label={t('common.pagination')}
         >
           <span>
             Страница {filters.page} из {totalPages} ({data?.count ?? 0} записей)
@@ -1544,11 +1511,9 @@ export default function TeamManagePage() {
                   ? 'cursor-not-allowed opacity-40'
                   : 'hover:bg-hover text-primary',
               )}
-              aria-label="Предыдущая страница"
+              aria-label={t('common.previousPage')}
             >
-              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-              Назад
-            </button>
+              <ChevronLeft className="h-4 w-4" aria-hidden="true" />{t('common.back')}</button>
             <button
               type="button"
               disabled={filters.page >= totalPages}
@@ -1559,7 +1524,7 @@ export default function TeamManagePage() {
                   ? 'cursor-not-allowed opacity-40'
                   : 'hover:bg-hover text-primary',
               )}
-              aria-label="Следующая страница"
+              aria-label={t('common.nextPage')}
             >
               Вперёд
               <ChevronRight className="h-4 w-4" aria-hidden="true" />
@@ -1588,7 +1553,7 @@ export default function TeamManagePage() {
             : ''
         }
         variant="warning"
-        confirmLabel="Деактивировать"
+        confirmLabel={t('common.deactivate')}
         isLoading={deactivateMemberMutation.isPending}
       />
 
@@ -1611,7 +1576,7 @@ export default function TeamManagePage() {
             : ''
         }
         variant="warning"
-        confirmLabel="Активировать"
+        confirmLabel={t('common.activate')}
         isLoading={activateMemberMutation.isPending}
       />
 
@@ -1630,7 +1595,7 @@ export default function TeamManagePage() {
             : ''
         }
         variant="danger"
-        confirmLabel="Продолжить"
+        confirmLabel={t('common.continue')}
       />
 
       <ReassignMemberModal
@@ -1695,7 +1660,7 @@ export default function TeamManagePage() {
             : ''
         }
         variant="warning"
-        confirmLabel="Войти от имени"
+        confirmLabel={t('common.impersonate')}
         isLoading={impersonateMutation.isPending}
       />
     </div>

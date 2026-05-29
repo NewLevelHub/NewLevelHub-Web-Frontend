@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { PromptModal } from '@/shared/ui/PromptModal';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -44,6 +46,8 @@ function formatFileSize(size: number) {
 }
 
 export default function FileBrowserPage() {
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [scope, setScope] = useState<StorageScope>('personal');
@@ -516,9 +520,7 @@ export default function FileBrowserPage() {
           disabled={!newFolderName.trim() || createFolderMutation.isPending}
           onClick={() => createFolderMutation.mutate()}
           className="rounded-md bg-brand px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Создать папку
-        </button>
+        >{t('common.createFolder')}</button>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -570,25 +572,24 @@ export default function FileBrowserPage() {
           <input
             key={uploadInputKey}
             type="file"
+            lang={dateLocale}
             className="sr-only"
             onChange={(e) => handleUploadInputChange(e.target.files?.[0] ?? null)}
           />
-          <span className="truncate">{uploadFile ? uploadFile.name : 'Файл не выбран'}</span>
+          <span className="truncate">{uploadFile ? uploadFile.name : t('common.noFileSelected')}</span>
         </label>
         <button
           type="button"
           disabled={!uploadFile || uploadFileMutation.isPending}
           onClick={handleFileUpload}
           className="rounded-md bg-emerald-600 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Загрузить файл
-        </button>
+        >{t('common.uploadFile')}</button>
         <p className="text-xs text-slate-400">Максимальный размер файла: 100 MB</p>
         {uploadSuccess ? <p className="w-full text-xs text-success">{uploadSuccess}</p> : null}
         {uploadError ? <p className="w-full text-xs text-rose-300">{uploadError}</p> : null}
       </div>
 
-      {isLoading ? <p className="text-sm text-slate-400">Загрузка...</p> : null}
+      {isLoading ? <p className="text-sm text-slate-400">{t('common.loading')}</p> : null}
       {isError ? (
         <p className="text-sm text-rose-300">Не удалось загрузить данные хранилища. Попробуйте обновить страницу.</p>
       ) : null}
@@ -622,15 +623,13 @@ export default function FileBrowserPage() {
                               onClick={() => handleRename(folder)}
                               className="rounded border border-slate-600 px-2 py-1 text-slate-300"
                             >
-                              Переименовать
+                              {t('common.rename')}
                             </button>
                             <button
                               type="button"
                               onClick={() => handleDelete(folder)}
                               className="rounded border border-rose-800 px-2 py-1 text-rose-300"
-                            >
-                              Удалить
-                            </button>
+                            >{t('common.delete')}</button>
                           </>
                         ) : null}
                       </div>
@@ -689,15 +688,13 @@ export default function FileBrowserPage() {
                               onClick={() => handleFileRename(file)}
                               className="rounded border border-slate-600 px-2 py-1 text-slate-300"
                             >
-                              Переименовать
+                              {t('common.rename')}
                             </button>
                             <button
                               type="button"
                               onClick={() => handleFileDelete(file)}
                               className="rounded border border-rose-800 px-2 py-1 text-rose-300"
-                            >
-                              Удалить
-                            </button>
+                            >{t('common.delete')}</button>
                           </>
                         ) : null}
                       </div>
@@ -723,7 +720,7 @@ export default function FileBrowserPage() {
                     onChange={(event) => setShareTargetUserId(event.target.value)}
                     className="flex-1 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-primary"
                   >
-                    <option value="">Выберите сотрудника</option>
+                    <option value="">{t('common.selectEmployee')}</option>
                     {recipientOptions.map((member) => (
                       <option key={member.id} value={member.id}>
                         {member.full_name} ({member.email})
@@ -780,7 +777,7 @@ export default function FileBrowserPage() {
 
           <section className="rounded-lg border border-slate-700 bg-slate-800 p-4">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">Расшарено мне</h2>
-            {sharedWithMeQuery.isLoading ? <p className="text-sm text-slate-400">Загрузка...</p> : null}
+            {sharedWithMeQuery.isLoading ? <p className="text-sm text-slate-400">{t('common.loading')}</p> : null}
             {sharedWithMeQuery.isError ? (
               <p className="text-sm text-rose-300">Не удалось загрузить список расшаренных файлов.</p>
             ) : null}
@@ -865,7 +862,7 @@ export default function FileBrowserPage() {
               : 'Доступ к файлу у выбранного пользователя будет отозван.'
         }
         confirmLabel={
-          confirmAction?.type === 'revoke-share' ? 'Отозвать' : 'Удалить'
+          confirmAction?.type === 'revoke-share' ? 'Отозвать' : t('common.delete')
         }
         variant="danger"
         isLoading={
@@ -906,7 +903,7 @@ export default function FileBrowserPage() {
         title={renameTarget?.kind === 'folder' ? 'Переименовать папку' : 'Переименовать файл'}
         label="Новое имя"
         defaultValue={renameTarget?.kind === 'folder' ? renameTarget.folder.name : renameTarget?.file.name ?? ''}
-        confirmLabel="Сохранить"
+        confirmLabel={t('common.save')}
         isLoading={renameFolderMutation.isPending || renameFileMutation.isPending}
       />
     </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { Bell, BellOff } from 'lucide-react';
 
@@ -19,6 +20,7 @@ export interface DoNotDisturbCardProps {
 }
 
 export function DoNotDisturbCard({ initialEnabled, initialUntil, onSaved }: DoNotDisturbCardProps) {
+  const { t } = useTranslation();
   const [enabled, setEnabled] = useState(initialEnabled);
   const [until, setUntil] = useState(() => {
     if (initialUntil) {
@@ -150,7 +152,7 @@ export function DoNotDisturbCard({ initialEnabled, initialUntil, onSaved }: DoNo
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
           )}
         >
-          {mutation.isPending ? 'Сохранение…' : 'Сохранить'}
+          {mutation.isPending ? t('common.saving') : t('common.save')}
         </button>
 
         {success && (

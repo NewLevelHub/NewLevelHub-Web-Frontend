@@ -47,6 +47,7 @@ This is a **Vite + React 18 SPA** — not Next.js. Before writing any code, read
 7. **API client:** Always use the Axios instance from `@/shared/api/client.ts`
 8. **Layouts:** Set layouts at the router level (`router.tsx`) — not inside page components
 9. **Roles:** Use `USER_ROLES` constants for all role comparisons — never raw strings
+10. **Localization:** Never hardcode UI strings — this applies to JSX **and** to config/data files (e.g. `sidebar-config.ts`, constants, label maps). Always use `t('...')` from `react-i18next`. Store i18n keys in config files and call `t(key)` at render time. When adding or changing any visible text, add the key to **both** `src/shared/locales/ru.json` and `src/shared/locales/en.json`. This is never deferred.
 
 ---
 
@@ -173,3 +174,4 @@ One responsibility per file. If a sub-section grows complex, give it its own fil
 - Verify no hardcoded API strings
 - Verify `cn()` is used for all conditional classes
 - Ensure accessibility: semantic HTML, ARIA where needed, keyboard-friendly
+- Verify no hardcoded UI strings — all visible text uses `t()`, keys exist in both locale files

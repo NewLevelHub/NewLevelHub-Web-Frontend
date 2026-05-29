@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Search, LayoutDashboard, List } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 
@@ -23,6 +24,7 @@ export interface BoardFilterBarProps {
 }
 
 export function BoardFilterBar({ filters, onChange }: BoardFilterBarProps) {
+  const { t } = useTranslation();
   const hasActive =
     filters.search !== '' ||
     filters.priority !== '' ||
@@ -45,7 +47,7 @@ export function BoardFilterBar({ filters, onChange }: BoardFilterBarProps) {
             'w-full rounded-lg border border-default bg-raised pl-8 pr-3 py-2 text-sm text-primary placeholder-gray-500',
             'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
           )}
-          aria-label="Поиск задач"
+          aria-label={t('common.searchTasks')}
         />
       </div>
 
@@ -56,13 +58,13 @@ export function BoardFilterBar({ filters, onChange }: BoardFilterBarProps) {
           'rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary',
           'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
         )}
-        aria-label="Фильтр по приоритету"
+        aria-label={t('common.filterPriority')}
       >
         <option value="">Все приоритеты</option>
-        <option value="low">Низкий</option>
-        <option value="medium">Средний</option>
-        <option value="high">Высокий</option>
-        <option value="critical">Критический</option>
+        <option value="low">{t('crm.priority.low')}</option>
+        <option value="medium">{t('crm.priority.medium')}</option>
+        <option value="high">{t('crm.priority.high')}</option>
+        <option value="critical">{t('crm.priority.critical')}</option>
       </select>
 
       <select
@@ -72,11 +74,11 @@ export function BoardFilterBar({ filters, onChange }: BoardFilterBarProps) {
           'rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary',
           'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
         )}
-        aria-label="Фильтр по дедлайну"
+        aria-label={t('common.filterDeadline')}
       >
         <option value="">Все дедлайны</option>
-        <option value="overdue">Просрочено</option>
-        <option value="today">Сегодня</option>
+        <option value="overdue">{t('common.overdue')}</option>
+        <option value="today">{t('common.today')}</option>
         <option value="this_week">На этой неделе</option>
       </select>
 
@@ -88,9 +90,7 @@ export function BoardFilterBar({ filters, onChange }: BoardFilterBarProps) {
             'rounded-lg border border-default px-3 py-2 text-sm font-medium',
             'text-secondary hover:text-primary hover:border-gray-500 transition-colors',
           )}
-        >
-          Сбросить
-        </button>
+        >{t('common.reset')}</button>
       )}
 
       <div className="ml-auto flex items-center rounded-lg border border-default bg-raised p-0.5 gap-0.5">
@@ -101,7 +101,7 @@ export function BoardFilterBar({ filters, onChange }: BoardFilterBarProps) {
             'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
             filters.view === 'kanban' ? 'bg-hover text-primary' : 'text-muted hover:text-secondary',
           )}
-          aria-label="Вид канбан"
+          aria-label={t('common.kanbanView')}
           aria-pressed={filters.view === 'kanban'}
         >
           <LayoutDashboard size={13} />
@@ -114,7 +114,7 @@ export function BoardFilterBar({ filters, onChange }: BoardFilterBarProps) {
             'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
             filters.view === 'list' ? 'bg-hover text-primary' : 'text-muted hover:text-secondary',
           )}
-          aria-label="Вид список"
+          aria-label={t('common.listView')}
           aria-pressed={filters.view === 'list'}
         >
           <List size={13} />

@@ -18,6 +18,15 @@ export const USER_ROLE_LABELS: Record<UserRole, string> = {
   [USER_ROLES.GUEST]: 'Гость',
 };
 
+export const USER_ROLE_LABEL_KEYS: Record<UserRole, string> = {
+  [USER_ROLES.SUPERADMIN]: 'profile.roles.superadmin',
+  [USER_ROLES.RECEPTION]: 'profile.roles.reception',
+  [USER_ROLES.SERVICE_MANAGER]: 'profile.roles.service_manager',
+  [USER_ROLES.COMPANY_ADMIN]: 'profile.roles.company_admin',
+  [USER_ROLES.EMPLOYEE]: 'profile.roles.employee',
+  [USER_ROLES.GUEST]: 'profile.roles.guest',
+};
+
 /**
  * SPA routes only for the platform superadmin. Kept outside `/admin/` so they never
  * collide with Django admin (`/admin/<app_label>/`).
@@ -42,9 +51,16 @@ export type ResourceType = (typeof RESOURCE_TYPES)[keyof typeof RESOURCE_TYPES];
 
 export const RESOURCE_TYPE_LABELS: Record<ResourceType, string> = {
   [RESOURCE_TYPES.DESK]: 'Рабочее место',
-  [RESOURCE_TYPES.MEETING_ROOM]: 'Переговорка',
+  [RESOURCE_TYPES.MEETING_ROOM]: 'Переговорная',
   [RESOURCE_TYPES.PARKING]: 'Парковка',
   [RESOURCE_TYPES.CAPSULE]: 'Капсула',
+};
+
+export const RESOURCE_TYPE_LABEL_KEYS: Record<ResourceType, string> = {
+  [RESOURCE_TYPES.DESK]: 'common.resourceType.desk',
+  [RESOURCE_TYPES.MEETING_ROOM]: 'common.resourceType.meeting_room',
+  [RESOURCE_TYPES.PARKING]: 'common.resourceType.parking',
+  [RESOURCE_TYPES.CAPSULE]: 'common.resourceType.capsule',
 };
 
 /** Ключи тела `equipment` для `meeting_room` (совпадают с бэкендом). */
@@ -60,14 +76,14 @@ export const RESOURCE_EQUIPMENT_KEYS = [
 
 export type ResourceEquipmentKey = (typeof RESOURCE_EQUIPMENT_KEYS)[number];
 
-export const RESOURCE_EQUIPMENT_LABELS: Record<ResourceEquipmentKey, string> = {
-  projector: 'Проектор',
-  tv: 'ТВ',
-  whiteboard: 'Доска',
-  video_conf: 'Видеосвязь',
-  monitor: 'Монитор',
-  dock: 'Док-станция',
-  power_outlet: 'Розетка',
+export const RESOURCE_EQUIPMENT_LABEL_KEYS: Record<ResourceEquipmentKey, string> = {
+  projector: 'common.resourceEquipment.projector',
+  tv: 'common.resourceEquipment.tv',
+  whiteboard: 'common.resourceEquipment.whiteboard',
+  video_conf: 'common.resourceEquipment.video_conf',
+  monitor: 'common.resourceEquipment.monitor',
+  dock: 'common.resourceEquipment.dock',
+  power_outlet: 'common.resourceEquipment.power_outlet',
 };
 
 export const PARKING_TYPES = {
@@ -132,11 +148,11 @@ export const SERVICE_REQUEST_TYPES = {
 
 export type ServiceRequestType = (typeof SERVICE_REQUEST_TYPES)[keyof typeof SERVICE_REQUEST_TYPES];
 
-export const SERVICE_REQUEST_TYPE_LABELS: Record<ServiceRequestType, string> = {
-  cleaning: 'Уборка',
-  repair: 'Ремонт',
-  supplies: 'Расходники',
-  general: 'Общая',
+export const SERVICE_REQUEST_TYPE_LABEL_KEYS: Record<ServiceRequestType, string> = {
+  cleaning: 'common.serviceRequestType.cleaning',
+  repair: 'common.serviceRequestType.repair',
+  supplies: 'common.serviceRequestType.supplies',
+  general: 'common.serviceRequestType.general',
 };
 
 export const SERVICE_REQUEST_STATUSES = {
@@ -149,11 +165,11 @@ export const SERVICE_REQUEST_STATUSES = {
 export type ServiceRequestStatus =
   (typeof SERVICE_REQUEST_STATUSES)[keyof typeof SERVICE_REQUEST_STATUSES];
 
-export const SERVICE_REQUEST_STATUS_LABELS: Record<ServiceRequestStatus, string> = {
-  new: 'Новая',
-  accepted: 'Принята',
-  in_progress: 'В работе',
-  completed: 'Выполнена',
+export const SERVICE_REQUEST_STATUS_LABEL_KEYS: Record<ServiceRequestStatus, string> = {
+  new: 'common.serviceRequestStatus.new',
+  accepted: 'common.serviceRequestStatus.accepted',
+  in_progress: 'common.serviceRequestStatus.in_progress',
+  completed: 'common.serviceRequestStatus.completed',
 };
 
 export const SERVICE_REQUEST_STATUS_TRANSITIONS: Record<ServiceRequestStatus, ServiceRequestStatus | null> = {
@@ -177,7 +193,14 @@ export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
   [LEAVE_TYPES.VACATION]: 'Отпуск',
   [LEAVE_TYPES.DAY_OFF]: 'Отгул',
   [LEAVE_TYPES.SICK_LEAVE]: 'Больничный',
-  [LEAVE_TYPES.REMOTE]: 'Удаленно',
+  [LEAVE_TYPES.REMOTE]: 'Удалённо',
+};
+
+export const LEAVE_TYPE_LABEL_KEYS: Record<LeaveType, string> = {
+  [LEAVE_TYPES.VACATION]: 'common.leaveType.vacation',
+  [LEAVE_TYPES.DAY_OFF]: 'common.leaveType.day_off',
+  [LEAVE_TYPES.SICK_LEAVE]: 'common.leaveType.sick_leave',
+  [LEAVE_TYPES.REMOTE]: 'common.leaveType.remote',
 };
 
 export const LEAVE_STATUSES = {
@@ -194,6 +217,13 @@ export const LEAVE_STATUS_LABELS: Record<LeaveStatus, string> = {
   [LEAVE_STATUSES.APPROVED]: 'Одобрено',
   [LEAVE_STATUSES.REJECTED]: 'Отклонено',
   [LEAVE_STATUSES.CANCELLED]: 'Отменено',
+};
+
+export const LEAVE_STATUS_LABEL_KEYS: Record<LeaveStatus, string> = {
+  [LEAVE_STATUSES.PENDING]: 'common.leaveStatus.pending',
+  [LEAVE_STATUSES.APPROVED]: 'common.leaveStatus.approved',
+  [LEAVE_STATUSES.REJECTED]: 'common.leaveStatus.rejected',
+  [LEAVE_STATUSES.CANCELLED]: 'common.leaveStatus.cancelled',
 };
 
 export const COMPANY_TIERS = {
@@ -229,10 +259,10 @@ export const ANNOUNCEMENT_CATEGORIES = {
 export type AnnouncementCategory =
   (typeof ANNOUNCEMENT_CATEGORIES)[keyof typeof ANNOUNCEMENT_CATEGORIES];
 
-export const ANNOUNCEMENT_CATEGORY_LABELS: Record<AnnouncementCategory, string> = {
-  [ANNOUNCEMENT_CATEGORIES.INFO]: 'Информация',
-  [ANNOUNCEMENT_CATEGORIES.IMPORTANT]: 'Важное',
-  [ANNOUNCEMENT_CATEGORIES.EVENT]: 'Мероприятие',
+export const ANNOUNCEMENT_CATEGORY_LABEL_KEYS: Record<AnnouncementCategory, string> = {
+  [ANNOUNCEMENT_CATEGORIES.INFO]: 'common.announcementCategory.info',
+  [ANNOUNCEMENT_CATEGORIES.IMPORTANT]: 'common.announcementCategory.important',
+  [ANNOUNCEMENT_CATEGORIES.EVENT]: 'common.announcementCategory.event',
 };
 
 export const CALENDAR_EVENT_TYPES = {
@@ -244,11 +274,42 @@ export const CALENDAR_EVENT_TYPES = {
 
 export type CalendarEventType = (typeof CALENDAR_EVENT_TYPES)[keyof typeof CALENDAR_EVENT_TYPES];
 
-export const CALENDAR_EVENT_TYPE_LABELS: Record<CalendarEventType, string> = {
-  [CALENDAR_EVENT_TYPES.BOOKING]: 'Бронирование',
-  [CALENDAR_EVENT_TYPES.TASK_DEADLINE]: 'Дедлайн CRM',
-  [CALENDAR_EVENT_TYPES.LEAVE]: 'Отпуск/отсутствие',
-  [CALENDAR_EVENT_TYPES.GUEST_VISIT]: 'Гостевой визит',
+export const CALENDAR_EVENT_TYPE_LABEL_KEYS: Record<CalendarEventType, string> = {
+  [CALENDAR_EVENT_TYPES.BOOKING]: 'common.calendarEventType.booking',
+  [CALENDAR_EVENT_TYPES.TASK_DEADLINE]: 'common.calendarEventType.task_deadline',
+  [CALENDAR_EVENT_TYPES.LEAVE]: 'common.calendarEventType.leave',
+  [CALENDAR_EVENT_TYPES.GUEST_VISIT]: 'common.calendarEventType.guest_visit',
+};
+
+export const BOOKING_STATUS_LABEL_KEYS: Record<BookingStatus, string> = {
+  [BOOKING_STATUSES.CONFIRMED]: 'common.bookingStatus.confirmed',
+  [BOOKING_STATUSES.CHECKED_IN]: 'common.bookingStatus.checked_in',
+  [BOOKING_STATUSES.CANCELLED]: 'common.bookingStatus.cancelled',
+  [BOOKING_STATUSES.COMPLETED]: 'common.bookingStatus.completed',
+  [BOOKING_STATUSES.NO_SHOW]: 'common.bookingStatus.no_show',
+};
+
+export const PASS_STATUS_LABEL_KEYS: Record<PassStatus, string> = {
+  [PASS_STATUSES.ACTIVE]: 'common.passStatus.active',
+  [PASS_STATUSES.USED]: 'common.passStatus.used',
+  [PASS_STATUSES.EXPIRED]: 'common.passStatus.expired',
+  [PASS_STATUSES.REVOKED]: 'common.passStatus.revoked',
+};
+
+export const COMPANY_TIER_LABEL_KEYS: Record<CompanyTier, string> = {
+  [COMPANY_TIERS.BASIC]: 'common.companyTier.basic',
+  [COMPANY_TIERS.STANDARD]: 'common.companyTier.standard',
+  [COMPANY_TIERS.PREMIUM]: 'common.companyTier.premium',
+};
+
+export const PARKING_TYPE_LABEL_KEYS: Record<ParkingType, string> = {
+  [PARKING_TYPES.REGULAR]: 'common.parkingType.regular',
+  [PARKING_TYPES.VIP]: 'common.parkingType.vip',
+};
+
+export const CAPSULE_ZONE_LABEL_KEYS: Record<CapsuleZone, string> = {
+  [CAPSULE_ZONES.QUIET]: 'common.capsuleZone.quiet',
+  [CAPSULE_ZONES.REGULAR]: 'common.capsuleZone.regular',
 };
 
 export const CALENDAR_VIEWS = {

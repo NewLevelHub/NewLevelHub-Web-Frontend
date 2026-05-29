@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { FloorMap, MapPoint } from '@/shared/types';
 
@@ -29,15 +30,16 @@ export const EditableFloorMapWithImage = memo<EditableFloorMapWithImageProps>(
     onMovePoint,
     onMapClick,
   }) => {
+    const { t } = useTranslation();
     return (
       <div
         className="relative w-full select-none overflow-hidden rounded-xl border-2 border-dashed border-indigo-300"
         role="img"
-        aria-label={`Карта этажа ${floorMap.floor_name} (режим редактирования)`}
+        aria-label={t('map.floorMapEdit', { name: floorMap.floor_name })}
       >
         <img
           src={imageUrl}
-          alt={`План этажа ${floorMap.floor_name}`}
+          alt={t('map.floorPlan', { name: floorMap.floor_name })}
           className="block w-full object-contain"
           draggable={false}
         />

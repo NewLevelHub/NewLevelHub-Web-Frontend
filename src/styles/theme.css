@@ -1,95 +1,145 @@
 /* ─── Design Tokens ─── */
 :root {
   --font-size: 16px;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Page background */
-  --bg-page:        #f7f7f8;
+  --bg-page:        #f7f8f6;
   /* Card / panel surfaces */
   --bg-surface:     #ffffff;
   /* Slightly elevated surface (nested panels, table heads) */
-  --bg-raised:      #f4f4f5;
+  --bg-raised:      #f1f3f0;
   /* Hover overlay (rows, list items) */
-  --bg-hover:       #f0f0f1;
+  --bg-hover:       #ebede9;
   /* Active / selected state */
-  --bg-active:      #eff6ff;
+  --bg-active:      #ecfdf5;
   /* Sidebar */
-  --bg-sidebar:     #ffffff;
+  --bg-sidebar:     #f5f6f4;
 
   /* Borders */
-  --border:         #e4e4e7;
-  --border-strong:  #d1d1d6;
+  --border:         #e6e8e3;
+  --border-strong:  #cdd1c9;
+  --border-faint:   #eef0eb;
 
   /* Text */
-  --text-primary:   #18181b;
-  --text-secondary: #52525b;
-  --text-muted:     #71717a;
-  --text-subtle:    #a1a1aa;
-  --text-placeholder: #a1a1aa;
+  --text-primary:   #14201a;
+  --text-secondary: #4a5550;
+  --text-muted:     #6f7973;
+  --text-subtle:    #9ba39d;
+  --text-placeholder: #9ba39d;
   --text-on-brand:  #ffffff;
 
-  /* Brand (accent) */
-  --brand:          #2563eb;
-  --brand-hover:    #1d4ed8;
-  --brand-subtle:   #eff6ff;
-  --brand-text:     #1d4ed8;
+  /* Brand (accent) — Variant A: emerald */
+  --brand:          #059669;
+  --brand-hover:    #047857;
+  --brand-subtle:   #ecfdf5;
+  --brand-text:     #047857;
 
   /* Status */
   --success:        #059669;
   --success-bg:     #ecfdf5;
-  --success-text:   #065f46;
-  --warning:        #d97706;
+  --success-text:   #047857;
+  --warning:        #b45309;
   --warning-bg:     #fffbeb;
-  --warning-text:   #92400e;
-  --danger:         #dc2626;
+  --warning-text:   #b45309;
+  --danger:         #b91c1c;
   --danger-bg:      #fef2f2;
-  --danger-text:    #991b1b;
+  --danger-text:    #b91c1c;
+  --info:           #0369a1;
+
+  /* Status badge tokens */
+  --status-free-bg:   #ecfdf5;
+  --status-free-text: #047857;
+  --status-busy-bg:   #fef2f2;
+  --status-busy-text: #b91c1c;
+  --status-soon-bg:   #fffbeb;
+  --status-soon-text: #b45309;
+  --status-na-bg:     #f1f3f0;
+  --status-na-text:   #6f7973;
 
   /* Sidebar active item */
-  --nav-active-bg:   #eff6ff;
-  --nav-active-text: #1d4ed8;
-  --nav-active-border: #2563eb;
-  --nav-text:        #52525b;
-  --nav-hover-bg:    #f4f4f5;
+  --nav-active-bg:     #ebeee8;
+  --nav-active-text:   #14201a;
+  --nav-active-border: #059669;
+  --nav-text:          #4a5550;
+  --nav-hover-bg:      #f1f3f0;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius:    10px;
+  --radius-lg: 14px;
+
+  /* Shadows */
+  --shadow-card: 0 0 0 1px var(--border-faint);
+  --shadow-pop:  0 12px 32px rgba(20, 32, 26, 0.10), 0 0 0 1px var(--border);
+
+  /* Layout */
+  --density-row: 52px;
+  --sidebar-w:   256px;
+  --header-h:    56px;
 }
 
 .dark {
-  --bg-page:        #0f0f11;
-  --bg-surface:     #17171a;
-  --bg-raised:      #1e1e23;
-  --bg-hover:       #222228;
-  --bg-active:      #1a2035;
-  --bg-sidebar:     #111114;
+  /* Backgrounds — Variant A dark */
+  --bg-page:        #08140d;
+  --bg-surface:     #0e1f17;
+  --bg-raised:      #122a1f;
+  --bg-hover:       #173427;
+  --bg-active:      #0a3026;
+  --bg-sidebar:     #0c1812;
 
-  --border:         #27272a;
-  --border-strong:  #3f3f46;
+  /* Borders */
+  --border:         #1a2f25;
+  --border-strong:  #244438;
+  --border-faint:   #122a1f;
 
-  --text-primary:   #fafafa;
-  --text-secondary: #a1a1aa;
-  --text-muted:     #71717a;
-  --text-subtle:    #52525b;
-  --text-placeholder: #52525b;
-  --text-on-brand:  #ffffff;
+  /* Text */
+  --text-primary:   #e8efe9;
+  --text-secondary: #a8b6ae;
+  --text-muted:     #748378;
+  --text-subtle:    #4f5e54;
+  --text-placeholder: #4f5e54;
+  --text-on-brand:  #042818;
 
-  --brand:          #3b82f6;
-  --brand-hover:    #2563eb;
-  --brand-subtle:   #1a2035;
-  --brand-text:     #60a5fa;
+  /* Brand — emerald, lightened for dark backgrounds */
+  --brand:          #10b981;
+  --brand-hover:    #34d399;
+  --brand-subtle:   #062a1d;
+  --brand-text:     #6ee7b7;
 
-  --success:        #10b981;
-  --success-bg:     #052e16;
+  /* Status */
+  --success:        #34d399;
+  --success-bg:     #0a3026;
   --success-text:   #6ee7b7;
-  --warning:        #f59e0b;
-  --warning-bg:     #27180a;
+  --warning:        #fbbf24;
+  --warning-bg:     #2a1f0a;
   --warning-text:   #fcd34d;
-  --danger:         #ef4444;
-  --danger-bg:      #1f0808;
+  --danger:         #f87171;
+  --danger-bg:      #2a1414;
   --danger-text:    #fca5a5;
+  --info:           #60a5fa;
 
-  --nav-active-bg:   #1a2035;
-  --nav-active-text: #60a5fa;
-  --nav-active-border: #3b82f6;
-  --nav-text:        #a1a1aa;
-  --nav-hover-bg:    #1e1e23;
+  /* Status badges */
+  --status-free-bg:   #0a3026;
+  --status-free-text: #6ee7b7;
+  --status-busy-bg:   #2a1414;
+  --status-busy-text: #fca5a5;
+  --status-soon-bg:   #2a1f0a;
+  --status-soon-text: #fcd34d;
+  --status-na-bg:     #122a1f;
+  --status-na-text:   #748378;
+
+  /* Navigation */
+  --nav-active-bg:     #1a3328;
+  --nav-active-text:   #e8efe9;
+  --nav-active-border: #10b981;
+  --nav-text:          #a8b6ae;
+  --nav-hover-bg:      #122a1f;
+
+  /* Shadows */
+  --shadow-card: 0 0 0 1px var(--border);
+  --shadow-pop:  0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--border);
 }
 
 /* ─── Base Styles ─── */
@@ -100,7 +150,7 @@
 
   html {
     font-size: var(--font-size);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-sans);
   }
 
   body {

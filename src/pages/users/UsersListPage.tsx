@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { Search, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { SUPERADMIN_UI_PREFIX, USER_ROLES } from '@/shared/config/constants';
+import { SUPERADMIN_UI_PREFIX, USER_ROLES, USER_ROLE_LABEL_KEYS } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import type { Company, UserListItem, PaginatedResponse } from '@/shared/types';
@@ -15,33 +16,12 @@ import type { Company, UserListItem, PaginatedResponse } from '@/shared/types';
 
 const PAGE_SIZE = 20;
 
-const ROLE_LABELS: Record<string, string> = {
-  [USER_ROLES.SUPERADMIN]: 'Суперадмин',
-  [USER_ROLES.COMPANY_ADMIN]: 'Администратор компании',
-  [USER_ROLES.EMPLOYEE]: 'Сотрудник',
-  [USER_ROLES.GUEST]: 'Гость',
-};
-
 const ROLE_BADGE_COLORS: Record<string, string> = {
   [USER_ROLES.SUPERADMIN]: 'bg-purple-100 text-purple-800',
   [USER_ROLES.COMPANY_ADMIN]: 'bg-blue-100 text-blue-800',
   [USER_ROLES.EMPLOYEE]: 'bg-green-100 text-green-800',
   [USER_ROLES.GUEST]: 'bg-gray-100 text-gray-700',
 };
-
-const ROLE_FILTER_OPTIONS = [
-  { value: '', label: 'Все роли' },
-  { value: USER_ROLES.SUPERADMIN, label: 'Суперадмин' },
-  { value: USER_ROLES.COMPANY_ADMIN, label: 'Администратор компании' },
-  { value: USER_ROLES.EMPLOYEE, label: 'Сотрудник' },
-  { value: USER_ROLES.GUEST, label: 'Гость' },
-];
-
-const ACTIVE_FILTER_OPTIONS = [
-  { value: '', label: 'Любой статус' },
-  { value: 'true', label: 'Активные' },
-  { value: 'false', label: 'Неактивные' },
-];
 
 const ORDERING_OPTIONS = [
   { value: '-date_joined', label: 'По дате регистрации ↓' },
@@ -128,7 +108,28 @@ function SkeletonRow() {
 // ---------------------------------------------------------------------------
 
 export default function UsersListPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+
+  const roleFilterOptions = useMemo(
+    () => [
+      { value: '', label: t('common.allRoles') },
+      { value: USER_ROLES.SUPERADMIN, label: t(USER_ROLE_LABEL_KEYS[USER_ROLES.SUPERADMIN]) },
+      { value: USER_ROLES.COMPANY_ADMIN, label: t(USER_ROLE_LABEL_KEYS[USER_ROLES.COMPANY_ADMIN]) },
+      { value: USER_ROLES.EMPLOYEE, label: t(USER_ROLE_LABEL_KEYS[USER_ROLES.EMPLOYEE]) },
+      { value: USER_ROLES.GUEST, label: t(USER_ROLE_LABEL_KEYS[USER_ROLES.GUEST]) },
+    ],
+    [t],
+  );
+
+  const activeFilterOptions = useMemo(
+    () => [
+      { value: '', label: t('common.anyStatus') },
+      { value: 'true', label: t('passes.filters.active') },
+      { value: 'false', label: t('common.inactive') },
+    ],
+    [t],
+  );
 
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -221,7 +222,7 @@ export default function UsersListPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12">
           {/* Search */}
           <label className="flex flex-col gap-1.5 lg:col-span-4">
-            <span className="text-xs font-medium text-secondary">Поиск</span>
+            <span className="text-xs font-medium text-secondary">{t('common.search')}</span>
             <div className="relative">
               <Search
                 size={16}
@@ -241,14 +242,14 @@ export default function UsersListPage() {
 
           {/* Role filter */}
           <label className="flex flex-col gap-1.5 lg:col-span-2">
-            <span className="text-xs font-medium text-secondary">Роль</span>
+            <span className="text-xs font-medium text-secondary">{t('common.role')}</span>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
               aria-label="Фильтр по роли"
               className="w-full px-3 py-2 text-sm rounded-lg border border-default bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-transparent"
             >
-              {ROLE_FILTER_OPTIONS.map((opt) => (
+              {roleFilterOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>
@@ -258,7 +259,7 @@ export default function UsersListPage() {
 
           {/* Company filter */}
           <label className="flex flex-col gap-1.5 lg:col-span-2">
-            <span className="text-xs font-medium text-secondary">Компания</span>
+            <span className="text-xs font-medium text-secondary">{t('common.company')}</span>
             <select
               value={companyId}
               onChange={(e) => setCompanyId(e.target.value)}
@@ -267,7 +268,7 @@ export default function UsersListPage() {
               className="w-full px-3 py-2 text-sm rounded-lg border border-default bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-transparent disabled:bg-raised disabled:text-muted"
             >
               <option value="">
-                {isCompaniesLoading ? 'Загрузка компаний...' : 'Все компании'}
+                {isCompaniesLoading ? 'Загрузка компаний...' : t('common.allCompanies')}
               </option>
               {(companiesData?.results ?? []).map((company) => (
                 <option key={company.id} value={String(company.id)}>
@@ -279,14 +280,14 @@ export default function UsersListPage() {
 
           {/* Active status filter */}
           <label className="flex flex-col gap-1.5 lg:col-span-2">
-            <span className="text-xs font-medium text-secondary">Статус</span>
+            <span className="text-xs font-medium text-secondary">{t('common.status')}</span>
             <select
               value={isActive}
               onChange={(e) => setIsActive(e.target.value)}
               aria-label="Фильтр по статусу"
               className="w-full px-3 py-2 text-sm rounded-lg border border-default bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-transparent"
             >
-              {ACTIVE_FILTER_OPTIONS.map((opt) => (
+              {activeFilterOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>
@@ -296,11 +297,11 @@ export default function UsersListPage() {
 
           {/* Ordering */}
           <label className="flex flex-col gap-1.5 lg:col-span-2">
-            <span className="text-xs font-medium text-secondary">Сортировка</span>
+            <span className="text-xs font-medium text-secondary">{t('common.sort')}</span>
             <select
               value={ordering}
               onChange={(e) => setOrdering(e.target.value)}
-              aria-label="Сортировка"
+              aria-label={t('common.sort')}
               className="w-full px-3 py-2 text-sm rounded-lg border border-default bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-transparent"
             >
               {ORDERING_OPTIONS.map((opt) => (
@@ -341,21 +342,15 @@ export default function UsersListPage() {
                   <th
                     scope="col"
                     className="px-4 py-3 text-left text-xs font-semibold text-secondary uppercase tracking-wide"
-                  >
-                    Роль
-                  </th>
+                  >{t('common.role')}</th>
                   <th
                     scope="col"
                     className="px-4 py-3 text-left text-xs font-semibold text-secondary uppercase tracking-wide"
-                  >
-                    Компания
-                  </th>
+                  >{t('common.company')}</th>
                   <th
                     scope="col"
                     className="px-4 py-3 text-left text-xs font-semibold text-secondary uppercase tracking-wide"
-                  >
-                    Статус
-                  </th>
+                  >{t('common.status')}</th>
                   <th
                     scope="col"
                     className="px-4 py-3 text-left text-xs font-semibold text-secondary uppercase tracking-wide"
@@ -365,9 +360,7 @@ export default function UsersListPage() {
                   <th
                     scope="col"
                     className="px-4 py-3 text-left text-xs font-semibold text-secondary uppercase tracking-wide"
-                  >
-                    Последний вход
-                  </th>
+                  >{t('common.lastLogin')}</th>
                   <th scope="col" className="px-4 py-3">
                     <span className="sr-only">Действия</span>
                   </th>
@@ -418,7 +411,7 @@ export default function UsersListPage() {
                             ROLE_BADGE_COLORS[user.role] ?? 'bg-gray-100 text-gray-700',
                           )}
                         >
-                          {ROLE_LABELS[user.role] ?? user.role}
+                          {t(USER_ROLE_LABEL_KEYS[user.role as keyof typeof USER_ROLE_LABEL_KEYS] ?? user.role)}
                         </span>
                       </td>
 
@@ -487,12 +480,12 @@ export default function UsersListPage() {
             <span className="font-medium text-primary">{totalCount}</span> пользователей
           </p>
 
-          <nav aria-label="Пагинация" className="flex flex-wrap items-center gap-1">
+          <nav aria-label={t('common.pagination')} className="flex flex-wrap items-center gap-1">
             <button
               type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              aria-label="Предыдущая страница"
+              aria-label={t('common.previousPage')}
               className={cn(
                 'p-2 rounded-lg border text-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
                 page === 1
@@ -538,7 +531,7 @@ export default function UsersListPage() {
               type="button"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              aria-label="Следующая страница"
+              aria-label={t('common.nextPage')}
               className={cn(
                 'p-2 rounded-lg border text-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
                 page === totalPages

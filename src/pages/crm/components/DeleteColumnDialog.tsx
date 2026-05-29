@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Trash2, AlertCircle } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
@@ -22,6 +23,7 @@ export function DeleteColumnDialog({
   taskCountByColumnId,
   onClose,
 }: DeleteColumnDialogProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [moveToId, setMoveToId] = useState<string>(
     otherColumns.length > 0 ? String(otherColumns[0].id) : '',
@@ -139,9 +141,7 @@ export function DeleteColumnDialog({
             type="button"
             onClick={onClose}
             className="rounded-lg px-4 py-2 text-sm font-medium text-secondary hover:text-primary hover:bg-hover transition-colors"
-          >
-            Отмена
-          </button>
+          >{t('common.cancel')}</button>
           <button
             type="button"
             onClick={handleConfirm}
@@ -152,7 +152,7 @@ export function DeleteColumnDialog({
               'disabled:opacity-50 disabled:cursor-not-allowed',
             )}
           >
-            {mutation.isPending ? 'Удаление...' : 'Удалить'}
+            {mutation.isPending ? t('common.deletingPlain') : t('common.delete')}
           </button>
         </div>
       </div>

@@ -1,6 +1,8 @@
+import { useTranslation } from 'react-i18next';
 import { PageStub } from '@/shared/ui/PageStub';
 
 export default function BuildingMapPage() {
+  const { t } = useTranslation();
   return (
     <PageStub
       title="Карта здания"

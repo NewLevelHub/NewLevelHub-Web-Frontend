@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { ArchiveRestore, AlertCircle } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import type { CrmBoard } from '@/shared/types';
@@ -17,6 +18,7 @@ export function UnarchiveBoardConfirm({
   isPending,
   error,
 }: UnarchiveBoardConfirmProps) {
+  const { t } = useTranslation();
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) onCancel();
   };
@@ -53,9 +55,7 @@ export function UnarchiveBoardConfirm({
             type="button"
             onClick={onCancel}
             className="rounded-lg px-4 py-2 text-sm font-medium text-secondary hover:text-primary hover:bg-hover transition-colors"
-          >
-            Отмена
-          </button>
+          >{t('common.cancel')}</button>
           <button
             type="button"
             onClick={onConfirm}
@@ -66,7 +66,7 @@ export function UnarchiveBoardConfirm({
               'disabled:opacity-50 disabled:cursor-not-allowed',
             )}
           >
-            {isPending ? 'Восстановление...' : 'Разархивировать'}
+            {isPending ? t('common.unarchivingPlain') : t('common.unarchive')}
           </button>
         </div>
       </div>

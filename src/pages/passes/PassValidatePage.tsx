@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BrowserQRCodeReader, type IScannerControls } from '@zxing/browser';
 import { Check, X } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
@@ -11,18 +12,18 @@ import { getApiError } from '@/shared/lib/getApiError';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-const REASON_LABELS: Record<import('@/shared/types').PassValidationFailure['reason'], string> = {
-  expired: 'Срок действия истёк',
-  revoked: 'Пропуск отозван',
-  already_used: 'Пропуск уже использован',
-  not_found: 'Пропуск не найден',
+const REASON_LABEL_KEYS: Record<import('@/shared/types').PassValidationFailure['reason'], string> = {
+  expired: 'passes.reason.expired',
+  revoked: 'passes.reason.revoked',
+  already_used: 'passes.reason.already_used',
+  not_found: 'passes.reason.not_found',
 };
 
-const REASON_SUBTITLES: Record<import('@/shared/types').PassValidationFailure['reason'], string> = {
-  expired: 'Истёк срок действия — попросите гостя оформить новый',
-  revoked: 'Пропуск был отозван администратором',
-  already_used: 'Пропуск уже был использован ранее',
-  not_found: 'Пропуск не найден в системе',
+const REASON_SUBTITLE_KEYS: Record<import('@/shared/types').PassValidationFailure['reason'], string> = {
+  expired: 'passes.reasonHint.expired',
+  revoked: 'passes.reasonHint.revoked',
+  already_used: 'passes.reasonHint.already_used',
+  not_found: 'passes.reasonHint.not_found',
 };
 
 function formatDateTime(iso: string): string {
@@ -54,6 +55,7 @@ const CAMERA_CONSTRAINTS_CHAIN: MediaStreamConstraints[] = [
 ];
 
 export default function PassValidatePage() {
+  const { t } = useTranslation();
   const user = useUser();
   const isCameraOnly =
     user?.role === USER_ROLES.RECEPTION || user?.role === USER_ROLES.SUPERADMIN;
@@ -99,7 +101,7 @@ export default function PassValidatePage() {
     const normalizedCode = qrCode.trim();
     if (!UUID_RE.test(normalizedCode)) {
       setResult(null);
-      setError('Введите корректный UUID QR-кода.');
+      setError(t('passes.invalidUuid'));
       return;
     }
     await submitValidation(normalizedCode);
@@ -107,7 +109,7 @@ export default function PassValidatePage() {
 
   const startCamera = useCallback(() => {
     if (!navigator.mediaDevices?.getUserMedia) {
-      setCameraError('В этом браузере недоступен доступ к камере. Проверьте разрешения браузера.');
+      setCameraError(t('passes.cameraUnavailable'));
       return;
     }
     setCameraError('');
@@ -157,7 +159,7 @@ export default function PassValidatePage() {
         } catch { /* try next constraint */ }
       }
       if (!cancelled) {
-        setCameraError('Не удалось получить доступ к камере. Проверьте разрешения браузера.');
+        setCameraError(t('passes.cameraDenied'));
         setIsCameraActive(false);
       }
     };
@@ -185,14 +187,14 @@ export default function PassValidatePage() {
     return (
       <main className="mx-auto max-w-5xl space-y-4 sm:space-y-5 p-3 sm:p-4 md:p-6">
         <div>
-          <h1 className="text-2xl font-bold text-primary">Проверка QR-кода</h1>
-          <p className="mt-1 text-sm text-secondary">Поднесите QR-код гостя к камере</p>
+          <h1 className="text-2xl font-bold text-primary">{t('passes.qrPageTitle')}</h1>
+          <p className="mt-1 text-sm text-secondary">{t('passes.qrPageSubtitle')}</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
           {/* Camera panel */}
           <div className="rounded-2xl border border-default bg-surface p-4 sm:p-5 flex flex-col gap-4">
-            <p className="text-sm text-center text-secondary">Поднесите QR-код гостя к камере</p>
+            <p className="text-sm text-center text-secondary">{t('passes.qrCameraHint')}</p>
 
             <div className="relative aspect-video rounded-xl overflow-hidden bg-neutral-900">
               <video
@@ -226,7 +228,7 @@ export default function PassValidatePage() {
 
               {isSubmitting && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                  <p className="text-sm font-medium text-white">Проверяем пропуск...</p>
+                  <p className="text-sm font-medium text-white">{t('passes.checking')}</p>
                 </div>
               )}
             </div>
@@ -241,7 +243,7 @@ export default function PassValidatePage() {
                   onClick={stopCamera}
                   className="rounded-lg border border-amber-700 bg-warning-subtle px-4 py-2 text-sm font-medium text-warning-badge hover:bg-warning-subtle"
                 >
-                  Остановить камеру
+                  {t('passes.stopCamera')}
                 </button>
               ) : (
                 <button
@@ -249,7 +251,7 @@ export default function PassValidatePage() {
                   onClick={startCamera}
                   className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
                 >
-                  Запустить камеру
+                  {t('passes.startCamera')}
                 </button>
               )}
             </div>
@@ -263,26 +265,26 @@ export default function PassValidatePage() {
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20">
                     <Check className="h-8 w-8" strokeWidth={2.5} />
                   </div>
-                  <p className="text-xl font-bold">Пропуск действителен</p>
+                  <p className="text-xl font-bold">{t('passes.passValid')}</p>
                 </div>
 
                 <div className="rounded-xl bg-white/10 divide-y divide-white/15 text-sm">
                   <div className="flex justify-between gap-4 px-4 py-2.5">
-                    <span className="uppercase text-[11px] tracking-wide text-white/55 shrink-0">Гость</span>
+                    <span className="uppercase text-[11px] tracking-wide text-white/55 shrink-0">{t('team.roleGuest')}</span>
                     <span className="font-medium text-right">{result.guest_name}</span>
                   </div>
                   {result.purpose ? (
                     <div className="flex justify-between gap-4 px-4 py-2.5">
-                      <span className="uppercase text-[11px] tracking-wide text-white/55 shrink-0">Цель</span>
+                      <span className="uppercase text-[11px] tracking-wide text-white/55 shrink-0">{t('passes.purpose')}</span>
                       <span className="font-medium text-right">{result.purpose}</span>
                     </div>
                   ) : null}
                   <div className="flex justify-between gap-4 px-4 py-2.5">
-                    <span className="uppercase text-[11px] tracking-wide text-white/55 shrink-0">Пригласил</span>
+                    <span className="uppercase text-[11px] tracking-wide text-white/55 shrink-0">{t('passes.invitedBy')}</span>
                     <span className="font-medium text-right">{result.invited_by}</span>
                   </div>
                   <div className="flex justify-between gap-4 px-4 py-2.5">
-                    <span className="uppercase text-[11px] tracking-wide text-white/55 shrink-0">Период</span>
+                    <span className="uppercase text-[11px] tracking-wide text-white/55 shrink-0">{t('passes.columnPeriod')}</span>
                     <span className="font-medium text-right">{formatPeriod(result.valid_from, result.valid_until)}</span>
                   </div>
                 </div>
@@ -292,7 +294,7 @@ export default function PassValidatePage() {
                   onClick={handleScanAgain}
                   className="mt-auto rounded-xl bg-white px-4 py-3 text-sm font-semibold text-green-800 hover:bg-green-50 transition-colors"
                 >
-                  Проверить следующий
+                  {t('passes.checkNext')}
                 </button>
               </div>
             ) : (
@@ -302,20 +304,20 @@ export default function PassValidatePage() {
                     <X className="h-8 w-8" strokeWidth={2.5} />
                   </div>
                   <div className="text-center">
-                    <p className="text-xl font-bold">Пропуск недействителен</p>
+                    <p className="text-xl font-bold">{t('passes.passInvalid')}</p>
                     <p className="mt-1 text-sm text-white/65">
                       {result.reason === 'not_yet_active'
-                        ? `Будет доступен с ${formatDateTime(result.available_from)}`
-                        : REASON_SUBTITLES[result.reason]}
+                        ? t('passes.availableFrom', { date: formatDateTime(result.available_from) })
+                        : t(REASON_SUBTITLE_KEYS[result.reason])}
                     </p>
                   </div>
                 </div>
 
                 <div className="rounded-xl bg-white/10 divide-y divide-white/15 text-sm">
                   <div className="flex justify-between gap-4 px-4 py-2.5">
-                    <span className="uppercase text-[11px] tracking-wide text-white/55 shrink-0">Причина</span>
+                    <span className="uppercase text-[11px] tracking-wide text-white/55 shrink-0">{t('passes.reasonLabel')}</span>
                     <span className="font-medium text-right">
-                      {result.reason === 'not_yet_active' ? 'Ещё не активен' : REASON_LABELS[result.reason]}
+                      {result.reason === 'not_yet_active' ? t('passes.notYetActive') : t(REASON_LABEL_KEYS[result.reason])}
                     </span>
                   </div>
                 </div>
@@ -325,7 +327,7 @@ export default function PassValidatePage() {
                   onClick={handleScanAgain}
                   className="mt-auto rounded-xl bg-white px-4 py-3 text-sm font-semibold text-red-800 hover:bg-red-50 transition-colors"
                 >
-                  Проверить следующий
+                  {t('passes.checkNext')}
                 </button>
               </div>
             )
@@ -335,7 +337,7 @@ export default function PassValidatePage() {
               'flex items-center justify-center min-h-56 lg:min-h-0',
             )}>
               <p className="text-sm text-secondary text-center">
-                {isSubmitting ? 'Проверяем пропуск...' : 'Результат проверки появится здесь'}
+                {isSubmitting ? t('passes.checking') : t('passes.resultPlaceholder')}
               </p>
             </div>
           )}
@@ -348,19 +350,19 @@ export default function PassValidatePage() {
   return (
     <main className="mx-auto max-w-3xl space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
       <div>
-        <h1 className="text-2xl font-bold text-primary">Проверка QR-пропуска</h1>
-        <p className="mt-1 text-sm text-secondary">Введите QR-код вручную или отсканируйте его камерой.</p>
+        <h1 className="text-2xl font-bold text-primary">{t('passes.validatePageTitle')}</h1>
+        <p className="mt-1 text-sm text-secondary">{t('passes.validatePageSubtitle')}</p>
       </div>
 
       <section className="rounded-xl border border-default bg-raised p-4 sm:p-5">
         <form onSubmit={(event) => void handleSubmit(event)} className="space-y-3">
           <label className="block text-sm text-secondary">
-            QR-код (UUID)
+            {t('passes.uuidLabel')}
             <input
               type="text"
               value={qrCode}
               onChange={(event) => setQrCode(event.target.value)}
-              placeholder="например, 64fdbf4f-465e-40e6-8ef4-3f3c96d34ac6"
+              placeholder={t('passes.uuidPlaceholder')}
               className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             />
           </label>
@@ -370,7 +372,7 @@ export default function PassValidatePage() {
               disabled={isSubmitting}
               className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-60"
             >
-              {isSubmitting ? 'Проверка...' : 'Проверить'}
+              {isSubmitting ? t('passes.checking') : t('passes.validate')}
             </button>
             {isCameraActive ? (
               <button
@@ -378,7 +380,7 @@ export default function PassValidatePage() {
                 onClick={stopCamera}
                 className="rounded-lg border border-amber-700 bg-warning-subtle px-4 py-2 text-sm font-medium text-warning-badge"
               >
-                Остановить камеру
+                {t('passes.stopCamera')}
               </button>
             ) : (
               <button
@@ -386,7 +388,7 @@ export default function PassValidatePage() {
                 onClick={startCamera}
                 className="rounded-lg border border-default px-4 py-2 text-sm font-medium text-primary hover:bg-hover"
               >
-                Сканировать камерой
+                {t('passes.scanCamera')}
               </button>
             )}
           </div>
@@ -397,7 +399,7 @@ export default function PassValidatePage() {
 
       {isCameraActive ? (
         <section className="rounded-xl border border-default bg-raised p-4 sm:p-5">
-          <p className="mb-3 text-sm text-secondary">Наведите камеру на QR-код пропуска.</p>
+          <p className="mb-3 text-sm text-secondary">{t('passes.qrAimHint')}</p>
           <video
             ref={videoRef}
             className="aspect-video w-full rounded-lg border border-default bg-black object-cover"
@@ -412,22 +414,22 @@ export default function PassValidatePage() {
         <section className="rounded-xl border border-default bg-raised p-4 sm:p-5">
           {result.valid ? (
             <div className="space-y-2 text-sm text-secondary">
-              <p className="font-semibold text-success">Пропуск валиден</p>
-              <p><span className="text-secondary">Гость:</span> {result.guest_name}</p>
-              <p><span className="text-secondary">Цель:</span> {result.purpose || '—'}</p>
-              <p><span className="text-secondary">Пригласил:</span> {result.invited_by}</p>
+              <p className="font-semibold text-success">{t('passes.passValidSimple')}</p>
+              <p><span className="text-secondary">{t('team.roleGuest')}:</span> {result.guest_name}</p>
+              <p><span className="text-secondary">{t('passes.purpose')}:</span> {result.purpose || '—'}</p>
+              <p><span className="text-secondary">{t('passes.invitedBy')}:</span> {result.invited_by}</p>
               <p>
-                <span className="text-secondary">Период:</span>{' '}
+                <span className="text-secondary">{t('passes.columnPeriod')}:</span>{' '}
                 {fmtDate(result.valid_from)} — {fmtDate(result.valid_until)}
               </p>
             </div>
           ) : (
             <div className="space-y-2 text-sm">
-              <p className="font-semibold text-rose-300">Пропуск невалиден</p>
+              <p className="font-semibold text-rose-300">{t('passes.passInvalidSimple')}</p>
               <p className="text-secondary">
                 {result.reason === 'not_yet_active'
-                  ? `Пропуск будет доступен с ${formatDateTime(result.available_from)}`
-                  : REASON_LABELS[result.reason]}
+                  ? t('passes.notYetActiveDetail', { date: formatDateTime(result.available_from) })
+                  : t(REASON_LABEL_KEYS[result.reason])}
               </p>
             </div>
           )}

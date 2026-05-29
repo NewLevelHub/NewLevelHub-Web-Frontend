@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { X, Tag, Pencil, Trash2 } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
@@ -14,6 +15,7 @@ interface LabelsManagerModalProps {
 }
 
 export function CrmLabelsManagerModal({ onClose }: LabelsManagerModalProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState('#6366f1');
@@ -105,7 +107,7 @@ export function CrmLabelsManagerModal({ onClose }: LabelsManagerModalProps) {
             type="button"
             onClick={onClose}
             className="text-secondary hover:text-primary transition-colors rounded-md p-1 hover:bg-hover"
-            aria-label="Закрыть"
+            aria-label={t('common.close')}
           >
             <X size={18} />
           </button>
@@ -127,7 +129,7 @@ export function CrmLabelsManagerModal({ onClose }: LabelsManagerModalProps) {
           )}
 
           {!isLoading && labels && labels.length > 0 && (
-            <ul className="space-y-1.5" aria-label="Список меток">
+            <ul className="space-y-1.5" aria-label={t('common.labelsManager')}>
               {labels.map((label) => (
                 <li key={label.id}>
                   {editingId === label.id ? (
@@ -137,7 +139,7 @@ export function CrmLabelsManagerModal({ onClose }: LabelsManagerModalProps) {
                         value={editColor}
                         onChange={(e) => setEditColor(e.target.value)}
                         className="w-7 h-7 rounded cursor-pointer border-0 bg-transparent p-0"
-                        aria-label="Цвет метки"
+                        aria-label={t('common.labelColor')}
                       />
                       <input
                         type="text"
@@ -164,13 +166,13 @@ export function CrmLabelsManagerModal({ onClose }: LabelsManagerModalProps) {
                           'bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed',
                         )}
                       >
-                        {updateMutation.isPending ? '...' : 'Сохранить'}
+                        {updateMutation.isPending ? '...' : t('common.save')}
                       </button>
                       <button
                         type="button"
                         onClick={cancelEdit}
                         className="rounded p-1 text-muted hover:text-secondary hover:bg-hover transition-colors"
-                        aria-label="Отмена"
+                        aria-label={t('common.cancel')}
                       >
                         <X size={14} />
                       </button>
@@ -218,7 +220,7 @@ export function CrmLabelsManagerModal({ onClose }: LabelsManagerModalProps) {
                 value={newColor}
                 onChange={(e) => setNewColor(e.target.value)}
                 className="w-9 h-9 rounded cursor-pointer border border-default bg-raised p-0.5"
-                aria-label="Выбрать цвет"
+                aria-label={t('common.pickColor')}
               />
               <input
                 type="text"
@@ -240,7 +242,7 @@ export function CrmLabelsManagerModal({ onClose }: LabelsManagerModalProps) {
                   'bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed',
                 )}
               >
-                {createMutation.isPending ? '...' : 'Создать'}
+                {createMutation.isPending ? '...' : t('common.create')}
               </button>
             </form>
             {createMutation.isError && (
@@ -262,7 +264,7 @@ export function CrmLabelsManagerModal({ onClose }: LabelsManagerModalProps) {
         title="Удалить метку?"
         description="Метка будет снята со всех задач. Это действие нельзя отменить."
         variant="danger"
-        confirmLabel="Удалить"
+        confirmLabel={t('common.delete')}
         isLoading={deleteMutation.isPending}
       />
     </div>

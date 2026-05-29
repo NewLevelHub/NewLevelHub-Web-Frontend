@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -18,7 +19,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { SUPERADMIN_UI_PREFIX, USER_ROLES } from '@/shared/config/constants';
+import { SUPERADMIN_UI_PREFIX, USER_ROLES, USER_ROLE_LABEL_KEYS } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
 import { mapApiUser } from '@/shared/lib/mapUser';
 import { useAuth } from '@/shared/hooks/useAuth';
@@ -29,13 +30,6 @@ import type { UserDetail } from '@/shared/types';
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-const ROLE_LABELS: Record<string, string> = {
-  [USER_ROLES.SUPERADMIN]: 'Суперадмин',
-  [USER_ROLES.COMPANY_ADMIN]: 'Администратор компании',
-  [USER_ROLES.EMPLOYEE]: 'Сотрудник',
-  [USER_ROLES.GUEST]: 'Гость',
-};
 
 const ROLE_BADGE_COLORS: Record<string, string> = {
   [USER_ROLES.SUPERADMIN]: 'bg-purple-100 text-purple-800',
@@ -204,6 +198,7 @@ interface ImpersonatePanelProps {
 }
 
 function ImpersonatePanel({ targetUser }: ImpersonatePanelProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { startImpersonation } = useAuth();
   const [showConfirm, setShowConfirm] = useState(false);
@@ -285,16 +280,14 @@ function ImpersonatePanel({ targetUser }: ImpersonatePanelProps) {
                   : 'bg-amber-500 hover:bg-amber-600 text-white',
               )}
             >
-              {isPending ? 'Вход...' : 'Подтвердить'}
+              {isPending ? t('common.signInLoading') : t('common.confirm')}
             </button>
             <button
               type="button"
               onClick={() => setShowConfirm(false)}
               disabled={isPending}
               className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
-            >
-              Отмена
-            </button>
+            >{t('common.cancel')}</button>
           </div>
         </div>
       ) : (
@@ -307,9 +300,7 @@ function ImpersonatePanel({ targetUser }: ImpersonatePanelProps) {
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-amber-500 hover:bg-amber-600 text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
           aria-label={`Войти от имени ${targetUser.first_name} ${targetUser.last_name}`}
         >
-          <LogIn size={15} aria-hidden="true" />
-          Войти от имени
-        </button>
+          <LogIn size={15} aria-hidden="true" />{t('common.impersonate')}</button>
       )}
     </div>
   );
@@ -320,6 +311,7 @@ function ImpersonatePanel({ targetUser }: ImpersonatePanelProps) {
 // ---------------------------------------------------------------------------
 
 export default function UserDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -381,7 +373,7 @@ export default function UserDetailPage() {
     );
   }
 
-  const roleLabel = ROLE_LABELS[user.role] ?? user.role;
+  const roleLabel = t(USER_ROLE_LABEL_KEYS[user.role as keyof typeof USER_ROLE_LABEL_KEYS] ?? user.role);
   const roleBadgeColor = ROLE_BADGE_COLORS[user.role] ?? 'bg-gray-100 text-gray-700';
 
   return (
@@ -393,10 +385,10 @@ export default function UserDetailPage() {
             type="button"
           onClick={() => navigate(`${SUPERADMIN_UI_PREFIX}/users`)}
             className="inline-flex items-center gap-2 text-sm font-medium text-muted hover:text-primary mb-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
-            aria-label="Назад к списку пользователей"
+            aria-label={t('users.backToList')}
           >
             <ArrowLeft size={16} aria-hidden="true" />
-            Назад к списку
+            {t('common.back')}
           </button>
           <h1 className="text-2xl font-bold text-primary">
             {user.first_name} {user.last_name}
@@ -485,7 +477,7 @@ export default function UserDetailPage() {
             ) : (
               <BadgeAlert size={13} aria-hidden="true" />
             )}
-            {user.is_email_verified ? 'Email подтверждён' : 'Email не подтверждён'}
+            {user.is_email_verified ? t('auth.verify.successTitle') : t('common.notVerifiedEmail')}
           </span>
 
           <span
@@ -528,20 +520,20 @@ export default function UserDetailPage() {
           {user.company ? (
             <InfoRow
               icon={<Building2 size={16} aria-hidden="true" />}
-              label="Компания"
+              label={t('common.company')}
               value={user.company.name}
             />
           ) : (
             <InfoRow
               icon={<Building2 size={16} aria-hidden="true" />}
-              label="Компания"
+              label={t('common.company')}
               value="—"
             />
           )}
 
           <InfoRow
             icon={<Briefcase size={16} aria-hidden="true" />}
-            label="Должность"
+            label={t('team.position')}
             value={user.position ?? '—'}
           />
 
@@ -553,7 +545,7 @@ export default function UserDetailPage() {
 
           <InfoRow
             icon={<LogIn size={16} aria-hidden="true" />}
-            label="Последний вход"
+            label={t('common.lastLogin')}
             value={formatDateTime(user.last_login)}
           />
         </dl>

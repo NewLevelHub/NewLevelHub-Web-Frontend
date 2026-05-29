@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Info } from 'lucide-react';
@@ -16,6 +17,7 @@ import { usePassCountdown } from '@/pages/passes/hooks/usePassCountdown';
 import { usePassValidations } from '@/pages/passes/hooks/usePassValidations';
 
 export default function PassDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const user = useUser();
   const queryClient = useQueryClient();
@@ -36,7 +38,7 @@ export default function PassDetailPage() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['guest-pass-detail', id] });
-      setSuccessMessage('QR-код успешно отправлен повторно.');
+      setSuccessMessage(t('passes.resendQr'));
     },
     onError: () => setSuccessMessage(null),
   });
@@ -48,7 +50,7 @@ export default function PassDetailPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['guest-pass-detail', id] });
       await queryClient.invalidateQueries({ queryKey: ['guest-passes'] });
-      setSuccessMessage('Пропуск успешно отозван.');
+      setSuccessMessage(t('passes.revokeSuccess'));
     },
     onError: () => setSuccessMessage(null),
   });
@@ -63,11 +65,11 @@ export default function PassDetailPage() {
   } = usePassValidations(id, isMultiUse);
 
   if (isLoading) {
-    return <main className="p-3 sm:p-4 md:p-6 text-sm text-secondary">Загрузка пропуска...</main>;
+    return <main className="p-3 sm:p-4 md:p-6 text-sm text-secondary">{t('passes.loadingPass')}</main>;
   }
 
   if (isError || !data) {
-    return <main className="p-3 sm:p-4 md:p-6 text-sm text-danger">Не удалось загрузить детали пропуска.</main>;
+    return <main className="p-3 sm:p-4 md:p-6 text-sm text-danger">{t('passes.loadError')}</main>;
   }
 
   const activatesAt = new Date(data.valid_from);
@@ -84,15 +86,15 @@ export default function PassDetailPage() {
   return (
     <main className="mx-auto max-w-3xl space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-primary">Пропуск #{data.id}</h1>
+        <h1 className="text-2xl font-bold text-primary">{t('passes.passId', { id: data.id })}</h1>
         <Link to="/passes" className="text-sm text-brand hover:text-brand">
-          Назад к списку
+          {t('passes.backToList')}
         </Link>
       </div>
 
       {canManagePass ? (
         <section className="rounded-xl border border-default bg-raised p-5">
-          <h2 className="mb-3 text-lg font-semibold text-primary">Действия</h2>
+          <h2 className="mb-3 text-lg font-semibold text-primary">{t('passes.actionsSection')}</h2>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -103,7 +105,7 @@ export default function PassDetailPage() {
               disabled={resendMutation.isPending}
               className="inline-flex items-center rounded-lg border border-default px-4 py-2 text-sm font-medium text-brand hover:bg-brand-subtle disabled:opacity-50"
             >
-              {resendMutation.isPending ? 'Отправка...' : 'Повторно отправить QR'}
+              {resendMutation.isPending ? t('common.submittingPlain') : t('passes.resendQr')}
             </button>
             <button
               type="button"
@@ -114,16 +116,13 @@ export default function PassDetailPage() {
               disabled={!canRevoke || revokeMutation.isPending}
               className="inline-flex items-center rounded-lg border border-rose-700 px-4 py-2 text-sm font-medium text-rose-300 hover:bg-rose-700/10 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {revokeMutation.isPending ? 'Отзыв...' : 'Отозвать пропуск'}
+              {revokeMutation.isPending ? t('passes.revoking') : t('passes.revoke')}
             </button>
           </div>
           {isNotYetActive ? (
             <div className="mt-3 flex items-start gap-2 text-xs text-blue-300">
               <Info size={14} className="mt-0.5 shrink-0" />
-              <span>
-                При отправке гостю — уведомите его, что QR будет активен с{' '}
-                {activatesAt.toLocaleString('ru-RU')}.
-              </span>
+              <span>{t('passes.qrActiveHint', { date: activatesAt.toLocaleString() })}</span>
             </div>
           ) : null}
           {resendMutation.isError ? (
@@ -138,36 +137,36 @@ export default function PassDetailPage() {
           ) : null}
           {successMessage ? <div className="mt-3 text-sm text-success">{successMessage}</div> : null}
           {!canRevoke ? (
-            <div className="mt-3 text-xs text-secondary">Нельзя отозвать использованный, истекший или уже отозванный пропуск.</div>
+            <div className="mt-3 text-xs text-secondary">{t('passes.cannotRevoke')}</div>
           ) : null}
         </section>
       ) : null}
 
       <section className="grid gap-4 rounded-xl border border-default bg-raised p-5 text-sm text-secondary sm:grid-cols-2">
         <div>
-          <div className="text-secondary">Гость</div>
+          <div className="text-secondary">{t('team.roleGuest')}</div>
           <div className="font-medium text-primary">{data.guest_name}</div>
           <div className="text-xs text-secondary">{data.guest_email}</div>
         </div>
         <div>
-          <div className="text-secondary">Статус</div>
+          <div className="text-secondary">{t('common.status')}</div>
           <div><PassStatusBadge status={data.status as PassStatus} /></div>
         </div>
         <div>
-          <div className="text-secondary">Цель</div>
+          <div className="text-secondary">{t('passes.purpose')}</div>
           <div>{data.purpose || '—'}</div>
         </div>
         <div>
-          <div className="text-secondary">Использований</div>
+          <div className="text-secondary">{t('passes.timesUsed')}</div>
           <div>{data.times_used}</div>
         </div>
         <div>
-          <div className="text-secondary">Действует с</div>
-          <div>{new Date(data.valid_from).toLocaleString('ru-RU')}</div>
+          <div className="text-secondary">{t('passes.validFrom')}</div>
+          <div>{new Date(data.valid_from).toLocaleString()}</div>
         </div>
         <div>
-          <div className="text-secondary">Действует до</div>
-          <div>{new Date(data.valid_until).toLocaleString('ru-RU')}</div>
+          <div className="text-secondary">{t('passes.validUntil')}</div>
+          <div>{new Date(data.valid_until).toLocaleString()}</div>
         </div>
       </section>
 

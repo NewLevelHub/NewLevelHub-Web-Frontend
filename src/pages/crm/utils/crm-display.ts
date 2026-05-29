@@ -1,13 +1,14 @@
+import i18n from '@/shared/lib/i18n';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import type { CrmTask } from '@/shared/types';
 
 export type CrmTaskPriority = CrmTask['priority'];
 
-/** Labels for board / list / card views (includes critical). */
-export const CRM_PRIORITY_LABELS: Record<CrmTaskPriority, string> = {
-  low: 'Низкий',
-  medium: 'Средний',
-  high: 'Высокий',
-  critical: 'Критический',
+export const CRM_PRIORITY_LABEL_KEYS: Record<CrmTaskPriority, string> = {
+  low: 'crm.priority.low',
+  medium: 'crm.priority.medium',
+  high: 'crm.priority.high',
+  critical: 'crm.priority.critical',
 };
 
 export const CRM_PRIORITY_BADGE_CLASS: Record<CrmTaskPriority, string> = {
@@ -19,7 +20,7 @@ export const CRM_PRIORITY_BADGE_CLASS: Record<CrmTaskPriority, string> = {
 
 export function formatDeadline(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  return d.toLocaleDateString(dateLocaleTag(i18n.language), { day: 'numeric', month: 'short' });
 }
 
 export function isOverdue(iso: string): boolean {

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Save, ListChecks, Pencil, Trash2, Star } from 'lucide-react';
@@ -36,6 +37,7 @@ function normalizeSteps(steps: OnboardingTemplateStepInput[]): OnboardingTemplat
 }
 
 export default function CompanyOnboardingTemplatesPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -195,16 +197,14 @@ export default function CompanyOnboardingTemplatesPage() {
 
   const companySelector = isSuperadmin ? (
     <section className="rounded-xl border border-default bg-surface/50 p-4">
-      <label className="block text-sm font-medium text-secondary" htmlFor="company-select-onboarding">
-        Компания
-      </label>
+      <label className="block text-sm font-medium text-secondary" htmlFor="company-select-onboarding">{t('common.company')}</label>
       <select
         id="company-select-onboarding"
         value={selectedCompanyId}
         onChange={(e) => setSelectedCompanyId(e.target.value)}
         className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
       >
-        <option value="">Выберите компанию</option>
+        <option value="">{t('common.selectCompany')}</option>
         {(companiesData?.results ?? []).map((company) => (
           <option key={company.id} value={String(company.id)}>
             {company.name}
@@ -241,7 +241,7 @@ export default function CompanyOnboardingTemplatesPage() {
           <section className="rounded-xl border border-default bg-surface/50 p-6">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-base font-semibold text-primary">
-                {editingTemplateId ? 'Редактирование шаблона' : 'Новый шаблон'}
+                {editingTemplateId ? 'Редактирование шаблона' : t('common.newTemplate')}
               </h2>
               {editingTemplateId && (
                 <button
@@ -253,9 +253,7 @@ export default function CompanyOnboardingTemplatesPage() {
                     setSuccess(null);
                   }}
                   className="rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:bg-hover"
-                >
-                  Сбросить
-                </button>
+                >{t('common.reset')}</button>
               )}
             </div>
 
@@ -325,7 +323,7 @@ export default function CompanyOnboardingTemplatesPage() {
                   className="inline-flex items-center gap-1 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-60"
                 >
                   <Save className="h-4 w-4" aria-hidden="true" />
-                  {saveMutation.isPending ? 'Сохранение...' : editingTemplateId ? 'Сохранить' : 'Создать'}
+                  {saveMutation.isPending ? t('common.savingPlain') : editingTemplateId ? t('common.save') : t('common.create')}
                 </button>
               </div>
             </div>
@@ -394,9 +392,7 @@ export default function CompanyOnboardingTemplatesPage() {
                         onClick={() => setTemplatePendingDelete({ id: template.id, name: template.name })}
                         className="inline-flex items-center gap-1 rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-3 py-1.5 text-xs text-danger hover:bg-danger-subtle disabled:opacity-50"
                       >
-                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                        Удалить
-                      </button>
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />{t('common.delete')}</button>
                     </div>
                   </div>
                 </div>
@@ -423,7 +419,7 @@ export default function CompanyOnboardingTemplatesPage() {
             : ''
         }
         variant="danger"
-        confirmLabel="Удалить"
+        confirmLabel={t('common.delete')}
         isLoading={deleteMutation.isPending}
       />
     </div>

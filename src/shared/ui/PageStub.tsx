@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 interface Props {
   title: string;
   description?: string;
@@ -5,6 +6,7 @@ interface Props {
 }
 
 export function PageStub({ title, description, todos }: Props) {
+  const { t } = useTranslation();
   return (
     <div>
       <h1 className="text-2xl font-bold mb-2">{title}</h1>

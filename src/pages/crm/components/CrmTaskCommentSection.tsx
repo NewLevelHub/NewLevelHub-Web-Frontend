@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MessageSquare, Send } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
@@ -42,6 +43,7 @@ function CommentItem({
   isUpdating,
   isDeleting,
 }: CommentItemProps) {
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(comment.text);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -138,15 +140,13 @@ function CommentItem({
                   'disabled:opacity-50 disabled:cursor-not-allowed',
                 )}
               >
-                {isUpdating ? 'Сохранение...' : 'Сохранить'}
+                {isUpdating ? t('common.savingPlain') : t('common.save')}
               </button>
               <button
                 type="button"
                 onClick={handleEditCancel}
                 className="rounded-md px-3 py-1 text-xs font-medium text-secondary hover:text-primary hover:bg-hover transition-colors"
-              >
-                Отмена
-              </button>
+              >{t('common.cancel')}</button>
             </div>
           </div>
         ) : (
@@ -162,7 +162,7 @@ function CommentItem({
                 onClick={handleEditStart}
                 className="text-xs text-muted hover:text-secondary transition-colors"
               >
-                Редактировать
+                {t('common.edit')}
               </button>
             )}
             {canDelete && (
@@ -172,7 +172,7 @@ function CommentItem({
                 disabled={isDeleting}
                 className="text-xs text-red-600 hover:text-red-400 transition-colors disabled:opacity-50"
               >
-                {isDeleting ? 'Удаление...' : 'Удалить'}
+                {isDeleting ? t('common.deletingPlain') : t('common.delete')}
               </button>
             )}
           </div>
@@ -190,6 +190,7 @@ interface CommentSectionProps {
 }
 
 export function CommentSection({ taskId, boardId }: CommentSectionProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [newText, setNewText] = useState('');
@@ -267,7 +268,7 @@ export function CommentSection({ taskId, boardId }: CommentSectionProps) {
       {/* Section heading */}
       <div className="flex items-center gap-2">
         <MessageSquare size={14} className="text-muted shrink-0" />
-        <h3 className="text-xs font-medium text-muted uppercase tracking-wide">Комментарии</h3>
+        <h3 className="text-xs font-medium text-muted uppercase tracking-wide">{t('common.comments')}</h3>
       </div>
 
       {/* Comment list */}
@@ -340,7 +341,7 @@ export function CommentSection({ taskId, boardId }: CommentSectionProps) {
               )}
             >
               <Send size={13} />
-              {createMutation.isPending ? 'Отправка...' : 'Отправить'}
+              {createMutation.isPending ? t('common.submittingPlain') : 'Отправить'}
             </button>
           </div>
         </div>

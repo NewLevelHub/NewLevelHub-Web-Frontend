@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, MessageSquare } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 
@@ -28,12 +29,15 @@ export function PromptModal({
   label,
   defaultValue = '',
   placeholder,
-  confirmLabel = 'OK',
-  cancelLabel = 'Отмена',
+  confirmLabel,
+  cancelLabel,
   isLoading = false,
   inputType = 'text',
   rootClassName,
 }: PromptModalProps) {
+  const { t } = useTranslation();
+  const resolvedConfirmLabel = confirmLabel ?? t('common.ok');
+  const resolvedCancelLabel = cancelLabel ?? t('modal.cancel');
   const dialogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState(defaultValue);
@@ -146,7 +150,7 @@ export function PromptModal({
               onClick={onClose}
               disabled={isLoading}
               className="shrink-0 rounded-lg p-1 text-secondary transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:pointer-events-none disabled:opacity-50"
-              aria-label="Закрыть"
+              aria-label={t('modal.close')}
             >
               <X className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -159,7 +163,7 @@ export function PromptModal({
               disabled={isLoading}
               className="rounded-lg border border-default bg-surface px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-raised disabled:pointer-events-none disabled:opacity-50"
             >
-              {cancelLabel}
+              {resolvedCancelLabel}
             </button>
             <button
               type="submit"
@@ -172,7 +176,7 @@ export function PromptModal({
                   aria-hidden="true"
                 />
               )}
-              {confirmLabel}
+              {resolvedConfirmLabel}
             </button>
           </div>
         </form>

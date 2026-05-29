@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Loader2 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -13,7 +14,7 @@ import type {
   PaginatedResponse,
 } from '@/shared/types';
 
-import { POINT_TYPES, POINT_TYPE_LABELS } from '@/pages/map/constants/mapConstants';
+import { POINT_TYPES, POINT_TYPE_LABEL_KEYS } from '@/pages/map/constants/mapConstants';
 import type { MapPointFormState } from '@/pages/map/types/mapPage.types';
 
 export interface MapPointEditModalProps {
@@ -31,6 +32,7 @@ function requiresResource(t: MapPointType) {
 
 export const MapPointEditModal = memo<MapPointEditModalProps>(
   ({ open, initialData, floorId, editingPointId, onClose, onSuccess }) => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     const [form, setForm] = useState<MapPointFormState>(initialData);
     const [formError, setFormError] = useState<string | null>(null);
@@ -101,7 +103,7 @@ export const MapPointEditModal = memo<MapPointEditModalProps>(
           return;
         }
         if (!form.label.trim()) {
-          setFormError('Метка обязательна');
+          setFormError(t('common.markRequired'));
           return;
         }
         if (requiresResource(form.point_type) && !form.resource.trim()) {
@@ -145,7 +147,7 @@ export const MapPointEditModal = memo<MapPointEditModalProps>(
             </h2>
             <button
               type="button"
-              aria-label="Закрыть"
+              aria-label={t('common.close')}
               className="rounded-lg p-1.5 text-secondary hover:bg-gray-100 hover:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors"
               onClick={onClose}
             >
@@ -177,9 +179,9 @@ export const MapPointEditModal = memo<MapPointEditModalProps>(
                   title="Тип точки определяется типом выбранного ресурса"
                   className="cursor-not-allowed rounded-lg border border-default bg-gray-100 px-3 py-2 text-sm text-muted outline-none"
                 >
-                  {POINT_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {POINT_TYPE_LABELS[t]}
+                  {POINT_TYPES.map((pointType) => (
+                    <option key={pointType} value={pointType}>
+                      {t(POINT_TYPE_LABEL_KEYS[pointType])}
                     </option>
                   ))}
                 </select>
@@ -300,9 +302,7 @@ export const MapPointEditModal = memo<MapPointEditModalProps>(
                 onClick={onClose}
                 disabled={updateMutation.isPending}
                 className="rounded-lg border border-gray-300 bg-surface px-4 py-2 text-sm font-medium text-gray-700 hover:bg-raised focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50 transition-colors"
-              >
-                Отмена
-              </button>
+              >{t('common.cancel')}</button>
               <button
                 type="submit"
                 disabled={updateMutation.isPending}

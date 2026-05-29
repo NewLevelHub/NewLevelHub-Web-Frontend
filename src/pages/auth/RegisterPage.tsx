@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { useAuthStore } from '@/shared/store/auth';
 import { getApiError } from '@/shared/lib/getApiError';
@@ -6,6 +7,7 @@ import { authInput, authLabel, authPrimaryBtn, authLink } from '@/shared/ui/auth
 import { AuthPasswordField } from '@/shared/ui/AuthPasswordField';
 
 export default function RegisterPage() {
+  const { t } = useTranslation();
   const register = useAuthStore((s) => s.register);
 
   const [firstName, setFirstName] = useState('');
@@ -21,16 +23,16 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
     if (password !== passwordConfirm) {
-      setError('Пароли не совпадают');
+      setError(t('auth.register.passwordsMismatch'));
       return;
     }
     if (password.length < 8) {
-      setError('Пароль не короче 8 символов');
+      setError(t('auth.register.passwordMin'));
       return;
     }
     const tld = email.trim().split('@')[1]?.split('.').pop() ?? '';
     if (!/^[a-zA-Z]{2,}$/.test(tld)) {
-      setError('Укажите корректный email — домен должен содержать буквенное расширение (например, .kz, .com)');
+      setError(t('auth.register.invalidEmail'));
       return;
     }
     setLoading(true);
@@ -52,8 +54,8 @@ export default function RegisterPage() {
 
   return (
     <div>
-      <h2 className="mb-1 text-center text-xl font-semibold">Регистрация</h2>
-      <p className="mb-6 text-center text-sm text-muted">Гостевой аккаунт (роль guest)</p>
+      <h2 className="mb-1 text-center text-xl font-semibold">{t('auth.register.title')}</h2>
+      <p className="mb-6 text-center text-sm text-muted">{t('auth.register.subtitle')}</p>
 
       <form onSubmit={handleSubmit} className="space-y-3">
         {error ? (
@@ -64,9 +66,7 @@ export default function RegisterPage() {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="reg-first" className={authLabel}>
-              Имя
-            </label>
+            <label htmlFor="reg-first" className={authLabel}>{t('common.firstName')}</label>
             <input
               id="reg-first"
               required
@@ -76,9 +76,7 @@ export default function RegisterPage() {
             />
           </div>
           <div>
-            <label htmlFor="reg-last" className={authLabel}>
-              Фамилия
-            </label>
+            <label htmlFor="reg-last" className={authLabel}>{t('common.lastName')}</label>
             <input
               id="reg-last"
               required
@@ -106,7 +104,7 @@ export default function RegisterPage() {
 
         <div>
           <label htmlFor="reg-phone" className={authLabel}>
-            Телефон <span className="text-gray-600">(необязательно)</span>
+            Телефон <span className="text-gray-600">{t('common.optional')}</span>
           </label>
           <input
             id="reg-phone"
@@ -118,9 +116,7 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label htmlFor="reg-pass" className={authLabel}>
-            Пароль
-          </label>
+          <label htmlFor="reg-pass" className={authLabel}>{t('common.password')}</label>
           <AuthPasswordField
             id="reg-pass"
             autoComplete="new-password"
@@ -132,9 +128,7 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label htmlFor="reg-pass2" className={authLabel}>
-            Пароль ещё раз
-          </label>
+          <label htmlFor="reg-pass2" className={authLabel}>{t('auth.register.passwordAgain')}</label>
           <AuthPasswordField
             id="reg-pass2"
             required
@@ -150,14 +144,12 @@ export default function RegisterPage() {
         </p>
 
         <button type="submit" disabled={loading} className={authPrimaryBtn}>
-          {loading ? 'Регистрация…' : 'Зарегистрироваться'}
+          {loading ? t('auth.register.submitting') : t('auth.register.submit')}
         </button>
       </form>
 
       <p className="mt-6 text-center">
-        <Link to="/login" className={authLink}>
-          Уже есть аккаунт — войти
-        </Link>
+        <Link to="/login" className={authLink}>{t('auth.register.hasAccount')}</Link>
       </p>
     </div>
   );

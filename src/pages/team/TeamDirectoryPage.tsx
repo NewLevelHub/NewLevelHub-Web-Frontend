@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { CalendarClock, CheckCircle2, Loader2, Mail, Phone, Search, User } from 'lucide-react';
 
@@ -8,6 +9,8 @@ import { USER_ROLES } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import { useAuth } from '@/shared/hooks/useAuth';
+import i18n from '@/shared/lib/i18n';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import type {
   Company,
@@ -27,7 +30,7 @@ const SEARCH_DEBOUNCE_MS = 350;
 
 function formatDate(iso: string | null | undefined) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleString('ru-RU', {
+  return new Date(iso).toLocaleString(dateLocaleTag(i18n.language), {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -46,10 +49,10 @@ function getInitials(fullName: string) {
 }
 
 function roleLabel(role: string) {
-  if (role === USER_ROLES.COMPANY_ADMIN) return 'Админ компании';
-  if (role === USER_ROLES.EMPLOYEE) return 'Сотрудник';
-  if (role === USER_ROLES.SUPERADMIN) return 'Суперадмин';
-  if (role === USER_ROLES.GUEST) return 'Гость';
+  if (role === USER_ROLES.COMPANY_ADMIN) return i18n.t('team.roleCompanyAdmin');
+  if (role === USER_ROLES.EMPLOYEE) return i18n.t('team.roleEmployee');
+  if (role === USER_ROLES.SUPERADMIN) return i18n.t('team.roleSuperadmin');
+  if (role === USER_ROLES.GUEST) return i18n.t('team.roleGuest');
   return role;
 }
 
@@ -86,6 +89,7 @@ function MemberAvatar({ src, fullName }: { src: string | null; fullName: string 
 }
 
 export default function TeamDirectoryPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
 
@@ -178,7 +182,7 @@ export default function TeamDirectoryPage() {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-center">
         <User className="h-12 w-12 text-muted" aria-hidden="true" />
-        <p className="text-sm text-secondary">Компания не найдена.</p>
+        <p className="text-sm text-secondary">{t('team.companyNotFound')}</p>
       </div>
     );
   }
@@ -186,17 +190,15 @@ export default function TeamDirectoryPage() {
   return (
     <div className="space-y-6 p-6">
       <div>
-        <h1 className="text-2xl font-bold text-primary">Команда</h1>
+        <h1 className="text-2xl font-bold text-primary">{t('team.title')}</h1>
         <p className="mt-1 text-sm text-secondary">
-          Карточки сотрудников компании с быстрым переходом в профиль.
+          {t('team.directorySubtitle')}
         </p>
       </div>
 
       {isSuperadmin && (
         <div className="rounded-xl border border-default bg-raised p-4">
-          <label htmlFor="company-select" className="mb-1 block text-xs font-medium text-secondary">
-            Компания
-          </label>
+          <label htmlFor="company-select" className="mb-1 block text-xs font-medium text-secondary">{t('common.company')}</label>
           <select
             id="company-select"
             value={selectedCompanyId}
@@ -206,7 +208,7 @@ export default function TeamDirectoryPage() {
             }}
             className={cn(selectClass, 'w-full sm:w-80')}
           >
-            <option value="">Выберите компанию</option>
+            <option value="">{t('common.selectCompany')}</option>
             {companiesData?.results.map((company) => (
               <option key={company.id} value={String(company.id)}>
                 {company.name}
@@ -221,9 +223,7 @@ export default function TeamDirectoryPage() {
           <div className="rounded-xl border border-default bg-raised p-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-end">
               <div className="flex-1">
-                <label htmlFor="directory-search" className="mb-1 block text-xs font-medium text-secondary">
-                  Поиск
-                </label>
+                <label htmlFor="directory-search" className="mb-1 block text-xs font-medium text-secondary">{t('common.search')}</label>
                 <div className="relative">
                   <Search
                     className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
@@ -234,16 +234,14 @@ export default function TeamDirectoryPage() {
                     type="search"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Имя или email"
+                    placeholder={t('common.nameOrEmail')}
                     className={cn(inputClass, 'pl-9')}
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="directory-position" className="mb-1 block text-xs font-medium text-secondary">
-                  Должность
-                </label>
+                <label htmlFor="directory-position" className="mb-1 block text-xs font-medium text-secondary">{t('team.position')}</label>
                 <input
                   id="directory-position"
                   type="text"
@@ -252,15 +250,13 @@ export default function TeamDirectoryPage() {
                     setPosition(e.target.value);
                     setPage(1);
                   }}
-                  placeholder="Например: Designer"
+                  placeholder={t('common.positionPlaceholder')}
                   className={inputClass}
                 />
               </div>
 
               <div>
-                <label htmlFor="directory-role" className="mb-1 block text-xs font-medium text-secondary">
-                  Роль
-                </label>
+                <label htmlFor="directory-role" className="mb-1 block text-xs font-medium text-secondary">{t('common.role')}</label>
                 <select
                   id="directory-role"
                   value={role}
@@ -270,18 +266,16 @@ export default function TeamDirectoryPage() {
                   }}
                   className={selectClass}
                 >
-                  <option value="">Все роли</option>
-                  <option value={USER_ROLES.EMPLOYEE}>Сотрудник</option>
-                  <option value={USER_ROLES.COMPANY_ADMIN}>Админ компании</option>
-                  <option value={USER_ROLES.SUPERADMIN}>Суперадмин</option>
-                  <option value={USER_ROLES.GUEST}>Гость</option>
+                  <option value="">{t('common.allRoles')}</option>
+                  <option value={USER_ROLES.EMPLOYEE}>{t('team.roleEmployee')}</option>
+                  <option value={USER_ROLES.COMPANY_ADMIN}>{t('team.roleCompanyAdmin')}</option>
+                  <option value={USER_ROLES.SUPERADMIN}>{t('team.roleSuperadmin')}</option>
+                  <option value={USER_ROLES.GUEST}>{t('team.roleGuest')}</option>
                 </select>
               </div>
 
               <div>
-                <label htmlFor="directory-ordering" className="mb-1 block text-xs font-medium text-secondary">
-                  Сортировка
-                </label>
+                <label htmlFor="directory-ordering" className="mb-1 block text-xs font-medium text-secondary">{t('common.sort')}</label>
                 <select
                   id="directory-ordering"
                   value={ordering}
@@ -293,10 +287,10 @@ export default function TeamDirectoryPage() {
                   }}
                   className={selectClass}
                 >
-                  <option value="full_name">Имя (А-Я)</option>
-                  <option value="-full_name">Имя (Я-А)</option>
-                  <option value="-date_joined">Новые сначала</option>
-                  <option value="date_joined">Старые сначала</option>
+                  <option value="full_name">{t('team.directory.nameAsc')}</option>
+                  <option value="-full_name">{t('team.directory.nameDesc')}</option>
+                  <option value="-date_joined">{t('team.directory.newest')}</option>
+                  <option value="date_joined">{t('team.directory.oldest')}</option>
                 </select>
               </div>
             </div>
@@ -390,9 +384,7 @@ export default function TeamDirectoryPage() {
                     'rounded-lg border border-default px-3 py-1.5',
                     page <= 1 ? 'cursor-not-allowed opacity-50' : 'hover:bg-hover text-primary',
                   )}
-                >
-                  Назад
-                </button>
+                >{t('common.back')}</button>
                 <button
                   type="button"
                   disabled={page >= totalPages}

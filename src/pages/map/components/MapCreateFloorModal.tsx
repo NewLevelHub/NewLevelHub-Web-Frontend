@@ -1,5 +1,7 @@
 import { memo, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
@@ -14,6 +16,8 @@ export interface MapCreateFloorModalProps {
 }
 
 export const MapCreateFloorModal = memo<MapCreateFloorModalProps>(({ open, onClose, onCreated }) => {
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const queryClient = useQueryClient();
   const [numberStr, setNumberStr] = useState('1');
   const [name, setName] = useState('');
@@ -67,7 +71,7 @@ export const MapCreateFloorModal = memo<MapCreateFloorModalProps>(({ open, onClo
     setFormError(null);
     const n = Number(numberStr);
     if (!Number.isInteger(n) || n < 1) {
-      setFormError('Укажите целый номер этажа не меньше 1');
+      setFormError(t('map.floorNumberMin'));
       return;
     }
     createMutation.mutate({ number: n, nameTrimmed: name.trim(), planFile });
@@ -111,7 +115,7 @@ export const MapCreateFloorModal = memo<MapCreateFloorModalProps>(({ open, onClo
 
             <div>
               <label htmlFor="create-floor-name" className="mb-1 block text-sm font-medium text-gray-700">
-                Название <span className="font-normal text-muted">(необязательно)</span>
+                Название <span className="font-normal text-muted">{t('common.optional')}</span>
               </label>
               <input
                 id="create-floor-name"
@@ -119,19 +123,20 @@ export const MapCreateFloorModal = memo<MapCreateFloorModalProps>(({ open, onClo
                 maxLength={100}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Например, Rooftop"
+                placeholder={t('map.floorNamePlaceholder')}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-primary placeholder:text-secondary focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20"
               />
             </div>
 
             <div>
               <label htmlFor="create-floor-plan" className="mb-1 block text-sm font-medium text-gray-700">
-                Схема этажа <span className="font-normal text-muted">(необязательно)</span>
+                Схема этажа <span className="font-normal text-muted">{t('common.optional')}</span>
               </label>
               <input
                 id="create-floor-plan"
                 type="file"
                 accept="image/*"
+                lang={dateLocale}
                 onChange={(e) => setPlanFile(e.target.files?.[0] ?? null)}
                 className="w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary hover:file:bg-gray-200"
               />
@@ -153,9 +158,7 @@ export const MapCreateFloorModal = memo<MapCreateFloorModalProps>(({ open, onClo
               onClick={onClose}
               disabled={createMutation.isPending}
               className="rounded-lg border border-gray-300 bg-surface px-4 py-2 text-sm font-medium text-gray-700 hover:bg-raised focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 disabled:opacity-50 transition-colors"
-            >
-              Отмена
-            </button>
+            >{t('common.cancel')}</button>
             <button
               type="submit"
               disabled={createMutation.isPending}

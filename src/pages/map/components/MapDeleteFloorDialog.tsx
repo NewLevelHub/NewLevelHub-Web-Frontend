@@ -1,4 +1,5 @@
 import { memo, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -18,6 +19,7 @@ export interface MapDeleteFloorDialogProps {
 
 export const MapDeleteFloorDialog = memo<MapDeleteFloorDialogProps>(
   ({ open, floor, onClose, onSuccess }) => {
+  const { t } = useTranslation();
     const queryClient = useQueryClient();
     const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -72,9 +74,7 @@ export const MapDeleteFloorDialog = memo<MapDeleteFloorDialogProps>(
               onClick={onClose}
               disabled={deleteMutation.isPending}
               className="rounded-lg border border-gray-300 bg-surface px-4 py-2 text-sm font-medium text-gray-700 hover:bg-raised focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 disabled:opacity-50 transition-colors"
-            >
-              Отмена
-            </button>
+            >{t('common.cancel')}</button>
             <button
               type="button"
               onClick={() => floor && deleteMutation.mutate(floor.id)}

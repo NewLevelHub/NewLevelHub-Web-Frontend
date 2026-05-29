@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { MailCheck } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { USER_ROLE_LABELS, type UserRole } from '@/shared/config/constants';
+import { USER_ROLE_LABEL_KEYS, type UserRole } from '@/shared/config/constants';
 import { getApiError } from '@/shared/lib/getApiError';
 import { useAuthStore } from '@/shared/store/auth';
 import type { InviteRegistrationPreview } from '@/shared/types';
@@ -16,6 +17,7 @@ import { authInput, authLabel, authLink, authPrimaryBtn } from '@/shared/ui/auth
  * Поддерживается также /invite/:token для совместимости.
  */
 export default function InviteAcceptPage() {
+  const { t } = useTranslation();
   const { token: pathToken } = useParams();
   const [searchParams] = useSearchParams();
   const registerByInvite = useAuthStore((s) => s.registerByInvite);
@@ -58,11 +60,11 @@ export default function InviteAcceptPage() {
       return;
     }
     if (password !== passwordConfirm) {
-      setError('Пароли не совпадают');
+      setError(t('auth.register.passwordsMismatch'));
       return;
     }
     if (password.length < 8) {
-      setError('Пароль не короче 8 символов');
+      setError(t('auth.register.passwordMin'));
       return;
     }
     registerMutation.mutate();
@@ -127,7 +129,7 @@ export default function InviteAcceptPage() {
         {invite.is_guest_upgrade ? (
           <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-200">
             Ваш гостевой аккаунт будет переведён в роль{' '}
-            <span className="font-medium">{USER_ROLE_LABELS[invite.role as UserRole] ?? invite.role}</span> в компании{' '}
+            <span className="font-medium">{t(USER_ROLE_LABEL_KEYS[invite.role as UserRole]) ?? invite.role}</span> в компании{' '}
             <span className="font-medium">{invite.company_name}</span>. После подтверждения
             email вы сможете войти с новыми правами.
           </div>
@@ -146,17 +148,13 @@ export default function InviteAcceptPage() {
         </div>
 
         <div>
-          <label htmlFor="invite-role" className={authLabel}>
-            Роль
-          </label>
-          <input id="invite-role" value={USER_ROLE_LABELS[invite.role as UserRole] ?? invite.role} readOnly className={`${authInput} opacity-70`} />
+          <label htmlFor="invite-role" className={authLabel}>{t('common.role')}</label>
+          <input id="invite-role" value={t(USER_ROLE_LABEL_KEYS[invite.role as UserRole]) ?? invite.role} readOnly className={`${authInput} opacity-70`} />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="invite-first" className={authLabel}>
-              Имя
-            </label>
+            <label htmlFor="invite-first" className={authLabel}>{t('common.firstName')}</label>
             <input
               id="invite-first"
               required
@@ -166,9 +164,7 @@ export default function InviteAcceptPage() {
             />
           </div>
           <div>
-            <label htmlFor="invite-last" className={authLabel}>
-              Фамилия
-            </label>
+            <label htmlFor="invite-last" className={authLabel}>{t('common.lastName')}</label>
             <input
               id="invite-last"
               required
@@ -181,7 +177,7 @@ export default function InviteAcceptPage() {
 
         <div>
           <label htmlFor="invite-phone" className={authLabel}>
-            Телефон <span className="text-gray-600">(необязательно)</span>
+            Телефон <span className="text-gray-600">{t('common.optional')}</span>
           </label>
           <input
             id="invite-phone"
@@ -193,9 +189,7 @@ export default function InviteAcceptPage() {
         </div>
 
         <div>
-          <label htmlFor="invite-pass" className={authLabel}>
-            Пароль
-          </label>
+          <label htmlFor="invite-pass" className={authLabel}>{t('common.password')}</label>
           <input
             id="invite-pass"
             type="password"
@@ -227,9 +221,7 @@ export default function InviteAcceptPage() {
       </form>
 
       <p className="mt-6 text-center">
-        <Link to="/login" className={authLink}>
-          Уже есть аккаунт — войти
-        </Link>
+        <Link to="/login" className={authLink}>{t('auth.register.hasAccount')}</Link>
       </p>
     </div>
   );

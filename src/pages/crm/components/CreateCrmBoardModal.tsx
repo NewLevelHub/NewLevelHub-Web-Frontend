@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { X, AlertCircle } from 'lucide-react';
@@ -13,6 +14,7 @@ export interface CreateCrmBoardModalProps {
 }
 
 export function CreateCrmBoardModal({ onClose, companyId }: CreateCrmBoardModalProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
@@ -75,14 +77,12 @@ export function CreateCrmBoardModal({ onClose, companyId }: CreateCrmBoardModalP
     >
       <div className="w-full max-w-md rounded-xl bg-surface border border-default shadow-2xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-default">
-          <h2 id="create-board-title" className="text-lg font-semibold text-primary">
-            Создать доску
-          </h2>
+          <h2 id="create-board-title" className="text-lg font-semibold text-primary">{t('common.createBoard')}</h2>
           <button
             type="button"
             onClick={onClose}
             className="text-secondary hover:text-primary transition-colors rounded-md p-1 hover:bg-hover"
-            aria-label="Закрыть"
+            aria-label={t('common.close')}
           >
             <X size={18} />
           </button>
@@ -119,7 +119,7 @@ export function CreateCrmBoardModal({ onClose, companyId }: CreateCrmBoardModalP
 
           <div className="space-y-1.5">
             <label htmlFor="board-description" className="block text-sm font-medium text-secondary">
-              Описание <span className="text-muted font-normal">(необязательно)</span>
+              Описание <span className="text-muted font-normal">{t('common.optional')}</span>
             </label>
             <textarea
               id="board-description"
@@ -141,9 +141,7 @@ export function CreateCrmBoardModal({ onClose, companyId }: CreateCrmBoardModalP
               type="button"
               onClick={onClose}
               className="rounded-lg px-4 py-2 text-sm font-medium text-secondary hover:text-primary hover:bg-hover transition-colors"
-            >
-              Отмена
-            </button>
+            >{t('common.cancel')}</button>
             <button
               type="submit"
               disabled={!name.trim() || mutation.isPending}
@@ -153,7 +151,7 @@ export function CreateCrmBoardModal({ onClose, companyId }: CreateCrmBoardModalP
                 'disabled:opacity-50 disabled:cursor-not-allowed',
               )}
             >
-              {mutation.isPending ? 'Создание...' : 'Создать'}
+              {mutation.isPending ? t('common.creatingPlain') : t('common.create')}
             </button>
           </div>
         </form>
