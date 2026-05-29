@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 
 import { cn } from '@/shared/lib/cn';
@@ -30,6 +31,7 @@ export const MapFloorTabs = memo<MapFloorTabsProps>(
     onOpenCreateFloor,
     onDeleteFloor,
   }) => {
+  const { t } = useTranslation();
     return (
       <>
         {floorsLoading ? (
@@ -51,7 +53,7 @@ export const MapFloorTabs = memo<MapFloorTabsProps>(
             <div
               className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1"
               role="tablist"
-              aria-label="Этажи здания"
+              aria-label={t('map.floorsAria')}
             >
               {floors.map((floor) => (
                 <div key={floor.id} className="relative shrink-0 flex items-center">

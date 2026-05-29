@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import {
   ChevronLeft,
@@ -11,7 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import type { CrmTask } from '@/shared/types';
-import { CRM_PRIORITY_BADGE_CLASS, CRM_PRIORITY_LABELS } from '@/pages/crm/utils/crm-display';
+import { CRM_PRIORITY_BADGE_CLASS, CRM_PRIORITY_LABEL_KEYS } from '@/pages/crm/utils/crm-display';
 import { ChecklistSection } from '@/pages/crm/components/CrmTaskChecklistSection';
 import { CommentSection } from '@/pages/crm/components/CrmTaskCommentSection';
 import { HistorySection } from '@/pages/crm/components/CrmTaskHistorySection';
@@ -21,6 +22,7 @@ import { useTaskDetail } from '@/pages/crm/hooks/useTaskDetail';
 export type TaskDetailViewProps = ReturnType<typeof useTaskDetail>;
 
 export function TaskDetailView(props: TaskDetailViewProps) {
+  const { t } = useTranslation();
   const {
     taskId,
     task,
@@ -96,7 +98,7 @@ export function TaskDetailView(props: TaskDetailViewProps) {
         className="inline-flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300 transition-colors"
       >
         <ChevronLeft size={16} />
-        {boardId ? 'К доске' : 'К доскам'}
+        {boardId ? t('common.toBoard') : t('common.toBoards')}
       </Link>
 
       <div className="space-y-1">
@@ -127,7 +129,7 @@ export function TaskDetailView(props: TaskDetailViewProps) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={6}
-              placeholder="Добавьте описание задачи..."
+              placeholder={t('common.addTaskDescription')}
               disabled={patchMutation.isPending}
               className={cn(
                 'w-full rounded-lg border border-default bg-raised px-3 py-2.5 text-sm text-primary',
@@ -176,9 +178,9 @@ export function TaskDetailView(props: TaskDetailViewProps) {
                   'disabled:opacity-60',
                 )}
               >
-                {(Object.keys(CRM_PRIORITY_LABELS) as CrmTask['priority'][]).map((val) => (
+                {(Object.keys(CRM_PRIORITY_LABEL_KEYS) as CrmTask['priority'][]).map((val) => (
                   <option key={val} value={val}>
-                    {CRM_PRIORITY_LABELS[val]}
+                    {t(CRM_PRIORITY_LABEL_KEYS[val])}
                   </option>
                 ))}
               </select>
@@ -188,7 +190,7 @@ export function TaskDetailView(props: TaskDetailViewProps) {
                   CRM_PRIORITY_BADGE_CLASS[priority],
                 )}
               >
-                {CRM_PRIORITY_LABELS[priority] ?? priority}
+                {t(CRM_PRIORITY_LABEL_KEYS[priority]) ?? priority}
               </span>
             </div>
 
@@ -280,7 +282,7 @@ export function TaskDetailView(props: TaskDetailViewProps) {
                   'disabled:opacity-50 disabled:cursor-not-allowed',
                 )}
               >
-                {patchMutation.isPending ? 'Сохранение...' : 'Сохранить'}
+                {patchMutation.isPending ? t('common.savingPlain') : t('common.save')}
               </button>
               <button
                 type="button"
@@ -315,7 +317,7 @@ export function TaskDetailView(props: TaskDetailViewProps) {
                 )}
               >
                 <Archive size={14} />
-                {unarchiveMutation.isPending ? 'Восстановление...' : 'Разархивировать задачу'}
+                {unarchiveMutation.isPending ? t('common.unarchivingPlain') : t('common.unarchiveTask')}
               </button>
             ) : (
               <button
@@ -329,7 +331,7 @@ export function TaskDetailView(props: TaskDetailViewProps) {
                 )}
               >
                 <Archive size={14} />
-                {archiveMutation.isPending ? 'Архивирование...' : 'Архивировать задачу'}
+                {archiveMutation.isPending ? t('common.archivingPlain') : t('common.archiveTask')}
               </button>
             )}
           </section>

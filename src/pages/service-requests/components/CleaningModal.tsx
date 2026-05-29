@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -32,6 +34,8 @@ export interface CleaningModalProps {
 }
 
 export function CleaningModal({ isOpen, onClose, onSuccess }: CleaningModalProps) {
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const queryClient = useQueryClient();
 
   const [description, setDescription] = useState('');
@@ -92,7 +96,7 @@ export function CleaningModal({ isOpen, onClose, onSuccess }: CleaningModalProps
     setMutationError(null);
 
     if (!floorId) {
-      setMutationError('Выберите этаж.');
+      setMutationError(t('resources.create.floorRequired'));
       return;
     }
     if (!location.trim()) {
@@ -126,7 +130,7 @@ export function CleaningModal({ isOpen, onClose, onSuccess }: CleaningModalProps
         className="w-full max-w-lg rounded-xl border border-default bg-raised p-5"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold text-primary">Вызвать уборку</h2>
+        <h2 className="text-lg font-semibold text-primary">{t('serviceRequests.cleaning.call')}</h2>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           {/* Floor */}
@@ -201,6 +205,7 @@ export function CleaningModal({ isOpen, onClose, onSuccess }: CleaningModalProps
             <input
               type="file"
               accept="image/*"
+              lang={dateLocale}
               onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
               className="mt-1 block w-full cursor-pointer rounded-lg border border-default bg-surface px-3 py-2 text-sm text-secondary file:mr-3 file:rounded-md file:border-0 file:bg-hover file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-primary hover:file:bg-gray-600"
             />
@@ -224,15 +229,13 @@ export function CleaningModal({ isOpen, onClose, onSuccess }: CleaningModalProps
               onClick={handleClose}
               disabled={cleaningMutation.isPending}
               className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover"
-            >
-              Отмена
-            </button>
+            >{t('common.cancel')}</button>
             <button
               type="submit"
               disabled={cleaningMutation.isPending}
               className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
             >
-              {cleaningMutation.isPending ? 'Отправка...' : 'Вызвать уборку'}
+              {cleaningMutation.isPending ? t('common.submittingPlain') : t('serviceRequests.cleaning.call')}
             </button>
           </div>
         </form>

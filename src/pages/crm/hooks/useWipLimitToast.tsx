@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertCircle } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 
 /** Same copy as inline CRM errors — use for every client-side WIP block + toasts. */
-export const WIP_LIMIT_VIOLATION_MESSAGE = 'Превышен WIP-лимит колонки.';
+export const WIP_LIMIT_VIOLATION_MESSAGE_KEY = 'crm.wipLimitExceeded';
 
 export function useWipLimitToast(durationMs = 4000) {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -36,7 +38,7 @@ export function useWipLimitToast(durationMs = 4000) {
       )}
     >
       <AlertCircle size={16} className="shrink-0" aria-hidden="true" />
-      <span>{WIP_LIMIT_VIOLATION_MESSAGE}</span>
+      <span>{t(WIP_LIMIT_VIOLATION_MESSAGE_KEY)}</span>
     </div>
   ) : null;
 

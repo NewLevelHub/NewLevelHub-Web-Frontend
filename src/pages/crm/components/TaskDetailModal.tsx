@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { X, User, Archive, AlertCircle } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
@@ -21,6 +22,7 @@ export interface TaskDetailModalProps {
 }
 
 export function TaskDetailModal({ taskId, boardId, boardCompanyId, onClose }: TaskDetailModalProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const { data: task, isLoading, isError } = useQuery({
@@ -161,7 +163,7 @@ export function TaskDetailModal({ taskId, boardId, boardCompanyId, onClose }: Ta
             type="button"
             onClick={onClose}
             className="text-secondary hover:text-primary transition-colors rounded-md p-1 hover:bg-hover"
-            aria-label="Закрыть"
+            aria-label={t('common.close')}
           >
             <X size={18} />
           </button>
@@ -222,9 +224,9 @@ export function TaskDetailModal({ taskId, boardId, boardCompanyId, onClose }: Ta
                       'disabled:opacity-60',
                     )}
                   >
-                    <option value="low">Низкий</option>
-                    <option value="medium">Средний</option>
-                    <option value="high">Высокий</option>
+                    <option value="low">{t('crm.priority.low')}</option>
+                    <option value="medium">{t('crm.priority.medium')}</option>
+                    <option value="high">{t('crm.priority.high')}</option>
                   </select>
                 </div>
 
@@ -290,7 +292,7 @@ export function TaskDetailModal({ taskId, boardId, boardCompanyId, onClose }: Ta
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
-                  placeholder="Добавьте описание..."
+                  placeholder={t('common.addDescription')}
                   disabled={patchMutation.isPending}
                   className={cn(
                     'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary placeholder-gray-600',
@@ -311,7 +313,7 @@ export function TaskDetailModal({ taskId, boardId, boardCompanyId, onClose }: Ta
                     'disabled:opacity-50 disabled:cursor-not-allowed',
                   )}
                 >
-                  {patchMutation.isPending ? 'Сохранение...' : 'Сохранить'}
+                  {patchMutation.isPending ? t('common.savingPlain') : t('common.save')}
                 </button>
                 <button
                   type="button"
@@ -355,7 +357,7 @@ export function TaskDetailModal({ taskId, boardId, boardCompanyId, onClose }: Ta
                     )}
                   >
                     <Archive size={14} />
-                    {unarchiveFromDetailMutation.isPending ? 'Восстановление...' : 'Разархивировать'}
+                    {unarchiveFromDetailMutation.isPending ? t('common.unarchivingPlain') : t('common.unarchive')}
                   </button>
                 ) : (
                   <button
@@ -369,7 +371,7 @@ export function TaskDetailModal({ taskId, boardId, boardCompanyId, onClose }: Ta
                     )}
                   >
                     <Archive size={14} />
-                    {archiveMutation.isPending ? 'Архивирование...' : 'Архивировать'}
+                    {archiveMutation.isPending ? t('common.archivingPlain') : t('common.archive')}
                   </button>
                 )}
               </div>

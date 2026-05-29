@@ -1,4 +1,5 @@
 import { memo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MapPin, X, Loader2 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -12,7 +13,7 @@ import type {
   PaginatedResponse,
 } from '@/shared/types';
 
-import { POINT_TYPES, POINT_TYPE_LABELS } from '@/pages/map/constants/mapConstants';
+import { POINT_TYPES, POINT_TYPE_LABEL_KEYS } from '@/pages/map/constants/mapConstants';
 import type { MapPointFormState } from '@/pages/map/types/mapPage.types';
 
 export interface MapPointAddPanelProps {
@@ -29,6 +30,7 @@ function requiresResource(t: MapPointType) {
 
 export const MapPointAddPanel = memo<MapPointAddPanelProps>(
   ({ form, floorId, onFormChange, onCancel, onSuccess }) => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     const [formError, setFormError] = useState<string | null>(null);
 
@@ -97,11 +99,11 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
           return;
         }
         if (!form.label.trim()) {
-          setFormError('Метка обязательна');
+          setFormError(t('common.markRequired'));
           return;
         }
         if (requiresResource(form.point_type) && !form.resource.trim()) {
-          setFormError('Выберите ресурс для данного типа точки');
+          setFormError(t('map.selectResource'));
           return;
         }
         if (form.point_type === 'office' && !form.company.trim()) {
@@ -134,7 +136,7 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
         onClick={handlePanelClick}
         role="dialog"
         aria-modal="false"
-        aria-label="Добавить точку"
+        aria-label={t('map.addPoint')}
       >
         <form onSubmit={handleSubmit} noValidate>
           <div className="px-4 pt-3 pb-1 flex items-center justify-between">
@@ -144,7 +146,7 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
             </span>
             <button
               type="button"
-              aria-label="Отмена"
+              aria-label={t('common.cancel')}
               onClick={onCancel}
               className="rounded p-1 text-secondary hover:text-primary hover:bg-hover transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400"
             >
@@ -204,9 +206,7 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
               </label>
               {resourcesLoading ? (
                 <div className="flex items-center gap-1.5 rounded-md border border-default bg-hover px-2 py-1.5 text-xs text-secondary">
-                  <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
-                  Загрузка...
-                </div>
+                  <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />{t('common.loading')}</div>
               ) : (
                 <select
                   id="ap-resource"
@@ -254,9 +254,9 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
                 title="Выберите ресурс — тип точки возьмётся из ресурса"
                 className="cursor-not-allowed rounded-md border border-default bg-gray-600/40 px-2 py-1.5 text-sm text-secondary outline-none"
               >
-                {POINT_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {POINT_TYPE_LABELS[t]}
+                {POINT_TYPES.map((pointType) => (
+                  <option key={pointType} value={pointType}>
+                    {t(POINT_TYPE_LABEL_KEYS[pointType])}
                   </option>
                 ))}
               </select>
@@ -291,9 +291,7 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
               onClick={onCancel}
               disabled={createMutation.isPending}
               className="rounded-lg border border-default bg-transparent px-3 py-1.5 text-xs font-medium text-secondary hover:bg-hover hover:text-primary focus:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400 disabled:opacity-50 transition-colors"
-            >
-              Отмена
-            </button>
+            >{t('common.cancel')}</button>
             <button
               type="submit"
               disabled={createMutation.isPending}

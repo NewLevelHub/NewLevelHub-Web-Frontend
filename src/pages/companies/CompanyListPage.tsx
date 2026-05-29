@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -19,7 +20,7 @@ import {
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { COMPANY_TIERS, SUPERADMIN_UI_PREFIX, USER_ROLES } from '@/shared/config/constants';
+import { COMPANY_TIERS, COMPANY_TIER_LABEL_KEYS, SUPERADMIN_UI_PREFIX, USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { isCompanyNotAssignedError } from '@/shared/lib/apiError';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
@@ -30,12 +31,6 @@ import type { Company, PaginatedResponse } from '@/shared/types';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PAGE_SIZE = 20;
-
-const PLAN_LABELS: Record<string, string> = {
-  [COMPANY_TIERS.BASIC]: 'Базовый',
-  [COMPANY_TIERS.STANDARD]: 'Стандарт',
-  [COMPANY_TIERS.PREMIUM]: 'Премиум',
-};
 
 const PLAN_COLORS: Record<string, string> = {
   [COMPANY_TIERS.BASIC]: 'bg-hover text-secondary',
@@ -54,27 +49,27 @@ interface ModalState {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function modalConfig(action: ModalAction, companyName: string) {
+function modalConfig(action: ModalAction, companyName: string, t: (k: string, opts?: Record<string, unknown>) => string) {
   switch (action) {
     case 'deactivate':
       return {
-        title: 'Деактивировать компанию',
-        description: `Вы уверены, что хотите деактивировать «${companyName}»? Сотрудники компании потеряют доступ к платформе.`,
-        confirmLabel: 'Деактивировать',
+        title: t('companies.deactivateTitle'),
+        description: t('companies.deactivateDesc', { name: companyName }),
+        confirmLabel: t('common.deactivate'),
         variant: 'warning' as const,
       };
     case 'activate':
       return {
-        title: 'Активировать компанию',
-        description: `Вы уверены, что хотите активировать «${companyName}»? Сотрудники снова получат доступ к платформе.`,
-        confirmLabel: 'Активировать',
+        title: t('companies.activateTitle'),
+        description: t('companies.activateDesc', { name: companyName }),
+        confirmLabel: t('common.activate'),
         variant: 'warning' as const,
       };
     case 'delete':
       return {
-        title: 'Удалить компанию',
-        description: `Вы уверены, что хотите безвозвратно удалить «${companyName}»? Это действие нельзя отменить. Все данные компании будут потеряны.`,
-        confirmLabel: 'Удалить',
+        title: t('companies.deleteTitle'),
+        description: t('companies.deleteDesc', { name: companyName }),
+        confirmLabel: t('common.delete'),
         variant: 'danger' as const,
       };
   }
@@ -106,6 +101,7 @@ function SkeletonRow() {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function CompanyListPage() {
+  const { t } = useTranslation();
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -182,7 +178,7 @@ export default function CompanyListPage() {
       setMutationError(null);
     },
     onError: () => {
-      setMutationError('Не удалось деактивировать компанию. Попробуйте ещё раз.');
+      setMutationError(t('companies.deactivateError'));
     },
     onSettled: () => setModal(null),
   });
@@ -194,7 +190,7 @@ export default function CompanyListPage() {
       setMutationError(null);
     },
     onError: () => {
-      setMutationError('Не удалось активировать компанию. Попробуйте ещё раз.');
+      setMutationError(t('companies.activateError'));
     },
     onSettled: () => setModal(null),
   });
@@ -206,7 +202,7 @@ export default function CompanyListPage() {
       setMutationError(null);
     },
     onError: () => {
-      setMutationError('Не удалось удалить компанию. Попробуйте ещё раз.');
+      setMutationError(t('companies.deleteError'));
     },
     onSettled: () => setModal(null),
   });
@@ -242,10 +238,9 @@ export default function CompanyListPage() {
       <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-7xl mx-auto">
         <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 rounded-2xl border border-amber-900/50 bg-warning-subtle px-6 py-12 text-center">
           <Building2 className="h-12 w-12 text-amber-400/90" aria-hidden="true" />
-          <h1 className="text-lg font-semibold text-primary">Ожидание назначения в компанию</h1>
+          <h1 className="text-lg font-semibold text-primary">{t('companies.notAssignedTitle')}</h1>
           <p className="max-w-md text-sm text-secondary">
-            Ваш аккаунт ещё не привязан к организации. Когда администратор добавит вас в компанию,
-            список и доступ к разделам появятся автоматически.
+            {t('companies.notAssignedDesc')}
           </p>
         </div>
       </main>
@@ -256,24 +251,24 @@ export default function CompanyListPage() {
     return (
       <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-7xl mx-auto">
         <div className="flex h-64 flex-col items-center justify-center gap-2 text-center">
-          <p className="text-sm font-medium text-danger">Ошибка загрузки компаний.</p>
-          <p className="text-xs text-secondary">Проверьте соединение и обновите страницу.</p>
+          <p className="text-sm font-medium text-danger">{t('companies.loadError')}</p>
+          <p className="text-xs text-secondary">{t('companies.loadErrorHint')}</p>
         </div>
       </main>
     );
   }
 
-  const currentModal = modal ? modalConfig(modal.action, modal.company.name) : null;
+  const currentModal = modal ? modalConfig(modal.action, modal.company.name, t) : null;
 
   return (
     <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
       {/* Page header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-primary">Компании-арендаторы</h1>
+          <h1 className="text-2xl font-bold text-primary">{t('companies.tenantsTitle')}</h1>
           {!showLoading && (
             <p className="mt-1 text-sm text-secondary">
-              Всего: {totalCount}
+              {t('companies.tenantsTotal', { count: totalCount })}
             </p>
           )}
         </div>
@@ -283,7 +278,7 @@ export default function CompanyListPage() {
             className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
-            Создать компанию
+            {t('companies.createCompany')}
           </Link>
         )}
       </div>
@@ -302,7 +297,7 @@ export default function CompanyListPage() {
       {isSuperadmin && (
         <section
           className="bg-raised rounded-2xl border border-default p-4"
-          aria-label="Фильтры компаний"
+          aria-label={t('companies.filterLabel')}
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             {/* Search */}
@@ -316,8 +311,8 @@ export default function CompanyListPage() {
                 type="search"
                 value={searchInput}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                placeholder="Поиск по названию..."
-                aria-label="Поиск компаний"
+                placeholder={t('common.searchByNameEmail')}
+                aria-label={t('companies.searchCompanies')}
                 className="w-full rounded-lg border border-default bg-surface py-2 pl-9 pr-3 text-sm text-primary placeholder:text-muted focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               />
             </div>
@@ -326,25 +321,25 @@ export default function CompanyListPage() {
             <select
               value={planFilter}
               onChange={(e) => setPlanFilter(e.target.value)}
-              aria-label="Фильтр по тарифу"
+              aria-label={t('companies.filterLabel')}
               className="w-full sm:w-auto rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
-              <option value="">Все тарифы</option>
-              <option value={COMPANY_TIERS.BASIC}>Базовый</option>
-              <option value={COMPANY_TIERS.STANDARD}>Стандарт</option>
-              <option value={COMPANY_TIERS.PREMIUM}>Премиум</option>
+              <option value="">{t('companies.allPlans')}</option>
+              <option value={COMPANY_TIERS.BASIC}>{t('companies.planBasic')}</option>
+              <option value={COMPANY_TIERS.STANDARD}>{t('companies.planStandard')}</option>
+              <option value={COMPANY_TIERS.PREMIUM}>{t('companies.planPremium')}</option>
             </select>
 
             {/* Status filter */}
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              aria-label="Фильтр по статусу"
+              aria-label={t('common.status')}
               className="w-full sm:w-auto rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
-              <option value="">Все статусы</option>
-              <option value="true">Активные</option>
-              <option value="false">Неактивные</option>
+              <option value="">{t('common.allStatuses')}</option>
+              <option value="true">{t('passes.filters.active')}</option>
+              <option value="false">{t('companies.inactive')}</option>
             </select>
           </div>
         </section>
@@ -356,21 +351,19 @@ export default function CompanyListPage() {
           <table
             className="w-full min-w-[820px] text-sm"
             role="table"
-            aria-label="Список компаний"
+            aria-label={t('companies.tableList')}
           >
             <thead>
               <tr className="border-b border-default bg-surface/60 text-left">
                 <th
                   scope="col"
                   className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-secondary"
-                >
-                  Компания
-                </th>
+                >{t('common.company')}</th>
                 <th
                   scope="col"
                   className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-secondary"
                 >
-                  Тариф
+                  {t('companies.tablePlan')}
                 </th>
                 <th
                   scope="col"
@@ -378,7 +371,7 @@ export default function CompanyListPage() {
                 >
                   <span className="inline-flex items-center gap-1">
                     <Users className="h-3.5 w-3.5" aria-hidden="true" />
-                    Сотрудники
+                    {t('companies.tableEmployees')}
                   </span>
                 </th>
                 <th
@@ -387,17 +380,15 @@ export default function CompanyListPage() {
                 >
                   <span className="inline-flex items-center gap-1">
                     <HardDrive className="h-3.5 w-3.5" aria-hidden="true" />
-                    Хранилище
+                    {t('companies.tableStorage')}
                   </span>
                 </th>
                 <th
                   scope="col"
                   className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-secondary"
-                >
-                  Статус
-                </th>
+                >{t('common.status')}</th>
                 <th scope="col" className="px-4 py-3">
-                  <span className="sr-only">Действия</span>
+                  <span className="sr-only">{t('companies.tableActions')}</span>
                 </th>
               </tr>
             </thead>
@@ -409,7 +400,7 @@ export default function CompanyListPage() {
                   <td colSpan={6} className="py-16 text-center">
                     <div className="flex flex-col items-center gap-2">
                       <Building2 className="h-8 w-8 text-secondary" aria-hidden="true" />
-                      <p className="text-sm text-secondary">Компании не найдены</p>
+                      <p className="text-sm text-secondary">{t('companies.notFound')}</p>
                     </div>
                   </td>
                 </tr>
@@ -435,20 +426,15 @@ export default function CompanyListPage() {
       {!showLoading && totalCount > 0 && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-secondary">
-            Показано{' '}
-            <span className="font-medium text-primary">
-              {rangeStart}–{rangeEnd}
-            </span>{' '}
-            из{' '}
-            <span className="font-medium text-primary">{totalCount}</span> компаний
+            {t('companies.paginationRange', { start: rangeStart, end: rangeEnd, total: totalCount })}
           </p>
 
-          <nav aria-label="Пагинация" className="flex flex-wrap items-center gap-1">
+          <nav aria-label={t('common.pagination')} className="flex flex-wrap items-center gap-1">
             <button
               type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              aria-label="Предыдущая страница"
+              aria-label={t('common.previousPage')}
               className={cn(
                 'rounded-lg border p-2 text-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
                 page === 1
@@ -479,7 +465,7 @@ export default function CompanyListPage() {
                     key={item}
                     type="button"
                     onClick={() => setPage(item)}
-                    aria-label={`Страница ${item}`}
+                    aria-label={t('companies.pageButton', { item })}
                     aria-current={item === page ? 'page' : undefined}
                     className={cn(
                       'h-9 w-9 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
@@ -497,7 +483,7 @@ export default function CompanyListPage() {
               type="button"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              aria-label="Следующая страница"
+              aria-label={t('common.nextPage')}
               className={cn(
                 'rounded-lg border p-2 text-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
                 page === totalPages
@@ -547,6 +533,7 @@ function CompanyRow({
   onActivate,
   onDelete,
 }: CompanyRowProps) {
+  const { t } = useTranslation();
   return (
     <tr className="group transition-colors hover:bg-hover/40">
       {/* Logo + Name + office */}
@@ -575,9 +562,9 @@ function CompanyRow({
             </Link>
             {(company.floor != null || company.office_number) && (
               <div className="mt-0.5 text-xs text-muted">
-                {company.floor != null && `Этаж ${company.floor}`}
+                {company.floor != null && t('companies.floorOffice', { floor: company.floor })}
                 {company.floor != null && company.office_number && ', '}
-                {company.office_number && `офис ${company.office_number}`}
+                {company.office_number && t('companies.officeNumber', { number: company.office_number })}
               </div>
             )}
           </div>
@@ -592,7 +579,7 @@ function CompanyRow({
             PLAN_COLORS[company.plan] ?? 'bg-hover text-secondary',
           )}
         >
-          {PLAN_LABELS[company.plan] ?? company.plan}
+          {t(COMPANY_TIER_LABEL_KEYS[company.plan as keyof typeof COMPANY_TIER_LABEL_KEYS] ?? company.plan)}
         </span>
       </td>
 
@@ -600,19 +587,19 @@ function CompanyRow({
       <td className="px-4 py-3 text-secondary">{company.max_employees}</td>
 
       {/* Storage limit */}
-      <td className="px-4 py-3 text-secondary">{company.storage_limit_gb} ГБ</td>
+      <td className="px-4 py-3 text-secondary">{t('companies.storageGb', { value: company.storage_limit_gb })}</td>
 
       {/* Status */}
       <td className="px-4 py-3">
         {company.is_active ? (
           <span className="inline-flex items-center gap-1 text-xs font-medium text-success">
             <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-            Активна
+            {t('companies.companyActive')}
           </span>
         ) : (
           <span className="inline-flex items-center gap-1 text-xs font-medium text-secondary">
             <XCircle className="h-3.5 w-3.5" aria-hidden="true" />
-            Неактивна
+            {t('companies.companyInactive')}
           </span>
         )}
       </td>
@@ -623,10 +610,10 @@ function CompanyRow({
           <Link
             to={`${detailBasePath}/${company.id}`}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-300 bg-blue-900/30 hover:bg-blue-900/50 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            aria-label={`Открыть ${company.name}`}
+            aria-label={t('companies.openCompany', { name: company.name })}
           >
             <ExternalLink size={13} aria-hidden="true" />
-            Открыть
+            {t('companies.open')}
           </Link>
 
           {isSuperadmin && (
@@ -635,32 +622,32 @@ function CompanyRow({
                 <button
                   type="button"
                   onClick={onDeactivate}
-                  title="Деактивировать"
+                  title={t('common.deactivate')}
                   className="rounded-lg p-1.5 text-amber-400 transition-colors hover:bg-warning-subtle hover:text-warning focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
                 >
                   <PowerOff className="h-4 w-4" aria-hidden="true" />
-                  <span className="sr-only">Деактивировать {company.name}</span>
+                  <span className="sr-only">{t('companies.deactivateCompany', { name: company.name })}</span>
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={onActivate}
-                  title="Активировать"
+                  title={t('common.activate')}
                   className="rounded-lg p-1.5 text-emerald-400 transition-colors hover:bg-success-subtle hover:text-success focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                   <Power className="h-4 w-4" aria-hidden="true" />
-                  <span className="sr-only">Активировать {company.name}</span>
+                  <span className="sr-only">{t('companies.activateCompany', { name: company.name })}</span>
                 </button>
               )}
 
               <button
                 type="button"
                 onClick={onDelete}
-                title="Удалить"
+                title={t('common.delete')}
                 className="rounded-lg p-1.5 text-red-400 transition-colors hover:bg-danger-subtle hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
               >
                 <Trash2 className="h-4 w-4" aria-hidden="true" />
-                <span className="sr-only">Удалить {company.name}</span>
+                <span className="sr-only">{t('companies.deleteCompany', { name: company.name })}</span>
               </button>
             </>
           )}

@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { X, Calendar, User } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
 import type { CrmTask, CompanyMember, PaginatedResponse } from '@/shared/types';
-import { WIP_LIMIT_VIOLATION_MESSAGE } from '@/pages/crm/hooks/useWipLimitToast';
+import { WIP_LIMIT_VIOLATION_MESSAGE_KEY } from '@/pages/crm/hooks/useWipLimitToast';
 
 type TaskPriorityValue = CrmTask['priority'];
 
@@ -18,6 +19,7 @@ export interface CreateTaskModalProps {
 }
 
 export function CreateTaskModal({ boardId, boardCompanyId, columnId, onClose, wipBlocked }: CreateTaskModalProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const titleRef = useRef<HTMLInputElement>(null);
 
@@ -119,7 +121,7 @@ export function CreateTaskModal({ boardId, boardCompanyId, columnId, onClose, wi
             type="button"
             onClick={onClose}
             className="text-secondary hover:text-primary transition-colors rounded-md p-1 hover:bg-hover"
-            aria-label="Закрыть"
+            aria-label={t('common.close')}
           >
             <X size={18} />
           </button>
@@ -136,7 +138,7 @@ export function CreateTaskModal({ boardId, boardCompanyId, columnId, onClose, wi
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Введите название задачи"
+              placeholder={t('common.enterTaskTitle')}
               required
               maxLength={255}
               className={cn(
@@ -149,13 +151,13 @@ export function CreateTaskModal({ boardId, boardCompanyId, columnId, onClose, wi
 
           <div className="space-y-1.5">
             <label htmlFor="new-task-description" className="block text-sm font-medium text-secondary">
-              Описание <span className="text-muted font-normal">(необязательно)</span>
+              Описание <span className="text-muted font-normal">{t('common.optional')}</span>
             </label>
             <textarea
               id="new-task-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Добавьте описание..."
+              placeholder={t('common.addDescription')}
               rows={3}
               className={cn(
                 'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary placeholder-gray-500',
@@ -180,9 +182,9 @@ export function CreateTaskModal({ boardId, boardCompanyId, columnId, onClose, wi
                   'border-default focus:border-blue-500',
                 )}
               >
-                <option value="low">Низкий</option>
-                <option value="medium">Средний</option>
-                <option value="high">Высокий</option>
+                <option value="low">{t('crm.priority.low')}</option>
+                <option value="medium">{t('crm.priority.medium')}</option>
+                <option value="high">{t('crm.priority.high')}</option>
               </select>
             </div>
 
@@ -209,7 +211,7 @@ export function CreateTaskModal({ boardId, boardCompanyId, columnId, onClose, wi
 
           <div className="space-y-1.5">
             <label htmlFor="new-task-assignee" className="block text-sm font-medium text-secondary">
-              Исполнитель <span className="text-muted font-normal">(необязательно)</span>
+              Исполнитель <span className="text-muted font-normal">{t('common.optional')}</span>
             </label>
             <div className="relative">
               <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
@@ -240,9 +242,7 @@ export function CreateTaskModal({ boardId, boardCompanyId, columnId, onClose, wi
               type="button"
               onClick={onClose}
               className="rounded-lg px-4 py-2 text-sm font-medium text-secondary hover:text-primary hover:bg-hover transition-colors"
-            >
-              Отмена
-            </button>
+            >{t('common.cancel')}</button>
             <button
               type="submit"
               disabled={!title.trim() || mutation.isPending || wipBlocked}
@@ -252,11 +252,13 @@ export function CreateTaskModal({ boardId, boardCompanyId, columnId, onClose, wi
                 'disabled:opacity-50 disabled:cursor-not-allowed',
               )}
             >
-              {mutation.isPending ? 'Создание...' : 'Создать задачу'}
+              {mutation.isPending ? t('common.creatingPlain') : t('common.createTask')}
             </button>
           </div>
 
-          {mutation.isError && <p className="text-sm text-red-400">{WIP_LIMIT_VIOLATION_MESSAGE}</p>}
+          {mutation.isError && (
+            <p className="text-sm text-red-400">{t(WIP_LIMIT_VIOLATION_MESSAGE_KEY)}</p>
+          )}
         </form>
       </div>
     </div>

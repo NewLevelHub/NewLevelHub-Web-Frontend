@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Building2, Eye, Pin, Trash2 } from 'lucide-react';
 
 import { USER_ROLES } from '@/shared/config/constants';

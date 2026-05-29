@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import { type PassStatus } from '@/shared/config/constants';
@@ -10,6 +11,7 @@ interface PassRowProps {
 }
 
 export function PassRow({ pass, isSuperadmin }: PassRowProps) {
+  const { t } = useTranslation();
   return (
     <tr className="text-secondary">
       <td className="px-4 py-3 align-top">

@@ -1,8 +1,9 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Inbox, Calendar } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import type { CrmColumn, CrmTask } from '@/shared/types';
-import { CRM_PRIORITY_BADGE_CLASS, CRM_PRIORITY_LABELS, formatDeadline, isOverdue } from '@/pages/crm/utils/crm-display';
+import { CRM_PRIORITY_BADGE_CLASS, CRM_PRIORITY_LABEL_KEYS, formatDeadline, isOverdue } from '@/pages/crm/utils/crm-display';
 import { CrmAssigneeAvatar } from '@/pages/crm/components/CrmAssigneeAvatar';
 
 export interface BoardTaskListViewProps {
@@ -21,6 +22,7 @@ const ListTaskRow = memo(function ListTaskRow({
   columnName: string;
   onTaskClick: (taskId: number) => void;
 }) {
+  const { t } = useTranslation();
   const overdue = task.deadline ? isOverdue(task.deadline) : false;
   return (
     <tr
@@ -34,7 +36,7 @@ const ListTaskRow = memo(function ListTaskRow({
           onTaskClick(task.id);
         }
       }}
-      aria-label={`Задача: ${task.title}`}
+      aria-label={t('crm.taskRowAria', { title: task.title })}
     >
       <td className="px-4 py-3">
         <span className="font-medium text-primary line-clamp-1">{task.title}</span>
@@ -46,7 +48,7 @@ const ListTaskRow = memo(function ListTaskRow({
             CRM_PRIORITY_BADGE_CLASS[task.priority],
           )}
         >
-          {CRM_PRIORITY_LABELS[task.priority]}
+          {t(CRM_PRIORITY_LABEL_KEYS[task.priority])}
         </span>
       </td>
       <td className="px-4 py-3">
@@ -81,6 +83,7 @@ const ListTaskRow = memo(function ListTaskRow({
 });
 
 export function BoardTaskListView({ tasks, columns, isLoading, onTaskClick }: BoardTaskListViewProps) {
+  const { t } = useTranslation();
   const columnMap = new Map(columns.map((c) => [c.id, c.name]));
 
   if (isLoading) {
@@ -104,7 +107,7 @@ export function BoardTaskListView({ tasks, columns, isLoading, onTaskClick }: Bo
 
   return (
     <div className="overflow-x-auto rounded-xl border border-default">
-      <table className="w-full text-sm" role="table" aria-label="Задачи доски">
+      <table className="w-full text-sm" role="table" aria-label={t('common.boardTasks')}>
         <thead>
           <tr className="border-b border-default bg-surface/60">
             <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase tracking-wide">

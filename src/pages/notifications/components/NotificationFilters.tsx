@@ -1,5 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/shared/lib/cn';
-import { NOTIFICATION_TYPE_LABELS } from '@/pages/notifications/components/NotificationItem';
+import { NOTIFICATION_TYPE_LABEL_KEYS } from '@/pages/notifications/constants';
 
 interface NotificationFiltersProps {
   unreadFilter: 'all' | 'unread';
@@ -14,6 +15,8 @@ export function NotificationFilters({
   onUnreadFilterChange,
   onTypeFilterChange,
 }: NotificationFiltersProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
       <div className="flex w-full sm:w-auto rounded-lg border border-default overflow-hidden text-sm">
@@ -27,7 +30,7 @@ export function NotificationFilters({
               : 'bg-surface text-muted hover:bg-raised',
           )}
         >
-          Все
+          {t('notifications.filters.all')}
         </button>
         <button
           type="button"
@@ -39,7 +42,7 @@ export function NotificationFilters({
               : 'bg-surface text-muted hover:bg-raised',
           )}
         >
-          Непрочитанные
+          {t('notifications.filters.unread')}
         </button>
       </div>
 
@@ -47,12 +50,12 @@ export function NotificationFilters({
         value={typeFilter}
         onChange={e => onTypeFilterChange(e.target.value)}
         className="w-full sm:w-auto text-sm rounded-lg border border-default px-3 py-1.5 bg-surface text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        aria-label="Фильтр по типу"
+        aria-label={t('notifications.filters.typeAria')}
       >
-        <option value="">Все типы</option>
-        {Object.entries(NOTIFICATION_TYPE_LABELS).map(([value, label]) => (
+        <option value="">{t('notifications.filters.allTypes')}</option>
+        {Object.entries(NOTIFICATION_TYPE_LABEL_KEYS).map(([value, labelKey]) => (
           <option key={value} value={value}>
-            {label}
+            {t(labelKey)}
           </option>
         ))}
       </select>

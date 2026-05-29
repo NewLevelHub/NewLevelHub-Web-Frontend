@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router';
 import { useAuthStore } from '@/shared/store/auth';
 import { getApiError } from '@/shared/lib/getApiError';
@@ -6,6 +7,7 @@ import { authInput, authLabel, authPrimaryBtn, authLink } from '@/shared/ui/auth
 import { AuthPasswordField } from '@/shared/ui/AuthPasswordField';
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const login = useAuthStore((s) => s.login);
   const location = useLocation();
   const notice = typeof location.state === 'object' && location.state !== null ? (location.state as { notice?: string }).notice : '';
@@ -31,8 +33,8 @@ export default function LoginPage() {
 
   return (
     <div>
-      <h2 className="mb-1 text-center text-xl font-semibold">Вход</h2>
-      <p className="mb-6 text-center text-sm text-muted">NewLevelHub — тест с бэкендом</p>
+      <h2 className="mb-1 text-center text-xl font-semibold">{t('auth.login.title')}</h2>
+      <p className="mb-6 text-center text-sm text-muted">{t('auth.login.subtitle')}</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {notice ? (
@@ -64,12 +66,8 @@ export default function LoginPage() {
 
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <label htmlFor="login-password" className={authLabel}>
-              Пароль
-            </label>
-            <Link to="/forgot-password" className={authLink}>
-              Забыли пароль?
-            </Link>
+            <label htmlFor="login-password" className={authLabel}>{t('common.password')}</label>
+            <Link to="/forgot-password" className={authLink}>{t('auth.login.forgotPassword')}</Link>
           </div>
           <AuthPasswordField
             id="login-password"
@@ -86,19 +84,15 @@ export default function LoginPage() {
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
             className="h-4 w-4 rounded border-default"
-          />
-          Запомнить меня
-        </label>
+          />{t('common.rememberMe')}</label>
 
         <button type="submit" disabled={loading} className={authPrimaryBtn}>
-          {loading ? 'Вход…' : 'Войти'}
+          {loading ? t('common.signInLoading') : t('common.signIn')}
         </button>
       </form>
 
       <p className="mt-6 text-center">
-        <Link to="/register" className={authLink}>
-          Нет аккаунта — регистрация
-        </Link>
+        <Link to="/register" className={authLink}>{t('auth.login.noAccount')}</Link>
       </p>
     </div>
   );

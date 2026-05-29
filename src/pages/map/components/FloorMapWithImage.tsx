@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { FloorMap, MapPoint } from '@/shared/types';
 
@@ -13,15 +14,16 @@ export interface FloorMapWithImageProps {
 
 export const FloorMapWithImage = memo<FloorMapWithImageProps>(
   ({ imageUrl, floorMap, highlightedPointId, onPointClick }) => {
+    const { t } = useTranslation();
     return (
       <div
         className="relative w-full select-none overflow-hidden rounded-xl border border-default"
         role="img"
-        aria-label={`Карта этажа ${floorMap.floor_name}`}
+        aria-label={t('map.floorMap', { name: floorMap.floor_name })}
       >
         <img
           src={imageUrl}
-          alt={`План этажа ${floorMap.floor_name}`}
+          alt={t('map.floorPlan', { name: floorMap.floor_name })}
           className="block w-full object-contain"
           draggable={false}
         />

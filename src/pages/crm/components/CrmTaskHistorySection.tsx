@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/shared/lib/i18n';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useQuery } from '@tanstack/react-query';
 import { Archive, Clock, ChevronDown, ChevronRight } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
@@ -9,24 +12,24 @@ import type { CrmTaskHistory } from '@/shared/types';
 // ─── History Section ──────────────────────────────────────────────────────────
 
 // Labels for non-field actions (action is not "updated")
-const ACTION_LABELS: Record<string, string> = {
-  created: 'создал(а) задачу',
-  archived: 'архивировал(а) задачу',
-  unarchived: 'восстановил(а) задачу из архива',
-  moved: 'переместил(а) задачу',
-  label_added: 'добавил(а) метку',
-  label_removed: 'удалил(а) метку',
+const ACTION_LABEL_KEYS: Record<string, string> = {
+  "created": "common.historyCreated",
+  "archived": "common.historyArchived",
+  "unarchived": "common.historyUnarchived",
+  "moved": "common.historyMoved",
+  "label_added": "common.historyLabelAdded",
+  "label_removed": "common.historyLabelRemoved"
 };
 
 // Labels for action="updated" — keyed by field_name
-const FIELD_LABELS: Record<string, string> = {
-  title: 'изменил(а) название',
-  description: 'обновил(а) описание задачи',
-  priority: 'изменил(а) приоритет',
-  deadline: 'изменил(а) дедлайн',
-  assignee: 'изменил(а) исполнителя',
-  column: 'переместил(а) задачу',
-  column_id: 'переместил(а) задачу',
+const FIELD_LABEL_KEYS: Record<string, string> = {
+  "title": "common.historyTitle",
+  "description": "common.historyDescription",
+  "priority": "common.historyPriority",
+  "deadline": "common.historyDeadline",
+  "assignee": "common.historyAssignee",
+  "column": "common.historyMoved",
+  "column_id": "common.historyMoved"
 };
 
 const HISTORY_PRIORITY_BADGE: Record<string, string> = {
@@ -35,15 +38,15 @@ const HISTORY_PRIORITY_BADGE: Record<string, string> = {
   high: 'bg-orange-900/60 text-orange-300 border-orange-700',
 };
 
-const HISTORY_PRIORITY_LABELS: Record<string, string> = {
-  low: 'Низкий',
-  medium: 'Средний',
-  high: 'Высокий',
+const HISTORY_PRIORITY_LABEL_KEYS: Record<string, string> = {
+  low: 'crm.priority.low',
+  medium: 'crm.priority.medium',
+  high: 'crm.priority.high',
 };
 
 function formatHistoryDate(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleString('ru-RU', {
+  return d.toLocaleString(dateLocaleTag(i18n.language), {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -53,10 +56,10 @@ function formatHistoryDate(iso: string): string {
 }
 
 function formatHistoryDeadline(value: string | null): string {
-  if (!value || value === 'null') return 'не задан';
+  if (!value || value === 'null') return i18n.t('common.notSet');
   const d = new Date(value);
   if (isNaN(d.getTime())) return value;
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString(dateLocaleTag(i18n.language), { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function truncate(text: string, max: number): string {
@@ -64,7 +67,7 @@ function truncate(text: string, max: number): string {
 }
 
 function PriorityBadge({ value }: { value: string }) {
-  const label = HISTORY_PRIORITY_LABELS[value] ?? value;
+  const label = i18n.t(HISTORY_PRIORITY_LABEL_KEYS[value] ?? value) ?? value;
   const cls = HISTORY_PRIORITY_BADGE[value] ?? 'bg-hover text-secondary border-default';
   return (
     <span className={cn('inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-medium', cls)}>
@@ -114,8 +117,8 @@ function HistoryValueChange({ entry }: { entry: CrmTaskHistory }) {
   }
 
   if (field === 'assignee') {
-    const oldName = !old_value || old_value === 'null' ? 'не назначен' : old_value;
-    const newName = !new_value || new_value === 'null' ? 'не назначен' : new_value;
+    const oldName = !old_value || old_value === 'null' ? i18n.t('common.notAssigned') : old_value;
+    const newName = !new_value || new_value === 'null' ? i18n.t('common.notAssigned') : new_value;
     return (
       <p className="text-xs text-muted mt-1">
         <span className="text-muted">{oldName}</span>
@@ -233,6 +236,7 @@ interface HistorySectionProps {
 }
 
 export function HistorySection({ taskId }: HistorySectionProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [allEntries, setAllEntries] = useState<CrmTaskHistory[]>([]);
@@ -312,11 +316,11 @@ export function HistorySection({ taskId }: HistorySectionProps) {
           )}
 
           {isError && (
-            <p className="text-xs text-red-400 pl-3">Не удалось загрузить историю изменений.</p>
+            <p className="text-xs text-red-400 pl-3">{t('common.historyLoadError')}</p>
           )}
 
           {!isLoading && !isError && allEntries.length === 0 && (
-            <p className="text-xs text-muted pl-3">История изменений пуста.</p>
+            <p className="text-xs text-muted pl-3">{t('common.historyEmpty')}</p>
           )}
 
           {!isLoading && !isError && allEntries.length > 0 && (
@@ -324,8 +328,8 @@ export function HistorySection({ taskId }: HistorySectionProps) {
               {allEntries.map((entry) => {
                 const actionLabel =
                   entry.action === 'updated' && entry.field_name
-                    ? (FIELD_LABELS[entry.field_name] ?? `изменил(а) ${entry.field_name}`)
-                    : (ACTION_LABELS[entry.action] ?? entry.action);
+                    ? i18n.t(FIELD_LABEL_KEYS[entry.field_name] ?? entry.field_name)
+                    : i18n.t(ACTION_LABEL_KEYS[entry.action] ?? entry.action);
                 const initials = entry.user.full_name
                   .split(' ')
                   .slice(0, 2)
@@ -391,7 +395,7 @@ export function HistorySection({ taskId }: HistorySectionProps) {
               disabled={isFetching}
               className="mt-3 ml-3 text-xs text-gray-400 hover:text-gray-200 transition-colors disabled:opacity-50"
             >
-              {isFetching ? 'Загрузка...' : 'Загрузить ещё'}
+              {isFetching ? i18n.t('common.loading') : 'Загрузить ещё'}
             </button>
           )}
         </div>

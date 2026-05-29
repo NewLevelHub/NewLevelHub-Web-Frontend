@@ -1,17 +1,20 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { CalendarDays, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 
+import i18n from '@/shared/lib/i18n';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import {
   CALENDAR_EVENT_TYPES,
-  CALENDAR_EVENT_TYPE_LABELS,
+  CALENDAR_EVENT_TYPE_LABEL_KEYS,
   CALENDAR_VIEWS,
-  LEAVE_TYPE_LABELS,
+  LEAVE_TYPE_LABEL_KEYS,
   LEAVE_TYPES,
   USER_ROLES,
   type CalendarEventType,
+  type LeaveType,
   type CalendarView,
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
@@ -114,13 +117,6 @@ const EVENT_BADGE_CLASS: Record<CalendarEventType, string> = {
   [CALENDAR_EVENT_TYPES.GUEST_VISIT]: 'bg-violet-900/40 text-violet-300 border-violet-700',
 };
 
-const LEAVE_CALENDAR_LABELS = {
-  [LEAVE_TYPES.VACATION]: LEAVE_TYPE_LABELS[LEAVE_TYPES.VACATION],
-  [LEAVE_TYPES.DAY_OFF]: LEAVE_TYPE_LABELS[LEAVE_TYPES.DAY_OFF],
-  [LEAVE_TYPES.SICK_LEAVE]: LEAVE_TYPE_LABELS[LEAVE_TYPES.SICK_LEAVE],
-  [LEAVE_TYPES.REMOTE]: LEAVE_TYPE_LABELS[LEAVE_TYPES.REMOTE],
-} as const;
-
 function formatCalendarTitle(event: CalendarEvent) {
   if (event.type !== CALENDAR_EVENT_TYPES.LEAVE) {
     return event.title;
@@ -129,14 +125,16 @@ function formatCalendarTitle(event: CalendarEvent) {
   const [namePart, leaveTypeRaw] = event.title.split(' — ');
   if (!leaveTypeRaw) return event.title;
 
-  const leaveType = leaveTypeRaw.trim().toLowerCase() as keyof typeof LEAVE_CALENDAR_LABELS;
-  const translated = LEAVE_CALENDAR_LABELS[leaveType];
+  const leaveType = leaveTypeRaw.trim().toLowerCase() as LeaveType;
+  const labelKey = LEAVE_TYPE_LABEL_KEYS[leaveType];
+  const translated = labelKey ? i18n.t(labelKey) : undefined;
   if (!translated) return event.title;
 
   return `${namePart} — ${translated}`;
 }
 
 export default function CalendarPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
 
@@ -301,16 +299,12 @@ export default function CalendarPage() {
               setAnchorDate(today);
             }}
             className="rounded-lg border border-default bg-surface px-3 py-2 text-sm text-secondary hover:bg-hover"
-          >
-            Сегодня
-          </button>
+          >{t('common.today')}</button>
         </div>
 
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
           {isSuperadmin && (
-            <label className="text-sm text-secondary">
-              Компания
-              <select
+            <label className="text-sm text-secondary">{t('common.company')}<select
                 value={selectedCompanyId}
                 onChange={(event) => {
                   setSelectedCompanyId(event.target.value);
@@ -318,7 +312,7 @@ export default function CalendarPage() {
                 }}
                 className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               >
-                <option value="">Выберите компанию</option>
+                <option value="">{t('common.selectCompany')}</option>
                 {companyOptions.map((option) => (
                   <option key={option.id} value={String(option.id)}>
                     {option.name}
@@ -328,9 +322,7 @@ export default function CalendarPage() {
             </label>
           )}
 
-          <label className="text-sm text-secondary">
-            Сотрудник
-            <select
+          <label className="text-sm text-secondary">{t('team.roleEmployee')}<select
               value={selectedUserId}
               onChange={(event) => setSelectedUserId(event.target.value)}
               disabled={companyId === null || myOnly}
@@ -352,8 +344,8 @@ export default function CalendarPage() {
               onChange={(event) => setSelectedEventType(event.target.value)}
               className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             >
-              <option value="">Все типы</option>
-              {Object.entries(CALENDAR_EVENT_TYPE_LABELS).map(([value, label]) => (
+              <option value="">{t('common.allTypes')}</option>
+              {Object.entries(CALENDAR_EVENT_TYPE_LABEL_KEYS).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
@@ -367,17 +359,13 @@ export default function CalendarPage() {
               checked={myOnly}
               onChange={(event) => setMyOnly(event.target.checked)}
               className="h-4 w-4 rounded border-default bg-surface text-brand focus:ring-blue-500/20"
-            />
-            Только мои
-          </label>
+            />{t('common.onlyMine')}</label>
 
           <button
             type="button"
             onClick={resetFilters}
             className="mt-6 rounded-lg border border-default bg-surface px-3 py-2 text-sm text-secondary hover:bg-hover"
-          >
-            Сбросить фильтры
-          </button>
+          >{t('common.resetFilters')}</button>
         </div>
       </section>
 
@@ -415,7 +403,7 @@ export default function CalendarPage() {
                       <li key={`${event.type}-${event.start}-${event.user.id}-${event.title}`} className="px-4 py-3">
                         <div className="mb-1 flex flex-wrap items-center gap-2">
                           <span className={cn('rounded-full border px-2 py-0.5 text-xs font-medium', EVENT_BADGE_CLASS[event.type])}>
-                            {CALENDAR_EVENT_TYPE_LABELS[event.type]}
+                            {t(CALENDAR_EVENT_TYPE_LABEL_KEYS[event.type])}
                           </span>
                           <span className="text-sm font-medium text-primary">{formatCalendarTitle(event)}</span>
                         </div>

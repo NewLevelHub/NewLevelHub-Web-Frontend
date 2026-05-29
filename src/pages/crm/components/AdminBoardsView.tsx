@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Building2, Search, Inbox, AlertCircle } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { AdminBoardCard } from '@/pages/crm/components/AdminBoardCard';
@@ -25,6 +26,7 @@ function LoadingSkeleton() {
 }
 
 export function AdminBoardsView(props: AdminBoardsViewProps) {
+  const { t } = useTranslation();
   const {
     companies,
     selectedCompanyId,
@@ -73,7 +75,7 @@ export function AdminBoardsView(props: AdminBoardsViewProps) {
               'hover:border-strong',
             )}
           >
-            <option value="">Все компании</option>
+            <option value="">{t('common.allCompanies')}</option>
             {companies?.map((c) => (
               <option key={c.id} value={String(c.id)}>
                 {c.name}
@@ -138,7 +140,7 @@ export function AdminBoardsView(props: AdminBoardsViewProps) {
             <Inbox size={32} className="text-muted" />
           </div>
           <div className="text-center">
-            <p className="font-medium text-secondary">Нет досок</p>
+            <p className="font-medium text-secondary">{t('common.noBoards')}</p>
             <p className="text-sm text-muted mt-1">
               {searchQuery
                 ? 'Нет досок, совпадающих с поисковым запросом.'

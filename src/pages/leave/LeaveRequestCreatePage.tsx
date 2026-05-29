@@ -1,10 +1,11 @@
-import { useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { LEAVE_TYPES, LEAVE_TYPE_LABELS, type LeaveType } from '@/shared/config/constants';
+import { LEAVE_TYPES, LEAVE_TYPE_LABEL_KEYS, type LeaveType } from '@/shared/config/constants';
 import { getApiError } from '@/shared/lib/getApiError';
 
 type LeaveRequestCreatePayload = {
@@ -14,14 +15,17 @@ type LeaveRequestCreatePayload = {
   comment?: string;
 };
 
-const TYPE_OPTIONS: Array<{ value: LeaveType; label: string }> = [
-  { value: LEAVE_TYPES.VACATION, label: LEAVE_TYPE_LABELS[LEAVE_TYPES.VACATION] },
-  { value: LEAVE_TYPES.DAY_OFF, label: LEAVE_TYPE_LABELS[LEAVE_TYPES.DAY_OFF] },
-  { value: LEAVE_TYPES.SICK_LEAVE, label: LEAVE_TYPE_LABELS[LEAVE_TYPES.SICK_LEAVE] },
-  { value: LEAVE_TYPES.REMOTE, label: LEAVE_TYPE_LABELS[LEAVE_TYPES.REMOTE] },
-];
-
 export default function LeaveRequestCreatePage() {
+  const { t } = useTranslation();
+  const typeOptions = useMemo(
+    () => [
+      { value: LEAVE_TYPES.VACATION, label: t(LEAVE_TYPE_LABEL_KEYS[LEAVE_TYPES.VACATION]) },
+      { value: LEAVE_TYPES.DAY_OFF, label: t(LEAVE_TYPE_LABEL_KEYS[LEAVE_TYPES.DAY_OFF]) },
+      { value: LEAVE_TYPES.SICK_LEAVE, label: t(LEAVE_TYPE_LABEL_KEYS[LEAVE_TYPES.SICK_LEAVE]) },
+      { value: LEAVE_TYPES.REMOTE, label: t(LEAVE_TYPE_LABEL_KEYS[LEAVE_TYPES.REMOTE]) },
+    ],
+    [t],
+  );
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [leaveType, setLeaveType] = useState<LeaveType>(LEAVE_TYPES.VACATION);
@@ -80,7 +84,7 @@ export default function LeaveRequestCreatePage() {
             onChange={(event) => setLeaveType(event.target.value as LeaveType)}
             className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
           >
-            {TYPE_OPTIONS.map(option => (
+            {typeOptions.map(option => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -111,9 +115,7 @@ export default function LeaveRequestCreatePage() {
           </label>
         </div>
 
-        <label className="block text-sm text-secondary">
-          Комментарий
-          <textarea
+        <label className="block text-sm text-secondary">{t('common.comment')}<textarea
             value={comment}
             onChange={(event) => setComment(event.target.value)}
             rows={4}
@@ -132,15 +134,13 @@ export default function LeaveRequestCreatePage() {
           <Link
             to="/leave"
             className="inline-flex items-center rounded-lg border border-default bg-transparent px-4 py-2 text-sm font-medium text-secondary hover:bg-hover"
-          >
-            Отмена
-          </Link>
+          >{t('common.cancel')}</Link>
           <button
             type="submit"
             disabled={createLeaveMutation.isPending}
             className="inline-flex items-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
           >
-            {createLeaveMutation.isPending ? 'Отправка...' : 'Подать заявку'}
+            {createLeaveMutation.isPending ? t('common.submittingPlain') : t('common.submitRequest')}
           </button>
         </div>
       </form>

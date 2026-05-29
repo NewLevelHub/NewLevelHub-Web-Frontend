@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import { USER_ROLES } from '@/shared/config/constants';
@@ -8,6 +9,7 @@ import { PassSkeleton } from '@/pages/passes/components/PassSkeleton';
 import { usePasses } from '@/pages/passes/hooks/usePasses';
 
 export default function PassListPage() {
+  const { t } = useTranslation();
   const user = useUser();
   const isAdminView = user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN;
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
@@ -35,15 +37,13 @@ export default function PassListPage() {
     <main className="mx-auto max-w-5xl space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-primary">Гостевые пропуска</h1>
-          <p className="text-sm text-secondary">Ваши цифровые пропуска с QR-кодом.</p>
+          <h1 className="text-2xl font-bold text-primary">{t('passes.listTitle')}</h1>
+          <p className="text-sm text-secondary">{t('passes.listSubtitle')}</p>
         </div>
         <Link
           to="/passes/new"
           className="inline-flex items-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
-        >
-          Создать пропуск
-        </Link>
+        >{t('passes.create')}</Link>
       </div>
 
       <PassFilters
@@ -64,7 +64,7 @@ export default function PassListPage() {
       />
 
       {isLoading ? <PassSkeleton /> : null}
-      {isError ? <div className="text-sm text-danger">Не удалось загрузить список пропусков.</div> : null}
+      {isError ? <div className="text-sm text-danger">{t('passes.loadListError')}</div> : null}
 
       {!isLoading && !isError ? (
         <div className="overflow-hidden rounded-xl border border-default bg-raised">
@@ -72,12 +72,12 @@ export default function PassListPage() {
             <table className="w-full min-w-[760px] divide-y divide-[color:var(--border)] text-sm">
               <thead className="bg-surface text-left text-secondary">
                 <tr>
-                  <th className="px-4 py-3">Гость</th>
-                  <th className="px-4 py-3">Владелец</th>
-                  <th className="px-4 py-3">Цель</th>
-                  <th className="px-4 py-3">Период</th>
-                  <th className="px-4 py-3">Статус</th>
-                  <th className="px-4 py-3 text-right">Детали</th>
+                  <th className="px-4 py-3">{t('team.roleGuest')}</th>
+                  <th className="px-4 py-3">{t('passes.owner')}</th>
+                  <th className="px-4 py-3">{t('passes.columnPurpose')}</th>
+                  <th className="px-4 py-3">{t('passes.columnPeriod')}</th>
+                  <th className="px-4 py-3">{t('common.status')}</th>
+                  <th className="px-4 py-3 text-right">{t('passes.columnDetails')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[color:var(--border)]">
@@ -88,7 +88,7 @@ export default function PassListPage() {
             </table>
           </div>
           {totalCount === 0 ? (
-            <div className="px-4 py-8 text-center text-sm text-secondary">Пропусков пока нет.</div>
+            <div className="px-4 py-8 text-center text-sm text-secondary">{t('passes.noPassesYet')}</div>
           ) : null}
         </div>
       ) : null}

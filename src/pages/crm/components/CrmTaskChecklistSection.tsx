@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ListChecks, Plus, X, Check, Pencil, Trash2, ChevronRight, ChevronDown } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
@@ -111,6 +112,7 @@ interface ChecklistBlockProps {
 }
 
 function ChecklistBlock({ checklist, taskId, boardId }: ChecklistBlockProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [collapsed, setCollapsed] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -336,7 +338,7 @@ function ChecklistBlock({ checklist, taskId, boardId }: ChecklistBlockProps) {
                 type="button"
                 onClick={() => { setAddingItem(false); setNewItemText(''); }}
                 className="shrink-0 rounded p-1 text-muted hover:text-secondary hover:bg-hover transition-colors"
-                aria-label="Отмена"
+                aria-label={t('common.cancel')}
               >
                 <X size={12} />
               </button>
@@ -368,6 +370,7 @@ interface ChecklistSectionProps {
 }
 
 export function ChecklistSection({ taskId, boardId, checklists }: ChecklistSectionProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [addingChecklist, setAddingChecklist] = useState(false);
   const [newChecklistTitle, setNewChecklistTitle] = useState('');
@@ -457,13 +460,13 @@ export function ChecklistSection({ taskId, boardId, checklists }: ChecklistSecti
               'bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed',
             )}
           >
-            {createChecklistMutation.isPending ? '...' : 'Создать'}
+            {createChecklistMutation.isPending ? '...' : t('common.create')}
           </button>
           <button
             type="button"
             onClick={() => { setAddingChecklist(false); setNewChecklistTitle(''); }}
             className="shrink-0 rounded p-1 text-muted hover:text-secondary hover:bg-hover transition-colors"
-            aria-label="Отмена"
+            aria-label={t('common.cancel')}
           >
             <X size={13} />
           </button>

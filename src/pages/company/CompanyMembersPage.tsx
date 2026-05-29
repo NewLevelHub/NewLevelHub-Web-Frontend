@@ -1,11 +1,12 @@
-import { useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MailPlus, RefreshCw, Ban } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { USER_ROLES, USER_ROLE_LABELS, type UserRole } from '@/shared/config/constants';
+import { USER_ROLES, USER_ROLE_LABEL_KEYS, type UserRole } from '@/shared/config/constants';
 import { getApiError } from '@/shared/lib/getApiError';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
@@ -20,12 +21,15 @@ const btnPrimary =
 const btnGhost =
   'inline-flex items-center justify-center gap-1 rounded-lg border border-default px-3 py-1.5 text-xs font-medium text-secondary hover:bg-hover disabled:opacity-50';
 
-const INVITE_ROLES: { value: UserRole; label: string }[] = [
-  { value: USER_ROLES.EMPLOYEE, label: 'Сотрудник' },
-  { value: USER_ROLES.COMPANY_ADMIN, label: 'Администратор компании' },
-];
-
 export default function CompanyMembersPage() {
+  const { t } = useTranslation();
+  const inviteRoles = useMemo(
+    () => [
+      { value: USER_ROLES.EMPLOYEE, label: t(USER_ROLE_LABEL_KEYS[USER_ROLES.EMPLOYEE]) },
+      { value: USER_ROLES.COMPANY_ADMIN, label: t(USER_ROLE_LABEL_KEYS[USER_ROLES.COMPANY_ADMIN]) },
+    ],
+    [t],
+  );
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -113,14 +117,14 @@ export default function CompanyMembersPage() {
   if (!companyId && !isSuperadmin) {
     return (
       <div className="max-w-2xl">
-        <h1 className="text-2xl font-semibold text-primary">Участники</h1>
+        <h1 className="text-2xl font-semibold text-primary">{t('booking.modal.participants')}</h1>
         <p className="mt-2 text-secondary">К компании не привязан профиль.</p>
       </div>
     );
   }
 
   const canOfferCompanyAdmin = user?.role === USER_ROLES.SUPERADMIN;
-  const roleOptions = INVITE_ROLES.filter(
+  const roleOptions = inviteRoles.filter(
     (o) => o.value !== USER_ROLES.COMPANY_ADMIN || canOfferCompanyAdmin,
   );
 
@@ -137,7 +141,7 @@ export default function CompanyMembersPage() {
     <div className="max-w-4xl space-y-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-primary">Участники</h1>
+          <h1 className="text-2xl font-semibold text-primary">{t('booking.modal.participants')}</h1>
           <p className="mt-1 text-sm text-secondary">
             {isSuperadmin && !companyId
               ? 'Выберите компанию ниже, чтобы просматривать участников и отправлять приглашения.'
@@ -168,9 +172,7 @@ export default function CompanyMembersPage() {
 
       {isSuperadmin ? (
         <section className="rounded-xl border border-default bg-surface/50 p-4">
-          <label className={labelClass} htmlFor="company-select">
-            Компания
-          </label>
+          <label className={labelClass} htmlFor="company-select">{t('common.company')}</label>
           <select
             id="company-select"
             value={selectedCompanyId}
@@ -181,7 +183,7 @@ export default function CompanyMembersPage() {
             }}
             className={inputClass}
           >
-            <option value="">Выберите компанию</option>
+            <option value="">{t('common.selectCompany')}</option>
             {(companiesData?.results ?? []).map((company) => (
               <option key={company.id} value={String(company.id)}>
                 {company.name}
@@ -227,9 +229,7 @@ export default function CompanyMembersPage() {
               />
             </div>
             <div>
-              <label htmlFor="invite-role" className={labelClass}>
-                Роль
-              </label>
+              <label htmlFor="invite-role" className={labelClass}>{t('common.role')}</label>
               <select
                 id="invite-role"
                 value={role}
@@ -245,15 +245,13 @@ export default function CompanyMembersPage() {
             </div>
             <div className="flex gap-3">
               <button type="submit" disabled={createInvite.isPending} className={btnPrimary}>
-                {createInvite.isPending ? 'Отправка…' : 'Отправить приглашение'}
+                {createInvite.isPending ? t('common.submitting') : 'Отправить приглашение'}
               </button>
               <button
                 type="button"
                 onClick={() => setInviteOpen(false)}
                 className="rounded-lg border border-default px-4 py-2 text-sm text-secondary hover:bg-hover"
-              >
-                Отмена
-              </button>
+              >{t('common.cancel')}</button>
             </div>
           </form>
         </section>
@@ -263,7 +261,7 @@ export default function CompanyMembersPage() {
       <section>
         <h2 className="text-lg font-medium text-primary">Сотрудники</h2>
         {membersLoading ? (
-          <p className="mt-3 text-sm text-muted">Загрузка…</p>
+          <p className="mt-3 text-sm text-muted">{t('common.loading')}</p>
         ) : (
           <ul className="mt-4 divide-y divide-[color:var(--border)] rounded-xl border border-default">
             {members.map((m) => (
@@ -273,7 +271,7 @@ export default function CompanyMembersPage() {
                   <p className="text-sm text-secondary">{m.email}</p>
                 </div>
                 <span className="rounded-full bg-raised px-2.5 py-0.5 text-xs text-secondary">
-                  {USER_ROLE_LABELS[m.role as UserRole] ?? m.role}
+                  {t(USER_ROLE_LABEL_KEYS[m.role as UserRole]) ?? m.role}
                 </span>
               </li>
             ))}
@@ -306,7 +304,7 @@ export default function CompanyMembersPage() {
               </select>
             </label>
             <label className="flex items-center gap-2 text-secondary">
-              <span>Просрочено</span>
+              <span>{t('common.overdue')}</span>
               <select
                 value={filterExpired === undefined ? '' : filterExpired ? 'true' : 'false'}
                 onChange={(e) => {
@@ -328,15 +326,13 @@ export default function CompanyMembersPage() {
                   setFilterExpired(undefined);
                 }}
                 className="rounded-md border border-default px-3 py-1 text-secondary hover:bg-hover"
-              >
-                Сбросить фильтры
-              </button>
+              >{t('common.resetFilters')}</button>
             ) : null}
           </div>
         </div>
 
         {invitationsQuery.isLoading ? (
-          <p className="mt-3 text-sm text-muted">Загрузка…</p>
+          <p className="mt-3 text-sm text-muted">{t('common.loading')}</p>
         ) : (
           <ul className="mt-4 divide-y divide-[color:var(--border)] rounded-xl border border-default">
             {invitations.map((inv) => (
@@ -345,7 +341,7 @@ export default function CompanyMembersPage() {
                   <div>
                     <p className="font-medium text-primary">{inv.email}</p>
                     <p className="text-xs text-muted">
-                      {USER_ROLE_LABELS[inv.role as UserRole] ?? inv.role} · до {new Date(inv.expires_at).toLocaleString('ru-RU')}
+                      {t(USER_ROLE_LABEL_KEYS[inv.role as UserRole]) ?? inv.role} · до {new Date(inv.expires_at).toLocaleString('ru-RU')}
                       {inv.is_expired ? ' · просрочено' : inv.is_used ? ' · использовано' : ''}
                     </p>
                     {isSuperadmin && selectedCompanyName ? (

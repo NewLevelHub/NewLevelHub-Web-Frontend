@@ -1,4 +1,5 @@
 import { useState, type InputHTMLAttributes } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { authInput } from '@/shared/ui/authFormStyles';
@@ -8,6 +9,7 @@ export type AuthPasswordFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>,
 };
 
 export function AuthPasswordField({ inputClassName, className, ...props }: AuthPasswordFieldProps) {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
 
   return (
@@ -24,7 +26,7 @@ export function AuthPasswordField({ inputClassName, className, ...props }: AuthP
           'hover:bg-raised hover:text-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500',
         )}
         onClick={() => setVisible((v) => !v)}
-        aria-label={visible ? 'Скрыть пароль' : 'Показать пароль'}
+        aria-label={visible ? t('common.hidePassword') : t('common.showPassword')}
         aria-pressed={visible}
       >
         {visible ? <EyeOff className="size-4 shrink-0" aria-hidden /> : <Eye className="size-4 shrink-0" aria-hidden />}

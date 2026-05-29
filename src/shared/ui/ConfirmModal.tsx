@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, AlertTriangle, AlertCircle } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 
@@ -22,12 +23,15 @@ export function ConfirmModal({
   onConfirm,
   title,
   description,
-  confirmLabel = 'Подтвердить',
-  cancelLabel = 'Отмена',
+  confirmLabel,
+  cancelLabel,
   variant = 'danger',
   isLoading = false,
   rootClassName,
 }: ConfirmModalProps) {
+  const { t } = useTranslation();
+  const resolvedConfirmLabel = confirmLabel ?? t('modal.confirm');
+  const resolvedCancelLabel = cancelLabel ?? t('modal.cancel');
   const dialogRef = useRef<HTMLDivElement>(null);
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -136,7 +140,7 @@ export function ConfirmModal({
             onClick={onClose}
             disabled={isLoading}
             className="shrink-0 rounded-lg p-1 text-secondary transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:pointer-events-none disabled:opacity-50"
-            aria-label="Закрыть"
+            aria-label={t('modal.close')}
           >
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -150,7 +154,7 @@ export function ConfirmModal({
             disabled={isLoading}
             className="rounded-lg border border-default bg-surface px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-raised disabled:pointer-events-none disabled:opacity-50"
           >
-            {cancelLabel}
+            {resolvedCancelLabel}
           </button>
 
           <button
@@ -171,7 +175,7 @@ export function ConfirmModal({
                 aria-hidden="true"
               />
             )}
-            {confirmLabel}
+            {resolvedConfirmLabel}
           </button>
         </div>
       </div>

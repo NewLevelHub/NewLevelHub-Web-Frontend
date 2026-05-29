@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, X, Search, Check, Settings } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
@@ -18,6 +19,7 @@ interface TaskLabelsSectionProps {
 }
 
 export function TaskLabelsSection({ taskId, boardId, taskLabels }: TaskLabelsSectionProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -84,7 +86,7 @@ export function TaskLabelsSection({ taskId, boardId, taskLabels }: TaskLabelsSec
 
   return (
     <div className="space-y-2">
-      <span className="block text-xs font-medium text-muted uppercase tracking-wide">Метки</span>
+      <span className="block text-xs font-medium text-muted uppercase tracking-wide">{t('crm.labels')}</span>
 
       {/* Current labels */}
       <div className="flex flex-wrap gap-1.5">
@@ -141,7 +143,7 @@ export function TaskLabelsSection({ taskId, boardId, taskLabels }: TaskLabelsSec
                 'w-56 rounded-lg border border-default bg-surface shadow-xl',
               )}
               role="listbox"
-              aria-label="Выбор меток"
+              aria-label={t('common.pickLabels')}
             >
               {/* Search */}
               <div className="p-2 border-b border-default">
@@ -152,7 +154,7 @@ export function TaskLabelsSection({ taskId, boardId, taskLabels }: TaskLabelsSec
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Найти метку..."
+                    placeholder={t('common.findLabel')}
                     className={cn(
                       'w-full rounded-md border bg-raised pl-7 pr-2 py-1.5 text-xs text-primary placeholder-gray-500',
                       'focus:outline-none focus:ring-1 focus:ring-blue-500 border-default',

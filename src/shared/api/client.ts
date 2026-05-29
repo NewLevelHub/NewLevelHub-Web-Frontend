@@ -3,6 +3,7 @@ import { env } from '@/shared/config/env';
 import { API } from '@/shared/api/endpoints';
 import { queryClient } from '@/shared/lib/queryClient';
 import { tokenStorage } from '@/shared/lib/storage';
+import i18n from '@/shared/lib/i18n';
 
 export const apiClient = axios.create({
   baseURL: env.API_BASE_URL,
@@ -15,8 +16,8 @@ apiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  // Default to Russian until i18n chooses locale per user.
-  config.headers['Accept-Language'] = 'ru-RU';
+  const lang = i18n.language ?? 'ru';
+  config.headers['Accept-Language'] = lang === 'ru' ? 'ru-RU' : 'en-US';
   return config;
 });
 
@@ -74,7 +75,7 @@ apiClient.interceptors.response.use(
         {},
         {
           withCredentials: true,
-          headers: { 'Accept-Language': 'ru-RU' },
+          headers: { 'Accept-Language': (i18n.language ?? 'ru') === 'ru' ? 'ru-RU' : 'en-US' },
         },
       );
       const newAccess = data.access;

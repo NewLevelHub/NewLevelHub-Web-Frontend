@@ -1,8 +1,10 @@
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { CheckCircle } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 
 export default function UnsubscribeSuccessPage() {
+  const { t } = useTranslation();
   return (
     <div className={cn('flex flex-col items-center text-center gap-6')}>
       <CheckCircle className="w-16 h-16 text-green-400" aria-hidden="true" />

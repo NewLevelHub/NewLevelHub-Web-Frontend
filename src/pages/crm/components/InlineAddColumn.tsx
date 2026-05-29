@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Check, X } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
@@ -12,6 +13,7 @@ export interface InlineAddColumnProps {
 }
 
 export function InlineAddColumn({ boardId, onDone }: InlineAddColumnProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -45,7 +47,7 @@ export function InlineAddColumn({ boardId, onDone }: InlineAddColumnProps) {
     <form
       onSubmit={handleSubmit}
       className="flex flex-col rounded-xl border border-blue-600/50 bg-surface w-72 shrink-0 px-4 py-3 gap-2"
-      aria-label="Создание новой колонки"
+      aria-label={t('common.newColumn')}
     >
       <input
         ref={inputRef}
@@ -53,7 +55,7 @@ export function InlineAddColumn({ boardId, onDone }: InlineAddColumnProps) {
         value={name}
         onChange={(e) => setName(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Название колонки..."
+        placeholder={t('common.columnName')}
         maxLength={100}
         required
         className={cn(
@@ -71,13 +73,13 @@ export function InlineAddColumn({ boardId, onDone }: InlineAddColumnProps) {
           )}
         >
           <Check size={13} />
-          {mutation.isPending ? 'Создание...' : 'Создать'}
+          {mutation.isPending ? t('common.creatingPlain') : t('common.create')}
         </button>
         <button
           type="button"
           onClick={onDone}
           className="rounded-lg p-1.5 text-muted hover:text-secondary hover:bg-hover transition-colors"
-          aria-label="Отмена"
+          aria-label={t('common.cancel')}
         >
           <X size={15} />
         </button>

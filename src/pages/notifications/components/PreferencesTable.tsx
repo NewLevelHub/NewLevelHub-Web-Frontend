@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { NotificationPreferences, NotificationType } from '@/shared/types';
 import { Toggle } from '@/pages/notifications/components/Toggle';
 
@@ -36,6 +37,7 @@ export interface PreferencesTableProps {
 }
 
 export function PreferencesTable({ preferences, pendingKeys, onToggle }: PreferencesTableProps) {
+  const { t } = useTranslation();
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm" role="table" aria-label="Настройки уведомлений">
@@ -50,9 +52,7 @@ export function PreferencesTable({ preferences, pendingKeys, onToggle }: Prefere
             <th
               scope="col"
               className="py-3 px-6 text-center text-xs font-medium uppercase tracking-wider text-secondary"
-            >
-              В приложении
-            </th>
+            >{t('common.inApp')}</th>
             <th
               scope="col"
               className="py-3 pl-6 text-center text-xs font-medium uppercase tracking-wider text-secondary"

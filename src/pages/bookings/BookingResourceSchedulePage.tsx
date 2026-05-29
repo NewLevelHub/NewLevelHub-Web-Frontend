@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { Link, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Bookmark, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -7,8 +9,8 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import {
   BOOKING_RESOURCE_CATALOG_STATUS,
-  RESOURCE_EQUIPMENT_LABELS,
-  RESOURCE_TYPE_LABELS,
+  RESOURCE_EQUIPMENT_LABEL_KEYS,
+  RESOURCE_TYPE_LABEL_KEYS,
   type ResourceEquipmentKey,
   type ResourceType,
 } from '@/shared/config/constants';
@@ -17,13 +19,6 @@ import { cn } from '@/shared/lib/cn';
 import type { BookingResourceDetail, ResourceScheduleSlot } from '@/shared/types';
 
 import { ResourceDayTimeline } from '@/pages/bookings/components/ResourceDayTimeline';
-
-const STATUS_LABELS: Record<string, string> = {
-  [BOOKING_RESOURCE_CATALOG_STATUS.FREE]: 'Свободен',
-  [BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED]: 'Занят',
-  [BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED]: 'Заблокирован',
-  [BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE]: 'Скоро свободен',
-};
 
 const STATUS_BADGE_CLASS: Record<string, string> = {
   [BOOKING_RESOURCE_CATALOG_STATUS.FREE]: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
@@ -46,6 +41,8 @@ function addDays(iso: string, delta: number): string {
 }
 
 export default function BookingResourceSchedulePage() {
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const { id } = useParams<{ id: string }>();
   const resourceId = id ? Number(id) : NaN;
   const [selectedDay, setSelectedDay] = useState(() => localIsoDate(new Date()));
@@ -90,7 +87,7 @@ export default function BookingResourceSchedulePage() {
   if (!Number.isFinite(resourceId)) {
     return (
       <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-3xl mx-auto">
-        <p className="text-sm text-red-600">Некорректный идентификатор ресурса.</p>
+        <p className="text-sm text-red-600">{t('resources.list.invalidId')}</p>
       </main>
     );
   }
@@ -98,7 +95,7 @@ export default function BookingResourceSchedulePage() {
   if (detailLoading) {
     return (
       <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-3xl mx-auto">
-        <p className="text-sm text-muted">Загрузка…</p>
+        <p className="text-sm text-muted">{t('common.loading')}</p>
       </main>
     );
   }
@@ -106,10 +103,8 @@ export default function BookingResourceSchedulePage() {
   if (detailError || !detail) {
     return (
       <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-3xl mx-auto space-y-3">
-        <p className="text-sm text-red-600">Ресурс не найден или нет доступа.</p>
-        <Link to="/bookings/catalog" className="text-sm text-blue-600 hover:underline">
-          В каталог
-        </Link>
+        <p className="text-sm text-red-600">{t('resources.list.notFound')}</p>
+        <Link to="/bookings/catalog" className="text-sm text-blue-600 hover:underline">{t('common.goToCatalog')}</Link>
       </main>
     );
   }
@@ -122,7 +117,7 @@ export default function BookingResourceSchedulePage() {
       : legacySrc;
 
   const status = detail.status;
-  const statusLabel = status ? (STATUS_LABELS[status] ?? status) : null;
+  const statusLabel = status ? t(`catalog.status.${status}`) : null;
   const statusClass = status ? (STATUS_BADGE_CLASS[status] ?? 'bg-slate-500/15 text-slate-400 border-slate-500/30') : null;
 
   const isBookable =
@@ -141,7 +136,7 @@ export default function BookingResourceSchedulePage() {
         className="inline-flex items-center gap-2 text-sm font-medium text-secondary hover:text-primary transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
-        Каталог
+        {t('catalog.title')}
       </Link>
 
       {/* Photo slider */}
@@ -160,7 +155,7 @@ export default function BookingResourceSchedulePage() {
         )}
         <div className="absolute bottom-3 left-4 flex items-center gap-2">
           <span className="rounded-full border border-white/20 bg-black/50 px-2.5 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
-            {RESOURCE_TYPE_LABELS[detail.type as ResourceType]}
+            {t(RESOURCE_TYPE_LABEL_KEYS[detail.type as ResourceType])}
           </span>
           {statusLabel && (
             <span className={cn('rounded-full border px-2.5 py-0.5 text-xs font-medium backdrop-blur-sm', statusClass)}>
@@ -176,7 +171,7 @@ export default function BookingResourceSchedulePage() {
               type="button"
               onClick={() => setPhotoIdx((i) => (i - 1 + photos.length) % photos.length)}
               className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/55 p-2 text-white hover:bg-black/80 transition-colors"
-              aria-label="Предыдущее фото"
+              aria-label={t('resources.list.prevPhoto')}
             >
               <ChevronLeft size={20} />
             </button>
@@ -184,7 +179,7 @@ export default function BookingResourceSchedulePage() {
               type="button"
               onClick={() => setPhotoIdx((i) => (i + 1) % photos.length)}
               className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/55 p-2 text-white hover:bg-black/80 transition-colors"
-              aria-label="Следующее фото"
+              aria-label={t('resources.list.nextPhoto')}
             >
               <ChevronRight size={20} />
             </button>
@@ -200,7 +195,7 @@ export default function BookingResourceSchedulePage() {
                     'h-1.5 rounded-full transition-all',
                     i === photoIdx ? 'w-4 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/75',
                   )}
-                  aria-label={`Фото ${i + 1}`}
+                  aria-label={t('resources.list.photoN', { n: i + 1 })}
                 />
               ))}
             </div>
@@ -212,10 +207,10 @@ export default function BookingResourceSchedulePage() {
       <div>
         <h1 className="text-2xl font-bold text-primary">{detail.name}</h1>
         <p className="mt-1 text-sm text-secondary">
-          Этаж {detail.floor}
+          {t('common.floor', { floor: detail.floor })}
           {detail.zone ? ` · ${detail.zone}` : ''}
-          {detail.parking_type ? ` · ${detail.parking_type === 'vip' ? 'VIP парковка' : 'Обычная парковка'}` : ''}
-          {detail.capsule_zone === 'quiet' ? ' · Тихая зона' : detail.capsule_zone === 'regular' ? ' · Обычная зона' : ''}
+          {detail.parking_type ? ` · ${t(`common.parkingType.${detail.parking_type}`)}` : ''}
+          {detail.capsule_zone ? ` · ${t(`common.capsuleZone.${detail.capsule_zone}`)}` : ''}
         </p>
         {detail.assigned_company_name && (
           <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/15 px-2.5 py-0.5 text-xs font-medium text-indigo-300">
@@ -233,18 +228,18 @@ export default function BookingResourceSchedulePage() {
       {/* Key info grid */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-xl border border-default bg-raised p-3">
-          <p className="text-xs text-muted">Тип</p>
+          <p className="text-xs text-muted">{t('common.type')}</p>
           <p className="mt-0.5 text-sm font-semibold text-primary">
-            {RESOURCE_TYPE_LABELS[detail.type as ResourceType]}
+            {t(RESOURCE_TYPE_LABEL_KEYS[detail.type as ResourceType])}
           </p>
         </div>
         <div className="rounded-xl border border-default bg-raised p-3">
-          <p className="text-xs text-muted">Вместимость</p>
+          <p className="text-xs text-muted">{t('catalog.capacityLabel')}</p>
           <p className="mt-0.5 text-sm font-semibold text-primary">{detail.capacity}</p>
         </div>
         {statusLabel && (
           <div className="rounded-xl border border-default bg-raised p-3">
-            <p className="text-xs text-muted">Статус</p>
+            <p className="text-xs text-muted">{t('common.status')}</p>
             <p className={cn('mt-0.5 text-sm font-semibold', status === BOOKING_RESOURCE_CATALOG_STATUS.FREE ? 'text-emerald-400' : status === BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED ? 'text-rose-400' : status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED ? 'text-slate-400' : 'text-amber-400')}>
               {statusLabel}
             </p>
@@ -252,7 +247,7 @@ export default function BookingResourceSchedulePage() {
         )}
         {detail.is_hot_desk && (
           <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-3">
-            <p className="text-xs text-blue-400">Режим</p>
+            <p className="text-xs text-blue-400">{t('catalog.modeLabel')}</p>
             <p className="mt-0.5 text-sm font-semibold text-blue-300">Hot desk</p>
           </div>
         )}
@@ -263,8 +258,9 @@ export default function BookingResourceSchedulePage() {
         <div className="flex items-center gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
           <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-amber-400" aria-hidden="true" />
           <p className="text-sm text-amber-300">
-            Освободится в{' '}
-            {new Date(detail.available_at).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })}
+            {t('resources.list.freeAt', {
+              time: new Date(detail.available_at).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }),
+            })}
           </p>
         </div>
       )}
@@ -272,14 +268,14 @@ export default function BookingResourceSchedulePage() {
       {/* Equipment */}
       {activeEquipment.length > 0 && (
         <div>
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">Оборудование</p>
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">{t('catalog.equipment')}</p>
           <ul className="flex flex-wrap gap-1.5">
             {activeEquipment.map((key) => (
               <li
                 key={key}
                 className="rounded-lg border border-default bg-raised px-2.5 py-1 text-xs font-medium text-secondary"
               >
-                {RESOURCE_EQUIPMENT_LABELS[key] ?? key}
+                {t(RESOURCE_EQUIPMENT_LABEL_KEYS[key]) ?? key}
               </li>
             ))}
           </ul>
@@ -289,7 +285,7 @@ export default function BookingResourceSchedulePage() {
       {/* Schedule */}
       <div className="rounded-2xl border border-default bg-surface p-4 shadow-sm space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold text-primary">Расписание</h2>
+          <h2 className="text-lg font-semibold text-primary">{t('resources.list.schedule')}</h2>
           <div className="flex items-center gap-1">
             <button
               type="button"
@@ -299,7 +295,7 @@ export default function BookingResourceSchedulePage() {
                 'hover:bg-raised hover:text-primary',
                 'focus:outline-none focus:ring-2 focus:ring-blue-500',
               )}
-              aria-label="Предыдущий день"
+              aria-label={t('resources.list.prevDay')}
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -307,6 +303,7 @@ export default function BookingResourceSchedulePage() {
               type="date"
               value={selectedDay}
               onChange={(e) => setSelectedDay(e.target.value)}
+              lang={dateLocale}
               className={cn(
                 'rounded-lg border border-default bg-surface px-2 py-1.5 text-sm text-primary',
                 'focus:outline-none focus:ring-2 focus:ring-blue-500',
@@ -320,7 +317,7 @@ export default function BookingResourceSchedulePage() {
                 'hover:bg-raised hover:text-primary',
                 'focus:outline-none focus:ring-2 focus:ring-blue-500',
               )}
-              aria-label="Следующий день"
+              aria-label={t('resources.list.nextDay')}
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -361,9 +358,7 @@ export default function BookingResourceSchedulePage() {
         ) : (
           <>
             <ResourceDayTimeline dayDate={selectedDay} slots={daySlots} />
-            <p className="text-xs text-muted">
-              Красным — бронирования, янтарным — блокировки. Свободное время — светлая полоса.
-            </p>
+            <p className="text-xs text-muted">{t('resources.list.timelineLegend')}</p>
           </>
         )}
       </div>
@@ -374,16 +369,14 @@ export default function BookingResourceSchedulePage() {
           <Link
             to={`/bookings/new?resource=${detail.id}`}
             className="inline-flex justify-center rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-          >
-            Забронировать
-          </Link>
+          >{t('catalog.book')}</Link>
         ) : (
           <button
             type="button"
             disabled
             className="inline-flex cursor-not-allowed justify-center rounded-xl bg-hover px-6 py-3 text-sm font-semibold text-secondary"
           >
-            {status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED ? 'Заблокирован' : 'Занят'}
+            {status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED ? t('catalog.status.blocked') : t('catalog.status.occupied')}
           </button>
         )}
       </div>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
@@ -12,6 +13,7 @@ export interface CreateColumnModalProps {
 }
 
 export function CreateColumnModal({ boardId, onClose }: CreateColumnModalProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [wipLimit, setWipLimit] = useState('');
@@ -57,14 +59,12 @@ export function CreateColumnModal({ boardId, onClose }: CreateColumnModalProps) 
     >
       <div className="w-full max-w-md rounded-xl bg-surface border border-default shadow-2xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-default">
-          <h2 id="create-column-title" className="text-lg font-semibold text-primary">
-            Добавить колонку
-          </h2>
+          <h2 id="create-column-title" className="text-lg font-semibold text-primary">{t('common.addColumn')}</h2>
           <button
             type="button"
             onClick={onClose}
             className="text-secondary hover:text-primary transition-colors rounded-md p-1 hover:bg-hover"
-            aria-label="Закрыть"
+            aria-label={t('common.close')}
           >
             <X size={18} />
           </button>
@@ -94,7 +94,7 @@ export function CreateColumnModal({ boardId, onClose }: CreateColumnModalProps) 
 
           <div className="space-y-1.5">
             <label htmlFor="column-wip" className="block text-sm font-medium text-secondary">
-              Лимит WIP <span className="text-muted font-normal">(необязательно)</span>
+              Лимит WIP <span className="text-muted font-normal">{t('common.optional')}</span>
             </label>
             <input
               id="column-wip"
@@ -116,9 +116,7 @@ export function CreateColumnModal({ boardId, onClose }: CreateColumnModalProps) 
               type="button"
               onClick={onClose}
               className="rounded-lg px-4 py-2 text-sm font-medium text-secondary hover:text-primary hover:bg-hover transition-colors"
-            >
-              Отмена
-            </button>
+            >{t('common.cancel')}</button>
             <button
               type="submit"
               disabled={!name.trim() || mutation.isPending}
@@ -128,7 +126,7 @@ export function CreateColumnModal({ boardId, onClose }: CreateColumnModalProps) 
                 'disabled:opacity-50 disabled:cursor-not-allowed',
               )}
             >
-              {mutation.isPending ? 'Создание...' : 'Создать'}
+              {mutation.isPending ? t('common.creatingPlain') : t('common.create')}
             </button>
           </div>
         </form>

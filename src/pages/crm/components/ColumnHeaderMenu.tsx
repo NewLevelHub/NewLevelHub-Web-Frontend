@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import type { CrmColumn } from '@/shared/types';
 
@@ -9,6 +10,7 @@ export interface ColumnHeaderMenuProps {
 }
 
 export function ColumnHeaderMenu({ column, onEdit, onDelete }: ColumnHeaderMenuProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -50,9 +52,7 @@ export function ColumnHeaderMenu({ column, onEdit, onDelete }: ColumnHeaderMenuP
             }}
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-secondary hover:text-primary hover:bg-hover transition-colors"
           >
-            <Pencil size={13} />
-            Редактировать
-          </button>
+            <Pencil size={13} />{t('common.edit')}</button>
           <button
             type="button"
             role="menuitem"
@@ -62,9 +62,7 @@ export function ColumnHeaderMenu({ column, onEdit, onDelete }: ColumnHeaderMenuP
             }}
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-400 hover:text-danger hover:bg-danger-subtle transition-colors"
           >
-            <Trash2 size={13} />
-            Удалить
-          </button>
+            <Trash2 size={13} />{t('common.delete')}</button>
         </div>
       )}
     </div>
