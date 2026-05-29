@@ -167,7 +167,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {isCompanyAdmin && companyOnboarding /*&& !companyOnboarding.completed &&*/ && (
+      {isCompanyAdmin && companyOnboarding && !companyOnboarding.completed && (
         /* ── Онбординг ещё не завершён — показываем шаги ── */
         <section className="rounded-xl border border-blue-200 bg-brand-subtle p-5 dark:border-blue-900/40">
           <h2 className="text-sm font-semibold text-brand">{t('dashboard.companyOnboarding.title')}</h2>
