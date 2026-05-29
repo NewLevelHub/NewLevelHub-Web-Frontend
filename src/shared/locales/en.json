@@ -8,7 +8,10 @@
       "activeBookings": "Active bookings",
       "spaceLoad": "Space utilization",
       "openRequests": "Open requests",
-      "activeTenants": "Active tenants"
+      "activeTenants": "Active tenants",
+      "trendWeek": "{{delta}} this week",
+      "trendSpaceLoad": "{{pct}}% vs last week",
+      "trendClosedToday": "−{{count}} closed today"
     },
     "upcomingBookings": "Upcoming bookings",
     "acrossAllCompanies": "across all companies · today",

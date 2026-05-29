@@ -315,7 +315,7 @@ export default function MyBookingsPage() {
       {/* Page header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-[22px] font-bold text-[color:var(--text-primary)] leading-tight">
+          <h1 className="text-lg sm:text-[22px] font-bold text-[color:var(--text-primary)] leading-tight">
             {t('common.myBookings')}
           </h1>
           {totalCount > 0 && (
@@ -333,7 +333,7 @@ export default function MyBookingsPage() {
             </Link>
           )}
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
           {(user?.role === USER_ROLES.EMPLOYEE || user?.role === USER_ROLES.COMPANY_ADMIN) && (
             <Link
               to="/bookings/recurring"
@@ -468,7 +468,7 @@ export default function MyBookingsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-[13px]" role="table">
+            <table className="w-full min-w-[600px] border-collapse text-[13px]" role="table">
               <thead>
                 <tr className="border-b border-[color:var(--border)]">
                   <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
@@ -626,7 +626,7 @@ export default function MyBookingsPage() {
           onClick={closeEditModal}
         >
           <div
-            className="w-full max-w-2xl rounded-2xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-5 shadow-xl"
+            className="w-full max-w-2xl mx-2 sm:mx-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-4 sm:p-5 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
             <h2 className="text-lg font-semibold text-[color:var(--text-primary)]">
@@ -738,7 +738,7 @@ export default function MyBookingsPage() {
               <p className="mt-3 text-sm text-[color:var(--status-free-text)]">{editSuccess}</p>
             )}
 
-            <div className="mt-4 flex justify-end gap-2">
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
               <button
                 type="button"
                 onClick={closeEditModal}

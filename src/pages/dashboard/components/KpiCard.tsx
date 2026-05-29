@@ -20,7 +20,7 @@ export function KpiCard({ label, value, trend, trendDir, sparklineData }: KpiCar
   return (
     <div className="rounded-xl border border-default bg-surface p-5 flex flex-col gap-3">
       <p className="text-xs text-muted leading-tight">{label}</p>
-      <p className="text-3xl font-bold text-primary leading-none tracking-tight">{value}</p>
+      <p className="text-2xl sm:text-3xl font-bold text-primary leading-none tracking-tight">{value}</p>
       <div className="flex items-end justify-between gap-2">
         <p className={cn('text-xs font-medium leading-tight', trendClass)}>{trend}</p>
         <div className="w-16 shrink-0">

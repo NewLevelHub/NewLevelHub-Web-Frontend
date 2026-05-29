@@ -465,10 +465,10 @@ export default function ManageBookingsPage() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-shrink-0 sm:items-center">
           <Link
             to="/bookings/my"
-            className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 h-[34px] px-3 text-[13px] font-medium border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors w-full sm:w-auto sm:justify-start"
           >
             <BookMarked className="w-3.5 h-3.5" />
             {t('common.myBookings')}
@@ -476,7 +476,7 @@ export default function ManageBookingsPage() {
           {(user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN) && (
             <Link
               to="/bookings/recurring"
-              className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 h-[34px] px-3 text-[13px] font-medium border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors w-full sm:w-auto sm:justify-start"
             >
               <Repeat className="w-3.5 h-3.5" />
               {t('sidebar.navItem.recurringBookings')}
@@ -484,7 +484,7 @@ export default function ManageBookingsPage() {
           )}
           <Link
             to="/bookings/catalog"
-            className="inline-flex items-center gap-1.5 h-8 px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity"
+            className="inline-flex items-center justify-center gap-1.5 h-8 px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity w-full sm:w-auto sm:justify-start"
           >
             {t('booking.manage.createBooking')}
           </Link>
