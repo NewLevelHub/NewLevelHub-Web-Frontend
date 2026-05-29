@@ -2,6 +2,8 @@ import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Megaphone, PlusCircle, ExternalLink } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
+import i18n from '@/shared/lib/i18n';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import type { SuperadminDashboardData } from '@/shared/types';
 import { KpiCard, type KpiCardProps } from '@/pages/dashboard/components/KpiCard';
 import { FloorLoadWidget } from '@/pages/dashboard/components/FloorLoadWidget';
@@ -9,9 +11,10 @@ import { SPARKLINE_DATA, BOOKING_STATUS_BADGE } from '@/pages/dashboard/constant
 
 export function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
   const { t } = useTranslation();
+  const locale = dateLocaleTag(i18n.language);
 
   const today = new Date();
-  const dateStr = today.toLocaleDateString('ru-RU', {
+  const dateStr = today.toLocaleDateString(locale, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -222,11 +225,11 @@ export function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
                 <ul className="space-y-3">
                   {announcements.map((a) => {
                     const createdDate = new Date(a.created_at);
-                    const metaStr = createdDate.toLocaleDateString('ru-RU', {
+                    const metaStr = createdDate.toLocaleDateString(locale, {
                       day: 'numeric',
                       month: 'short',
                     });
-                    const metaTime = createdDate.toLocaleTimeString('ru-RU', {
+                    const metaTime = createdDate.toLocaleTimeString(locale, {
                       hour: '2-digit',
                       minute: '2-digit',
                     });

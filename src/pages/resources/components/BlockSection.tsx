@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 
 import { cn } from '@/shared/lib/cn';
 import { fmtBlockRange, inputCls, textareaCls } from '@/pages/resources/utils';
@@ -30,7 +31,8 @@ export function BlockSection({
   onSubmitBlock,
   onUnblock,
 }: BlockSectionProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
 
   const labelCls = 'mb-1 block text-sm font-medium text-secondary';
   const mutedLabelCls = 'mb-1 block text-xs text-muted';
@@ -64,6 +66,7 @@ export function BlockSection({
                 type="date"
                 value={blockForm.start_date}
                 onChange={(e) => onBlockFormChange({ start_date: e.target.value })}
+                lang={dateLocale}
                 className={inputCls}
               />
             </label>
@@ -74,6 +77,7 @@ export function BlockSection({
                 step={300}
                 value={blockForm.start_clock}
                 onChange={(e) => onBlockFormChange({ start_clock: e.target.value })}
+                lang={dateLocale}
                 className={inputCls}
               />
             </label>
@@ -88,6 +92,7 @@ export function BlockSection({
                 type="date"
                 value={blockForm.end_date}
                 onChange={(e) => onBlockFormChange({ end_date: e.target.value })}
+                lang={dateLocale}
                 className={inputCls}
               />
             </label>
@@ -98,6 +103,7 @@ export function BlockSection({
                 step={300}
                 value={blockForm.end_clock}
                 onChange={(e) => onBlockFormChange({ end_clock: e.target.value })}
+                lang={dateLocale}
                 className={inputCls}
               />
             </label>

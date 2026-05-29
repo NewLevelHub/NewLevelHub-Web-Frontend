@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { Link, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Bookmark, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -40,7 +41,8 @@ function addDays(iso: string, delta: number): string {
 }
 
 export default function BookingResourceSchedulePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const { id } = useParams<{ id: string }>();
   const resourceId = id ? Number(id) : NaN;
   const [selectedDay, setSelectedDay] = useState(() => localIsoDate(new Date()));
@@ -301,6 +303,7 @@ export default function BookingResourceSchedulePage() {
               type="date"
               value={selectedDay}
               onChange={(e) => setSelectedDay(e.target.value)}
+              lang={dateLocale}
               className={cn(
                 'rounded-lg border border-default bg-surface px-2 py-1.5 text-sm text-primary',
                 'focus:outline-none focus:ring-2 focus:ring-blue-500',

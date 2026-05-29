@@ -43,6 +43,13 @@
     "noBookings": "No upcoming bookings",
     "noAnnouncements": "No new announcements",
     "floorNoData": "No floor data available",
+    "tasksWidget": {
+      "subheading": "{{tasksLabel}} · {{boardsLabel}}",
+      "tasksCount_one": "{{count}} task",
+      "tasksCount_other": "{{count}} tasks",
+      "boardsCount_one": "{{count}} board",
+      "boardsCount_other": "{{count}} boards"
+    },
     "companyAdmin": {
       "greeting": "Good morning, {{name}}",
       "subtitle": "{{date}} · {{count}} employees in the office today out of {{total}}",

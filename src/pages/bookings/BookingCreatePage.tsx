@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
@@ -36,7 +37,8 @@ function maxDateStr(days: number): string {
 
 
 export default function BookingCreatePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -261,6 +263,7 @@ export default function BookingCreatePage() {
               max={maxDate}
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
+              lang={dateLocale}
               className={fieldClass}
             />
             <p className="mt-1 text-xs text-muted">{t('booking.modal.parkingFullDay')}</p>
@@ -289,6 +292,7 @@ export default function BookingCreatePage() {
                 max={maxDate ? `${maxDate}T23:59` : undefined}
                 value={startLocal}
                 onChange={(e) => setStartLocal(e.target.value)}
+                lang={dateLocale}
                 className={fieldClass}
               />
             </div>
@@ -302,6 +306,7 @@ export default function BookingCreatePage() {
                 max={maxDate ? `${maxDate}T23:59` : undefined}
                 value={endLocal}
                 onChange={(e) => setEndLocal(e.target.value)}
+                lang={dateLocale}
                 className={fieldClass}
               />
             </div>

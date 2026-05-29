@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useNavigate } from 'react-router';
 import { Plus } from 'lucide-react';
 
@@ -18,7 +19,8 @@ import { PhotoUploadCreate } from '@/pages/resources/components/PhotoUpload';
 import type { CapsuleZone, ParkingType, ResourceEquipmentKey } from '@/shared/config/constants';
 
 export default function ResourceCreatePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const navigate = useNavigate();
 
   const {
@@ -404,6 +406,7 @@ export default function ResourceCreatePage() {
                     type="time"
                     value={form.availability_start}
                     onChange={(e) => updateForm('availability_start', e.target.value)}
+                    lang={dateLocale}
                     className={inputClass(!!fieldErrors.availability_start || availabilityRangeInvalid)}
                   />
                 </div>
@@ -416,6 +419,7 @@ export default function ResourceCreatePage() {
                     type="time"
                     value={form.availability_end}
                     onChange={(e) => updateForm('availability_end', e.target.value)}
+                    lang={dateLocale}
                     className={inputClass(!!fieldErrors.availability_end || availabilityRangeInvalid)}
                   />
                 </div>

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, MoreHorizontal, Plus, Repeat } from 'lucide-react';
@@ -90,7 +91,8 @@ function StatusBadge({ status }: StatusBadgeProps) {
 }
 
 export default function MyBookingsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [statusTab, setStatusTab] = useState<MyBookingsStatusFilter>('upcoming');
@@ -369,6 +371,7 @@ export default function MyBookingsPage() {
           type="datetime-local"
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
+          lang={dateLocale}
           className={selectClass}
           aria-label={t('common.dateFrom')}
           title={t('common.dateFrom')}
@@ -377,6 +380,7 @@ export default function MyBookingsPage() {
           type="datetime-local"
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
+          lang={dateLocale}
           className={selectClass}
           aria-label={t('common.dateTo')}
           title={t('common.dateTo')}
@@ -639,6 +643,7 @@ export default function MyBookingsPage() {
                   type="datetime-local"
                   value={editStart}
                   onChange={(event) => setEditStart(event.target.value)}
+                  lang={dateLocale}
                   className="mt-1 w-full rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2 text-sm text-[color:var(--text-primary)]"
                 />
               </label>
@@ -648,6 +653,7 @@ export default function MyBookingsPage() {
                   type="datetime-local"
                   value={editEnd}
                   onChange={(event) => setEditEnd(event.target.value)}
+                  lang={dateLocale}
                   className="mt-1 w-full rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2 text-sm text-[color:var(--text-primary)]"
                 />
               </label>

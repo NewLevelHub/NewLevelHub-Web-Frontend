@@ -43,6 +43,17 @@
     "noBookings": "Нет предстоящих бронирований",
     "noAnnouncements": "Нет новых объявлений",
     "floorNoData": "Нет данных по этажам",
+    "tasksWidget": {
+      "subheading": "{{tasksLabel}} · {{boardsLabel}}",
+      "tasksCount_one": "{{count}} задача",
+      "tasksCount_few": "{{count}} задачи",
+      "tasksCount_many": "{{count}} задач",
+      "tasksCount_other": "{{count}} задач",
+      "boardsCount_one": "{{count}} доска",
+      "boardsCount_few": "{{count}} доски",
+      "boardsCount_many": "{{count}} досок",
+      "boardsCount_other": "{{count}} досок"
+    },
     "companyAdmin": {
       "greeting": "Доброе утро, {{name}}",
       "subtitle": "{{date}} · в офисе сегодня {{count}} сотрудников из {{total}}",

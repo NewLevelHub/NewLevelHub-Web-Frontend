@@ -1078,11 +1078,11 @@ export interface TeamBookingItem {
   status: string;
 }
 
-export interface CompanyAdminTaskItem {
+export interface DashboardTaskItem {
   id: number;
   title: string;
+  board_name: string;
   due_date: string;
-  due_time: string | null;
   priority: string;
   is_overdue: boolean;
 }
@@ -1097,15 +1097,6 @@ export interface EmployeeUpcomingBooking {
   end_time: string;
   is_all_day: boolean;
   status: string;
-}
-
-export interface EmployeeTaskItem {
-  id: number;
-  title: string;
-  board_name: string;
-  due_date: string;
-  priority: string;
-  is_overdue: boolean;
 }
 
 export interface SuperadminDashboardData {
@@ -1136,7 +1127,7 @@ export interface CompanyAdminDashboardData {
   pending_approvals: { leaves: number; guest_passes: number };
   free_resources_now: number;
   team_bookings_today: TeamBookingItem[];
-  my_tasks: CompanyAdminTaskItem[];
+  my_tasks: DashboardTaskItem[];
 }
 
 export interface EmployeeDashboardData {
@@ -1147,8 +1138,7 @@ export interface EmployeeDashboardData {
   announcement_feed: DashboardAnnouncementItem[];
   unread_notifications_count: number;
   my_upcoming_bookings: EmployeeUpcomingBooking[];
-  my_tasks: EmployeeTaskItem[];
-  my_tasks_boards_count: number;
+  my_tasks: DashboardTaskItem[];
 }
 
 export interface GuestDashboardData {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -32,7 +33,8 @@ function toDateTimeLocalValue(iso: string): string {
 }
 
 export default function BookingDetailPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { id } = useParams<{ id: string }>();
@@ -331,6 +333,7 @@ export default function BookingDetailPage() {
                 type="datetime-local"
                 value={startInput}
                 onChange={(event) => setStartInput(event.target.value)}
+                lang={dateLocale}
                 className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               />
             </label>
@@ -340,6 +343,7 @@ export default function BookingDetailPage() {
                 type="datetime-local"
                 value={endInput}
                 onChange={(event) => setEndInput(event.target.value)}
+                lang={dateLocale}
                 className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               />
             </label>

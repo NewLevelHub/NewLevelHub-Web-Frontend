@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bed, Calendar, Car, Clock, DoorOpen, LayoutGrid, Plus, X } from 'lucide-react';
 import dayjs from 'dayjs';
@@ -46,7 +47,8 @@ interface BookingModalProps {
 }
 
 export function BookingModal({ resource, open, onClose }: BookingModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
@@ -409,6 +411,7 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
                     max={maxDateParking}
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
+                    lang={dateLocale}
                     className={inputClass}
                   />
                 </div>
@@ -433,6 +436,7 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
                       max={maxDate}
                       value={selectedDate}
                       onChange={(e) => setSelectedDate(e.target.value)}
+                      lang={dateLocale}
                       className={inputClass}
                     />
                   </div>
@@ -449,6 +453,7 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
                       required
                       value={startTime}
                       onChange={(e) => setStartTime(e.target.value)}
+                      lang={dateLocale}
                       className={inputClass}
                     />
                   </div>
@@ -465,6 +470,7 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
                       required
                       value={endTime}
                       onChange={(e) => setEndTime(e.target.value)}
+                      lang={dateLocale}
                       className={inputClass}
                     />
                   </div>

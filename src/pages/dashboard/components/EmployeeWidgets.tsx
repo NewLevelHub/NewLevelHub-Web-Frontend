@@ -1,18 +1,9 @@
 import { Link } from 'react-router';
 import { DoorOpen, ExternalLink, Megaphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { cn } from '@/shared/lib/cn';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import type { EmployeeDashboardData } from '@/shared/types';
-
-const PRIORITY_STYLE: Record<string, string> = {
-  urgent:   'bg-[color:var(--danger)]',
-  critical: 'bg-[color:var(--danger)]',
-  high:     'bg-[color:var(--warning)]',
-  medium:   'bg-[#d4b300]',
-  mid:      'bg-[#d4b300]',
-  low:      'bg-subtle',
-};
+import { MyTasksWidget } from '@/pages/dashboard/components/MyTasksWidget';
 
 export function EmployeeWidgets({
   data,
@@ -35,7 +26,6 @@ export function EmployeeWidgets({
 
   const upcomingBookings = data.my_upcoming_bookings ?? [];
   const tasks = data.my_tasks ?? [];
-  const uniqueBoards = data.my_tasks_boards_count ?? 0;
 
   return (
     <div className="space-y-6">
@@ -100,7 +90,7 @@ export function EmployeeWidgets({
         >
           <p className="text-xs text-muted">{t('dashboard.employee.kpi.myTasks')}</p>
           <p className="text-3xl font-bold text-primary leading-none tracking-tight">
-            {data.my_tasks_today}
+            {tasks.length}
           </p>
         </Link>
 
@@ -187,58 +177,11 @@ export function EmployeeWidgets({
         {/* Right column */}
         <div className="lg:col-span-1 flex flex-col gap-6">
           {/* My tasks */}
-          <section className="rounded-xl border border-default bg-surface overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-default">
-              <div>
-                <h2 className="text-sm font-semibold text-primary">
-                  {t('dashboard.employee.myTasks')}
-                </h2>
-                <p className="text-xs text-muted mt-0.5">
-                  {t('dashboard.employee.tasksFromBoards', {
-                    count: data.my_tasks_today,
-                    boards: uniqueBoards,
-                  })}
-                </p>
-              </div>
-              <Link
-                to="/crm/my-tasks"
-                className="text-xs text-brand hover:text-brand-hover transition-colors"
-              >
-                {t('dashboard.employee.allTasks')}
-              </Link>
-            </div>
-
-            <ul className="divide-y divide-[color:var(--border)]">
-              {tasks.map((task) => {
-                const dotClass =
-                  PRIORITY_STYLE[task.priority] ?? 'bg-subtle';
-                return (
-                  <li key={task.id} className="flex items-start gap-3 px-5 py-3">
-                    {/* Priority indicator: 6px wide, 24px high */}
-                    <span
-                      className={cn('mt-0.5 shrink-0 rounded-sm', dotClass)}
-                      style={{ width: 6, height: 24, borderRadius: 2 }}
-                      aria-hidden="true"
-                    />
-
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-primary leading-snug">{task.title}</p>
-                      <p className="mt-0.5 text-xs text-muted">{task.board_name}</p>
-                    </div>
-
-                    <span
-                      className={cn(
-                        'shrink-0 font-mono text-xs whitespace-nowrap',
-                        task.is_overdue ? 'font-bold text-danger' : 'text-muted',
-                      )}
-                    >
-                      {task.due_date}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
+          <MyTasksWidget
+            heading={t('dashboard.employee.myTasks')}
+            linkLabel={t('dashboard.employee.allTasks')}
+            tasks={tasks}
+          />
 
           {/* Announcements widget */}
           <section className="rounded-xl border border-default bg-surface overflow-hidden">
@@ -262,11 +205,11 @@ export function EmployeeWidgets({
                 <ul className="space-y-3">
                   {data.announcement_feed.map((a) => {
                     const createdDate = new Date(a.created_at);
-                    const metaStr = createdDate.toLocaleDateString('ru-RU', {
+                    const metaStr = createdDate.toLocaleDateString(locale, {
                       day: 'numeric',
                       month: 'short',
                     });
-                    const metaTime = createdDate.toLocaleTimeString('ru-RU', {
+                    const metaTime = createdDate.toLocaleTimeString(locale, {
                       hour: '2-digit',
                       minute: '2-digit',
                     });

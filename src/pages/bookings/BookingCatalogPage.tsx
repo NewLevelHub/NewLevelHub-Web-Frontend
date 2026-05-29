@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
@@ -72,7 +73,8 @@ function formatAvailableAt(iso: string | null): string | null {
 }
 
 export default function BookingCatalogPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const [searchParams, setSearchParams] = useSearchParams();
   const preselectResourceId = Number(searchParams.get('resource'));
   const { user } = useAuth();
@@ -90,8 +92,12 @@ export default function BookingCatalogPage() {
   const [equipmentNeed, setEquipmentNeed] = useState(emptyEquipmentFilters);
   const [ordering, setOrdering] = useState('name');
   const [searchInput, setSearchInput] = useState('');
-  const [availFromLocal, setAvailFromLocal] = useState('');
-  const [availToLocal, setAvailToLocal] = useState('');
+  const [availFromDate, setAvailFromDate] = useState('');
+  const [availFromTime, setAvailFromTime] = useState('');
+  const [availToDate, setAvailToDate] = useState('');
+  const [availToTime, setAvailToTime] = useState('');
+  const availFromLocal = availFromDate && availFromTime ? `${availFromDate}T${availFromTime}` : '';
+  const availToLocal = availToDate && availToTime ? `${availToDate}T${availToTime}` : '';
   const [showOnlyFree, setShowOnlyFree] = useState(false);
   const [showAvailFilter, setShowAvailFilter] = useState(false);
 
@@ -268,8 +274,10 @@ export default function BookingCatalogPage() {
     capacityMax,
     equipmentNeed,
     ordering,
-    availFromLocal,
-    availToLocal,
+    availFromDate,
+    availFromTime,
+    availToDate,
+    availToTime,
   ]);
 
   const resetFilters = () => {
@@ -280,8 +288,10 @@ export default function BookingCatalogPage() {
     setEquipmentNeed(emptyEquipmentFilters());
     setOrdering('name');
     setSearchInput('');
-    setAvailFromLocal('');
-    setAvailToLocal('');
+    setAvailFromDate('');
+    setAvailFromTime('');
+    setAvailToDate('');
+    setAvailToTime('');
     setShowOnlyFree(false);
     setShowAvailFilter(false);
   };
@@ -436,26 +446,42 @@ export default function BookingCatalogPage() {
 
         {/* Availability date inputs — shown when toggled or has values */}
         {showAvailFilter && (
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-default bg-raised p-3">
-            <span className="text-xs font-medium text-secondary">{t('catalog.availFrom')}</span>
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-default bg-raised px-3 py-2">
+            <span className="text-xs font-medium text-secondary shrink-0">{t('catalog.availFrom')}</span>
             <input
-              type="datetime-local"
-              value={availFromLocal}
-              onChange={(e) => setAvailFromLocal(e.target.value)}
-              className="h-8 rounded-lg border border-default bg-surface px-2 text-xs text-primary [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-brand/20"
+              type="date"
+              value={availFromDate}
+              onChange={(e) => setAvailFromDate(e.target.value)}
+              lang={dateLocale}
+              className="h-8 rounded-lg border border-default bg-surface px-2 text-xs text-primary focus:outline-none focus:ring-2 focus:ring-brand/20"
             />
-            <span className="text-xs text-muted">{t('catalog.availTo')}</span>
             <input
-              type="datetime-local"
-              value={availToLocal}
-              onChange={(e) => setAvailToLocal(e.target.value)}
-              className="h-8 rounded-lg border border-default bg-surface px-2 text-xs text-primary [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-brand/20"
+              type="time"
+              value={availFromTime}
+              onChange={(e) => setAvailFromTime(e.target.value)}
+              lang={dateLocale}
+              className="h-8 rounded-lg border border-default bg-surface px-2 text-xs text-primary focus:outline-none focus:ring-2 focus:ring-brand/20"
+            />
+            <span className="text-xs font-medium text-secondary shrink-0">{t('catalog.availTo')}</span>
+            <input
+              type="date"
+              value={availToDate}
+              onChange={(e) => setAvailToDate(e.target.value)}
+              lang={dateLocale}
+              className="h-8 rounded-lg border border-default bg-surface px-2 text-xs text-primary focus:outline-none focus:ring-2 focus:ring-brand/20"
+            />
+            <input
+              type="time"
+              value={availToTime}
+              onChange={(e) => setAvailToTime(e.target.value)}
+              lang={dateLocale}
+              className="h-8 rounded-lg border border-default bg-surface px-2 text-xs text-primary focus:outline-none focus:ring-2 focus:ring-brand/20"
             />
             {hasAvailFilter && (
               <button
                 type="button"
-                onClick={() => { setAvailFromLocal(''); setAvailToLocal(''); }}
-                className="ml-1 rounded-full p-0.5 text-muted hover:text-secondary"
+                onClick={() => { setAvailFromDate(''); setAvailFromTime(''); setAvailToDate(''); setAvailToTime(''); }}
+                className="ml-auto rounded-full p-0.5 text-muted hover:text-secondary"
               >
                 <X size={14} />
               </button>

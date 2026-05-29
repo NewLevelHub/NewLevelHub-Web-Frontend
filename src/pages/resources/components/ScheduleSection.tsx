@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 
 import { cn } from '@/shared/lib/cn';
 import { ResourceDayTimeline } from '@/pages/bookings/components/ResourceDayTimeline';
@@ -19,7 +20,8 @@ export function ScheduleSection({
   scheduleLoading,
   onDayChange,
 }: ScheduleSectionProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
 
   return (
     <section className="space-y-5 rounded-xl border border-default bg-surface p-6 shadow-sm space-y-3">
@@ -31,6 +33,7 @@ export function ScheduleSection({
           type="date"
           value={scheduleDay}
           onChange={(e) => onDayChange(e.target.value)}
+          lang={dateLocale}
           className="rounded-lg border border-default bg-raised px-2 py-1.5 text-sm text-primary"
         />
         <div className="flex flex-wrap gap-1">

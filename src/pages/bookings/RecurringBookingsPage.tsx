@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -31,7 +32,8 @@ function todayIsoDate(): string {
 }
 
 export default function RecurringBookingsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = dateLocaleTag(i18n.language);
   const WEEKDAY_OPTIONS = WEEKDAY_KEYS.map((key, idx) => ({ value: idx, label: t(key) }));
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -249,6 +251,7 @@ export default function RecurringBookingsPage() {
               min={todayIsoDate()}
               value={repeatUntil}
               onChange={(event) => setRepeatUntil(event.target.value)}
+              lang={dateLocale}
               className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             />
           </label>
@@ -258,6 +261,7 @@ export default function RecurringBookingsPage() {
               required
               value={startTime}
               onChange={(event) => setStartTime(event.target.value)}
+              lang={dateLocale}
               className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             />
           </label>
@@ -267,6 +271,7 @@ export default function RecurringBookingsPage() {
               required
               value={endTime}
               onChange={(event) => setEndTime(event.target.value)}
+              lang={dateLocale}
               className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             />
           </label>

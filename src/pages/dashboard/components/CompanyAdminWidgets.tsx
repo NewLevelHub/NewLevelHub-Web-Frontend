@@ -2,29 +2,24 @@ import { Link } from 'react-router';
 import { ExternalLink, Megaphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/shared/lib/cn';
+import i18n from '@/shared/lib/i18n';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import type { CompanyAdminDashboardData } from '@/shared/types';
-
-const PRIORITY_BORDER: Record<string, string> = {
-  critical: 'border-l-[color:var(--danger)]',
-  urgent:   'border-l-[color:var(--danger)]',
-  high:     'border-l-[color:var(--warning)]',
-  medium:   'border-l-[#d4b300]',
-  mid:      'border-l-[#d4b300]',
-  low:      'border-l-[color:var(--text-subtle)]',
-};
+import { MyTasksWidget } from '@/pages/dashboard/components/MyTasksWidget';
 
 const STATUS_BADGE: Record<string, string> = {
   confirmed: 'bg-success-subtle text-success-badge',
 };
 
-const fmtTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-
 export function CompanyAdminWidgets({ data }: { data: CompanyAdminDashboardData }) {
   const { t } = useTranslation();
+  const locale = dateLocaleTag(i18n.language);
+
+  const fmtTime = (iso: string) =>
+    new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 
   const today = new Date();
-  const dateStr = today.toLocaleDateString('ru-RU', {
+  const dateStr = today.toLocaleDateString(locale, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -104,7 +99,7 @@ export function CompanyAdminWidgets({ data }: { data: CompanyAdminDashboardData 
         >
           <p className="text-xs text-muted">{t('dashboard.companyAdmin.kpi.openTasks')}</p>
           <p className="text-3xl font-bold text-primary leading-none tracking-tight">
-            {data.active_tasks}
+            {tasks.length}
           </p>
         </Link>
 
@@ -187,53 +182,11 @@ export function CompanyAdminWidgets({ data }: { data: CompanyAdminDashboardData 
         {/* Right column */}
         <div className="lg:col-span-1 flex flex-col gap-4">
           {/* My tasks widget */}
-          <section className="rounded-xl border border-default bg-surface overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-default">
-              <div>
-                <h2 className="text-sm font-semibold text-primary">
-                  {t('dashboard.companyAdmin.myTasks')}
-                </h2>
-                <p className="text-xs text-muted mt-0.5">
-                  {t('dashboard.companyAdmin.tasksToday', { count: data.active_tasks })}
-                </p>
-              </div>
-              <Link
-                to="/crm/my-tasks"
-                className="text-xs text-brand hover:text-brand-hover transition-colors"
-              >
-                {t('dashboard.companyAdmin.allTasks')}
-              </Link>
-            </div>
-
-            <ul className="divide-y divide-[color:var(--border)]">
-              {tasks.map((task) => {
-                const borderClass =
-                  PRIORITY_BORDER[task.priority] ?? 'border-l-[color:var(--text-subtle)]';
-                const dueLabel = task.due_time ? task.due_time : task.due_date;
-                return (
-                  <li
-                    key={task.id}
-                    className={cn(
-                      'flex items-start gap-3 px-4 py-3 border-l-2',
-                      borderClass,
-                    )}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-primary leading-snug">{task.title}</p>
-                      <p
-                        className={cn(
-                          'mt-0.5 font-mono text-[11px]',
-                          task.is_overdue ? 'text-danger font-semibold' : 'text-muted',
-                        )}
-                      >
-                        {dueLabel}
-                      </p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
+          <MyTasksWidget
+            heading={t('dashboard.companyAdmin.myTasks')}
+            linkLabel={t('dashboard.companyAdmin.allTasks')}
+            tasks={tasks}
+          />
 
           {/* Announcements */}
           <section className="rounded-xl border border-default bg-surface overflow-hidden">
@@ -257,11 +210,11 @@ export function CompanyAdminWidgets({ data }: { data: CompanyAdminDashboardData 
                 <ul className="space-y-3">
                   {data.announcement_feed.map((a) => {
                     const createdDate = new Date(a.created_at);
-                    const metaStr = createdDate.toLocaleDateString('ru-RU', {
+                    const metaStr = createdDate.toLocaleDateString(locale, {
                       day: 'numeric',
                       month: 'short',
                     });
-                    const metaTime = createdDate.toLocaleTimeString('ru-RU', {
+                    const metaTime = createdDate.toLocaleTimeString(locale, {
                       hour: '2-digit',
                       minute: '2-digit',
                     });
