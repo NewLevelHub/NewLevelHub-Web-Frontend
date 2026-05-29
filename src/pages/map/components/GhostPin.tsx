@@ -3,19 +3,18 @@ import { memo } from 'react';
 export interface GhostPinProps {
   x: number;
   y: number;
+  w?: number;
+  h?: number;
 }
 
-export const GhostPin = memo<GhostPinProps>(({ x, y }) => (
+export const GhostPin = memo<GhostPinProps>(({ x, y, w = 12, h = 8 }) => (
   <div
-    className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none z-20"
-    style={{ left: `${x}%`, top: `${y}%` }}
+    className="absolute pointer-events-none z-20"
+    style={{ left: `${x}%`, top: `${y}%`, width: `${w}%`, height: `${h}%` }}
     aria-hidden="true"
   >
-    <div className="relative flex items-center justify-center">
-      <span className="absolute inline-flex h-6 w-6 rounded-full bg-indigo-400 opacity-40 animate-ping" />
-      <div className="relative h-5 w-5 rounded-full border-2 border-dashed border-indigo-400 bg-hover flex items-center justify-center shadow-lg">
-        <span className="text-[9px] font-bold text-brand leading-none">?</span>
-      </div>
+    <div className="h-full w-full rounded-[4px] border-2 border-dashed border-indigo-400 bg-indigo-50/60 flex items-end justify-start px-2 py-1.5 shadow-lg">
+      <span className="text-[10px] font-semibold text-brand opacity-70">Новая область</span>
     </div>
   </div>
 ));

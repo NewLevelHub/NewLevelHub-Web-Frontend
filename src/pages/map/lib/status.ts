@@ -38,6 +38,33 @@ export const LEGEND_ITEM_COLORS: Record<PointUiStatus, string> = {
   none: 'bg-stone-500',
 };
 
+export const ROOM_STATUS_STYLES: Record<PointUiStatus, { bg: string; border: string; text: string; nameText: string }> = {
+  free: {
+    bg: 'var(--status-free-bg)',
+    border: 'color-mix(in oklab, var(--status-free-text) 30%, transparent)',
+    text: 'var(--status-free-text)',
+    nameText: 'var(--status-free-text)',
+  },
+  occupied: {
+    bg: 'var(--status-busy-bg)',
+    border: 'color-mix(in oklab, var(--status-busy-text) 30%, transparent)',
+    text: 'var(--status-busy-text)',
+    nameText: 'var(--status-busy-text)',
+  },
+  soon_available: {
+    bg: 'var(--status-soon-bg)',
+    border: 'color-mix(in oklab, var(--status-soon-text) 30%, transparent)',
+    text: 'var(--status-soon-text)',
+    nameText: 'var(--status-soon-text)',
+  },
+  none: {
+    bg: 'var(--status-na-bg)',
+    border: 'color-mix(in oklab, var(--status-na-text) 30%, transparent)',
+    text: 'var(--status-na-text)',
+    nameText: 'var(--status-na-text)',
+  },
+};
+
 const BOOKABLE_STATUSES: readonly PointUiStatus[] = ['free', 'occupied', 'soon_available'];
 
 const REASON_LABEL_KEYS: Record<string, string> = {

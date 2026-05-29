@@ -1,13 +1,16 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Minus, Pencil, Plus, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 
+import { cn } from '@/shared/lib/cn';
 import type { UseMapLogicReturn } from '@/pages/map/hooks/useMapLogic';
+import {
+  LEGEND_ITEM_COLORS,
+  LEGEND_STATUS_KEYS,
+  POINT_STATUS_LABEL_KEYS,
+} from '@/pages/map/lib/status';
 
 import { MapSearchBar } from '@/pages/map/components/MapSearchBar';
-import { MapLegend } from '@/pages/map/components/MapLegend';
-import { MapFloorTabs } from '@/pages/map/components/MapFloorTabs';
-import { MapEditToolbar } from '@/pages/map/components/MapEditToolbar';
 import { MapEditModeBanner } from '@/pages/map/components/MapEditModeBanner';
 import { FloorMapView } from '@/pages/map/components/FloorMapView';
 import { EditableFloorMapView } from '@/pages/map/components/EditableFloorMapView';
@@ -18,6 +21,8 @@ import { MapPointEditModal } from '@/pages/map/components/MapPointEditModal';
 import { MapDeletePointDialog } from '@/pages/map/components/MapDeletePointDialog';
 import { MapDeleteFloorDialog } from '@/pages/map/components/MapDeleteFloorDialog';
 import { MapCreateFloorModal } from '@/pages/map/components/MapCreateFloorModal';
+import { MapEditFloorModal } from '@/pages/map/components/MapEditFloorModal';
+import { MapRoomPopup } from '@/pages/map/components/MapRoomPopup';
 
 export type MapPageLayoutProps = UseMapLogicReturn;
 
@@ -25,6 +30,8 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
   const {
     searchRef,
     isSuperadmin,
+    viewMode,
+    setViewMode,
     searchQuery,
     handleSearchChange,
     handleSearchClear,
@@ -37,7 +44,6 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
     statusCounts,
     floors,
     floorsLoading,
-    floorsError,
     selectedFloorId,
     handleSelectFloor,
     onOpenCreateFloor,
@@ -50,14 +56,22 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
     editMode,
     setEditMode,
     movingPointId,
+    draggingPointId,
     resolvedImageUrl,
     highlightedPointId,
     ghostPin,
-    handleMapClick,
+    handleMapMouseDown,
+    handleMapMouseMove,
+    handleMapMouseUp,
     handleEditPoint,
     handleDeletePoint,
     handleMovePoint,
-    handlePointClick,
+    handlePointDragStart,
+    selectedPointId,
+    handleRoomClick,
+    handleCloseRoomPopup,
+    handleBookPoint,
+    handleDetailsPoint,
     addPanelOpen,
     addPanelForm,
     handleAddPanelFormChange,
@@ -77,18 +91,29 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
     handleDeleteFloor,
     handleCloseDeleteFloorDialog,
     handleDeleteFloorSuccess,
+    editFloorOpen,
+    editingFloor,
+    onOpenEditFloor,
+    onCloseEditFloor,
+    onFloorUpdated,
   } = logic;
 
-  return (
-    <div className="flex flex-col gap-6 p-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-primary">Карта здания</h1>
-        <p className="text-sm text-muted">
-          Интерактивная карта этажей. Нажмите на точку, чтобы открыть бронирование.
-        </p>
-      </div>
+  const { t } = useTranslation();
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+  return (
+    <div className="flex flex-col gap-4 p-6">
+      {/* Page header + search */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-primary">{t('map.buildingMap')}</h1>
+          {floorMap && statusCounts && (
+            <p className="mt-0.5 text-sm text-muted">
+              {floorMap.floor_name} · {statusCounts.free} {t('map.status.free').toLowerCase()},{' '}
+              {statusCounts.occupied} {t('map.status.occupied').toLowerCase()},{' '}
+              {statusCounts.soon_available} {t('map.status.soon_available').toLowerCase()}
+            </p>
+          )}
+        </div>
         <MapSearchBar
           searchRef={searchRef}
           searchQuery={searchQuery}
@@ -101,135 +126,365 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
           searchResults={searchResults}
           onSelectResult={handleSearchSelect}
         />
-        <MapLegend statusCounts={statusCounts} />
       </div>
 
-      <MapFloorTabs
-        floors={floors}
-        floorsLoading={floorsLoading}
-        floorsError={floorsError}
-        selectedFloorId={selectedFloorId}
-        isSuperadmin={isSuperadmin}
-        editMode={editMode}
-        onSelectFloor={handleSelectFloor}
-        onOpenCreateFloor={onOpenCreateFloor}
-        onDeleteFloor={handleDeleteFloor}
-      />
-
+      {/* MAP FRAME: left sidebar + right stage */}
       <div
-        id="floor-map-panel"
-        role="tabpanel"
-        aria-labelledby={selectedFloorId ? `tab-floor-${selectedFloorId}` : undefined}
+        className="grid overflow-hidden rounded-xl border border-default bg-surface"
+        style={{
+          gridTemplateColumns: '200px 1fr',
+          minHeight: '540px',
+          boxShadow: 'var(--shadow-card)',
+        }}
       >
-        {mapLoading ? (
-          <div
-            className="flex min-h-64 items-center justify-center rounded-xl border border-default bg-gray-50"
-            aria-live="polite"
-          >
-            <div className="flex flex-col items-center gap-3 text-secondary">
-              <Loader2 className="h-8 w-8 animate-spin" aria-hidden="true" />
-              <p className="text-sm">Загрузка карты...</p>
+        {/* LEFT SIDEBAR */}
+        <div className="flex flex-col gap-1 border-r border-default bg-raised p-3">
+          {/* Floors section */}
+          <p className="px-2 pb-2.5 pt-1 text-[11px] font-medium uppercase tracking-wider text-muted">
+            {t('map.floorsTitle')}
+          </p>
+
+          {floorsLoading && (
+            <div className="flex items-center gap-2 px-2 py-1 text-xs text-muted">
+              <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+              ...
             </div>
-          </div>
-        ) : null}
+          )}
 
-        {mapError && !mapLoading ? (
-          <div
-            className="flex min-h-64 items-center justify-center rounded-xl border border-rose-200 bg-rose-50"
-            role="alert"
-          >
-            <p className="text-sm text-rose-600">
-              Не удалось загрузить карту этажа. Попробуйте выбрать другой этаж.
-            </p>
-          </div>
-        ) : null}
+          {floors?.map((floor) => {
+            const isSelected = selectedFloorId === floor.id;
+            return (
+              <div
+                key={floor.id}
+                role="tab"
+                aria-selected={isSelected}
+                className={cn(
+                  'group flex w-full items-center gap-1 rounded-md px-2.5 py-2 transition-colors',
+                  isSelected ? 'bg-active' : 'hover:bg-hover',
+                )}
+              >
+                {/* Main select button */}
+                <button
+                  type="button"
+                  onClick={() => handleSelectFloor(floor.id)}
+                  className={cn(
+                    'min-w-0 flex-1 truncate text-left text-[13px] font-medium transition-colors',
+                    isSelected ? 'text-[var(--brand-text)] font-semibold' : 'text-secondary',
+                  )}
+                >
+                  {floor.name || `${t('map.floorFallbackName')} ${floor.number}`}
+                </button>
 
-        {floorMap && !mapLoading && !mapError && selectedFloorId !== null ? (
-          <div className="flex flex-col gap-3">
-            <MapEditToolbar
-              floorName={floorMap.floor_name}
-              atTimeIso={floorMap.at_time}
-              editMode={editMode}
-              onToggleEditMode={() => setEditMode((prev) => !prev)}
-              isSuperadmin={isSuperadmin}
-            />
+                {/* Action buttons — always visible in editMode (not behind hover) */}
+                {editMode && isSuperadmin && (
+                  <div className="flex shrink-0 items-center gap-0.5">
+                    <button
+                      type="button"
+                      aria-label={t('map.editFloorAria', { name: floor.name ?? floor.number })}
+                      onClick={() => onOpenEditFloor(floor)}
+                      className="flex h-5 w-5 items-center justify-center rounded text-muted hover:bg-[var(--bg-hover)] hover:text-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] transition-colors"
+                    >
+                      <Pencil className="h-3 w-3" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={t('map.deleteFloor', { name: floor.name ?? floor.number })}
+                      onClick={() => handleDeleteFloor(floor)}
+                      className="flex h-5 w-5 items-center justify-center rounded text-muted hover:bg-rose-100 hover:text-[var(--danger)] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 transition-colors"
+                    >
+                      <Trash2 className="h-3 w-3" aria-hidden="true" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
-            {isSuperadmin && editMode ? <MapEditModeBanner movingPointId={movingPointId} /> : null}
-
-            <div className="relative">
-              {editMode && isSuperadmin ? (
-                resolvedImageUrl ? (
-                  <EditableFloorMapWithImage
-                    imageUrl={resolvedImageUrl}
-                    floorMap={floorMap}
-                    highlightedPointId={highlightedPointId}
-                    movingPointId={movingPointId}
-                    ghostPin={ghostPin}
-                    onEditPoint={handleEditPoint}
-                    onDeletePoint={handleDeletePoint}
-                    onMovePoint={handleMovePoint}
-                    onMapClick={handleMapClick}
-                  />
-                ) : (
-                  <EditableFloorMapView
-                    floorMap={floorMap}
-                    highlightedPointId={highlightedPointId}
-                    movingPointId={movingPointId}
-                    ghostPin={ghostPin}
-                    onEditPoint={handleEditPoint}
-                    onDeletePoint={handleDeletePoint}
-                    onMovePoint={handleMovePoint}
-                    onMapClick={handleMapClick}
-                  />
-                )
-              ) : resolvedImageUrl ? (
-                <FloorMapWithImage
-                  imageUrl={resolvedImageUrl}
-                  floorMap={floorMap}
-                  highlightedPointId={highlightedPointId}
-                  onPointClick={handlePointClick}
-                />
-              ) : (
-                <FloorMapView
-                  floorMap={floorMap}
-                  highlightedPointId={highlightedPointId}
-                  onPointClick={handlePointClick}
-                />
+          {isSuperadmin && (
+            <button
+              type="button"
+              onClick={onOpenCreateFloor}
+              className={cn(
+                'mt-1 flex w-full items-center gap-1.5 rounded-md px-2.5 py-1.5 text-left text-[12px] font-medium transition-colors',
+                editMode
+                  ? 'text-[var(--brand-text)] hover:bg-active'
+                  : 'text-muted hover:bg-hover hover:text-primary',
               )}
+            >
+              <Plus className="h-3 w-3" aria-hidden="true" />
+              {t('map.addFloor')}
+            </button>
+          )}
 
-              {addPanelOpen && isSuperadmin && editMode && selectedFloorId !== null ? (
-                <MapPointAddPanel
-                  form={addPanelForm}
-                  floorId={selectedFloorId}
-                  onFormChange={handleAddPanelFormChange}
-                  onCancel={handleAddPanelCancel}
-                  onSuccess={handleAddPanelSuccess}
-                />
-              ) : null}
+          {/* Divider */}
+          <div className="my-2 border-t border-default" />
+
+          {/* Legend section */}
+          <p className="px-2 pb-2 text-[11px] font-medium uppercase tracking-wider text-muted">
+            {t('map.legendTitle')}
+          </p>
+
+          {LEGEND_STATUS_KEYS.map((status) => (
+            <div key={status} className="flex items-center gap-2 px-2 py-1 text-[12px] text-muted">
+              <span
+                className={cn(
+                  'block h-3.5 w-3.5 shrink-0 rounded-[3px] border',
+                  LEGEND_ITEM_COLORS[status],
+                  status === 'free' && 'border-emerald-600',
+                  status === 'occupied' && 'border-rose-600',
+                  status === 'soon_available' && 'border-amber-600',
+                  status === 'none' && 'border-stone-600',
+                )}
+              />
+              <span>
+                {t(POINT_STATUS_LABEL_KEYS[status])}
+                {statusCounts ? ` (${statusCounts[status]})` : ''}
+              </span>
             </div>
+          ))}
+        </div>
 
-            {!editMode && floorMap.points.length > 0 ? (
-              <p className="text-xs text-secondary">
+        {/* RIGHT STAGE */}
+        <div className="flex min-w-0 flex-col gap-3 p-3.5">
+          {/* Toolbar — badge and 2D/3D only when floorMap is loaded; edit toggle always for superadmin */}
+          <div className="flex min-h-[36px] items-center gap-2">
+            {/* Floor name + point count badge — only when floorMap is ready */}
+            {floorMap && !mapLoading && !mapError && (
+              <span className="inline-flex items-center rounded-md border border-default bg-raised px-2.5 py-1 text-[12px] font-medium text-secondary">
+                {floorMap.floor_name} &middot;{' '}
                 {floorMap.points.length}{' '}
                 {floorMap.points.length === 1
-                  ? 'точка'
+                  ? t('map.pointCount_one', { count: 1, defaultValue: 'точка' })
                   : floorMap.points.length < 5
-                    ? 'точки'
-                    : 'точек'}{' '}
-                на карте. Нажмите на точку, чтобы открыть бронирование.
-              </p>
+                    ? t('map.pointCount_few', { count: floorMap.points.length, defaultValue: 'точки' })
+                    : t('map.pointCount_many', { count: floorMap.points.length, defaultValue: 'точек' })}
+              </span>
+            )}
+
+            <div className="ml-auto flex items-center gap-2">
+              {/* 2D / 3D toggle — only when floorMap is ready */}
+              {floorMap && !mapLoading && !mapError && (
+                <div className="inline-flex rounded-[6px] border border-default bg-raised p-0.5">
+                  {(['2D', '3D'] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setViewMode(m)}
+                      className={cn(
+                        'rounded-[4px] px-3 py-1 text-[12px] font-medium transition-all',
+                        viewMode === m
+                          ? 'bg-surface text-primary shadow-sm'
+                          : 'text-muted hover:text-secondary',
+                      )}
+                    >
+                      {m} {t('map.schemaLabel')}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Edit mode toggle — ALWAYS visible for superadmin, regardless of floorMap state */}
+              {isSuperadmin && (
+                <button
+                  type="button"
+                  onClick={() => setEditMode((prev) => !prev)}
+                  aria-pressed={editMode}
+                  aria-label={editMode ? t('map.editModeOff') : t('map.editModeOn')}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[12px] font-medium transition-colors',
+                    editMode
+                      ? 'border-[var(--brand)] bg-active text-[var(--brand-text)]'
+                      : 'border-default bg-surface text-muted hover:bg-raised',
+                  )}
+                >
+                  {editMode ? (
+                    <ToggleRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  ) : (
+                    <ToggleLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                  )}
+                  {t('map.editMode')}
+                </button>
+              )}
+
+              {/* Updated at — only when floorMap is ready and not in editMode */}
+              {floorMap && !mapLoading && !mapError && !editMode && (
+                <span className="text-[11px] text-muted">
+                  {t('map.updatedAt')}{' '}
+                  {new Date(floorMap.at_time).toLocaleTimeString('ru-RU', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Edit mode banner */}
+          {isSuperadmin && editMode && <MapEditModeBanner movingPointId={movingPointId} />}
+
+          {/* Canvas area */}
+          <div className="relative flex-1" onClick={handleCloseRoomPopup}>
+            {mapLoading && (
+              <div
+                className="flex min-h-64 items-center justify-center rounded-xl border border-default bg-raised"
+                aria-live="polite"
+              >
+                <div className="flex flex-col items-center gap-3 text-secondary">
+                  <Loader2 className="h-8 w-8 animate-spin" aria-hidden="true" />
+                  <p className="text-sm">{t('map.loadingMap')}</p>
+                </div>
+              </div>
+            )}
+
+            {mapError && !mapLoading && (
+              <div
+                className="flex min-h-64 items-center justify-center rounded-xl border border-rose-200 bg-rose-50"
+                role="alert"
+              >
+                <p className="text-sm text-rose-600">{t('map.loadError')}</p>
+              </div>
+            )}
+
+            {!selectedFloorId && !floorsLoading && (
+              <div className="flex min-h-64 items-center justify-center rounded-xl border border-default bg-raised">
+                <p className="text-sm text-muted">{t('map.selectFloor')}</p>
+              </div>
+            )}
+
+            {floorMap && !mapLoading && !mapError && selectedFloorId !== null ? (
+              <div className="relative">
+                {/* Canvas with dot-grid background */}
+                <div
+                  className="relative overflow-hidden rounded-xl border border-default"
+                  style={{
+                    background: `
+                      linear-gradient(var(--border-faint) 1px, transparent 1px) 0 0/24px 24px,
+                      linear-gradient(90deg, var(--border-faint) 1px, transparent 1px) 0 0/24px 24px,
+                      var(--bg-page)
+                    `,
+                  }}
+                >
+                  {/* 3D perspective wrapper */}
+                  <div
+                    style={
+                      viewMode === '3D'
+                        ? {
+                            transform: 'perspective(1200px) rotateX(22deg)',
+                            transformOrigin: 'top center',
+                            transition: 'transform 0.3s ease',
+                          }
+                        : { transition: 'transform 0.3s ease' }
+                    }
+                  >
+                    {editMode && isSuperadmin ? (
+                      resolvedImageUrl ? (
+                        <EditableFloorMapWithImage
+                          imageUrl={resolvedImageUrl}
+                          floorMap={floorMap}
+                          highlightedPointId={highlightedPointId}
+                          movingPointId={movingPointId}
+                          draggingPointId={draggingPointId}
+                          ghostPin={ghostPin}
+                          onEditPoint={handleEditPoint}
+                          onDeletePoint={handleDeletePoint}
+                          onMovePoint={handleMovePoint}
+                          onPointDragStart={handlePointDragStart}
+                          onMapMouseDown={handleMapMouseDown}
+                          onMapMouseMove={handleMapMouseMove}
+                          onMapMouseUp={handleMapMouseUp}
+                        />
+                      ) : (
+                        <EditableFloorMapView
+                          floorMap={floorMap}
+                          highlightedPointId={highlightedPointId}
+                          movingPointId={movingPointId}
+                          draggingPointId={draggingPointId}
+                          ghostPin={ghostPin}
+                          onEditPoint={handleEditPoint}
+                          onDeletePoint={handleDeletePoint}
+                          onMovePoint={handleMovePoint}
+                          onPointDragStart={handlePointDragStart}
+                          onMapMouseDown={handleMapMouseDown}
+                          onMapMouseMove={handleMapMouseMove}
+                          onMapMouseUp={handleMapMouseUp}
+                        />
+                      )
+                    ) : resolvedImageUrl ? (
+                      <FloorMapWithImage
+                        imageUrl={resolvedImageUrl}
+                        floorMap={floorMap}
+                        highlightedPointId={highlightedPointId}
+                        onPointClick={handleRoomClick}
+                      />
+                    ) : (
+                      <FloorMapView
+                        floorMap={floorMap}
+                        highlightedPointId={highlightedPointId}
+                        onPointClick={handleRoomClick}
+                      />
+                    )}
+                  </div>
+
+                  {/* Room popup — shown when a room is selected in view mode */}
+                  {selectedPointId !== null && !editMode && (() => {
+                    const point = floorMap.points.find((p) => p.id === selectedPointId);
+                    if (!point) return null;
+                    return (
+                      <MapRoomPopup
+                        point={point}
+                        floorName={floorMap.floor_name}
+                        onBook={handleBookPoint}
+                        onDetails={handleDetailsPoint}
+                        onClose={handleCloseRoomPopup}
+                      />
+                    );
+                  })()}
+
+                  {/* Zoom controls — absolute bottom-right of canvas */}
+                  <div
+                    className="absolute bottom-4 right-4 flex flex-col overflow-hidden rounded-md border border-default bg-surface"
+                    style={{ boxShadow: 'var(--shadow-card)' }}
+                  >
+                    <button
+                      type="button"
+                      aria-label={t('map.zoomIn')}
+                      className="flex h-7 w-7 items-center justify-center text-secondary transition-colors hover:bg-hover"
+                    >
+                      <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={t('map.zoomOut')}
+                      className="flex h-7 w-7 items-center justify-center border-t border-default text-secondary transition-colors hover:bg-hover"
+                    >
+                      <Minus className="h-3.5 w-3.5" aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Add point panel */}
+                {addPanelOpen && isSuperadmin && editMode && selectedFloorId !== null && (
+                  <MapPointAddPanel
+                    form={addPanelForm}
+                    floorId={selectedFloorId}
+                    onFormChange={handleAddPanelFormChange}
+                    onCancel={handleAddPanelCancel}
+                    onSuccess={handleAddPanelSuccess}
+                  />
+                )}
+
+                {/* Points count hint */}
+                {!editMode && floorMap.points.length > 0 && (
+                  <p className="mt-2 text-xs text-muted">{t('map.clickToBook')}</p>
+                )}
+              </div>
             ) : null}
           </div>
-        ) : null}
-
-        {!selectedFloorId && !floorsLoading ? (
-          <div className="flex min-h-64 items-center justify-center rounded-xl border border-default bg-gray-50">
-            <p className="text-sm text-secondary">Выберите этаж для просмотра карты</p>
-          </div>
-        ) : null}
+        </div>
       </div>
 
-      {selectedFloorId !== null ? (
+      {/* Modals */}
+      {selectedFloorId !== null && (
         <MapPointEditModal
           open={editModalOpen}
           initialData={editModalInitialData}
@@ -238,9 +493,9 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
           onClose={handleCloseEditModal}
           onSuccess={handleEditModalSuccess}
         />
-      ) : null}
+      )}
 
-      {selectedFloorId !== null ? (
+      {selectedFloorId !== null && (
         <MapDeletePointDialog
           open={deleteDialogOpen}
           point={deletingPoint}
@@ -248,7 +503,7 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
           onClose={handleCloseDeleteDialog}
           onSuccess={handleDeleteSuccess}
         />
-      ) : null}
+      )}
 
       <MapDeleteFloorDialog
         open={deleteFloorDialogOpen}
@@ -257,13 +512,20 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
         onSuccess={handleDeleteFloorSuccess}
       />
 
-      {isSuperadmin ? (
+      {isSuperadmin && (
         <MapCreateFloorModal
           open={createFloorOpen}
           onClose={onCloseCreateFloor}
           onCreated={onFloorCreated}
         />
-      ) : null}
+      )}
+
+      <MapEditFloorModal
+        open={editFloorOpen}
+        floor={editingFloor}
+        onClose={onCloseEditFloor}
+        onUpdated={onFloorUpdated}
+      />
     </div>
   );
 });

@@ -117,6 +117,8 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
           label: form.label.trim(),
           x: xNum,
           y: yNum,
+          width: form.width ? parseFloat(form.width) : undefined,
+          height: form.height ? parseFloat(form.height) : undefined,
           resource: form.resource.trim() ? parseInt(form.resource, 10) : null,
           company: form.company.trim() ? parseInt(form.company, 10) : null,
         };

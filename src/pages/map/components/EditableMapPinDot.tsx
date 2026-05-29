@@ -1,97 +1,115 @@
 import { memo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Pencil, Trash2, Move } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 
 import { cn } from '@/shared/lib/cn';
 import type { MapPoint } from '@/shared/types';
-import { normalizePointStatus, POINT_STATUS_CLASS } from '@/pages/map/lib/status';
+import { normalizePointStatus, ROOM_STATUS_STYLES } from '@/pages/map/lib/status';
 
-import { MapPointTooltip } from '@/pages/map/components/MapPointTooltip';
+const DEFAULT_W = 12;
+const DEFAULT_H = 8;
 
 export interface EditableMapPinDotProps {
   point: MapPoint;
   isHighlighted: boolean;
   isMoving: boolean;
+  isDragging: boolean;
   onEdit: (point: MapPoint) => void;
   onDelete: (point: MapPoint) => void;
   onMove: (point: MapPoint) => void;
+  onDragStart: (point: MapPoint, clientX: number, clientY: number) => void;
 }
 
 export const EditableMapPinDot = memo<EditableMapPinDotProps>(
-  ({ point, isHighlighted, isMoving, onEdit, onDelete, onMove }) => {
+  ({ point, isHighlighted, isMoving, isDragging, onEdit, onDelete, onMove, onDragStart }) => {
     const status = normalizePointStatus(point.resource_status);
-    const colorClass = POINT_STATUS_CLASS[status];
+    const styles = ROOM_STATUS_STYLES[status];
+    const w = point.width ?? DEFAULT_W;
+    const h = point.height ?? DEFAULT_H;
 
     return (
       <div
-        className="absolute -translate-x-1/2 -translate-y-1/2 group"
-        style={{ left: `${point.x}%`, top: `${point.y}%` }}
+        className={cn('absolute group', (isMoving || isDragging) && 'z-20')}
+        style={{ left: `${point.x}%`, top: `${point.y}%`, width: `${w}%`, height: `${h}%` }}
+        onMouseDown={(e) => {
+          if (!isDragging && !isMoving) {
+            e.stopPropagation();
+            onDragStart(point, e.clientX, e.clientY);
+          }
+        }}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative flex flex-col items-center">
-          {isMoving && (
+        {/* Room rectangle */}
+        <div
+          className={cn(
+            'relative h-full w-full rounded-[4px] flex flex-col items-start justify-end px-2 py-1.5 transition-all duration-150',
+            isMoving
+              ? 'border-2 border-dashed border-amber-400 bg-amber-50 opacity-60'
+              : isDragging
+                ? 'opacity-40 border'
+                : 'border cursor-grab',
+            isHighlighted && !isMoving && !isDragging && 'ring-2 ring-[var(--brand)]',
+          )}
+          style={
+            isMoving || isDragging
+              ? undefined
+              : { background: styles.bg, border: `1px solid ${styles.border}` }
+          }
+        >
+          <span
+            className="block truncate text-[11px] font-semibold leading-tight"
+            style={{ color: isMoving ? '#b45309' : styles.nameText }}
+          >
+            {point.label}
+          </span>
+          {point.resource_name && !isMoving && !isDragging && (
             <span
-              className="absolute inline-flex h-7 w-7 rounded-full bg-amber-400 opacity-50 animate-ping pointer-events-none"
-              aria-hidden="true"
-            />
+              className="block truncate text-[9px] leading-tight opacity-85"
+              style={{ color: styles.text, fontFamily: 'var(--font-mono)' }}
+            >
+              {point.resource_name}
+            </span>
           )}
 
-          {!isMoving && (
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 pb-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-20">
-              <MapPointTooltip point={point} />
-            </div>
-          )}
-
-          <div
-            className={cn(
-              'relative block h-4 w-4 rounded-full border-2 cursor-pointer shadow-md transition-all duration-150',
-              isMoving ? 'border-amber-500 bg-amber-400 scale-125' : colorClass,
-              isHighlighted && !isMoving && 'ring-2 ring-white ring-offset-1 ring-offset-transparent scale-150',
-            )}
-          />
-
-          {!isMoving && (
-            <div className="pt-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-30">
-              <div
-                className="flex items-center gap-0.5 rounded-md bg-surface border border-default shadow-lg p-0.5"
-                onClick={(e) => e.stopPropagation()}
+          {/* Action buttons — top-right corner, visible on hover */}
+          {!isMoving && !isDragging && (
+            <div
+              className="absolute right-1 top-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-10"
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                aria-label={`Редактировать ${point.label}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(point);
+                }}
+                className="flex h-5 w-5 items-center justify-center rounded bg-surface/80 text-muted shadow-sm hover:bg-indigo-50 hover:text-brand transition-colors"
               >
-                <button
-                  type="button"
-                  aria-label={`Редактировать точку ${point.label}`}
-                  className="rounded p-1 text-muted hover:bg-indigo-50 hover:text-brand focus:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500 transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(point);
-                  }}
-                >
-                  <Pencil className="h-3 w-3" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Переместить точку ${point.label}`}
-                  className="rounded p-1 text-muted hover:bg-amber-50 hover:text-amber-600 focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-500 transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onMove(point);
-                  }}
-                >
-                  <Move className="h-3 w-3" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Удалить точку ${point.label}`}
-                  className="rounded p-1 text-muted hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus-visible:ring-1 focus-visible:ring-rose-500 transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(point);
-                  }}
-                >
-                  <Trash2 className="h-3 w-3" aria-hidden="true" />
-                </button>
-              </div>
+                <Pencil className="h-2.5 w-2.5" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                aria-label={`Удалить ${point.label}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(point);
+                }}
+                className="flex h-5 w-5 items-center justify-center rounded bg-surface/80 text-muted shadow-sm hover:bg-rose-50 hover:text-rose-600 transition-colors"
+              >
+                <Trash2 className="h-2.5 w-2.5" aria-hidden="true" />
+              </button>
             </div>
           )}
         </div>
+
+        {/* Moving pulse animation */}
+        {isMoving && (
+          <span
+            className="absolute inset-0 rounded-[4px] border-2 border-amber-400 animate-pulse pointer-events-none"
+            aria-hidden="true"
+          />
+        )}
       </div>
     );
   },

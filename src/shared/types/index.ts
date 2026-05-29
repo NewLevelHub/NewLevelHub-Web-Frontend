@@ -778,6 +778,8 @@ export interface MapPoint {
   label: string;
   x: number;
   y: number;
+  width: number | null;   // % от ширины canvas, null → дефолт 12
+  height: number | null;  // % от высоты canvas, null → дефолт 8
   resource_id: number | null;
   resource_name: string | null;
   resource_status: MapPointStatus | null;
@@ -808,6 +810,12 @@ export interface ServiceFloorCreatePayload {
   name?: string;
 }
 
+/** PATCH /services/floors/{id}/ */
+export interface ServiceFloorUpdatePayload {
+  number?: number;
+  name?: string;
+}
+
 export interface MapPointSearchResult {
   id: number;
   label: string;
@@ -826,6 +834,8 @@ export interface MapPointCreatePayload {
   label: string;
   x: number;
   y: number;
+  width?: number;
+  height?: number;
   resource?: number | null;
   company?: number | null;
 }
