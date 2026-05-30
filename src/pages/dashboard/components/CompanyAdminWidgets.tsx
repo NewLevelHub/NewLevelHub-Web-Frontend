@@ -6,6 +6,7 @@ import i18n from '@/shared/lib/i18n';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import type { CompanyAdminDashboardData } from '@/shared/types';
 import { MyTasksWidget } from '@/pages/dashboard/components/MyTasksWidget';
+import { useMyTasksFlat } from '@/pages/dashboard/hooks/useMyTasksFlat';
 
 const STATUS_BADGE: Record<string, string> = {
   confirmed: 'bg-success-subtle text-success-badge',
@@ -30,7 +31,7 @@ export function CompanyAdminWidgets({ data }: { data: CompanyAdminDashboardData 
   const unreadCount = data.pending_approvals.leaves + data.pending_approvals.guest_passes;
 
   const teamBookings = data.team_bookings_today ?? [];
-  const tasks = data.my_tasks ?? [];
+  const { tasks, totalCount: tasksTotalCount } = useMyTasksFlat();
 
   return (
     <div className="space-y-6">
@@ -99,7 +100,7 @@ export function CompanyAdminWidgets({ data }: { data: CompanyAdminDashboardData 
         >
           <p className="text-xs text-muted">{t('dashboard.companyAdmin.kpi.openTasks')}</p>
           <p className="text-3xl font-bold text-primary leading-none tracking-tight">
-            {tasks.length}
+            {tasksTotalCount}
           </p>
         </Link>
 

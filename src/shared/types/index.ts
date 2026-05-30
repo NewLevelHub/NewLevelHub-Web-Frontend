@@ -1126,7 +1126,7 @@ export interface DashboardTaskItem {
   id: number;
   title: string;
   board_name: string;
-  due_date: string;
+  due_date: string | null;
   priority: string;
   is_overdue: boolean;
 }

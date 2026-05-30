@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import type { EmployeeDashboardData } from '@/shared/types';
 import { MyTasksWidget } from '@/pages/dashboard/components/MyTasksWidget';
+import { useMyTasksFlat } from '@/pages/dashboard/hooks/useMyTasksFlat';
 
 export function EmployeeWidgets({
   data,
@@ -25,7 +26,7 @@ export function EmployeeWidgets({
   const userName = data.user?.full_name?.split(' ')[0] ?? '';
 
   const upcomingBookings = data.my_upcoming_bookings ?? [];
-  const tasks = data.my_tasks ?? [];
+  const { tasks, totalCount: tasksTotalCount } = useMyTasksFlat();
 
   return (
     <div className="space-y-6">
@@ -90,7 +91,7 @@ export function EmployeeWidgets({
         >
           <p className="text-xs text-muted">{t('dashboard.employee.kpi.myTasks')}</p>
           <p className="text-3xl font-bold text-primary leading-none tracking-tight">
-            {tasks.length}
+            {tasksTotalCount}
           </p>
         </Link>
 

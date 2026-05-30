@@ -32,11 +32,13 @@ export function useTaskDetail() {
   const companyId = task?.board.company != null ? String(task.board.company) : null;
 
   const { data: membersData } = useQuery({
-    queryKey: ['company-members', companyId],
+    queryKey: ['company-members', companyId, 'assignee-picker'],
     enabled: Boolean(companyId),
     queryFn: () =>
       apiClient
-        .get<PaginatedResponse<CompanyMember>>(API.companies.members(companyId!))
+        .get<PaginatedResponse<CompanyMember>>(API.companies.members(companyId!), {
+          params: { page_size: 100, is_active: 'true' },
+        })
         .then((r) => r.data),
   });
 

@@ -1,5 +1,4 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MailPlus, RefreshCw, Ban, Shield, LogIn, Trash2 } from 'lucide-react';
 
@@ -34,7 +33,6 @@ const ROLE_FILTERS: { value: UserRole | ''; label: string }[] = [
 
 export default function BuildingStaffPage() {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const { user, isImpersonating, startImpersonation } = useAuth();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
 
@@ -130,7 +128,6 @@ export default function BuildingStaffPage() {
     onSuccess: (data) => {
       const mappedUser = mapApiUser(data.user);
       startImpersonation(mappedUser, data.access);
-      navigate('/dashboard');
     },
     onError: (err) => {
       setActionError(getApiError(err).message);

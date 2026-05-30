@@ -161,6 +161,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   bootstrap: async () => {
     try {
+      // Перехватываем impersonation-токен, сохранённый перед hard-reload.
+      const pendingImpersonationToken = tokenStorage.consumeImpersonationAccess();
+      if (pendingImpersonationToken) {
+        tokenStorage.setAccessToken(pendingImpersonationToken);
+      }
+
       if (!tokenStorage.getAccessToken() && shouldTryRefreshFromCookie()) {
         const { data } = await axios.post<{ access: string }>(
           `${env.API_BASE_URL}${API.auth.refreshToken}`,
@@ -210,20 +216,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { user } = get();
     if (!user) return;
 
-    queryClient.clear();
-
     // Сохраняем оригинального суперадмина в localStorage для индикации активной сессии.
     saveOriginalUserToStorage(user);
 
-    // Устанавливаем токен целевого пользователя в память.
-    tokenStorage.setAccessToken(accessToken);
-
-    set({
-      user: targetUser,
-      isAuthenticated: true,
-      isImpersonating: true,
-      originalUser: user,
-    });
+    // Жёсткая перезагрузка нужна, чтобы избежать race-condition с RequireRole
+    // guard'ами на странице, где находился суперадмин (например, /team/manage,
+    // /building/staff, /users/:id) — без hard nav смена роли в state триггерит
+    // <Navigate to="/403">. Токен передаём через sessionStorage, потому что
+    // access-токен живёт только в памяти.
+    tokenStorage.stashImpersonationAccess(accessToken);
+    // Подавляем targetUser ради линтера — он будет прочитан после reload через fetchMe.
+    void targetUser;
+    queryClient.clear();
+    window.location.replace('/dashboard');
   },
 
   stopImpersonation: () => {
