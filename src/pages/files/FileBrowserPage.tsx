@@ -337,7 +337,11 @@ export default function FileBrowserPage() {
       refreshStorageData();
     },
     onError: (error) => {
-      setShareError(getApiError(error).message);
+      const message = getApiError(error).message;
+      const isDuplicate = /уникальн/i.test(message) || /unique/i.test(message);
+      setShareError(
+        isDuplicate ? 'Этому пользователю уже расшарен данный файл.' : message,
+      );
     },
   });
 
@@ -356,10 +360,16 @@ export default function FileBrowserPage() {
   }, [currentFolder, folderDetailQuery.data?.folders, rootFoldersQuery.data?.results]);
 
   const files = useMemo<StorageFile[]>(() => {
-    if (isSearching) return searchedFilesQuery.data?.results ?? [];
-    if (!currentFolder) return rootFilesQuery.data?.results ?? [];
-    return folderDetailQuery.data?.files ?? [];
-  }, [currentFolder, folderDetailQuery.data?.files, isSearching, rootFilesQuery.data?.results, searchedFilesQuery.data?.results]);
+    let result: StorageFile[];
+    if (isSearching) result = searchedFilesQuery.data?.results ?? [];
+    else if (!currentFolder) result = rootFilesQuery.data?.results ?? [];
+    else result = folderDetailQuery.data?.files ?? [];
+
+    if (scope === 'personal' && user?.id !== undefined) {
+      result = result.filter((file) => file.owner === user.id);
+    }
+    return result;
+  }, [currentFolder, folderDetailQuery.data?.files, isSearching, rootFilesQuery.data?.results, searchedFilesQuery.data?.results, scope, user?.id]);
 
   const companyMembers = companyMembersQuery.data?.results ?? [];
   const recipientOptions = companyMembers.filter((member) => member.id !== user?.id);
@@ -754,9 +764,13 @@ export default function FileBrowserPage() {
                         key={share.id}
                         className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-700 px-3 py-2"
                       >
-                        <div className="text-sm text-slate-200">
-                          <p>{share.shared_with_name}</p>
-                          {share.comment ? <p className="text-xs text-slate-500">{share.comment}</p> : null}
+                        <div className="min-w-0 flex-1 text-sm text-slate-200">
+                          <p className="break-words">{share.shared_with_name}</p>
+                          {share.comment ? (
+                            <p className="break-words text-xs text-slate-500" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                              {share.comment}
+                            </p>
+                          ) : null}
                         </div>
                         <button
                           type="button"
@@ -791,11 +805,14 @@ export default function FileBrowserPage() {
                     key={share.id}
                     className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-700 px-3 py-2 text-sm"
                   >
-                    <div>
-                      <p className="text-slate-200">{share.file_name}</p>
-                      <p className="text-xs text-slate-500">Владелец: {share.file_owner_name}</p>
-                      <p className="text-xs text-slate-500">Расшарил: {share.shared_by_name}</p>
-                      {share.comment ? <p className="text-xs text-slate-400 italic">{share.comment}</p> : null}
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words text-slate-200">{share.file_name}</p>
+                      <p className="break-words text-xs text-slate-500">Владелец: {share.file_owner_name}</p>
+                      {share.comment ? (
+                        <p className="break-words text-xs italic text-slate-400" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                          {share.comment}
+                        </p>
+                      ) : null}
                     </div>
                     <button
                       type="button"
