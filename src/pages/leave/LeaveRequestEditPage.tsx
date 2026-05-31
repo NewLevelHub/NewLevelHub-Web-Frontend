@@ -13,7 +13,7 @@ type LeaveRequestUpdatePayload = {
   leave_type: LeaveType;
   start_date: string;
   end_date: string;
-  comment?: string;
+  comment: string;
   assigned_reviewer?: number | null;
 };
 
@@ -66,6 +66,7 @@ export default function LeaveRequestEditPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
       await queryClient.invalidateQueries({ queryKey: ['leave-balance'] });
+      await queryClient.invalidateQueries({ queryKey: ['leave-request', id] });
       navigate('/hr/leaves');
     },
     onError: (error: unknown) => {
@@ -94,7 +95,7 @@ export default function LeaveRequestEditPage() {
       leave_type: leaveType,
       start_date: startDate,
       end_date: endDate,
-      comment: comment.trim() || undefined,
+      comment: comment.trim(),
       assigned_reviewer: assignedReviewer ? Number(assignedReviewer) : null,
     });
   };
