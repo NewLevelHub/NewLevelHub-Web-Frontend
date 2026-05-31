@@ -23,6 +23,8 @@ import { MapDeleteFloorDialog } from '@/pages/map/components/MapDeleteFloorDialo
 import { MapCreateFloorModal } from '@/pages/map/components/MapCreateFloorModal';
 import { MapEditFloorModal } from '@/pages/map/components/MapEditFloorModal';
 import { MapRoomPopup } from '@/pages/map/components/MapRoomPopup';
+import { BookingModal } from '@/shared/ui/BookingModal';
+import { ResourceDetailModal } from '@/shared/ui/ResourceDetailModal';
 
 export type MapPageLayoutProps = UseMapLogicReturn;
 
@@ -72,6 +74,11 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
     handleCloseRoomPopup,
     handleBookPoint,
     handleDetailsPoint,
+    bookingModalResource,
+    handleCloseBookingModal,
+    handleOpenBookingModal,
+    detailModalResource,
+    handleCloseDetailModal,
     addPanelOpen,
     addPanelForm,
     handleAddPanelFormChange,
@@ -526,6 +533,21 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
         onClose={onCloseEditFloor}
         onUpdated={onFloorUpdated}
       />
+
+      <ResourceDetailModal
+        resource={detailModalResource}
+        open={detailModalResource !== null}
+        onClose={handleCloseDetailModal}
+        onBook={(r) => { handleCloseDetailModal(); handleOpenBookingModal(r); }}
+      />
+
+      {bookingModalResource !== null && (
+        <BookingModal
+          resource={bookingModalResource}
+          open={true}
+          onClose={handleCloseBookingModal}
+        />
+      )}
     </div>
   );
 });

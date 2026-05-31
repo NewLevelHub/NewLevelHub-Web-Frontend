@@ -35,10 +35,12 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
     const [formError, setFormError] = useState<string | null>(null);
 
     const { data: resourcesData, isLoading: resourcesLoading } = useQuery({
-      queryKey: ['booking-resources-list'],
+      queryKey: ['booking-resources-list', floorId],
       queryFn: () =>
         apiClient
-          .get<PaginatedResponse<BookingResourceListItem>>(API.bookings.resources.list)
+          .get<PaginatedResponse<BookingResourceListItem>>(API.bookings.resources.list, {
+            params: { floor_id: floorId, page_size: 200 },
+          })
           .then((r) => r.data),
       enabled: requiresResource(form.point_type),
       staleTime: 60_000,

@@ -744,7 +744,10 @@
     "detailLoading": "Loading…",
     "capacityLabel": "Capacity",
     "modeLabel": "Mode",
-    "back": "Back to bookings (admin)"
+    "back": "Back to bookings (admin)",
+    "photoPrev": "Previous photo",
+    "photoNext": "Next photo",
+    "photoGoTo": "Go to photo {{n}}"
   },
   "profile": {
     "title": "Profile",

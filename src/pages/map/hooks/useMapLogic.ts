@@ -8,6 +8,7 @@ import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { USER_ROLES } from '@/shared/config/constants';
 import type {
+  BookingResourceListItem,
   FloorMap,
   MapPoint,
   MapPointSearchResult,
@@ -64,6 +65,11 @@ export interface UseMapLogicReturn {
   handleCloseRoomPopup: () => void;
   handleBookPoint: (point: MapPoint) => void;
   handleDetailsPoint: (point: MapPoint) => void;
+  bookingModalResource: BookingResourceListItem | null;
+  handleCloseBookingModal: () => void;
+  handleOpenBookingModal: (resource: BookingResourceListItem) => void;
+  detailModalResource: BookingResourceListItem | null;
+  handleCloseDetailModal: () => void;
   addPanelOpen: boolean;
   addPanelForm: MapPointFormState;
   handleAddPanelFormChange: (updates: Partial<MapPointFormState>) => void;
@@ -136,6 +142,8 @@ export function useMapLogic(): UseMapLogicReturn {
 
   const [viewMode, setViewMode] = useState<'2D' | '3D'>('2D');
   const [selectedPointId, setSelectedPointId] = useState<number | null>(null);
+  const [bookingModalResource, setBookingModalResource] = useState<BookingResourceListItem | null>(null);
+  const [detailModalResource, setDetailModalResource] = useState<BookingResourceListItem | null>(null);
 
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -246,6 +254,7 @@ export function useMapLogic(): UseMapLogicReturn {
   });
 
   const handleRoomClick = useCallback((point: MapPoint) => {
+    console.log('[MapRoom] clicked point:', point);
     setSelectedPointId(point.id);
   }, []);
 
@@ -258,17 +267,35 @@ export function useMapLogic(): UseMapLogicReturn {
       const pointWithFallback = point as MapPoint & { resource?: number | null };
       const resourceId = pointWithFallback.resource_id ?? pointWithFallback.resource ?? null;
       if (resourceId === null) return;
-      navigate(`/bookings/catalog?resource=${resourceId}`);
+      void apiClient
+        .get<BookingResourceListItem>(API.bookings.resources.detail(String(resourceId)))
+        .then((r) => setBookingModalResource(r.data))
+        .catch(() => navigate(`/bookings/catalog?resource=${resourceId}`));
     },
     [navigate],
   );
+
+  const handleCloseBookingModal = useCallback(() => {
+    setBookingModalResource(null);
+  }, []);
+
+  const handleOpenBookingModal = useCallback((resource: BookingResourceListItem) => {
+    setBookingModalResource(resource);
+  }, []);
+
+  const handleCloseDetailModal = useCallback(() => {
+    setDetailModalResource(null);
+  }, []);
 
   const handleDetailsPoint = useCallback(
     (point: MapPoint) => {
       const pointWithFallback = point as MapPoint & { resource?: number | null };
       const resourceId = pointWithFallback.resource_id ?? pointWithFallback.resource ?? null;
       if (resourceId === null) return;
-      navigate(`/resources/${resourceId}`);
+      void apiClient
+        .get<BookingResourceListItem>(API.bookings.resources.detail(String(resourceId)))
+        .then((r) => setDetailModalResource(r.data))
+        .catch(() => navigate(`/resources/${resourceId}`));
     },
     [navigate],
   );
@@ -628,6 +655,11 @@ export function useMapLogic(): UseMapLogicReturn {
     handleCloseRoomPopup,
     handleBookPoint,
     handleDetailsPoint,
+    bookingModalResource,
+    handleCloseBookingModal,
+    handleOpenBookingModal,
+    detailModalResource,
+    handleCloseDetailModal,
     addPanelOpen,
     addPanelForm,
     handleAddPanelFormChange,

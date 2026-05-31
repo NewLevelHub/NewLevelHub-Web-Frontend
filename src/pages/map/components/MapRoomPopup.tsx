@@ -90,7 +90,7 @@ export const MapRoomPopup = memo<MapRoomPopupProps>(({ point, floorName, onBook,
       role="dialog"
       aria-modal="false"
       aria-label={point.label}
-      className="absolute z-30 w-56 rounded-xl border border-default bg-surface p-4 shadow-xl"
+      className="absolute z-30 w-60 overflow-hidden rounded-xl border border-default bg-surface p-4 shadow-xl"
       style={{ left, top }}
       onClick={(e) => e.stopPropagation()}
     >
@@ -131,7 +131,7 @@ export const MapRoomPopup = memo<MapRoomPopupProps>(({ point, floorName, onBook,
       />
 
       {/* Action buttons */}
-      <div className="mt-3 flex gap-2">
+      <div className="mt-3 flex flex-col gap-2">
         <button
           type="button"
           disabled={isBookDisabled}
@@ -139,7 +139,7 @@ export const MapRoomPopup = memo<MapRoomPopupProps>(({ point, floorName, onBook,
             if (!isBookDisabled) onBook(point);
           }}
           className={cn(
-            'flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-opacity',
+            'w-full rounded-md px-3 py-1.5 text-sm font-medium transition-opacity',
             'bg-[var(--brand)] text-white hover:opacity-90',
             isBookDisabled && 'cursor-not-allowed opacity-40',
           )}
@@ -154,7 +154,7 @@ export const MapRoomPopup = memo<MapRoomPopupProps>(({ point, floorName, onBook,
             if (hasResource) onDetails(point);
           }}
           className={cn(
-            'flex-1 rounded-md border border-default px-3 py-1.5 text-sm font-medium text-secondary transition-colors hover:bg-hover',
+            'w-full rounded-md border border-default px-3 py-1.5 text-sm font-medium text-secondary transition-colors hover:bg-hover',
             !hasResource && 'cursor-not-allowed opacity-40',
           )}
         >

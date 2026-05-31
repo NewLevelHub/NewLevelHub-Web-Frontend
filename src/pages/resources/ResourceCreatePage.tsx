@@ -150,7 +150,7 @@ export default function ResourceCreatePage() {
                 >
                   <option value="">{t('resources.create.floorSelectDefault')}</option>
                   {floors.map((f) => (
-                    <option key={f.id} value={String(f.number)}>
+                    <option key={f.id} value={String(f.id)}>
                       {f.name
                         ? t('resources.create.floorOptionWithName', { number: f.number, name: f.name })
                         : t('resources.create.floorOptionNoName', { number: f.number })}

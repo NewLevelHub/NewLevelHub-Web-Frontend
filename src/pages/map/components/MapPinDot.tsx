@@ -1,9 +1,8 @@
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback } from 'react';
 
 import { cn } from '@/shared/lib/cn';
 import type { MapPoint } from '@/shared/types';
 import { isBookablePoint, normalizePointStatus, ROOM_STATUS_STYLES } from '@/pages/map/lib/status';
-import { MapPointTooltip } from '@/pages/map/components/MapPointTooltip';
 
 const DEFAULT_W = 12;
 const DEFAULT_H = 8;
@@ -15,7 +14,6 @@ export interface MapPinDotProps {
 }
 
 export const MapPinDot = memo<MapPinDotProps>(({ point, isHighlighted, onClick }) => {
-  const [showTooltip, setShowTooltip] = useState(false);
   const status = normalizePointStatus(point.resource_status);
   const styles = ROOM_STATUS_STYLES[status];
   const isClickable = isBookablePoint(point);
@@ -23,7 +21,8 @@ export const MapPinDot = memo<MapPinDotProps>(({ point, isHighlighted, onClick }
   const w = point.width ?? DEFAULT_W;
   const h = point.height ?? DEFAULT_H;
 
-  const handleClick = useCallback(() => {
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
     onClick(point);
   }, [onClick, point]);
 
@@ -32,19 +31,10 @@ export const MapPinDot = memo<MapPinDotProps>(({ point, isHighlighted, onClick }
       className="absolute"
       style={{ left: `${point.x}%`, top: `${point.y}%`, width: `${w}%`, height: `${h}%` }}
     >
-      {showTooltip && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 z-20 pointer-events-none">
-          <MapPointTooltip point={point} />
-        </div>
-      )}
       <button
         type="button"
         aria-label={`${point.label}${point.resource_name ? ` — ${point.resource_name}` : ''}`}
         onClick={handleClick}
-        onMouseEnter={() => setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
-        onFocus={() => setShowTooltip(true)}
-        onBlur={() => setShowTooltip(false)}
         tabIndex={0}
         className={cn(
           'relative flex h-full w-full flex-col items-start justify-end rounded-[4px] px-2 py-1.5 transition-all duration-150',
