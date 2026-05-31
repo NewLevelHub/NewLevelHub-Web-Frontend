@@ -49,7 +49,7 @@ export default function PassDetailPage() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['guest-pass-detail', id] });
-      await queryClient.invalidateQueries({ queryKey: ['guest-passes'] });
+      await queryClient.invalidateQueries({ queryKey: ['guest-passes'], refetchType: 'all' });
       setSuccessMessage(t('passes.revokeSuccess'));
     },
     onError: () => setSuccessMessage(null),

@@ -45,7 +45,7 @@ export default function PassCreatePage() {
       return response.data;
     },
     onSuccess: async (createdPass) => {
-      await queryClient.invalidateQueries({ queryKey: ['guest-passes'] });
+      await queryClient.invalidateQueries({ queryKey: ['guest-passes'], refetchType: 'all' });
       navigate(`/passes/${createdPass.id}`);
     },
     onError: (error: unknown) => {

@@ -1345,6 +1345,7 @@
     "rowActions": "Действия"
   },
   "passes": {
+    "showing": "Показано {{start}}—{{end}} из {{total}}",
     "revokeSuccess": "Пропуск успешно отозван.",
     "resendQr": "Повторно отправить QR",
     "revoke": "Отозвать пропуск",

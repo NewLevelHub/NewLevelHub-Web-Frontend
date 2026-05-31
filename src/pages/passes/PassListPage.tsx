@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -38,7 +39,14 @@ export default function PassListPage() {
     hasActiveFilters,
     resetFilters,
     totalCount,
+    totalPages,
+    page,
+    setPage,
+    pageSize,
   } = usePasses();
+
+  const rangeStart = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const rangeEnd = Math.min(page * pageSize, totalCount);
 
   async function handleExport() {
     try {
@@ -136,6 +144,29 @@ export default function PassListPage() {
           </div>
           {totalCount === 0 ? (
             <div className="px-4 py-8 text-center text-sm text-secondary">{t('passes.noPassesYet')}</div>
+          ) : null}
+          {totalCount > 0 ? (
+            <div className="flex items-center justify-end gap-2 border-t border-default px-4 py-3 text-xs text-muted">
+              <span>{t('passes.showing', { start: rangeStart, end: rangeEnd, total: totalCount })}</span>
+              <button
+                type="button"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                aria-label={t('common.previousPage')}
+                className="flex h-7 w-7 items-center justify-center rounded-md text-muted hover:bg-hover disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                aria-label={t('common.nextPage')}
+                className="flex h-7 w-7 items-center justify-center rounded-md text-muted hover:bg-hover disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
           ) : null}
         </div>
       ) : null}

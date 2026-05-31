@@ -1341,6 +1341,7 @@
     "rowActions": "Actions"
   },
   "passes": {
+    "showing": "Showing {{start}}—{{end}} of {{total}}",
     "revokeSuccess": "Pass revoked successfully.",
     "resendQr": "Resend QR",
     "revoke": "Revoke pass",

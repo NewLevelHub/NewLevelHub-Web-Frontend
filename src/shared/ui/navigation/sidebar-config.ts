@@ -46,7 +46,6 @@ const superadminNav: NavSection[] = [
       { labelKey: 'sidebar.navItem.bookings',        path: `${STAFF_UI_PREFIX}/bookings`,           icon: CalendarDays },
       { labelKey: 'sidebar.navItem.passes',          path: '/passes',                               icon: ShieldCheck },
       { labelKey: 'sidebar.navItem.qrCheck',         path: '/access/validate',                      icon: ShieldCheck },
-      { labelKey: 'sidebar.navItem.accessLog',       path: '/access/logs',                          icon: Clock },
     ],
   },
   {
@@ -104,7 +103,6 @@ const companyAdminNav: NavSection[] = [
       { labelKey: 'sidebar.navItem.adminBookings',   path: `${STAFF_UI_PREFIX}/bookings`,           icon: CalendarDays },
       { labelKey: 'sidebar.navItem.buildingMap',     path: '/building/map',                         icon: Map },
       { labelKey: 'sidebar.navItem.guestPasses',     path: '/passes',                               icon: ShieldCheck },
-      { labelKey: 'sidebar.navItem.accessLog',       path: '/access/logs',                          icon: Clock },
       { labelKey: 'sidebar.navItem.files',           path: '/storage',                              icon: FileText },
       { labelKey: 'sidebar.navItem.announcements',   path: '/announcements',                        icon: Megaphone },
       { labelKey: 'sidebar.navItem.leave',           path: '/hr/leaves',                            icon: Clock },
