@@ -630,11 +630,12 @@ export default function ServiceRequestListPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
           role="dialog"
           aria-modal="true"
-          onClick={() => closeCreateModal()}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) closeCreateModal();
+          }}
         >
           <div
             className="w-full max-w-lg rounded-xl border border-default bg-raised p-5"
-            onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-semibold text-primary">{t('serviceRequests.newRequestTitle')}</h2>
 
@@ -810,11 +811,12 @@ export default function ServiceRequestListPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
           role="dialog"
           aria-modal="true"
-          onClick={closeRateModal}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) closeRateModal();
+          }}
         >
           <div
             className="w-full max-w-sm rounded-xl border border-default bg-raised p-5"
-            onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-semibold text-primary">
               {rateModal.autoOpened ? t('serviceRequests.rateAuto') : t('serviceRequests.rateTitle')}
