@@ -1,9 +1,12 @@
 import { Link } from 'react-router';
 import { ExternalLink, Megaphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/shared/lib/cn';
 import i18n from '@/shared/lib/i18n';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
+import { apiClient } from '@/shared/api/client';
+import { API } from '@/shared/api/endpoints';
 import type { CompanyAdminDashboardData } from '@/shared/types';
 import { MyTasksWidget } from '@/pages/dashboard/components/MyTasksWidget';
 import { useMyTasksFlat } from '@/pages/dashboard/hooks/useMyTasksFlat';
@@ -28,7 +31,13 @@ export function CompanyAdminWidgets({ data }: { data: CompanyAdminDashboardData 
 
   const userName = data.user?.full_name?.split(' ')[0] ?? '';
 
-  const unreadCount = data.pending_approvals.leaves + data.pending_approvals.guest_passes;
+  const { data: unreadData } = useQuery({
+    queryKey: ['notifications-unread-count'],
+    queryFn: () =>
+      apiClient.get<{ count: number }>(API.notifications.unreadCount).then((r) => r.data),
+    refetchInterval: 30_000,
+  });
+  const unreadCount = unreadData?.count ?? 0;
 
   const teamBookings = data.team_bookings_today ?? [];
   const { tasks, totalCount: tasksTotalCount } = useMyTasksFlat();
@@ -64,7 +73,7 @@ export function CompanyAdminWidgets({ data }: { data: CompanyAdminDashboardData 
 
         <div className="mt-5 flex flex-wrap gap-2">
           <Link
-            to="/catalog"
+            to="/bookings/catalog"
             className="inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition-colors"
           >
             {t('dashboard.companyAdmin.bookResource')}
@@ -105,7 +114,7 @@ export function CompanyAdminWidgets({ data }: { data: CompanyAdminDashboardData 
         </Link>
 
         <Link
-          to="/leave"
+          to="/notifications"
           className="rounded-xl border border-default bg-surface p-5 flex flex-col gap-1 hover:bg-hover transition-colors"
         >
           <p className="text-xs text-muted">{t('dashboard.companyAdmin.kpi.unread')}</p>
