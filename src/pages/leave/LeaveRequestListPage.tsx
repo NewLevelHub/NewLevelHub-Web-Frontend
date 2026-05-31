@@ -160,12 +160,14 @@ export default function LeaveRequestListPage() {
   const showUserColumn = isAdmin;
 
   const openReviewDialog = (leaveId: number, status: ReviewStatus, currentComment = '') => {
+    setMutationError(null);
     setReviewDialog({ leaveId, status });
     setReviewCommentInput(currentComment);
   };
 
   const closeReviewDialog = () => {
     if (reviewMutation.isPending) return;
+    setMutationError(null);
     setReviewDialog(null);
     setReviewCommentInput('');
   };
@@ -246,7 +248,7 @@ export default function LeaveRequestListPage() {
         </div>
       </section>
 
-      {mutationError ? (
+      {mutationError && !reviewDialog && cancelConfirmId === null ? (
         <div className="rounded-lg border border-rose-800 bg-rose-950/30 px-3 py-2 text-sm text-rose-300" role="alert">
           {mutationError}
         </div>
@@ -302,7 +304,14 @@ export default function LeaveRequestListPage() {
                       </div>
                     ) : null}
                   </td>
-                  <td className="px-4 py-3 text-secondary">{leave.comment || '-'}</td>
+                  <td className="px-4 py-3 text-secondary">
+                    <div>{leave.comment || '-'}</div>
+                    {leave.review_comment ? (
+                      <div className="mt-1 text-xs text-muted">
+                        Комментарий администратора: {leave.review_comment}
+                      </div>
+                    ) : null}
+                  </td>
                   {isAdmin ? (
                     <td className="px-4 py-3">
                       {(() => {
@@ -367,7 +376,7 @@ export default function LeaveRequestListPage() {
                             type="button"
                             className="rounded-md border border-rose-800 bg-rose-900/30 px-2 py-1 text-xs text-rose-300 hover:bg-rose-900/50"
                             disabled={cancelMutation.isPending}
-                            onClick={() => setCancelConfirmId(leave.id)}
+                            onClick={() => { setMutationError(null); setCancelConfirmId(leave.id); }}
                           >
                             Отменить
                           </button>
@@ -477,8 +486,8 @@ export default function LeaveRequestListPage() {
             </h2>
             <p className="mt-2 text-sm text-secondary">
               {reviewDialog.status === LEAVE_STATUSES.APPROVED
-                ? 'Комментарий к одобрению (необязательно)'
-                : 'Комментарий к отклонению (необязательно)'}
+                ? 'Комментарий к одобрению'
+                : 'Комментарий к отклонению'}
             </p>
             <textarea
               value={reviewCommentInput}
@@ -487,6 +496,11 @@ export default function LeaveRequestListPage() {
               placeholder="Оставьте комментарий при необходимости"
               className="mt-3 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted"
             />
+            {mutationError ? (
+              <div className="mt-3 rounded-lg border border-rose-800 bg-rose-950/30 px-3 py-2 text-sm text-rose-300" role="alert">
+                {mutationError}
+              </div>
+            ) : null}
             <div className="mt-4 flex items-center justify-end gap-2">
               <button
                 type="button"
@@ -521,7 +535,7 @@ export default function LeaveRequestListPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
           role="dialog"
           aria-modal="true"
-          onClick={() => { if (!cancelMutation.isPending) setCancelConfirmId(null); }}
+          onClick={() => { if (!cancelMutation.isPending) { setMutationError(null); setCancelConfirmId(null); } }}
         >
           <div
             className="w-full max-w-sm rounded-xl border border-default bg-raised p-5"
@@ -531,11 +545,16 @@ export default function LeaveRequestListPage() {
             <p className="mt-2 text-sm text-secondary">
               Вы уверены, что хотите отменить эту заявку? Действие нельзя отменить.
             </p>
+            {mutationError ? (
+              <div className="mt-3 rounded-lg border border-rose-800 bg-rose-950/30 px-3 py-2 text-sm text-rose-300" role="alert">
+                {mutationError}
+              </div>
+            ) : null}
             <div className="mt-4 flex items-center justify-end gap-2">
               <button
                 type="button"
                 className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover"
-                onClick={() => setCancelConfirmId(null)}
+                onClick={() => { setMutationError(null); setCancelConfirmId(null); }}
                 disabled={cancelMutation.isPending}
               >
                 Назад
