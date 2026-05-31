@@ -705,13 +705,14 @@ export default function BookingCatalogPage() {
       {panelResource && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          onClick={() => setPanelResource(null)}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setPanelResource(null);
+          }}
         >
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
           <div
             className="relative z-10 flex w-full max-w-xl max-h-[88vh] flex-col overflow-hidden rounded-3xl bg-surface shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
           >
             {/* Close */}
             <button

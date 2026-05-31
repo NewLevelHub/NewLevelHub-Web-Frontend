@@ -475,11 +475,12 @@ export default function LeaveRequestListPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
           role="dialog"
           aria-modal="true"
-          onClick={closeReviewDialog}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) closeReviewDialog();
+          }}
         >
           <div
             className="w-full max-w-lg rounded-xl border border-default bg-raised p-5"
-            onClick={(event) => event.stopPropagation()}
           >
             <h2 className="text-lg font-semibold text-primary">
               {reviewDialog.status === LEAVE_STATUSES.APPROVED ? 'Одобрить заявку' : 'Отклонить заявку'}
@@ -535,11 +536,16 @@ export default function LeaveRequestListPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
           role="dialog"
           aria-modal="true"
-          onClick={() => { if (!cancelMutation.isPending) { setMutationError(null); setCancelConfirmId(null); } }}
+          onMouseDown={(e) => {
+            if (e.target !== e.currentTarget) return;
+            if (!cancelMutation.isPending) {
+              setMutationError(null);
+              setCancelConfirmId(null);
+            }
+          }}
         >
           <div
             className="w-full max-w-sm rounded-xl border border-default bg-raised p-5"
-            onClick={(event) => event.stopPropagation()}
           >
             <h2 className="text-lg font-semibold text-primary">Отменить заявку</h2>
             <p className="mt-2 text-sm text-secondary">

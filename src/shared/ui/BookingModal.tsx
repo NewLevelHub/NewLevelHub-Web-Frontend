@@ -318,14 +318,13 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
     <div
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={handleOverlayClick}
+      onMouseDown={handleOverlayClick}
       aria-modal="true"
       role="dialog"
       aria-label={t('booking.modal.title', { name: resource.name })}
     >
       <div
         className="relative w-full max-w-[560px] rounded-2xl border border-default bg-surface shadow-xl overflow-y-auto max-h-[90vh]"
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-start justify-between px-[22px] pt-[18px] pb-[14px]">

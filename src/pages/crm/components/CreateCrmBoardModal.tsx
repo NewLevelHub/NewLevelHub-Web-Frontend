@@ -70,7 +70,7 @@ export function CreateCrmBoardModal({ onClose, companyId }: CreateCrmBoardModalP
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      onClick={handleBackdropClick}
+      onMouseDown={handleBackdropClick}
       role="dialog"
       aria-modal="true"
       aria-labelledby="create-board-title"
