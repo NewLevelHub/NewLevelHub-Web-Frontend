@@ -52,6 +52,9 @@ export default function AccessLogPage() {
         .get<PaginatedResponse<AccessLogEntry>>(API.accessLog.list, { params })
         .then((response) => response.data),
     placeholderData: (prev) => prev,
+    // Auto-refresh every 10 s on the first page so new validated QR logs
+    // appear without a manual reload.
+    refetchInterval: page === 1 ? 10_000 : false,
   });
 
   const guestPassIds = useMemo(() => {

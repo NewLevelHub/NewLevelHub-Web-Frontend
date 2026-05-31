@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { AlertCircle, ChevronLeft } from 'lucide-react';
 import { useBoardDetail } from '@/pages/crm/hooks/useBoardDetail';
 import { BoardDetailSkeleton } from '@/pages/crm/components/BoardDetailSkeleton';
@@ -8,6 +8,8 @@ import { BoardDetailMain } from '@/pages/crm/components/BoardDetailMain';
 export default function BoardDetailPage() {
   const { t } = useTranslation();
   const ctx = useBoardDetail();
+  const location = useLocation();
+  const backTo = (location.state as { backTo?: string } | null)?.backTo ?? '/crm';
 
   if (ctx.isLoading) {
     return <BoardDetailSkeleton />;
@@ -17,7 +19,7 @@ export default function BoardDetailPage() {
     return (
       <div className="space-y-4">
         <Link
-          to="/crm"
+          to={backTo}
           className="inline-flex items-center gap-1.5 text-sm text-secondary hover:text-primary transition-colors"
         >
           <ChevronLeft size={16} />{t('common.backToBoards')}</Link>

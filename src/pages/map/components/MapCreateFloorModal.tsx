@@ -85,9 +85,9 @@ export const MapCreateFloorModal = memo<MapCreateFloorModalProps>(({ open, onClo
       role="dialog"
       aria-modal="true"
       aria-labelledby="create-floor-title"
-      onClick={handleBackdrop}
+      onMouseDown={handleBackdrop}
     >
-      <div className="w-full max-w-md rounded-2xl bg-surface shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-md rounded-2xl bg-surface shadow-2xl">
         <form onSubmit={handleSubmit}>
           <div className="px-6 py-5 space-y-4">
             <h2 id="create-floor-title" className="text-base font-semibold text-primary">

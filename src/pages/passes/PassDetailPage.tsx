@@ -11,8 +11,10 @@ import { useUser } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
 import type { GuestPass } from '@/shared/types';
 import { PassStatusBadge } from '@/pages/passes/components/PassStatusBadge';
+import { PassValidationsList } from '@/pages/passes/components/PassValidationsList';
 import { QRCodeView } from '@/pages/passes/components/QRCodeView';
 import { usePassCountdown } from '@/pages/passes/hooks/usePassCountdown';
+import { usePassValidations } from '@/pages/passes/hooks/usePassValidations';
 
 export default function PassDetailPage() {
   const { t } = useTranslation();
@@ -47,13 +49,20 @@ export default function PassDetailPage() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['guest-pass-detail', id] });
-      await queryClient.invalidateQueries({ queryKey: ['guest-passes'] });
+      await queryClient.invalidateQueries({ queryKey: ['guest-passes'], refetchType: 'all' });
       setSuccessMessage(t('passes.revokeSuccess'));
     },
     onError: () => setSuccessMessage(null),
   });
 
   const { isNowActive } = usePassCountdown(data?.valid_from);
+
+  const isMultiUse = data?.usage_type === 'multi';
+  const {
+    data: validationsData,
+    isLoading: isLoadingValidations,
+    isError: isValidationsError,
+  } = usePassValidations(id, isMultiUse);
 
   if (isLoading) {
     return <main className="p-3 sm:p-4 md:p-6 text-sm text-secondary">{t('passes.loadingPass')}</main>;
@@ -160,6 +169,15 @@ export default function PassDetailPage() {
           <div>{new Date(data.valid_until).toLocaleString()}</div>
         </div>
       </section>
+
+      {isMultiUse ? (
+        <PassValidationsList
+          total={validationsData?.total ?? data.times_used}
+          results={validationsData?.results ?? []}
+          isLoading={isLoadingValidations}
+          isError={isValidationsError}
+        />
+      ) : null}
 
       <QRCodeView qrImage={data.qr_image} validFrom={data.valid_from} />
     </main>

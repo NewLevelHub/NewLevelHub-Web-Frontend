@@ -813,11 +813,12 @@ export default function ManageBookingsPage() {
           role="dialog"
           aria-modal="true"
           aria-label={t('booking.manage.adminCancelTitle')}
-          onClick={closeCancelModal}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) closeCancelModal();
+          }}
         >
           <div
             className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-4 sm:p-5 shadow-xl"
-            onClick={(event) => event.stopPropagation()}
           >
             <h2 className="text-lg font-semibold text-[color:var(--text-primary)]">
               {t('booking.manage.adminCancelTitle')}
@@ -875,11 +876,12 @@ export default function ManageBookingsPage() {
           role="dialog"
           aria-modal="true"
           aria-label={t('common.edit')}
-          onClick={closeEditModal}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) closeEditModal();
+          }}
         >
           <div
             className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-4 sm:p-5 shadow-xl"
-            onClick={(event) => event.stopPropagation()}
           >
             <h2 className="text-lg font-semibold text-[color:var(--text-primary)]">
               {t('booking.manage.editTitle', { id: modalBooking?.id ?? editTarget.id })}

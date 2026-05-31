@@ -25,6 +25,7 @@ import { cn } from '@/shared/lib/cn';
 import type {
   PaginatedResponse,
   ServiceRequest,
+  ServiceRequestAssignPayload,
   ServiceRequestRatePayload,
   ServiceRequestUpdateStatusPayload,
 } from '@/shared/types';
@@ -42,6 +43,8 @@ type ServiceFloorOption = {
   floor_number?: number;
   name?: string | null;
 };
+
+type BookingResourceOption = { id: number; name: string };
 
 function normalizeServiceFloors(payload: ServiceFloorOption[] | PaginatedResponse<ServiceFloorOption>) {
   return Array.isArray(payload) ? payload : payload.results;
@@ -136,6 +139,7 @@ export default function ServiceRequestListPage() {
   const [createDescription, setCreateDescription] = useState('');
   const [createFloorId, setCreateFloorId] = useState('');
   const [createLocation, setCreateLocation] = useState('');
+  const [createResourceId, setCreateResourceId] = useState('');
   const [createUrgency, setCreateUrgency] = useState<'normal' | 'urgent'>('normal');
   const [createPhoto, setCreatePhoto] = useState<File | null>(null);
 
@@ -144,8 +148,17 @@ export default function ServiceRequestListPage() {
   const [ratingValue, setRatingValue] = useState(5);
 
   const isAdmin =
-    user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN;
-  const canChangeStatus = user?.role === USER_ROLES.SUPERADMIN;
+    user?.role === USER_ROLES.SUPERADMIN ||
+    user?.role === USER_ROLES.COMPANY_ADMIN ||
+    user?.role === USER_ROLES.SERVICE_MANAGER;
+  // All management actions (status + assign) are reserved for superadmin and
+  // service_manager. company_admin can only create requests on behalf of their
+  // company (matches IsServiceRequestManager on the backend).
+  const canChangeStatus =
+    user?.role === USER_ROLES.SUPERADMIN ||
+    user?.role === USER_ROLES.SERVICE_MANAGER;
+  const canAssign = canChangeStatus;
+  const isServiceManager = user?.role === USER_ROLES.SERVICE_MANAGER;
 
   const queryParams: Record<string, string> = {};
   if (typeFilter) queryParams.type = typeFilter;
@@ -209,6 +222,22 @@ export default function ServiceRequestListPage() {
     },
   });
 
+  const assignMutation = useMutation({
+    mutationFn: ({ id, assigned_to }: { id: number; assigned_to: number | null }) =>
+      apiClient
+        .patch<ServiceRequest>(API.serviceRequests.assign(String(id)), {
+          assigned_to,
+        } satisfies ServiceRequestAssignPayload)
+        .then((r) => r.data),
+    onSuccess: async () => {
+      setMutationError(null);
+      await queryClient.invalidateQueries({ queryKey: ['service-requests'] });
+    },
+    onError: (err) => {
+      setMutationError(getApiError(err).message);
+    },
+  });
+
   const rateMutation = useMutation({
     mutationFn: ({ id, rating }: { id: number; rating: number }) =>
       apiClient
@@ -231,10 +260,37 @@ export default function ServiceRequestListPage() {
     setCreateDescription('');
     setCreateFloorId('');
     setCreateLocation('');
+    setCreateResourceId('');
     setCreateUrgency('normal');
     setCreatePhoto(null);
     setMutationError(null);
     setCreateModal({ mode: 'general' });
+  }
+
+  // Resolve floor number from selected floor id for resource fetching
+  const selectedFloorNumber: number | null = (() => {
+    if (!createFloorId) return null;
+    const floor = floors.find((f) => String(f.id) === createFloorId);
+    return floor?.number ?? floor?.floor_number ?? null;
+  })();
+
+  const { data: floorResourcesData, isLoading: isResourcesLoading } = useQuery({
+    queryKey: ['booking-resources-by-floor', selectedFloorNumber],
+    queryFn: () =>
+      apiClient
+        .get<PaginatedResponse<BookingResourceOption>>(API.bookings.resources.list, {
+          params: { floor: selectedFloorNumber, is_active: true, page_size: 100 },
+        })
+        .then((r) => (Array.isArray(r.data) ? r.data : r.data.results) as BookingResourceOption[]),
+    enabled: selectedFloorNumber !== null,
+    staleTime: 30_000,
+  });
+  const floorResources: BookingResourceOption[] = floorResourcesData ?? [];
+
+  function handleCreateFloorChange(floorId: string) {
+    setCreateFloorId(floorId);
+    setCreateResourceId('');
+    // Don't clear location — user may have typed something already
   }
 
   function openCleaningModal() {
@@ -298,27 +354,41 @@ export default function ServiceRequestListPage() {
   const isPendingMutation =
     createMutation.isPending ||
     updateStatusMutation.isPending ||
+    assignMutation.isPending ||
     rateMutation.isPending;
+
+  // Service manager can only hold 1 active (non-completed) request at a time.
+  // Check the current page's data to hide the "take" button proactively.
+  const serviceManagerHasActive =
+    isServiceManager &&
+    user?.id != null &&
+    rows.some(
+      (r) =>
+        Number(r.assigned_to) === Number(user.id) &&
+        r.status !== SERVICE_REQUEST_STATUSES.COMPLETED,
+    );
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 p-6">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-primary">{t('serviceRequests.title')}</h1>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={openCleaningModal}
-            className="inline-flex items-center justify-center rounded-lg border border-sky-700 bg-sky-900/30 px-4 py-2 text-sm font-medium text-sky-300 hover:bg-sky-900/50"
-          >{t('serviceRequests.cleaning.call')}</button>
-          <button
-            type="button"
-            onClick={openGeneralModal}
-            className="inline-flex items-center justify-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
-          >
-            {t('serviceRequests.createRequest')}
-          </button>
-        </div>
+        {isServiceManager ? null : (
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={openCleaningModal}
+              className="inline-flex items-center justify-center rounded-lg border border-sky-700 bg-sky-900/30 px-4 py-2 text-sm font-medium text-sky-300 hover:bg-sky-900/50"
+            >{t('serviceRequests.cleaning.call')}</button>
+            <button
+              type="button"
+              onClick={openGeneralModal}
+              className="inline-flex items-center justify-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
+            >
+              {t('serviceRequests.createRequest')}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
@@ -387,6 +457,9 @@ export default function ServiceRequestListPage() {
                   {isAdmin && (
                     <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('team.roleEmployee')}</th>
                   )}
+                  {isAdmin && (
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('common.assignee')}</th>
+                  )}
                   <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('serviceRequests.columnDescription')}</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('serviceRequests.columnPhoto')}</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('serviceRequests.columnFloor')}</th>
@@ -423,6 +496,11 @@ export default function ServiceRequestListPage() {
                       {isAdmin && (
                         <td className="whitespace-nowrap px-4 py-3 text-secondary">
                           {getRequestOwnerName(req) || '—'}
+                        </td>
+                      )}
+                      {isAdmin && (
+                        <td className="whitespace-nowrap px-4 py-3 text-secondary">
+                          {req.assigned_to_name || '—'}
                         </td>
                       )}
                       <td className="max-w-xs px-4 py-3 text-secondary">
@@ -463,8 +541,11 @@ export default function ServiceRequestListPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-2">
-                          {/* Superadmin: advance status */}
-                          {canChangeStatus && nextStatus ? (
+                          {/* Admin / service_manager: advance status.
+                              Service managers can only act on their own assigned request. */}
+                          {canChangeStatus &&
+                          nextStatus &&
+                          (!isServiceManager || req.assigned_to === Number(user?.id)) ? (
                             <button
                               type="button"
                               disabled={isPendingMutation}
@@ -473,6 +554,39 @@ export default function ServiceRequestListPage() {
                             >
                               {t(SERVICE_REQUEST_STATUS_LABEL_KEYS[nextStatus])}
                             </button>
+                          ) : null}
+
+                          {/* Admin / service_manager: self-assign or unassign */}
+                          {canAssign && req.status !== SERVICE_REQUEST_STATUSES.COMPLETED ? (
+                            user?.id != null && req.assigned_to === Number(user.id) ? (
+                              // Service managers cannot unassign themselves — only superadmin can
+                              !isServiceManager ? (
+                                <button
+                                  type="button"
+                                  disabled={isPendingMutation}
+                                  onClick={() =>
+                                    assignMutation.mutate({ id: req.id, assigned_to: null })
+                                  }
+                                  className="rounded-md border border-default px-2 py-1 text-xs text-secondary hover:bg-hover disabled:opacity-50"
+                                >
+                                  Снять с себя
+                                </button>
+                              ) : null
+                            ) : user?.id != null && (!isServiceManager || !req.assigned_to) && !serviceManagerHasActive ? (
+                              <button
+                                type="button"
+                                disabled={isPendingMutation}
+                                onClick={() =>
+                                  assignMutation.mutate({
+                                    id: req.id,
+                                    assigned_to: Number(user.id),
+                                  })
+                                }
+                                className="rounded-md border border-default bg-surface px-2 py-1 text-xs text-primary hover:bg-hover disabled:opacity-50"
+                              >
+                                {!isServiceManager && req.assigned_to_name ? 'Переназначить на себя' : 'Взять в работу'}
+                              </button>
+                            ) : null
                           ) : null}
 
                           {/* Employee: rate completed request */}
@@ -489,7 +603,7 @@ export default function ServiceRequestListPage() {
                             </button>
                           ) : null}
 
-                          {!canChangeStatus && !canRate ? (
+                          {!canChangeStatus && !canAssign && !canRate ? (
                             <span className="text-xs text-muted">—</span>
                           ) : null}
                         </div>
@@ -516,11 +630,12 @@ export default function ServiceRequestListPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
           role="dialog"
           aria-modal="true"
-          onClick={() => closeCreateModal()}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) closeCreateModal();
+          }}
         >
           <div
             className="w-full max-w-lg rounded-xl border border-default bg-raised p-5"
-            onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-semibold text-primary">{t('serviceRequests.newRequestTitle')}</h2>
 
@@ -547,7 +662,7 @@ export default function ServiceRequestListPage() {
                 <p className="mt-1 text-xs text-muted">{t('serviceRequests.floorHint')}</p>
                 <select
                   value={createFloorId}
-                  onChange={(e) => setCreateFloorId(e.target.value)}
+                  onChange={(e) => handleCreateFloorChange(e.target.value)}
                   disabled={isFloorsLoading}
                   required
                   className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
@@ -575,6 +690,39 @@ export default function ServiceRequestListPage() {
                   <p className="mt-1 text-xs text-warning">{t('serviceRequests.floorLoadError')}</p>
                 ) : null}
               </label>
+
+              {/* Resource (optional, loaded from floor) */}
+              {createFloorId ? (
+                <label className="block text-sm text-secondary">
+                  Ресурс (необязательно)
+                  <select
+                    value={createResourceId}
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      setCreateResourceId(id);
+                      if (id) {
+                        const resource = floorResources.find((r) => String(r.id) === id);
+                        if (resource) setCreateLocation(resource.name);
+                      }
+                    }}
+                    disabled={isResourcesLoading}
+                    className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+                  >
+                    <option value="">
+                      {isResourcesLoading
+                        ? 'Загрузка ресурсов...'
+                        : floorResources.length === 0
+                          ? 'Нет ресурсов на этом этаже'
+                          : 'Не выбрано'}
+                    </option>
+                    {floorResources.map((r) => (
+                      <option key={r.id} value={String(r.id)}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
 
               <label className="block text-sm text-secondary">
                 {t('serviceRequests.locationLabel')}
@@ -663,11 +811,12 @@ export default function ServiceRequestListPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
           role="dialog"
           aria-modal="true"
-          onClick={closeRateModal}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) closeRateModal();
+          }}
         >
           <div
             className="w-full max-w-sm rounded-xl border border-default bg-raised p-5"
-            onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-semibold text-primary">
               {rateModal.autoOpened ? t('serviceRequests.rateAuto') : t('serviceRequests.rateTitle')}

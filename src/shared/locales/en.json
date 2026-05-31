@@ -154,6 +154,7 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "delete": "Delete",
+    "rename": "Rename",
     "close": "Close",
     "back": "Back",
     "yes": "Yes",
@@ -231,7 +232,8 @@
     "leaveStatus": {
       "pending": "Pending review",
       "approved": "Approved",
-      "rejected": "Rejected"
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
     },
     "announcementCategory": {
       "info": "Information",
@@ -663,7 +665,8 @@
       "work": "Work",
       "services": "Services",
       "profile": "Profile",
-      "access": "Access"
+      "access": "Access",
+      "service": "Service"
     },
     "navItem": {
       "dashboard": "Dashboard",
@@ -693,7 +696,8 @@
       "files": "Files",
       "leave": "Leave",
       "team": "Team",
-      "serviceRequest": "Service Request"
+      "serviceRequest": "Service Request",
+      "buildingStaff": "Building Staff"
     }
   },
   "catalog": {
@@ -762,6 +766,7 @@
       "company_admin": "Company administrator",
       "employee": "Employee",
       "reception": "Reception",
+      "service_manager": "Service manager",
       "guest": "Guest"
     },
     "settingsTitle": "Profile settings",
@@ -1336,6 +1341,7 @@
     "rowActions": "Actions"
   },
   "passes": {
+    "showing": "Showing {{start}}—{{end}} of {{total}}",
     "revokeSuccess": "Pass revoked successfully.",
     "resendQr": "Resend QR",
     "revoke": "Revoke pass",
@@ -1384,6 +1390,7 @@
     "validFromHint": "The code will become active from this moment",
     "validUntilLabel": "Valid until",
     "autoUntil": "Automatically: +30 days from start date",
+    "autoUntilMulti": "Automatically: +1 day from start date",
     "loadingPass": "Loading pass...",
     "loadError": "Failed to load pass details.",
     "passId": "Pass #{{id}}",
@@ -1399,6 +1406,9 @@
     "owner": "Owner",
     "columnPurpose": "Purpose",
     "columnPeriod": "Period",
+    "columnChecker": "Checked by",
+    "columnValidated": "Validated",
+    "columnMethod": "Method",
     "columnDetails": "Details",
     "noPassesYet": "No passes yet.",
     "listTitle": "Guest passes",

@@ -1,6 +1,7 @@
 export const USER_ROLES = {
   SUPERADMIN: 'superadmin',
   RECEPTION: 'reception',
+  SERVICE_MANAGER: 'service_manager',
   COMPANY_ADMIN: 'company_admin',
   EMPLOYEE: 'employee',
   GUEST: 'guest',
@@ -8,9 +9,19 @@ export const USER_ROLES = {
 
 export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
 
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  [USER_ROLES.SUPERADMIN]: 'Суперадмин',
+  [USER_ROLES.RECEPTION]: 'Ресепшн',
+  [USER_ROLES.SERVICE_MANAGER]: 'Сервис-менеджер',
+  [USER_ROLES.COMPANY_ADMIN]: 'Администратор компании',
+  [USER_ROLES.EMPLOYEE]: 'Сотрудник',
+  [USER_ROLES.GUEST]: 'Гость',
+};
+
 export const USER_ROLE_LABEL_KEYS: Record<UserRole, string> = {
   [USER_ROLES.SUPERADMIN]: 'profile.roles.superadmin',
   [USER_ROLES.RECEPTION]: 'profile.roles.reception',
+  [USER_ROLES.SERVICE_MANAGER]: 'profile.roles.service_manager',
   [USER_ROLES.COMPANY_ADMIN]: 'profile.roles.company_admin',
   [USER_ROLES.EMPLOYEE]: 'profile.roles.employee',
   [USER_ROLES.GUEST]: 'profile.roles.guest',
@@ -37,6 +48,13 @@ export const RESOURCE_TYPES = {
 } as const;
 
 export type ResourceType = (typeof RESOURCE_TYPES)[keyof typeof RESOURCE_TYPES];
+
+export const RESOURCE_TYPE_LABELS: Record<ResourceType, string> = {
+  [RESOURCE_TYPES.DESK]: 'Рабочее место',
+  [RESOURCE_TYPES.MEETING_ROOM]: 'Переговорная',
+  [RESOURCE_TYPES.PARKING]: 'Парковка',
+  [RESOURCE_TYPES.CAPSULE]: 'Капсула',
+};
 
 export const RESOURCE_TYPE_LABEL_KEYS: Record<ResourceType, string> = {
   [RESOURCE_TYPES.DESK]: 'common.resourceType.desk',
@@ -171,6 +189,13 @@ export const LEAVE_TYPES = {
 
 export type LeaveType = (typeof LEAVE_TYPES)[keyof typeof LEAVE_TYPES];
 
+export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
+  [LEAVE_TYPES.VACATION]: 'Отпуск',
+  [LEAVE_TYPES.DAY_OFF]: 'Отгул',
+  [LEAVE_TYPES.SICK_LEAVE]: 'Больничный',
+  [LEAVE_TYPES.REMOTE]: 'Удалённо',
+};
+
 export const LEAVE_TYPE_LABEL_KEYS: Record<LeaveType, string> = {
   [LEAVE_TYPES.VACATION]: 'common.leaveType.vacation',
   [LEAVE_TYPES.DAY_OFF]: 'common.leaveType.day_off',
@@ -182,14 +207,23 @@ export const LEAVE_STATUSES = {
   PENDING: 'pending',
   APPROVED: 'approved',
   REJECTED: 'rejected',
+  CANCELLED: 'cancelled',
 } as const;
 
 export type LeaveStatus = (typeof LEAVE_STATUSES)[keyof typeof LEAVE_STATUSES];
+
+export const LEAVE_STATUS_LABELS: Record<LeaveStatus, string> = {
+  [LEAVE_STATUSES.PENDING]: 'На рассмотрении',
+  [LEAVE_STATUSES.APPROVED]: 'Одобрено',
+  [LEAVE_STATUSES.REJECTED]: 'Отклонено',
+  [LEAVE_STATUSES.CANCELLED]: 'Отменено',
+};
 
 export const LEAVE_STATUS_LABEL_KEYS: Record<LeaveStatus, string> = {
   [LEAVE_STATUSES.PENDING]: 'common.leaveStatus.pending',
   [LEAVE_STATUSES.APPROVED]: 'common.leaveStatus.approved',
   [LEAVE_STATUSES.REJECTED]: 'common.leaveStatus.rejected',
+  [LEAVE_STATUSES.CANCELLED]: 'common.leaveStatus.cancelled',
 };
 
 export const COMPANY_TIERS = {

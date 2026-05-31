@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import type { EmployeeDashboardData } from '@/shared/types';
 import { MyTasksWidget } from '@/pages/dashboard/components/MyTasksWidget';
+import { useMyTasksFlat } from '@/pages/dashboard/hooks/useMyTasksFlat';
 
 export function EmployeeWidgets({
   data,
@@ -25,7 +26,7 @@ export function EmployeeWidgets({
   const userName = data.user?.full_name?.split(' ')[0] ?? '';
 
   const upcomingBookings = data.my_upcoming_bookings ?? [];
-  const tasks = data.my_tasks ?? [];
+  const { tasks, totalCount: tasksTotalCount } = useMyTasksFlat();
 
   return (
     <div className="space-y-6">
@@ -58,13 +59,13 @@ export function EmployeeWidgets({
 
         <div className="mt-5 flex flex-wrap gap-2">
           <Link
-            to="/catalog"
+            to="/bookings/catalog"
             className="inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition-colors"
           >
             {t('dashboard.employee.bookResource')}
           </Link>
           <Link
-            to="/passes"
+            to="/passes/new"
             className="inline-flex items-center gap-1.5 rounded-lg border border-white/30 px-4 py-2 text-sm font-medium text-white hover:bg-white/10 transition-colors"
           >
             {t('dashboard.employee.inviteGuest')}
@@ -90,7 +91,7 @@ export function EmployeeWidgets({
         >
           <p className="text-xs text-muted">{t('dashboard.employee.kpi.myTasks')}</p>
           <p className="text-3xl font-bold text-primary leading-none tracking-tight">
-            {tasks.length}
+            {tasksTotalCount}
           </p>
         </Link>
 

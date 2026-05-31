@@ -14,6 +14,7 @@ import {
   Megaphone,
   Clock,
   ListTodo,
+  Repeat,
   MailPlus,
   Bell,
   type LucideIcon,
@@ -45,13 +46,13 @@ const superadminNav: NavSection[] = [
       { labelKey: 'sidebar.navItem.bookings',        path: `${STAFF_UI_PREFIX}/bookings`,           icon: CalendarDays },
       { labelKey: 'sidebar.navItem.passes',          path: '/passes',                               icon: ShieldCheck },
       { labelKey: 'sidebar.navItem.qrCheck',         path: '/access/validate',                      icon: ShieldCheck },
-      { labelKey: 'sidebar.navItem.accessLog',       path: '/access/logs',                          icon: Clock },
     ],
   },
   {
     titleKey: 'sidebar.navSection.building',
     items: [
       { labelKey: 'sidebar.navItem.buildingMap',     path: '/building/map',                         icon: Map },
+      { labelKey: 'sidebar.navItem.buildingStaff',   path: '/building/staff',                       icon: Users },
       { labelKey: 'sidebar.navItem.serviceRequests', path: '/service-requests',                     icon: Wrench },
       { labelKey: 'sidebar.navItem.announcements',   path: '/announcements',                        icon: Megaphone },
     ],
@@ -97,10 +98,11 @@ const companyAdminNav: NavSection[] = [
   {
     titleKey: 'sidebar.navSection.services',
     items: [
-      { labelKey: 'sidebar.navItem.bookings',        path: `${STAFF_UI_PREFIX}/bookings`,           icon: CalendarDays },
+      { labelKey: 'sidebar.navItem.bookingCatalog',  path: '/bookings/catalog',                     icon: CalendarDays },
+      { labelKey: 'sidebar.navItem.recurringBookings', path: '/bookings/recurring',                 icon: Repeat },
+      { labelKey: 'sidebar.navItem.adminBookings',   path: `${STAFF_UI_PREFIX}/bookings`,           icon: CalendarDays },
       { labelKey: 'sidebar.navItem.buildingMap',     path: '/building/map',                         icon: Map },
       { labelKey: 'sidebar.navItem.guestPasses',     path: '/passes',                               icon: ShieldCheck },
-      { labelKey: 'sidebar.navItem.accessLog',       path: '/access/logs',                          icon: Clock },
       { labelKey: 'sidebar.navItem.files',           path: '/storage',                              icon: FileText },
       { labelKey: 'sidebar.navItem.announcements',   path: '/announcements',                        icon: Megaphone },
       { labelKey: 'sidebar.navItem.leave',           path: '/hr/leaves',                            icon: Clock },
@@ -187,9 +189,26 @@ const receptionNav: NavSection[] = [
   },
 ];
 
+const serviceManagerNav: NavSection[] = [
+  {
+    items: [{ labelKey: 'sidebar.navItem.dashboard', path: '/', icon: LayoutDashboard }],
+  },
+  {
+    titleKey: 'sidebar.navSection.service',
+    items: [
+      { labelKey: 'sidebar.navItem.serviceRequests', path: '/service-requests', icon: Wrench },
+    ],
+  },
+  {
+    titleKey: 'sidebar.navSection.settings',
+    items: [{ labelKey: 'sidebar.navItem.notifications', path: '/settings/notifications', icon: Bell }],
+  },
+];
+
 export const sidebarConfig: Record<UserRole, NavSection[]> = {
   [USER_ROLES.SUPERADMIN]: superadminNav,
   [USER_ROLES.RECEPTION]: receptionNav,
+  [USER_ROLES.SERVICE_MANAGER]: serviceManagerNav,
   [USER_ROLES.COMPANY_ADMIN]: companyAdminNav,
   [USER_ROLES.EMPLOYEE]: employeeNav,
   [USER_ROLES.GUEST]: guestNav,

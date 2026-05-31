@@ -79,6 +79,36 @@ export async function downloadFromApiEndpoint(
   downloadEndpoint: string,
   options?: { filename?: string },
 ): Promise<void> {
-  const url = await fetchSignedDownloadUrl(downloadEndpoint);
-  openSignedDownloadUrl(url, { filename: options?.filename });
+  const path = toApiRelativePath(downloadEndpoint);
+
+  // Use responseType:'blob' so we can inspect content-type before deciding.
+  const response = await apiClient.get<Blob>(path, {
+    responseType: 'blob',
+    // Preserve non-2xx so we can forward errors properly.
+    validateStatus: (s) => s < 400,
+  });
+
+  const contentType: string = (response.headers as Record<string, string>)['content-type'] ?? '';
+
+  if (contentType.includes('application/json')) {
+    // S3 path: backend returned { url, expires_in } — read the blob as text.
+    const text = await (response.data as Blob).text();
+    const json = JSON.parse(text) as DownloadUrlResponse;
+    if (!json?.url) throw new Error('Download URL missing in response');
+    const url = resolveFetchedDownloadUrl(json.url);
+    openSignedDownloadUrl(url, { filename: options?.filename, openInNewTab: false });
+    return;
+  }
+
+  // Local-storage path: backend streamed the file directly with Content-Disposition.
+  const blobUrl = URL.createObjectURL(response.data as Blob);
+  const anchor = document.createElement('a');
+  anchor.href = blobUrl;
+  if (options?.filename) {
+    anchor.download = options.filename;
+  }
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
 }

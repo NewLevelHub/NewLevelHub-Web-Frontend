@@ -91,7 +91,7 @@ export function CrmLabelsManagerModal({ onClose }: LabelsManagerModalProps) {
   return (
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4"
-      onClick={handleBackdropClick}
+      onMouseDown={handleBackdropClick}
       role="dialog"
       aria-modal="true"
       aria-labelledby="labels-manager-title"

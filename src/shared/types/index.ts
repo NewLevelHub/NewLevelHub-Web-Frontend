@@ -117,6 +117,26 @@ export interface SuperadminAnalyticsResponse {
   }>;
 }
 
+/** GET /analytics/resources/ — загруженность в разрезе конкретных ресурсов. */
+export interface ResourceUsageRow {
+  resource_id: number;
+  resource_name: string;
+  resource_type: string;
+  floor: number;
+  total_bookings: number;
+  avg_duration_minutes: number;
+  total_booked_minutes: number;
+  peak_hour: number | null;
+  peak_hour_bookings: number;
+}
+
+export interface ResourceUsageResponse {
+  period: SuperadminAnalyticsPeriod;
+  date_from: string;
+  date_to: string;
+  results: ResourceUsageRow[];
+}
+
 export interface CompanyLimits {
   employees: {
     current: number;
@@ -468,6 +488,9 @@ export interface GuestPass {
   times_used: number;
   status: PassStatus;
   created_at: string;
+  last_validated_at?: string | null;
+  last_validated_by?: string | null;
+  last_method?: string | null;
 }
 
 export interface PassValidationSuccess {
@@ -477,6 +500,19 @@ export interface PassValidationSuccess {
   invited_by: string;
   valid_from: string;
   valid_until: string;
+}
+
+export interface PassValidationLog {
+  id: number;
+  validated_at: string;
+  validated_by: string | null;
+  method: 'qr' | 'manual' | string;
+  entry_point: string;
+}
+
+export interface PassValidationsResponse {
+  total: number;
+  results: PassValidationLog[];
 }
 
 export interface PassValidationFailure {
@@ -548,6 +584,10 @@ export interface ServiceRequestRatePayload {
   rating: number;
 }
 
+export interface ServiceRequestAssignPayload {
+  assigned_to: number | null;
+}
+
 export interface Announcement {
   id: number;
   title: string;
@@ -581,6 +621,8 @@ export interface LeaveRequest {
   duration_days?: number;
   comment: string;
   status: LeaveStatus;
+  assigned_reviewer: number | null;
+  assigned_reviewer_name?: string | null;
   reviewed_by: number | null;
   reviewer?: number | null;
   review_comment: string;
@@ -633,6 +675,7 @@ export interface StorageFolder {
   name: string;
   scope: 'personal' | 'company';
   parent: number | null;
+  owner: number;
   children_count: number;
   files_count: number;
   created_at: string;
@@ -689,6 +732,7 @@ export interface StorageFileShare {
   shared_by: number;
   shared_by_name: string;
   permission: StorageSharePermission;
+  comment: string;
   created_at: string;
 }
 
@@ -1082,7 +1126,7 @@ export interface DashboardTaskItem {
   id: number;
   title: string;
   board_name: string;
-  due_date: string;
+  due_date: string | null;
   priority: string;
   is_overdue: boolean;
 }
