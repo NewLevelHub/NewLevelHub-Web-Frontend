@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search,
@@ -980,7 +979,6 @@ type ViewTab = 'manage' | 'directory';
 export default function TeamManagePage() {
   const { t } = useTranslation();
   const { user, isImpersonating, startImpersonation } = useAuth();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
   const isCompanyAdmin = user?.role === USER_ROLES.COMPANY_ADMIN;
@@ -1057,6 +1055,11 @@ export default function TeamManagePage() {
   const refreshMemberQueries = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
     await queryClient.invalidateQueries({ queryKey: ['company-members'] });
+    // Leave requests can reference this member as assigned_reviewer; the backend
+    // releases the FK on deactivate/remove, so refresh the leaves list and the
+    // reviewer-options picker too.
+    await queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
+    await queryClient.invalidateQueries({ queryKey: ['leave', 'reviewer-options'] });
   }, [queryClient]);
 
   const deactivateMemberMutation = useMutation({
@@ -1145,7 +1148,6 @@ export default function TeamManagePage() {
     onSuccess: (data) => {
       const mappedUser = mapApiUser(data.user);
       startImpersonation(mappedUser, data.access);
-      navigate('/dashboard');
     },
     onError: (error: unknown) => {
       setActionSuccess(null);

@@ -4,6 +4,7 @@
  */
 const LEGACY_ACCESS_KEY = 'nlh_access_token';
 const LEGACY_REFRESH_KEY = 'nlh_refresh_token';
+const IMPERSONATION_TOKEN_KEY = 'nlh_impersonation_access';
 
 let accessToken: string | null = null;
 
@@ -30,5 +31,26 @@ export const tokenStorage = {
   clear: () => {
     accessToken = null;
     clearLegacyLocalStorage();
+  },
+  /**
+   * Передаёт impersonation-токен через hard-reload: hard window.location нужен,
+   * чтобы обойти race-condition с RequireRole guard'ами на странице, где
+   * суперадмин нажал «Войти от имени».
+   */
+  stashImpersonationAccess: (token: string) => {
+    try {
+      sessionStorage.setItem(IMPERSONATION_TOKEN_KEY, token);
+    } catch {
+      /* ignore */
+    }
+  },
+  consumeImpersonationAccess: (): string | null => {
+    try {
+      const token = sessionStorage.getItem(IMPERSONATION_TOKEN_KEY);
+      sessionStorage.removeItem(IMPERSONATION_TOKEN_KEY);
+      return token;
+    } catch {
+      return null;
+    }
   },
 };

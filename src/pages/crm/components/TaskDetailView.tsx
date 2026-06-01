@@ -236,6 +236,11 @@ export function TaskDetailView(props: TaskDetailViewProps) {
                 )}
               >
                 <option value="">— Не назначен —</option>
+                {task.assignee && !members.some((m) => String(m.id) === String(task.assignee!.id)) ? (
+                  <option value={String(task.assignee.id)}>
+                    {`${task.assignee.first_name} ${task.assignee.last_name}`.trim()}
+                  </option>
+                ) : null}
                 {members
                   .filter((m) => m.is_active)
                   .map((m) => (

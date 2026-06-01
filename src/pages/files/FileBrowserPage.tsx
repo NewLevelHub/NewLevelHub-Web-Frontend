@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
@@ -10,6 +10,7 @@ import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import { downloadFromApiEndpoint } from '@/shared/lib/resolveDownloadUrl';
+import { USER_ROLES } from '@/shared/config/constants';
 import type {
   CompanyDirectoryMember,
   PaginatedResponse,
@@ -17,7 +18,6 @@ import type {
   StorageFileShare,
   StorageFolder,
   StorageFolderDetail,
-  StorageSharePermission,
   StorageUsage,
 } from '@/shared/types';
 
@@ -32,12 +32,6 @@ type RenameTarget =
   | { kind: 'folder'; folder: StorageFolder }
   | { kind: 'file'; file: StorageFile };
 const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
-const STORAGE_SHARE_PERMISSIONS: StorageSharePermission[] = ['view', 'download', 'full'];
-const STORAGE_SHARE_PERMISSION_LABEL: Record<StorageSharePermission, string> = {
-  view: 'Только просмотр',
-  download: 'Просмотр и скачивание',
-  full: 'Полный доступ',
-};
 
 function formatFileSize(size: number) {
   if (size <= 0) return '0 B';
@@ -64,10 +58,16 @@ export default function FileBrowserPage() {
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [uploadInputKey, setUploadInputKey] = useState(0);
   const [shareTargetUserId, setShareTargetUserId] = useState('');
-  const [sharePermission, setSharePermission] = useState<StorageSharePermission>('view');
+  const [shareComment, setShareComment] = useState('');
+
+  useEffect(() => {
+    if (!uploadSuccess) return;
+    const timer = setTimeout(() => setUploadSuccess(null), 4000);
+    return () => clearTimeout(timer);
+  }, [uploadSuccess]);
+
   const [selectedShareFileId, setSelectedShareFileId] = useState<number | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
-  const [openedSharedFile, setOpenedSharedFile] = useState<StorageFile | null>(null);
   const [trail, setTrail] = useState<StorageFolder[]>([]);
   const [confirmAction, setConfirmAction] = useState<FileBrowserConfirmAction | null>(null);
   const [renameTarget, setRenameTarget] = useState<RenameTarget | null>(null);
@@ -326,26 +326,22 @@ export default function FileBrowserPage() {
       await apiClient.post(API.storage.shares, {
         file_id: selectedShareFileId,
         shared_with_user_id: Number(shareTargetUserId),
-        permission: sharePermission,
+        permission: 'download',
+        comment: shareComment.trim(),
       });
     },
     onSuccess: () => {
       setShareError(null);
       setShareTargetUserId('');
-      setSharePermission('view');
+      setShareComment('');
       refreshStorageData();
     },
     onError: (error) => {
-      setShareError(getApiError(error).message);
-    },
-  });
-
-  const updateSharePermissionMutation = useMutation({
-    mutationFn: async ({ shareId, permission }: { shareId: number; permission: StorageSharePermission }) => {
-      await apiClient.patch(API.storage.share(String(shareId)), { permission });
-    },
-    onSuccess: () => {
-      refreshStorageData();
+      const message = getApiError(error).message;
+      const isDuplicate = /уникальн/i.test(message) || /unique/i.test(message);
+      setShareError(
+        isDuplicate ? 'Этому пользователю уже расшарен данный файл.' : message,
+      );
     },
   });
 
@@ -358,26 +354,22 @@ export default function FileBrowserPage() {
     },
   });
 
-  const openSharedFileMutation = useMutation({
-    mutationFn: async (fileId: number) => {
-      const { data } = await apiClient.get<StorageFile>(API.storage.file(String(fileId)));
-      return data;
-    },
-    onSuccess: (file) => {
-      setOpenedSharedFile(file);
-    },
-  });
-
   const folders = useMemo<StorageFolder[]>(() => {
     if (currentFolder) return folderDetailQuery.data?.folders ?? [];
     return rootFoldersQuery.data?.results ?? [];
   }, [currentFolder, folderDetailQuery.data?.folders, rootFoldersQuery.data?.results]);
 
   const files = useMemo<StorageFile[]>(() => {
-    if (isSearching) return searchedFilesQuery.data?.results ?? [];
-    if (!currentFolder) return rootFilesQuery.data?.results ?? [];
-    return folderDetailQuery.data?.files ?? [];
-  }, [currentFolder, folderDetailQuery.data?.files, isSearching, rootFilesQuery.data?.results, searchedFilesQuery.data?.results]);
+    let result: StorageFile[];
+    if (isSearching) result = searchedFilesQuery.data?.results ?? [];
+    else if (!currentFolder) result = rootFilesQuery.data?.results ?? [];
+    else result = folderDetailQuery.data?.files ?? [];
+
+    if (scope === 'personal' && user?.id !== undefined) {
+      result = result.filter((file) => file.owner === user.id);
+    }
+    return result;
+  }, [currentFolder, folderDetailQuery.data?.files, isSearching, rootFilesQuery.data?.results, searchedFilesQuery.data?.results, scope, user?.id]);
 
   const companyMembers = companyMembersQuery.data?.results ?? [];
   const recipientOptions = companyMembers.filter((member) => member.id !== user?.id);
@@ -388,6 +380,12 @@ export default function FileBrowserPage() {
   const isLoading =
     rootFoldersQuery.isLoading || folderDetailQuery.isLoading || searchedFilesQuery.isLoading || rootFilesQuery.isLoading;
   const isError = rootFoldersQuery.isError || folderDetailQuery.isError || searchedFilesQuery.isError || rootFilesQuery.isError;
+
+  const isAdmin = user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN;
+  const canManageFile = (file: StorageFile) =>
+    scope === 'personal' || file.owner === user?.id || isAdmin;
+  const canManageFolder = (folder: StorageFolder) =>
+    scope === 'personal' || folder.owner === user?.id || isAdmin;
 
   const openFolder = (folder: StorageFolder) => {
     setTrail((prev) => [...prev, folder]);
@@ -425,9 +423,6 @@ export default function FileBrowserPage() {
     createShareMutation.mutate();
   };
 
-  const handleSharePermissionChange = (shareId: number, permission: StorageSharePermission) => {
-    updateSharePermissionMutation.mutate({ shareId, permission });
-  };
 
   const handleRevokeShare = (shareId: number) => {
     setConfirmAction({ type: 'revoke-share', shareId });
@@ -583,13 +578,16 @@ export default function FileBrowserPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <input
-          key={uploadInputKey}
-          type="file"
-          lang={dateLocale}
-          onChange={(e) => handleUploadInputChange(e.target.files?.[0] ?? null)}
-          className="w-full max-w-sm rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-300"
-        />
+        <label className="flex w-full max-w-sm cursor-pointer items-center rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-300">
+          <input
+            key={uploadInputKey}
+            type="file"
+            lang={dateLocale}
+            className="sr-only"
+            onChange={(e) => handleUploadInputChange(e.target.files?.[0] ?? null)}
+          />
+          <span className="truncate">{uploadFile ? uploadFile.name : t('common.noFileSelected')}</span>
+        </label>
         <button
           type="button"
           disabled={!uploadFile || uploadFileMutation.isPending}
@@ -628,18 +626,22 @@ export default function FileBrowserPage() {
                         {folder.name}
                       </button>
                       <div className="flex items-center gap-2 text-xs">
-                        <button
-                          type="button"
-                          onClick={() => handleRename(folder)}
-                          className="rounded border border-slate-600 px-2 py-1 text-slate-300"
-                        >
-                          Переименовать
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(folder)}
-                          className="rounded border border-rose-800 px-2 py-1 text-rose-300"
-                        >{t('common.delete')}</button>
+                        {canManageFolder(folder) ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleRename(folder)}
+                              className="rounded border border-slate-600 px-2 py-1 text-slate-300"
+                            >
+                              {t('common.rename')}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(folder)}
+                              className="rounded border border-rose-800 px-2 py-1 text-rose-300"
+                            >{t('common.delete')}</button>
+                          </>
+                        ) : null}
                       </div>
                     </li>
                   ))}
@@ -667,13 +669,15 @@ export default function FileBrowserPage() {
                         <span className="text-xs text-slate-500">{formatFileSize(file.size ?? file.file_size)}</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
-                        <button
-                          type="button"
-                          onClick={() => handleSelectShareFile(file)}
-                          className="rounded border border-default px-2 py-1 text-brand"
-                        >
-                          Доступ
-                        </button>
+                        {scope === 'personal' ? (
+                          <button
+                            type="button"
+                            onClick={() => handleSelectShareFile(file)}
+                            className="rounded border border-default px-2 py-1 text-brand"
+                          >
+                            Доступ
+                          </button>
+                        ) : null}
                         <button
                           type="button"
                           onClick={() =>
@@ -687,18 +691,22 @@ export default function FileBrowserPage() {
                         >
                           Скачать
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleFileRename(file)}
-                          className="rounded border border-slate-600 px-2 py-1 text-slate-300"
-                        >
-                          Переименовать
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleFileDelete(file)}
-                          className="rounded border border-rose-800 px-2 py-1 text-rose-300"
-                        >{t('common.delete')}</button>
+                        {canManageFile(file) ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleFileRename(file)}
+                              className="rounded border border-slate-600 px-2 py-1 text-slate-300"
+                            >
+                              {t('common.rename')}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleFileDelete(file)}
+                              className="rounded border border-rose-800 px-2 py-1 text-rose-300"
+                            >{t('common.delete')}</button>
+                          </>
+                        ) : null}
                       </div>
                     </li>
                   ))}
@@ -707,6 +715,8 @@ export default function FileBrowserPage() {
             </section>
           </div>
 
+          {scope === 'personal' ? (
+          <>
           <section className="rounded-lg border border-slate-700 bg-slate-800 p-4">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">Шаринг файла</h2>
             {selectedShareFile ? (
@@ -714,27 +724,16 @@ export default function FileBrowserPage() {
                 <p className="mb-3 text-sm text-slate-300">
                   Выбран файл: <span className="font-medium text-primary">{selectedShareFile.name}</span>
                 </p>
-                <div className="mb-3 grid gap-2 md:grid-cols-[1fr_200px_auto]">
+                <div className="mb-2 flex gap-2">
                   <select
                     value={shareTargetUserId}
                     onChange={(event) => setShareTargetUserId(event.target.value)}
-                    className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-primary"
+                    className="flex-1 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-primary"
                   >
                     <option value="">{t('common.selectEmployee')}</option>
                     {recipientOptions.map((member) => (
                       <option key={member.id} value={member.id}>
                         {member.full_name} ({member.email})
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={sharePermission}
-                    onChange={(event) => setSharePermission(event.target.value as StorageSharePermission)}
-                    className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-primary"
-                  >
-                    {STORAGE_SHARE_PERMISSIONS.map((permission) => (
-                      <option key={permission} value={permission}>
-                        {STORAGE_SHARE_PERMISSION_LABEL[permission]}
                       </option>
                     ))}
                   </select>
@@ -747,6 +746,13 @@ export default function FileBrowserPage() {
                     Выдать доступ
                   </button>
                 </div>
+                <textarea
+                  value={shareComment}
+                  onChange={(event) => setShareComment(event.target.value)}
+                  placeholder="Комментарий (необязательно)"
+                  rows={2}
+                  className="mb-3 w-full resize-none rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-primary placeholder:text-slate-500"
+                />
                 {shareError ? <p className="mb-3 text-sm text-rose-300">{shareError}</p> : null}
                 {fileSharesQuery.isLoading ? <p className="text-sm text-slate-400">Загрузка доступов...</p> : null}
                 {fileShares.length === 0 ? (
@@ -758,32 +764,21 @@ export default function FileBrowserPage() {
                         key={share.id}
                         className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-700 px-3 py-2"
                       >
-                        <div className="text-sm text-slate-200">
-                          <p>{share.shared_with_name}</p>
-                          <p className="text-xs text-slate-500">ID пользователя: {share.shared_with_user_id}</p>
+                        <div className="min-w-0 flex-1 text-sm text-slate-200">
+                          <p className="break-words">{share.shared_with_name}</p>
+                          {share.comment ? (
+                            <p className="break-words text-xs text-slate-500" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                              {share.comment}
+                            </p>
+                          ) : null}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={share.permission}
-                            onChange={(event) =>
-                              handleSharePermissionChange(share.id, event.target.value as StorageSharePermission)
-                            }
-                            className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-primary"
-                          >
-                            {STORAGE_SHARE_PERMISSIONS.map((permission) => (
-                              <option key={permission} value={permission}>
-                                {permission}
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            onClick={() => handleRevokeShare(share.id)}
-                            className="rounded border border-rose-800 px-2 py-1 text-xs text-rose-300"
-                          >
-                            Отозвать
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRevokeShare(share.id)}
+                          className="rounded border border-rose-800 px-2 py-1 text-xs text-rose-300"
+                        >
+                          Отозвать
+                        </button>
                       </li>
                     ))}
                   </ul>
@@ -810,55 +805,36 @@ export default function FileBrowserPage() {
                     key={share.id}
                     className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-700 px-3 py-2 text-sm"
                   >
-                    <div>
-                      <p className="text-slate-200">{share.file_name}</p>
-                      <p className="text-xs text-slate-500">Владелец: {share.file_owner_name}</p>
-                      <p className="text-xs text-slate-500">Расшарил: {share.shared_by_name}</p>
-                      <p className="text-xs text-slate-500">Ваш уровень доступа: {share.permission}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words text-slate-200">{share.file_name}</p>
+                      <p className="break-words text-xs text-slate-500">Владелец: {share.file_owner_name}</p>
+                      {share.comment ? (
+                        <p className="break-words text-xs italic text-slate-400" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                          {share.comment}
+                        </p>
+                      ) : null}
                     </div>
-                    {share.permission === 'view' ? (
-                      <button
-                        type="button"
-                        onClick={() => openSharedFileMutation.mutate(share.file_id)}
-                        className="rounded border border-default px-2 py-1 text-xs text-brand"
-                      >
-                        Открыть
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          downloadFileMutation.mutate({
-                            id: share.file_id,
-                            name: share.file_name || `file-${share.file_id}`,
-                            mimeType: 'application/octet-stream',
-                          })
-                        }
-                        className="rounded border border-slate-600 px-2 py-1 text-xs text-slate-300"
-                      >
-                        Скачать
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        downloadFileMutation.mutate({
+                          id: share.file_id,
+                          name: share.file_name || `file-${share.file_id}`,
+                          mimeType: 'application/octet-stream',
+                        })
+                      }
+                      className="rounded border border-slate-600 px-2 py-1 text-xs text-slate-300"
+                    >
+                      Скачать
+                    </button>
                   </li>
                 ))}
               </ul>
             ) : null}
-            {openSharedFileMutation.isError ? (
-              <p className="mt-3 text-sm text-rose-300">Не удалось открыть файл по доступу view.</p>
-            ) : null}
-            {openedSharedFile ? (
-              <div className="mt-3 rounded-md border border-slate-700 bg-slate-900 p-3 text-sm">
-                <p className="text-slate-200">Открыт файл: {openedSharedFile.name}</p>
-                <p className="text-xs text-slate-500">
-                  Размер: {formatFileSize(openedSharedFile.size ?? openedSharedFile.file_size)}
-                </p>
-                <p className="text-xs text-slate-500">
-                  Тип: {openedSharedFile.mime_type ?? openedSharedFile.content_type ?? 'unknown'}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">Скачивание доступно только для уровней download/full.</p>
-              </div>
-            ) : null}
+
           </section>
+          </>
+          ) : null}
         </>
       ) : null}
 

@@ -623,7 +623,9 @@ export default function MyBookingsPage() {
           role="dialog"
           aria-modal="true"
           aria-label={t('common.edit')}
-          onClick={closeEditModal}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) closeEditModal();
+          }}
         >
           <div
             className="w-full max-w-2xl mx-2 sm:mx-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-4 sm:p-5 shadow-xl"

@@ -106,7 +106,7 @@ export function CreateTaskModal({ boardId, boardCompanyId, columnId, onClose, wi
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      onClick={handleBackdropClick}
+      onMouseDown={handleBackdropClick}
       onKeyDown={handleKeyDown}
       role="dialog"
       aria-modal="true"
