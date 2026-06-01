@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { Link } from 'react-router';
@@ -8,7 +8,9 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
+import { cn } from '@/shared/lib/cn';
 import { getApiError } from '@/shared/lib/getApiError';
+import { localTodayIso, recurringSeriesDateEntries } from '@/shared/lib/recurringSeriesDates';
 import type {
   BookingResourceListItem,
   PaginatedResponse,
@@ -27,10 +29,6 @@ const WEEKDAY_KEYS = [
   'booking.recurring.sunday',
 ] as const;
 
-function todayIsoDate(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export default function RecurringBookingsPage() {
   const { t, i18n } = useTranslation();
   const dateLocale = dateLocaleTag(i18n.language);
@@ -41,9 +39,10 @@ export default function RecurringBookingsPage() {
   const [dayOfWeek, setDayOfWeek] = useState('0');
   const [startTime, setStartTime] = useState('10:00');
   const [endTime, setEndTime] = useState('11:00');
-  const [repeatUntil, setRepeatUntil] = useState(todayIsoDate());
+  const [repeatUntil, setRepeatUntil] = useState(localTodayIso);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [lastSkippedDates, setLastSkippedDates] = useState<string[]>([]);
+  const [expandedSeriesId, setExpandedSeriesId] = useState<number | null>(null);
 
   const { data: resourcesData, isLoading: resourcesLoading } = useQuery({
     queryKey: ['recurring-bookings', 'resources'],
@@ -102,6 +101,16 @@ export default function RecurringBookingsPage() {
     }
   }, [allowedWeekdayValues, dayOfWeek]);
 
+  const formatSeriesDate = useMemo(() => {
+    const formatter = new Intl.DateTimeFormat(dateLocale, {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    return (iso: string) => formatter.format(new Date(`${iso}T12:00:00`));
+  }, [dateLocale]);
+
   const createMutation = useMutation({
     mutationFn: async (payload: RecurringBookingCreatePayload) => {
       const { data } = await apiClient.post<RecurringBookingCreateResponse>(
@@ -139,6 +148,7 @@ export default function RecurringBookingsPage() {
     },
     onSuccess: async () => {
       setErrorMessage(null);
+      setExpandedSeriesId(null);
       await queryClient.invalidateQueries({ queryKey: ['recurring-bookings', 'list'] });
     },
     onError: (error: unknown) => {
@@ -167,6 +177,13 @@ export default function RecurringBookingsPage() {
     }
     return false;
   }
+
+  function toggleSeriesExpanded(rowId: number) {
+    setExpandedSeriesId((current) => (current === rowId ? null : rowId));
+  }
+
+  const listColumnCount =
+    (user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN ? 6 : 5);
 
   return (
     <div className="space-y-6">
@@ -248,7 +265,7 @@ export default function RecurringBookingsPage() {
             <input
               type="date"
               required
-              min={todayIsoDate()}
+              min={localTodayIso()}
               value={repeatUntil}
               onChange={(event) => setRepeatUntil(event.target.value)}
               lang={dateLocale}
@@ -298,11 +315,14 @@ export default function RecurringBookingsPage() {
       </section>
 
       <div>
-        <h2 className="text-[15px] font-semibold text-[color:var(--text-primary)] mb-3">
-          {user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN
-            ? t('booking.recurring.listSectionAdmin')
-            : t('booking.recurring.listSectionMy')}
-        </h2>
+        <div className="mb-3">
+          <h2 className="text-[15px] font-semibold text-[color:var(--text-primary)]">
+            {user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN
+              ? t('booking.recurring.listSectionAdmin')
+              : t('booking.recurring.listSectionMy')}
+          </h2>
+          <p className="mt-1 text-xs text-[color:var(--text-muted)]">{t('booking.recurring.expandSeriesHint')}</p>
+        </div>
 
         <div className="bg-[color:var(--bg-surface)] border border-[color:var(--border)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
           {recurringError ? (
@@ -343,46 +363,110 @@ export default function RecurringBookingsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleRecurringRows.map((row) => (
-                    <tr
-                      key={row.id}
-                      className="border-b border-[color:var(--border)] hover:bg-[color:var(--bg-hover)] transition-colors last:border-0"
-                    >
-                      <td className="px-3 py-2.5 align-middle text-[13px] font-medium text-[color:var(--text-primary)]">
-                        {resourceNameById.get(row.resource_id) ?? t('booking.recurring.resourcePrefix', { id: row.resource_id })}
-                      </td>
-                      <td className="px-3 py-2.5 align-middle text-[13px] text-[color:var(--text-muted)]">
-                        {WEEKDAY_OPTIONS[row.day_of_week]?.label ?? String(row.day_of_week)}
-                      </td>
-                      <td className="px-3 py-2.5 align-middle text-[13px] font-mono text-[color:var(--text-primary)]">
-                        {row.start_time.slice(0, 5)}–{row.end_time.slice(0, 5)}
-                      </td>
-                      <td className="px-3 py-2.5 align-middle text-[13px] text-[color:var(--text-muted)]">
-                        {row.valid_until ?? t('common.noDate')}
-                      </td>
-                      {(user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN) && (
-                        <td className="px-3 py-2.5 align-middle text-[13px] text-[color:var(--text-muted)]">
-                          {row.user_name ?? '—'}
-                        </td>
-                      )}
-                      <td className="px-3 py-2.5 align-middle">
-                        {canCancelSeries(row) ? (
-                          <button
-                            type="button"
-                            onClick={() => deleteMutation.mutate(row.id)}
-                            disabled={deleteMutation.isPending}
-                            className="inline-flex items-center gap-1 h-7 px-2.5 text-[12px] rounded-[var(--radius-sm)] border border-[color:var(--status-busy-bg)] text-[color:var(--status-busy-text)] hover:bg-[color:var(--status-busy-bg)] disabled:opacity-50 transition-colors"
-                          >
-                            {t('booking.recurring.cancelSeries')}
-                          </button>
-                        ) : (
-                          <span className="text-[12px] text-[color:var(--text-muted)]">
-                            {t('booking.recurring.noAccess')}
-                          </span>
+                  {visibleRecurringRows.map((row) => {
+                    const isExpanded = expandedSeriesId === row.id;
+                    const seriesDates = recurringSeriesDateEntries({
+                      dayOfWeek: row.day_of_week,
+                      validFrom: row.valid_from,
+                      repeatUntil: row.valid_until,
+                      endTime: row.end_time,
+                    });
+
+                    return (
+                      <Fragment key={row.id}>
+                        <tr
+                          className={cn(
+                            'border-b border-[color:var(--border)] transition-colors cursor-pointer',
+                            isExpanded
+                              ? 'bg-[color:var(--bg-hover)]'
+                              : 'hover:bg-[color:var(--bg-hover)]',
+                          )}
+                          onClick={() => toggleSeriesExpanded(row.id)}
+                        >
+                          <td className="px-3 py-2.5 align-middle text-[13px] font-medium text-[color:var(--text-primary)]">
+                            {resourceNameById.get(row.resource_id) ?? t('booking.recurring.resourcePrefix', { id: row.resource_id })}
+                          </td>
+                          <td className="px-3 py-2.5 align-middle text-[13px] text-[color:var(--text-muted)]">
+                            {WEEKDAY_OPTIONS[row.day_of_week]?.label ?? String(row.day_of_week)}
+                          </td>
+                          <td className="px-3 py-2.5 align-middle text-[13px] font-mono text-[color:var(--text-primary)]">
+                            {row.start_time.slice(0, 5)}–{row.end_time.slice(0, 5)}
+                          </td>
+                          <td className="px-3 py-2.5 align-middle text-[13px] text-[color:var(--text-muted)]">
+                            {row.valid_until ?? t('common.noDate')}
+                          </td>
+                          {(user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN) && (
+                            <td className="px-3 py-2.5 align-middle text-[13px] text-[color:var(--text-muted)]">
+                              {row.user_name ?? '—'}
+                            </td>
+                          )}
+                          <td className="px-3 py-2.5 align-middle" onClick={(event) => event.stopPropagation()}>
+                            {canCancelSeries(row) ? (
+                              <button
+                                type="button"
+                                onClick={() => deleteMutation.mutate(row.id)}
+                                disabled={deleteMutation.isPending}
+                                className="inline-flex items-center gap-1 h-7 px-2.5 text-[12px] rounded-[var(--radius-sm)] border border-[color:var(--status-busy-bg)] text-[color:var(--status-busy-text)] hover:bg-[color:var(--status-busy-bg)] disabled:opacity-50 transition-colors"
+                              >
+                                {t('booking.recurring.cancelSeries')}
+                              </button>
+                            ) : (
+                              <span className="text-[12px] text-[color:var(--text-muted)]">
+                                {t('booking.recurring.noAccess')}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                        {isExpanded && (
+                          <tr className="border-b border-[color:var(--border)] bg-[color:var(--bg-raised)]">
+                            <td colSpan={listColumnCount} className="px-3 py-3">
+                              <p className="text-xs font-medium text-[color:var(--text-primary)] mb-2">
+                                {t('booking.recurring.previewTitle')}
+                              </p>
+                              {seriesDates.length === 0 ? (
+                                <p className="text-xs text-[color:var(--text-muted)]">
+                                  {t('booking.recurring.previewNoDates')}
+                                </p>
+                              ) : (
+                                <div className="flex flex-wrap gap-2">
+                                  {seriesDates.map((entry) => (
+                                    <div
+                                      key={entry.iso}
+                                      className={cn(
+                                        'min-w-[9.5rem] rounded-lg border px-3 py-2',
+                                        entry.status === 'will_create'
+                                          ? 'border-brand/40 bg-brand/5'
+                                          : 'border-[color:var(--border)] bg-[color:var(--bg-surface)] opacity-75',
+                                      )}
+                                    >
+                                      <p className="text-sm font-medium text-[color:var(--text-primary)]">
+                                        {formatSeriesDate(entry.iso)}
+                                      </p>
+                                      <p className="mt-0.5 font-mono text-xs text-[color:var(--text-muted)]">
+                                        {row.start_time.slice(0, 5)}–{row.end_time.slice(0, 5)}
+                                      </p>
+                                      <p
+                                        className={cn(
+                                          'mt-1 text-[11px] font-medium',
+                                          entry.status === 'will_create'
+                                            ? 'text-brand'
+                                            : 'text-[color:var(--text-muted)]',
+                                        )}
+                                      >
+                                        {entry.status === 'will_create'
+                                          ? t('booking.recurring.dateWillCreate')
+                                          : t('booking.recurring.dateSkippedPast')}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                          </tr>
                         )}
-                      </td>
-                    </tr>
-                  ))}
+                      </Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
