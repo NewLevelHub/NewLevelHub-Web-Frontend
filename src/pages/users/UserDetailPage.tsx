@@ -199,7 +199,6 @@ interface ImpersonatePanelProps {
 
 function ImpersonatePanel({ targetUser }: ImpersonatePanelProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { startImpersonation } = useAuth();
   const [showConfirm, setShowConfirm] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -218,7 +217,6 @@ function ImpersonatePanel({ targetUser }: ImpersonatePanelProps) {
     onSuccess: (data) => {
       const mappedUser = mapApiUser(data.user);
       startImpersonation(mappedUser, data.access);
-      navigate('/dashboard');
     },
     onError: (error: unknown) => {
       const axiosError = error as { response?: { status?: number } };

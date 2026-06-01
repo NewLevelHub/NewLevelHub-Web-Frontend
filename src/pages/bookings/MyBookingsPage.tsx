@@ -623,11 +623,12 @@ export default function MyBookingsPage() {
           role="dialog"
           aria-modal="true"
           aria-label={t('common.edit')}
-          onClick={closeEditModal}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) closeEditModal();
+          }}
         >
           <div
             className="w-full max-w-2xl rounded-2xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-5 shadow-xl"
-            onClick={(event) => event.stopPropagation()}
           >
             <h2 className="text-lg font-semibold text-[color:var(--text-primary)]">
               {t('common.edit')} #{modalBooking?.id ?? editTarget.id}

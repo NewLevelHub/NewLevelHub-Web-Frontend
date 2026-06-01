@@ -37,6 +37,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
+  const isImpersonating = useAuthStore((s) => s.isImpersonating);
   const fetchMe = useAuthStore((s) => s.fetchMe);
 
   const isCompanyAdmin = user?.role === USER_ROLES.COMPANY_ADMIN;
@@ -62,10 +63,16 @@ export default function DashboardPage() {
   });
 
   useEffect(() => {
-    if (!onboardingFetching && requiresHrOnboarding && onboardingProgress && onboardingProgress.completed === false) {
+    if (
+      !isImpersonating &&
+      !onboardingFetching &&
+      requiresHrOnboarding &&
+      onboardingProgress &&
+      onboardingProgress.completed === false
+    ) {
       void navigate('/onboarding', { replace: true });
     }
-  }, [requiresHrOnboarding, onboardingProgress, onboardingFetching, navigate]);
+  }, [isImpersonating, requiresHrOnboarding, onboardingProgress, onboardingFetching, navigate]);
 
   const { data: dashboard, isLoading: dashLoading } = useQuery<DashboardData>({
     queryKey: ['dashboard'],
@@ -167,7 +174,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {isCompanyAdmin && companyOnboarding /*&& !companyOnboarding.completed &&*/ && (
+      {isCompanyAdmin && companyOnboarding && !companyOnboarding.completed && (
         /* ── Онбординг ещё не завершён — показываем шаги ── */
         <section className="rounded-xl border border-blue-200 bg-brand-subtle p-5 dark:border-blue-900/40">
           <h2 className="text-sm font-semibold text-brand">{t('dashboard.companyOnboarding.title')}</h2>

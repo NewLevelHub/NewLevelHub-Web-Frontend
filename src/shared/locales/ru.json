@@ -158,6 +158,7 @@
     "cancel": "Отмена",
     "confirm": "Подтвердить",
     "delete": "Удалить",
+    "rename": "Переименовать",
     "close": "Закрыть",
     "back": "Назад",
     "yes": "Да",
@@ -235,7 +236,8 @@
     "leaveStatus": {
       "pending": "На рассмотрении",
       "approved": "Одобрено",
-      "rejected": "Отклонено"
+      "rejected": "Отклонено",
+      "cancelled": "Отменено"
     },
     "announcementCategory": {
       "info": "Информация",
@@ -667,7 +669,8 @@
       "work": "Работа",
       "services": "Сервисы",
       "profile": "Профиль",
-      "access": "Доступ"
+      "access": "Доступ",
+      "service": "Сервис"
     },
     "navItem": {
       "dashboard": "Дашборд",
@@ -692,12 +695,13 @@
       "calendar": "Календарь",
       "bookingCatalog": "Бронирование",
       "recurringBookings": "Рекуррентные брони",
-      "adminBookings": "Бронирования (Управление)",
+      "adminBookings": "Управление броней",
       "guestPasses": "Гостевые пропуска",
       "files": "Файлы",
       "leave": "Отпуска",
       "team": "Команда",
-      "serviceRequest": "Сервисная заявка"
+      "serviceRequest": "Сервисная заявка",
+      "buildingStaff": "Сотрудники здания"
     }
   },
   "catalog": {
@@ -769,6 +773,7 @@
       "company_admin": "Администратор компании",
       "employee": "Сотрудник",
       "reception": "Ресепшен",
+      "service_manager": "Сервис-менеджер",
       "guest": "Гость"
     },
     "settingsTitle": "Настройки профиля",
@@ -1374,6 +1379,7 @@
     "rowActions": "Действия"
   },
   "passes": {
+    "showing": "Показано {{start}}—{{end}} из {{total}}",
     "revokeSuccess": "Пропуск успешно отозван.",
     "resendQr": "Повторно отправить QR",
     "revoke": "Отозвать пропуск",
@@ -1422,6 +1428,7 @@
     "validFromHint": "Код станет активным начиная с этого момента",
     "validUntilLabel": "Действует до",
     "autoUntil": "Автоматически: +30 дней от даты начала",
+    "autoUntilMulti": "Автоматически: +1 день от даты начала",
     "loadingPass": "Загрузка пропуска...",
     "loadError": "Не удалось загрузить детали пропуска.",
     "passId": "Пропуск #{{id}}",
@@ -1437,6 +1444,9 @@
     "owner": "Владелец",
     "columnPurpose": "Цель",
     "columnPeriod": "Период",
+    "columnChecker": "Проверил",
+    "columnValidated": "Валидирован",
+    "columnMethod": "Метод",
     "columnDetails": "Детали",
     "noPassesYet": "Пропусков пока нет.",
     "listTitle": "Гостевые пропуска",

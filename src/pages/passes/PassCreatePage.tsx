@@ -45,7 +45,7 @@ export default function PassCreatePage() {
       return response.data;
     },
     onSuccess: async (createdPass) => {
-      await queryClient.invalidateQueries({ queryKey: ['guest-passes'] });
+      await queryClient.invalidateQueries({ queryKey: ['guest-passes'], refetchType: 'all' });
       navigate(`/passes/${createdPass.id}`);
     },
     onError: (error: unknown) => {
@@ -60,13 +60,15 @@ export default function PassCreatePage() {
       setFormError(t('passes.requiredFields'));
       return;
     }
+    const start = dayjs.tz(validFrom, TZ);
+    const end = isSingleUse ? start.add(30, 'day') : start.add(1, 'day');
     createPassMutation.mutate({
       guest_name: guestName.trim(),
       guest_email: guestEmail.trim(),
       guest_phone: guestPhone.trim() || undefined,
       purpose: purpose.trim(),
-      valid_from: dayjs.tz(validFrom, TZ).toISOString(),
-      valid_until: dayjs.tz(validFrom, TZ).add(30, 'day').toISOString(),
+      valid_from: start.toISOString(),
+      valid_until: end.toISOString(),
       is_single_use: isSingleUse,
     });
   };
@@ -133,7 +135,7 @@ export default function PassCreatePage() {
           <div className="block text-sm text-secondary">
             {t('passes.validUntilLabel')}
             <div className="mt-1 rounded-lg border border-default bg-surface px-3 py-2 text-sm text-secondary">
-              {t('passes.autoUntil')}
+              {isSingleUse ? t('passes.autoUntil') : t('passes.autoUntilMulti')}
             </div>
           </div>
         </div>

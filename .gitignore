@@ -38,5 +38,8 @@ pnpm-debug.log*
 !.vscode/settings.json
 !.vscode/tasks.json
 
+# Local QA / agent-generated docs
+docs/
+
 # Misc
 *.pem
