@@ -80,6 +80,16 @@ export function recurringSeriesDateEntries(params: {
   }));
 }
 
+/** True when at least one occurrence in the create range is not in the past. */
+export function hasCreatableRecurringSeriesDate(params: {
+  dayOfWeek: number;
+  repeatUntil: string;
+  endTime: string;
+  now?: Date;
+}): boolean {
+  return previewRecurringSeriesDates(params).some((entry) => entry.status === 'will_create');
+}
+
 /** Preview dates the backend will materialise when creating a series. */
 export function previewRecurringSeriesDates(params: {
   dayOfWeek: number;

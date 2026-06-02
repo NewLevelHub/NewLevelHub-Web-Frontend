@@ -10,7 +10,11 @@ import { USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { cn } from '@/shared/lib/cn';
 import { getApiError } from '@/shared/lib/getApiError';
-import { localTodayIso, recurringSeriesDateEntries } from '@/shared/lib/recurringSeriesDates';
+import {
+  hasCreatableRecurringSeriesDate,
+  localTodayIso,
+  recurringSeriesDateEntries,
+} from '@/shared/lib/recurringSeriesDates';
 import type {
   BookingResourceListItem,
   PaginatedResponse,
@@ -100,6 +104,15 @@ export default function RecurringBookingsPage() {
       setDayOfWeek(String(allowedWeekdayValues[0]));
     }
   }, [allowedWeekdayValues, dayOfWeek]);
+
+  const canCreateSeries = useMemo(() => {
+    if (!resourceId || !repeatUntil) return false;
+    return hasCreatableRecurringSeriesDate({
+      dayOfWeek: Number(dayOfWeek),
+      repeatUntil,
+      endTime,
+    });
+  }, [resourceId, dayOfWeek, repeatUntil, endTime]);
 
   const formatSeriesDate = useMemo(() => {
     const formatter = new Intl.DateTimeFormat(dateLocale, {
@@ -296,12 +309,23 @@ export default function RecurringBookingsPage() {
           <div className="sm:col-span-2 lg:col-span-1 flex items-end">
             <button
               type="submit"
-              disabled={createMutation.isPending || !resourceId || allowedWeekdayOptions.length === 0}
+              disabled={
+                createMutation.isPending
+                || !resourceId
+                || allowedWeekdayOptions.length === 0
+                || !canCreateSeries
+              }
               className="w-full rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
             >
               {createMutation.isPending ? t('common.creating') : t('booking.recurring.createBtn')}
             </button>
           </div>
+
+          {resourceId && !canCreateSeries && (
+            <p className="sm:col-span-2 lg:col-span-3 text-xs text-danger">
+              {t('booking.recurring.noCreatableDates')}
+            </p>
+          )}
 
           {resourceId && (
             <p className="sm:col-span-2 lg:col-span-3 text-xs text-secondary">

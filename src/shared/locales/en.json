@@ -874,6 +874,7 @@
       "expandSeriesHint": "Click a series row to see booking days",
       "dateWillCreate": "Will be created",
       "dateSkippedPast": "Past — will be skipped",
+      "noCreatableDates": "No bookable dates in the selected range: all slots are already in the past. Extend repeat-until to the next week.",
       "noDays": "not configured",
       "conflictsTitle": "Conflicts on dates:",
       "conflictError": "Series not created: conflicts found in the selected range.",
