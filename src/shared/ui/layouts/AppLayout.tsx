@@ -1,11 +1,11 @@
-import { Outlet, useNavigate } from 'react-router';
+import { Outlet } from 'react-router';
 import { useState } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Sidebar } from '@/shared/ui/navigation/Sidebar';
 import { Header } from '@/shared/ui/navigation/Header';
 import { useAuthStore } from '@/shared/store/auth';
-import { SUPERADMIN_UI_PREFIX, USER_ROLE_LABEL_KEYS, type UserRole } from '@/shared/config/constants';
+import { USER_ROLE_LABEL_KEYS, type UserRole } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
 
 function useSidebarCollapsed() {
@@ -23,7 +23,6 @@ function useSidebarCollapsed() {
 }
 
 function ImpersonationBanner() {
-  const navigate = useNavigate();
   const { t } = useTranslation();
   const { user, isImpersonating, originalUser, stopImpersonation } = useAuthStore();
 
@@ -37,7 +36,6 @@ function ImpersonationBanner() {
 
   function handleStop() {
     stopImpersonation();
-    navigate(`${SUPERADMIN_UI_PREFIX}/users`);
   }
 
   return (
