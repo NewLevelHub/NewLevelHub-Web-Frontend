@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useNavigate } from 'react-router';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Building2,
@@ -22,22 +22,24 @@ import {
 } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
 import { useAuth } from '@/shared/hooks/useAuth';
-import type { Company } from '@/shared/types';
+import type { Company, ServiceFloor } from '@/shared/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface FormData {
   name: string;
   description: string;
-  floor: string;
+  floor_id: number | null;
   office_number: string;
-  contact_email: string;
-  contact_phone: string;
   plan: string;
   max_employees: string;
   max_boards: string;
   storage_limit_gb: string;
+  categories: string[];
 }
+
+const CATEGORIES_MAX = 10;
+const CATEGORY_MAX_LEN = 50;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -52,6 +54,70 @@ function inputClass(hasError: boolean) {
 
 const basicPlanLimits = COMPANY_PLAN_DEFAULT_LIMITS[COMPANY_TIERS.BASIC];
 
+// ─── TagInput ─────────────────────────────────────────────────────────────────
+
+interface TagInputProps {
+  tags: string[];
+  onChange: (tags: string[]) => void;
+  placeholder?: string;
+}
+
+function TagInput({ tags, onChange, placeholder }: TagInputProps) {
+  const [input, setInput] = useState('');
+  const atLimit = tags.length >= CATEGORIES_MAX;
+
+  function addTag(value: string) {
+    const trimmed = value.trim().slice(0, CATEGORY_MAX_LEN);
+    if (trimmed && !tags.includes(trimmed) && tags.length < CATEGORIES_MAX) {
+      onChange([...tags, trimmed]);
+    }
+    setInput('');
+  }
+
+  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addTag(input);
+    } else if (e.key === 'Backspace' && !input && tags.length > 0) {
+      onChange(tags.slice(0, -1));
+    }
+  }
+
+  function handleBlur() {
+    if (input.trim()) addTag(input);
+  }
+
+  return (
+    <div className="mt-1 flex flex-wrap gap-1.5 rounded-lg border border-default bg-surface px-3 py-2 focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-brand min-h-[38px]">
+      {tags.map(tag => (
+        <span key={tag} className="inline-flex items-center gap-1 rounded bg-raised px-2 py-0.5 text-xs font-medium text-secondary">
+          {tag}
+          <button
+            type="button"
+            onClick={() => onChange(tags.filter(t => t !== tag))}
+            className="text-muted hover:text-primary leading-none"
+            aria-label={`Remove ${tag}`}
+          >
+            ×
+          </button>
+        </span>
+      ))}
+      {!atLimit && (
+        <input
+          type="text"
+          value={input}
+          onChange={e => setInput(e.target.value.slice(0, CATEGORY_MAX_LEN))}
+          onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
+          placeholder={tags.length === 0 ? placeholder : ''}
+          className="min-w-[120px] flex-1 bg-transparent text-sm text-primary placeholder:text-muted focus:outline-none"
+          maxLength={CATEGORY_MAX_LEN}
+        />
+      )}
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function CompanyCreatePage() {
@@ -65,14 +131,21 @@ export default function CompanyCreatePage() {
   const [form, setForm] = useState<FormData>({
     name: '',
     description: '',
-    floor: '',
+    floor_id: null,
     office_number: '',
-    contact_email: '',
-    contact_phone: '',
     plan: COMPANY_TIERS.BASIC,
     max_employees: String(basicPlanLimits.max_employees),
     max_boards: String(basicPlanLimits.max_boards),
     storage_limit_gb: String(basicPlanLimits.storage_limit_gb),
+    categories: [],
+  });
+
+  const { data: floorsData = [], isLoading: floorsLoading } = useQuery({
+    queryKey: ['map-floors'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ results: ServiceFloor[] }>(API.map.floors);
+      return data.results ?? [];
+    },
   });
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -86,14 +159,13 @@ export default function CompanyCreatePage() {
       const formData = new FormData();
       formData.append('name', form.name);
       if (form.description) formData.append('description', form.description);
-      if (form.floor) formData.append('floor', form.floor);
+      if (form.floor_id != null) formData.append('floor_id', String(form.floor_id));
       if (form.office_number) formData.append('office_number', form.office_number);
-      if (form.contact_email) formData.append('contact_email', form.contact_email);
-      if (form.contact_phone) formData.append('contact_phone', form.contact_phone);
       formData.append('plan', form.plan);
       formData.append('max_employees', form.max_employees);
       formData.append('max_boards', form.max_boards);
-      formData.append('storage_limit_gb', form.storage_limit_gb);
+      formData.append('storage_limit_gb', String(form.storage_limit_gb));
+      formData.append('categories', JSON.stringify(form.categories));
       if (logoFile) formData.append('logo', logoFile);
 
       return apiClient.post<Company>(
@@ -120,12 +192,12 @@ export default function CompanyCreatePage() {
         setFieldErrors(errors);
         setGeneralError(null);
       } else {
-        setGeneralError('Не удалось создать компанию. Проверьте данные и попробуйте ещё раз.');
+        setGeneralError(t('companies.createError'));
       }
     },
   });
 
-  function handleField(field: keyof FormData, value: string) {
+  function handleField(field: Exclude<keyof FormData, 'floor_id' | 'categories'>, value: string) {
     setForm((prev) => {
       if (field === 'plan') {
         const limits =
@@ -141,7 +213,7 @@ export default function CompanyCreatePage() {
       }
       return { ...prev, [field]: value };
     });
-    const keysToClear: (keyof FormData)[] =
+    const keysToClear: string[] =
       field === 'plan'
         ? ['plan', 'max_employees', 'max_boards', 'storage_limit_gb']
         : [field];
@@ -168,7 +240,7 @@ export default function CompanyCreatePage() {
     setGeneralError(null);
 
     if (!form.name.trim()) {
-      setFieldErrors({ name: 'Название обязательно' });
+      setFieldErrors({ name: t('companies.nameRequired') });
       return;
     }
 
@@ -183,19 +255,19 @@ export default function CompanyCreatePage() {
           type="button"
           onClick={() => navigate(companiesBasePath)}
           className="inline-flex items-center gap-2 text-sm font-medium text-muted hover:text-primary mb-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
-          aria-label="Назад к списку компаний"
+          aria-label={t('companies.backToListCreateAria')}
         >
           <ArrowLeft size={16} aria-hidden="true" />
-          Назад к списку
+          {t('companies.backToList')}
         </button>
-        <h1 className="text-2xl font-bold text-primary">Создать компанию</h1>
-        <p className="mt-1 text-sm text-muted">Заполните данные новой компании-арендатора</p>
+        <h1 className="text-2xl font-bold text-primary">{t('companies.createTitle')}</h1>
+        <p className="mt-1 text-sm text-muted">{t('companies.createSubtitle')}</p>
       </div>
 
       {/* Form card */}
       <section
         className="bg-surface rounded-2xl border border-default shadow-sm p-6"
-        aria-label="Форма создания компании"
+        aria-label={t('companies.createSection')}
       >
         <form onSubmit={handleSubmit} noValidate className="space-y-5">
           {generalError && (
@@ -210,12 +282,12 @@ export default function CompanyCreatePage() {
 
           {/* Logo upload */}
           <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">Логотип</p>
+            <p className="text-sm font-medium text-gray-700 mb-2">{t('companies.logoLabel')}</p>
             <div className="flex items-center gap-4">
               {logoPreview ? (
                 <img
                   src={logoPreview}
-                  alt="Превью логотипа"
+                  alt={t('companies.logoPreview')}
                   className="w-16 h-16 rounded-xl object-cover border border-default"
                 />
               ) : (
@@ -233,9 +305,9 @@ export default function CompanyCreatePage() {
                   className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-surface border border-gray-300 rounded-lg hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors"
                 >
                   <Upload size={14} aria-hidden="true" />
-                  Выбрать изображение
+                  {t('companies.selectImage')}
                 </button>
-                <p className="text-xs text-secondary">PNG, JPG, WebP до 5 МБ</p>
+                <p className="text-xs text-secondary">{t('companies.logoHint')}</p>
               </div>
               <input
                 ref={fileInputRef}
@@ -244,7 +316,7 @@ export default function CompanyCreatePage() {
                 lang={dateLocale}
                 onChange={handleLogoChange}
                 className="sr-only"
-                aria-label="Выбрать файл логотипа"
+                aria-label={t('companies.selectLogoFile')}
               />
             </div>
           </div>
@@ -254,7 +326,7 @@ export default function CompanyCreatePage() {
           {/* Name */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Название <span className="text-red-500" aria-hidden="true">*</span>
+              {t('companies.nameLabel')} <span className="text-red-500" aria-hidden="true">*</span>
             </label>
             <input
               id="name"
@@ -265,6 +337,7 @@ export default function CompanyCreatePage() {
               onChange={(e) => handleField('name', e.target.value)}
               className={inputClass(!!fieldErrors.name)}
               aria-describedby={fieldErrors.name ? 'name-error' : undefined}
+              maxLength={255}
             />
             {fieldErrors.name && (
               <p id="name-error" className="mt-1 text-xs text-red-600" role="alert">
@@ -276,45 +349,64 @@ export default function CompanyCreatePage() {
           {/* Description */}
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-              Описание
+              {t('companies.descriptionLabel')}
             </label>
             <textarea
               id="description"
               rows={3}
-              placeholder="Краткое описание компании..."
               value={form.description}
               onChange={(e) => handleField('description', e.target.value)}
               className={cn(inputClass(false), 'resize-none')}
             />
           </div>
 
+          {/* Categories */}
+          <div>
+            <label className="block text-sm font-medium text-secondary mb-1">
+              {t('companies.categoriesCol')}
+            </label>
+            <TagInput
+              tags={form.categories}
+              onChange={cats => setForm(prev => ({ ...prev, categories: cats }))}
+              placeholder={t('companies.categoriesPlaceholder')}
+            />
+            <p className="mt-1 text-xs text-muted">{t('companies.categoriesHint')}</p>
+          </div>
+
           <hr className="border-default" />
-          <p className="text-sm font-semibold text-gray-700">Расположение</p>
+          <p className="text-sm font-semibold text-gray-700">{t('companies.locationSection')}</p>
 
           <div className="grid grid-cols-2 gap-4">
             {/* Floor */}
             <div>
-              <label htmlFor="floor" className="block text-sm font-medium text-gray-700 mb-1">
-                Этаж
+              <label htmlFor="floor_id" className="block text-sm font-medium text-gray-700 mb-1">
+                {t('companies.floorLabel')}
               </label>
-              <input
-                id="floor"
-                type="number"
-                min={1}
-                placeholder="3"
-                value={form.floor}
-                onChange={(e) => handleField('floor', e.target.value)}
-                className={inputClass(!!fieldErrors.floor)}
-              />
-              {fieldErrors.floor && (
-                <p className="mt-1 text-xs text-red-600" role="alert">{fieldErrors.floor}</p>
+              <select
+                id="floor_id"
+                value={form.floor_id ?? ''}
+                disabled={floorsLoading}
+                onChange={(e) => setForm(f => ({ ...f, floor_id: e.target.value ? Number(e.target.value) : null }))}
+                className={inputClass(!!fieldErrors.floor_id)}
+              >
+                <option value="">{t('resources.create.floorSelectDefault')}</option>
+                {floorsData.map((f) => (
+                  <option key={f.id} value={String(f.id)}>
+                    {f.name
+                      ? t('resources.create.floorOptionWithName', { number: f.number, name: f.name })
+                      : t('resources.create.floorOptionNoName', { number: f.number })}
+                  </option>
+                ))}
+              </select>
+              {fieldErrors.floor_id && (
+                <p className="mt-1 text-xs text-red-600" role="alert">{fieldErrors.floor_id}</p>
               )}
             </div>
 
             {/* Office number */}
             <div>
               <label htmlFor="office_number" className="block text-sm font-medium text-gray-700 mb-1">
-                Номер офиса
+                {t('companies.officeNumberLabel')}
               </label>
               <input
                 id="office_number"
@@ -323,56 +415,18 @@ export default function CompanyCreatePage() {
                 value={form.office_number}
                 onChange={(e) => handleField('office_number', e.target.value)}
                 className={inputClass(!!fieldErrors.office_number)}
+                maxLength={50}
               />
             </div>
           </div>
 
           <hr className="border-default" />
-          <p className="text-sm font-semibold text-gray-700">Контакты</p>
-
-          {/* Contact email */}
-          <div>
-            <label htmlFor="contact_email" className="block text-sm font-medium text-gray-700 mb-1">
-              Контактный email
-            </label>
-            <input
-              id="contact_email"
-              type="email"
-              placeholder="contact@company.com"
-              value={form.contact_email}
-              onChange={(e) => handleField('contact_email', e.target.value)}
-              className={inputClass(!!fieldErrors.contact_email)}
-              aria-describedby={fieldErrors.contact_email ? 'contact-email-error' : undefined}
-            />
-            {fieldErrors.contact_email && (
-              <p id="contact-email-error" className="mt-1 text-xs text-red-600" role="alert">
-                {fieldErrors.contact_email}
-              </p>
-            )}
-          </div>
-
-          {/* Contact phone */}
-          <div>
-            <label htmlFor="contact_phone" className="block text-sm font-medium text-gray-700 mb-1">
-              Контактный телефон
-            </label>
-            <input
-              id="contact_phone"
-              type="tel"
-              placeholder="+7 (700) 000-00-00"
-              value={form.contact_phone}
-              onChange={(e) => handleField('contact_phone', e.target.value)}
-              className={inputClass(!!fieldErrors.contact_phone)}
-            />
-          </div>
-
-          <hr className="border-default" />
-          <p className="text-sm font-semibold text-gray-700">Тариф и лимиты</p>
+          <p className="text-sm font-semibold text-gray-700">{t('companies.planSection')}</p>
 
           {/* Plan */}
           <div>
             <label htmlFor="plan" className="block text-sm font-medium text-gray-700 mb-1">
-              Тариф
+              {t('companies.planLabel')}
             </label>
             <select
               id="plan"
@@ -386,11 +440,11 @@ export default function CompanyCreatePage() {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Max employees */}
             <div>
               <label htmlFor="max_employees" className="block text-sm font-medium text-gray-700 mb-1">
-                Макс. сотрудников
+                {t('companies.maxEmployeesLabel')}
               </label>
               <input
                 id="max_employees"
@@ -408,15 +462,37 @@ export default function CompanyCreatePage() {
               )}
             </div>
 
+            {/* Max boards */}
+            <div>
+              <label htmlFor="max_boards" className="block text-sm font-medium text-gray-700 mb-1">
+                {t('companies.maxBoardsLabel')}
+              </label>
+              <input
+                id="max_boards"
+                type="number"
+                min={1}
+                value={form.max_boards}
+                onChange={(e) => handleField('max_boards', e.target.value)}
+                className={inputClass(!!fieldErrors.max_boards)}
+                aria-describedby={fieldErrors.max_boards ? 'max-boards-error' : undefined}
+              />
+              {fieldErrors.max_boards && (
+                <p id="max-boards-error" className="mt-1 text-xs text-red-600" role="alert">
+                  {fieldErrors.max_boards}
+                </p>
+              )}
+            </div>
+
             {/* Storage limit */}
             <div>
               <label htmlFor="storage_limit_gb" className="block text-sm font-medium text-gray-700 mb-1">
-                Хранилище (ГБ)
+                {t('companies.storageLabel')}
               </label>
               <input
                 id="storage_limit_gb"
                 type="number"
-                min={1}
+                min={0}
+                step="0.1"
                 value={form.storage_limit_gb}
                 onChange={(e) => handleField('storage_limit_gb', e.target.value)}
                 className={inputClass(!!fieldErrors.storage_limit_gb)}
@@ -451,7 +527,7 @@ export default function CompanyCreatePage() {
               ) : (
                 <>
                   <Check size={15} aria-hidden="true" />
-                  Создать компанию
+                  {t('companies.createCompany')}
                 </>
               )}
             </button>

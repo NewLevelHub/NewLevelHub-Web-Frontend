@@ -4,6 +4,16 @@
 /* Class-based dark mode: add `.dark` to <html> */
 @variant dark (&:where(.dark, .dark *));
 
+/*
+  Register project fonts in Tailwind's theme namespace so that:
+  - preflight sets html { font-family } to Inter (not the system UI fallback)
+  - font-sans / font-mono utility classes resolve to the correct families
+*/
+@theme {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
 @keyframes scan-line {
   0%   { transform: translateY(0); }
   100% { transform: translateY(11rem); }

@@ -705,7 +705,7 @@ export default function ManageBookingsPage() {
                       <td className="px-3 py-2.5 align-middle">
                         <Link
                           to={`${STAFF_UI_PREFIX}/bookings/${booking.id}`}
-                          className="font-medium text-[color:var(--text-primary)] hover:text-[color:var(--brand)] transition-colors"
+                          className="hover:text-[color:var(--brand)] transition-colors"
                         >
                           {booking.resource_name}
                         </Link>

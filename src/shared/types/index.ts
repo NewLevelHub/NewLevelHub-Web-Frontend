@@ -36,26 +36,43 @@ export interface User {
   last_login?: string | null;
 }
 
+export interface CompanyAdmin {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  avatar: string | null;
+  position: string;
+}
+
 export interface Company {
   id: number;
   name: string;
   description: string | null;
   logo: string | null;
-  floor: number | null;
+  floor_id: number | null;
+  floor_number: number | null;
+  floor_name: string | null;
   office_number: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  company_admin: CompanyAdmin | null;
+  categories: string[];
   plan: CompanyTier;
   max_employees: number;
   max_boards: number;
   storage_limit_gb: number;
   is_active: boolean;
+  employee_count: number;
+  working_hours_start: string | null;
+  working_hours_end: string | null;
   created_at: string;
   updated_at: string;
+  domain?: string | null;
 }
 
 export interface CompanyDetail extends Company {
-  employee_count: number;
   storage_used: number;
 }
 

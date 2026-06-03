@@ -162,7 +162,7 @@ export function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
                     const end = new Date(b.end_time);
                     const timeStr = `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')} – ${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`;
                     return (
-                      <tr key={b.id} className="hover:bg-hover transition-colors">
+                      <tr key={b.id} className="border-b border-[color:var(--border)] hover:bg-[color:var(--bg-hover)] transition-colors">
                         <td className="px-4 py-3 font-medium text-primary whitespace-nowrap">
                           {b.resource_name}
                         </td>

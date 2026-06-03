@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { ChevronDown, ChevronLeft, ChevronRight, ExternalLink, LayoutGrid, Plus, Search } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, LayoutGrid, Plus, Search } from 'lucide-react';
 
 import { cn } from '@/shared/lib/cn';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
@@ -328,15 +328,7 @@ export default function ResourceListPage() {
                       <td className="px-3 py-2.5 align-middle">
                         <ResourceStatusBadge resource={r} />
                       </td>
-                      <td className="w-10 px-3 py-2.5 align-middle">
-                        <Link
-                          to={`/resources/${r.id}`}
-                          aria-label={t('resources.list.open')}
-                          className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)] hover:bg-[color:var(--bg-hover)] transition-colors"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </Link>
-                      </td>
+                      <td className="w-10 px-3 py-2.5 align-middle" />
                     </tr>
                   );
                 })}

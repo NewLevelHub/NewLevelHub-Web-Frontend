@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Settings2, Plus, Trash2 } from 'lucide-react';
+import { Settings2, Plus, Trash2, Users, ListChecks, CheckCircle2, AlertCircle } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
+import { cn } from '@/shared/lib/cn';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { getApiError } from '@/shared/lib/getApiError';
 import type { Company, CompanySettings, CrmLabel, PaginatedResponse } from '@/shared/types';
@@ -14,6 +15,11 @@ import type { Company, CompanySettings, CrmLabel, PaginatedResponse } from '@/sh
 function normalizeTimeInput(value: string): string {
   return value.trim().slice(0, 5);
 }
+
+const inputClass =
+  'mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand';
+
+const labelClass = 'block text-sm font-medium text-secondary';
 
 export default function CompanySettingsPage() {
   const { t } = useTranslation();
@@ -99,7 +105,7 @@ export default function CompanySettingsPage() {
     },
     onSuccess: async () => {
       setError(null);
-      setSuccess('Настройки сохранены.');
+      setSuccess(t('companies.settingsSaved'));
       await queryClient.invalidateQueries({ queryKey: ['company-settings', companyId] });
       void queryClient.invalidateQueries({ queryKey: ['leave-balance'] });
       void queryClient.invalidateQueries({ queryKey: ['leave-team-balance'] });
@@ -126,13 +132,15 @@ export default function CompanySettingsPage() {
   });
 
   const companySelector = (
-    <section className="rounded-xl border border-default bg-surface/50 p-4">
-      <label className="block text-sm font-medium text-secondary" htmlFor="company-select-settings">{t('common.company')}</label>
+    <section className="rounded-xl border border-default bg-surface p-4">
+      <label className={labelClass} htmlFor="company-select-settings">
+        {t('common.company')}
+      </label>
       <select
         id="company-select-settings"
         value={selectedCompanyId}
         onChange={(e) => setSelectedCompanyId(e.target.value)}
-        className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+        className={inputClass}
       >
         <option value="">{t('common.selectCompany')}</option>
         {(companiesData?.results ?? []).map((company) => (
@@ -146,19 +154,22 @@ export default function CompanySettingsPage() {
 
   if (!companyId && !isSuperadmin) {
     return (
-      <div className="max-w-3xl space-y-2">
-        <h1 className="text-2xl font-semibold text-primary">Настройки компании</h1>
-        <p className="text-sm text-secondary">Профиль пользователя не привязан к компании.</p>
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Settings2 className="h-6 w-6 text-brand" aria-hidden="true" />
+          <h1 className="text-2xl font-semibold text-primary">{t('companies.settingsPageTitle')}</h1>
+        </div>
+        <p className="text-sm text-secondary">{t('companies.settingsNoCompany')}</p>
       </div>
     );
   }
 
   if (!companyId && isSuperadmin) {
     return (
-      <div className="max-w-3xl space-y-6">
-        <div className="flex items-center gap-2">
-          <Settings2 className="h-5 w-5 text-brand" aria-hidden="true" />
-          <h1 className="text-2xl font-semibold text-primary">Настройки компании</h1>
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Settings2 className="h-6 w-6 text-brand" aria-hidden="true" />
+          <h1 className="text-2xl font-semibold text-primary">{t('companies.settingsPageTitle')}</h1>
         </div>
         {companySelector}
       </div>
@@ -166,140 +177,232 @@ export default function CompanySettingsPage() {
   }
 
   if (isLoading) {
-    return <p className="text-sm text-secondary">Загрузка настроек...</p>;
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Settings2 className="h-6 w-6 text-brand" aria-hidden="true" />
+          <h1 className="text-2xl font-semibold text-primary">{t('companies.settingsPageTitle')}</h1>
+        </div>
+        <p className="text-sm text-muted">{t('companies.settingsLoading')}</p>
+      </div>
+    );
   }
 
   if (isError || !data) {
-    return <p className="text-sm text-red-400">Не удалось загрузить настройки компании.</p>;
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Settings2 className="h-6 w-6 text-brand" aria-hidden="true" />
+          <h1 className="text-2xl font-semibold text-primary">{t('companies.settingsPageTitle')}</h1>
+        </div>
+        <div className="rounded-lg border border-default bg-danger-subtle px-4 py-3 text-sm text-danger">
+          {t('companies.settingsError')}
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <div className="flex items-center gap-2">
-        <Settings2 className="h-5 w-5 text-brand" aria-hidden="true" />
-        <h1 className="text-2xl font-semibold text-primary">Настройки компании</h1>
+    <div className="space-y-4">
+      {/* Page header */}
+      <div>
+        <div className="flex items-center gap-3">
+          <Settings2 className="h-6 w-6 text-brand" aria-hidden="true" />
+          <h1 className="text-2xl font-semibold text-primary">{t('companies.settingsPageTitle')}</h1>
+        </div>
+        <p className="mt-1 text-sm text-muted">{t('companies.membersSubtitle')}</p>
       </div>
-      {isSuperadmin && companySelector}
-      <div className="flex flex-wrap gap-2">
+
+      {/* Tab navigation */}
+      <nav className="flex flex-wrap gap-2" aria-label={t('companies.settingsPageTitle')}>
+        <span
+          className="inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white"
+          aria-current="page"
+        >
+          <Settings2 className="h-3.5 w-3.5" aria-hidden="true" />
+          {t('companies.generalSettings')}
+        </span>
         <Link
           to={`/company/settings/members${companyId ? `?company=${companyId}` : ''}`}
-          className="rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:bg-hover"
+          className="inline-flex items-center gap-1.5 rounded-full border border-default px-4 py-1.5 text-sm text-secondary hover:bg-hover"
         >
-          Перейти к инвайтам сотрудников
+          <Users className="h-3.5 w-3.5" aria-hidden="true" />
+          {t('companies.membersTitle')}
         </Link>
         <Link
           to={`/company/settings/onboarding${companyId ? `?company=${companyId}` : ''}`}
-          className="rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:bg-hover"
+          className="inline-flex items-center gap-1.5 rounded-full border border-default px-4 py-1.5 text-sm text-secondary hover:bg-hover"
         >
-          Шаблоны онбординга
+          <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
+          {t('companies.onboardingTemplatesLink')}
         </Link>
-      </div>
+      </nav>
 
+      {/* Superadmin company selector */}
+      {isSuperadmin && companySelector}
+
+      {/* Alert banners */}
       {error && (
-        <div className="rounded-lg border border-red-200 dark:border-red-900/40 bg-danger-subtle px-4 py-3 text-sm text-danger">
-          {error}
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-lg border border-default bg-danger-subtle px-4 py-3 text-sm text-danger"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>{error}</span>
         </div>
       )}
       {success && (
-        <div className="rounded-lg border border-emerald-900/70 bg-success-subtle px-4 py-3 text-sm text-success">
-          {success}
+        <div
+          role="status"
+          className="flex items-start gap-3 rounded-lg border border-default bg-success-subtle px-4 py-3 text-sm text-success"
+        >
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>{success}</span>
         </div>
       )}
 
-      <section className="space-y-5 rounded-xl border border-default bg-surface/50 p-6">
-        <h2 className="text-base font-semibold text-primary">HR и бренд</h2>
+      {/* Section: HR & Brand */}
+      <section className="space-y-5 rounded-xl border border-default bg-surface p-6">
+        <h2 className="pb-4 mb-4 border-b border-default text-base font-semibold text-primary">
+          {t('companies.hrBrand')}
+        </h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block text-sm text-secondary">
-            Отпускных дней в год
+          <div>
+            <label className={labelClass} htmlFor="vacation-days">
+              {t('companies.vacationDays')}
+            </label>
             <input
+              id="vacation-days"
               type="number"
               min={0}
               value={vacationDays}
               onChange={(e) => setVacationDays(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-primary"
+              className={inputClass}
             />
-          </label>
-          <label className="block text-sm text-secondary">
-            Бренд-цвет
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="brand-color">
+              {t('companies.brandColor')}
+            </label>
+            <div className="mt-1 flex items-center gap-2">
+              <button
+                type="button"
+                className="h-10 w-10 shrink-0 rounded-lg border border-default cursor-pointer"
+                style={{ backgroundColor: brandColor || '#4F46E5' }}
+                aria-label={t('companies.brandColor')}
+                onClick={() => {
+                  void navigator.clipboard.writeText(brandColor);
+                }}
+                title={brandColor}
+              />
+              <input
+                id="brand-color"
+                type="text"
+                value={brandColor}
+                onChange={(e) => setBrandColor(e.target.value)}
+                className="w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                placeholder="#6366F1"
+              />
+            </div>
+          </div>
+        </div>
+        <div className="rounded-lg border border-default bg-raised p-3">
+          <label className="flex cursor-pointer items-center gap-3">
             <input
-              type="text"
-              value={brandColor}
-              onChange={(e) => setBrandColor(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-primary"
-              placeholder="#6366F1"
+              type="checkbox"
+              checked={onboardingEnabled}
+              onChange={(e) => setOnboardingEnabled(e.target.checked)}
+              className="h-4 w-4 rounded border-default accent-brand"
             />
+            <span className="text-sm font-medium text-primary">{t('announcements.enableOnboarding')}</span>
           </label>
         </div>
-        <label className="inline-flex items-center gap-2 text-sm text-secondary">
-          <input
-            type="checkbox"
-            checked={onboardingEnabled}
-            onChange={(e) => setOnboardingEnabled(e.target.checked)}
-            className="h-4 w-4 rounded border-default bg-surface text-brand"
-          />{t('announcements.enableOnboarding')}</label>
       </section>
 
-      <section className="space-y-5 rounded-xl border border-default bg-surface/50 p-6">
-        <h2 className="text-base font-semibold text-primary">Рабочие часы и категории</h2>
+      {/* Section: Working hours & Categories */}
+      <section className="space-y-5 rounded-xl border border-default bg-surface p-6">
+        <h2 className="pb-4 mb-4 border-b border-default text-base font-semibold text-primary">
+          {t('companies.workHours')}
+        </h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block text-sm text-secondary">
-            Начало рабочего дня
+          <div>
+            <label className={labelClass} htmlFor="work-start">
+              {t('companies.workStart')}
+            </label>
             <input
+              id="work-start"
               type="time"
               value={workStart}
               onChange={(e) => setWorkStart(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-primary"
+              className={inputClass}
             />
-          </label>
-          <label className="block text-sm text-secondary">
-            Конец рабочего дня
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="work-end">
+              {t('companies.workEnd')}
+            </label>
             <input
+              id="work-end"
               type="time"
               value={workEnd}
               onChange={(e) => setWorkEnd(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-primary"
+              className={inputClass}
             />
-          </label>
+          </div>
         </div>
-        <label className="block text-sm text-secondary">
-          Кастомные категории задач (каждая с новой строки)
+        <div>
+          <label className={labelClass} htmlFor="custom-categories">
+            {t('companies.customCategories')}
+          </label>
           <textarea
+            id="custom-categories"
             rows={5}
             value={categoriesText}
             onChange={(e) => setCategoriesText(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-primary"
-            placeholder={'Продажи\nРазработка\nПоддержка'}
+            className={inputClass}
+            placeholder={t('companies.customCategoriesPlaceholder')}
           />
-        </label>
+        </div>
       </section>
 
-      <section className="space-y-4 rounded-xl border border-default bg-surface/50 p-6">
-        <h2 className="text-base font-semibold text-primary">Кастомные лейблы CRM</h2>
+      {/* Section: CRM Labels */}
+      <section className="space-y-4 rounded-xl border border-default bg-surface p-6">
+        <h2 className="pb-4 mb-4 border-b border-default text-base font-semibold text-primary">
+          {t('companies.crmLabels')}
+        </h2>
+
         <div className="space-y-2">
           {(crmLabels ?? []).map((label) => (
-            <div key={label.id} className="flex items-center gap-3 rounded-lg border border-default bg-raised px-3 py-2">
+            <div
+              key={label.id}
+              className="flex items-center gap-3 rounded-lg border border-default bg-raised px-3 py-2"
+            >
               <span
                 className="h-4 w-4 shrink-0 rounded"
                 style={{ backgroundColor: label.color }}
                 aria-hidden="true"
               />
-              <span className="flex-1 text-sm text-secondary truncate">{label.name}</span>
-              <span className="text-xs text-muted font-mono">{label.color}</span>
+              <span className="flex-1 truncate text-sm text-primary">{label.name}</span>
+              <span className="font-mono text-xs text-muted">{label.color}</span>
               <button
                 type="button"
                 onClick={() => deleteLabelMutation.mutate(label.id)}
                 disabled={deleteLabelMutation.isPending}
-                className="inline-flex items-center justify-center rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle p-1.5 text-danger hover:bg-danger-subtle disabled:opacity-50"
-                aria-label={`Удалить метку ${label.name}`}
+                className={cn(
+                  'inline-flex items-center justify-center rounded-lg border border-default p-1.5',
+                  'text-danger hover:bg-danger-subtle disabled:opacity-50',
+                )}
+                aria-label={t('companies.labelDeleteAria', { name: label.name })}
               >
                 <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
             </div>
           ))}
           {(crmLabels ?? []).length === 0 && (
-            <p className="text-sm text-muted">Лейблы пока не добавлены.</p>
+            <p className="text-sm text-muted">{t('companies.noLabels')}</p>
           )}
         </div>
+
         <form
           className="grid gap-2 sm:grid-cols-[1fr_160px_auto]"
           onSubmit={(e) => {
@@ -313,42 +416,46 @@ export default function CompanySettingsPage() {
             type="text"
             value={newLabelName}
             onChange={(e) => setNewLabelName(e.target.value)}
-            placeholder="Название лейбла"
-            className="rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+            placeholder={t('companies.labelNamePlaceholder')}
+            className="rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
           />
           <input
             type="text"
             value={newLabelColor}
             onChange={(e) => setNewLabelColor(e.target.value)}
             placeholder="#6366F1"
-            className="rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+            className="rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
           />
           <button
             type="submit"
             disabled={!newLabelName.trim() || createLabelMutation.isPending}
-            className="inline-flex items-center gap-1 rounded-lg border border-default px-3 py-2 text-xs text-secondary hover:bg-hover disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-            {createLabelMutation.isPending ? '...' : 'Добавить'}
+            {createLabelMutation.isPending ? t('common.creating') : t('companies.addLabel')}
           </button>
         </form>
+
         {createLabelMutation.isError && (
-          <p className="text-xs text-red-400">Не удалось создать лейбл.</p>
+          <p className="text-xs text-danger">{t('companies.labelCreateError')}</p>
         )}
       </section>
 
-      <button
-        type="button"
-        onClick={() => {
-          setSuccess(null);
-          setError(null);
-          saveMutation.mutate();
-        }}
-        disabled={saveMutation.isPending}
-        className="inline-flex items-center rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-60"
-      >
-        {saveMutation.isPending ? t('common.savingPlain') : 'Сохранить настройки'}
-      </button>
+      {/* Save button */}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => {
+            setSuccess(null);
+            setError(null);
+            saveMutation.mutate();
+          }}
+          disabled={saveMutation.isPending}
+          className="inline-flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+        >
+          {saveMutation.isPending ? t('common.savingPlain') : t('companies.saveSettings')}
+        </button>
+      </div>
     </div>
   );
 }

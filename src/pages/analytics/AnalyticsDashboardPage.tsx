@@ -204,7 +204,7 @@ export default function AnalyticsDashboardPage() {
             </thead>
             <tbody>
               {data.employee_activity.map((row) => (
-                <tr key={row.user_id} className="border-t border-default/70 text-secondary">
+                <tr key={row.user_id} className="border-b border-[color:var(--border)] hover:bg-[color:var(--bg-hover)] transition-colors text-secondary">
                   <td className="px-4 py-3">{row.full_name}</td>
                   <td className="px-4 py-3">{row.booking_count_30d}</td>
                   <td className="px-4 py-3">{row.task_count_active}</td>
