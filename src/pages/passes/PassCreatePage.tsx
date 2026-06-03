@@ -129,9 +129,11 @@ export default function PassCreatePage() {
                 type="text"
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}
+                maxLength={70}
                 className={inputCls}
                 required
               />
+              <p className="text-xs text-right text-muted">{guestName.length}/70</p>
             </div>
 
             {/* Guest email */}
@@ -173,9 +175,11 @@ export default function PassCreatePage() {
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
                 rows={3}
+                maxLength={70}
                 className={textareaCls}
                 required
               />
+              <p className="text-xs text-right text-muted">{purpose.length}/70</p>
             </div>
 
             {/* Visit details sub-card */}

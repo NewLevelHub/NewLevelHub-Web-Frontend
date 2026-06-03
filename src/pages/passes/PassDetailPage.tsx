@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -16,6 +15,7 @@ import { PassValidationsList } from '@/pages/passes/components/PassValidationsLi
 import { QRCodeView } from '@/pages/passes/components/QRCodeView';
 import { usePassCountdown } from '@/pages/passes/hooks/usePassCountdown';
 import { usePassValidations } from '@/pages/passes/hooks/usePassValidations';
+import { useTimedMessage } from '@/pages/passes/hooks/useTimedMessage';
 
 export default function PassDetailPage() {
   const { t } = useTranslation();
@@ -23,7 +23,7 @@ export default function PassDetailPage() {
   const navigate = useNavigate();
   const user = useUser();
   const queryClient = useQueryClient();
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const { message: successMessage, showMessage, clearMessage, isMessageVisible } = useTimedMessage();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['guest-pass-detail', id],
@@ -39,10 +39,10 @@ export default function PassDetailPage() {
       await apiClient.post(API.passes.resend(String(id)));
     },
     onSuccess: async () => {
+      showMessage(t('passes.resendQr'));
       await queryClient.invalidateQueries({ queryKey: ['guest-pass-detail', id] });
-      setSuccessMessage(t('passes.resendQr'));
     },
-    onError: () => setSuccessMessage(null),
+    onError: () => clearMessage(),
   });
 
   const revokeMutation = useMutation({
@@ -50,11 +50,11 @@ export default function PassDetailPage() {
       await apiClient.post(API.passes.revoke(String(id)));
     },
     onSuccess: async () => {
+      showMessage(t('passes.revokeSuccess'));
       await queryClient.invalidateQueries({ queryKey: ['guest-pass-detail', id] });
       await queryClient.invalidateQueries({ queryKey: ['guest-passes'], refetchType: 'all' });
-      setSuccessMessage(t('passes.revokeSuccess'));
     },
-    onError: () => setSuccessMessage(null),
+    onError: () => clearMessage(),
   });
 
   const { isNowActive } = usePassCountdown(data?.valid_from);
@@ -182,7 +182,7 @@ export default function PassDetailPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setSuccessMessage(null);
+                  clearMessage();
                   resendMutation.mutate();
                 }}
                 disabled={resendMutation.isPending}
@@ -193,7 +193,7 @@ export default function PassDetailPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setSuccessMessage(null);
+                  clearMessage();
                   revokeMutation.mutate();
                 }}
                 disabled={!canRevoke || revokeMutation.isPending}
@@ -221,7 +221,7 @@ export default function PassDetailPage() {
             {successMessage ? (
               <div className="text-sm text-[color:var(--status-free-text)]">{successMessage}</div>
             ) : null}
-            {!canRevoke ? (
+            {!canRevoke && !isMessageVisible ? (
               <div className="text-xs text-[color:var(--text-muted)]">
                 {t('passes.cannotRevoke')}
               </div>

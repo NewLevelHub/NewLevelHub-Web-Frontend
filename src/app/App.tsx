@@ -6,6 +6,7 @@ import { router } from './router';
 import { useAuthStore } from '@/shared/store/auth';
 import { queryClient } from '@/shared/lib/queryClient';
 
+// Comment
 export default function App() {
   const bootstrap = useAuthStore((s) => s.bootstrap);
 
