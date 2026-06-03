@@ -226,7 +226,7 @@ export default function ResourceDetailPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-secondary">{t('resources.detail.floorFieldLabel')}</label>
                 <select
@@ -343,7 +343,7 @@ export default function ResourceDetailPage() {
             {type === RESOURCE_TYPES.MEETING_ROOM && (
               <div className="rounded-xl border border-[color:var(--border-faint)] bg-raised px-4 py-3 space-y-4">
                 <p className="text-xs font-semibold text-secondary mb-2">{t('resources.detail.meetingRoomSettings')}</p>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {RESOURCE_EQUIPMENT_KEYS.map((key) => (
                     <label key={key} className="inline-flex items-center gap-2 text-xs text-secondary cursor-pointer">
                       <input
@@ -355,7 +355,7 @@ export default function ResourceDetailPage() {
                     </label>
                   ))}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-medium text-secondary">{t('resources.detail.minMinutesLabel')}</label>
                     <input
@@ -422,7 +422,7 @@ export default function ResourceDetailPage() {
 
             <div className="rounded-xl border border-[color:var(--border-faint)] bg-raised px-4 py-3 space-y-3">
               <p className="text-xs font-semibold text-secondary mb-2">{t('resources.detail.bookingPolicyLabel')}</p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="advance_booking_days" className="text-xs font-medium text-secondary">
                     {t('resources.detail.advanceDaysLabel')}
@@ -454,7 +454,7 @@ export default function ResourceDetailPage() {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center gap-2 border-t border-[color:var(--border-faint)] px-6 pt-4 pb-5">
+          <div className="flex flex-wrap items-center gap-2 border-t border-[color:var(--border-faint)] px-6 pt-4 pb-5">
             <button
               type="submit"
               disabled={saveMutation.isPending}

@@ -85,7 +85,7 @@ export function Sidebar({ mobileOpen, onCloseMobile, collapsed, onToggleCollapse
         aria-label={t('sidebar.nav')}
         className={cn(
           'fixed left-0 top-0 bottom-0 z-50 flex flex-col transition-[width,transform] duration-200',
-          'bg-sidebar border-r border-default',
+          'bg-sidebar border-r border-default [-webkit-text-size-adjust:100%] [text-size-adjust:100%]',
           collapsed ? 'w-16' : 'w-60',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
           'md:translate-x-0',
@@ -174,31 +174,31 @@ export function Sidebar({ mobileOpen, onCloseMobile, collapsed, onToggleCollapse
               {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
             </button>
           ) : (
-            <div className="flex items-center justify-between rounded-lg border border-default bg-raised p-[3px]">
+            <div className="flex items-center justify-between rounded-lg border border-default bg-raised p-1">
               <button
                 type="button"
                 onClick={() => { if (theme !== 'light') toggle(); }}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-1 h-6 rounded-md text-[11px] font-medium cursor-pointer transition-colors',
+                  'flex-1 flex items-center justify-center gap-2 h-[30px] rounded-[var(--radius-sm)] text-[13px]! font-medium cursor-pointer transition-colors',
                   theme === 'light'
                     ? 'bg-surface text-primary shadow-sm'
                     : 'text-muted hover:text-secondary',
                 )}
               >
-                <Sun size={12} />
+                <Sun size={14} />
                 {t('sidebar.themeLight')}
               </button>
               <button
                 type="button"
                 onClick={() => { if (theme !== 'dark') toggle(); }}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-1 h-6 rounded-md text-[11px] font-medium cursor-pointer transition-colors',
+                  'flex-1 flex items-center justify-center gap-2 h-[30px] rounded-[var(--radius-sm)] text-[13px]! font-medium cursor-pointer transition-colors',
                   theme === 'dark'
                     ? 'bg-surface text-primary shadow-sm'
                     : 'text-muted hover:text-secondary',
                 )}
               >
-                <Moon size={12} />
+                <Moon size={14} />
                 {t('sidebar.themeDark')}
               </button>
             </div>
@@ -209,18 +209,18 @@ export function Sidebar({ mobileOpen, onCloseMobile, collapsed, onToggleCollapse
             <button
               type="button"
               onClick={() => handleLanguageSwitch(currentLang === 'ru' ? 'en' : 'ru')}
-              className="w-9 h-9 mx-auto flex items-center justify-center rounded-md text-[10px] font-semibold text-secondary hover:bg-hover hover:text-primary transition-colors"
+              className="w-9 h-9 mx-auto flex items-center justify-center rounded-md text-[13px] font-semibold text-secondary hover:bg-hover hover:text-primary transition-colors"
               aria-label={currentLang === 'ru' ? t('sidebar.langEn') : t('sidebar.langRu')}
             >
               {currentLang === 'ru' ? 'EN' : 'RU'}
             </button>
           ) : (
-            <div className="flex items-center justify-between rounded-lg border border-default bg-raised p-[3px]">
+            <div className="flex items-center justify-between rounded-lg border border-default bg-raised p-1">
               <button
                 type="button"
                 onClick={() => handleLanguageSwitch('ru')}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-1 h-6 rounded-md text-[11px] font-medium cursor-pointer transition-colors',
+                  'flex-1 flex items-center justify-center gap-2 h-[30px] rounded-[var(--radius-sm)] text-[13px]! font-medium cursor-pointer transition-colors',
                   currentLang === 'ru'
                     ? 'bg-surface text-primary shadow-sm'
                     : 'text-muted hover:text-secondary',
@@ -232,7 +232,7 @@ export function Sidebar({ mobileOpen, onCloseMobile, collapsed, onToggleCollapse
                 type="button"
                 onClick={() => handleLanguageSwitch('en')}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-1 h-6 rounded-md text-[11px] font-medium cursor-pointer transition-colors',
+                  'flex-1 flex items-center justify-center gap-2 h-[30px] rounded-[var(--radius-sm)] text-[13px]! font-medium cursor-pointer transition-colors',
                   currentLang === 'en'
                     ? 'bg-surface text-primary shadow-sm'
                     : 'text-muted hover:text-secondary',
@@ -246,7 +246,7 @@ export function Sidebar({ mobileOpen, onCloseMobile, collapsed, onToggleCollapse
           {/* User block */}
           {collapsed ? (
             <div className="border-t border-default pt-2.5 mt-1 flex flex-col items-center gap-1.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-raised text-[11px] font-semibold text-primary">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-raised text-[12px] font-semibold text-primary">
                 {initials}
               </div>
               <button
@@ -260,14 +260,14 @@ export function Sidebar({ mobileOpen, onCloseMobile, collapsed, onToggleCollapse
             </div>
           ) : (
             <div className="border-t border-default pt-2.5 mt-1 flex items-center gap-2.5">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-raised text-[11px] font-semibold text-primary">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-raised text-[12px] font-semibold text-primary">
                 {initials}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="truncate text-[13px] font-medium text-primary leading-tight">
                   {user.full_name || user.email}
                 </p>
-                <p className="text-[11px] text-muted capitalize leading-tight">
+                <p className="text-[12px] text-muted capitalize leading-tight">
                   {user.role.replace('_', ' ')}
                 </p>
               </div>

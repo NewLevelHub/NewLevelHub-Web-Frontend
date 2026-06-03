@@ -46,7 +46,7 @@ export function CompanyAdminWidgets({ data }: { data: CompanyAdminDashboardData 
     <div className="space-y-6">
       {/* Hero */}
       <section
-        className="relative overflow-hidden rounded-2xl p-6"
+        className="relative overflow-hidden rounded-2xl px-4 py-6 sm:px-6 sm:py-8"
         style={{ background: 'linear-gradient(135deg, var(--brand) 0%, #7c3aed 100%)' }}
       >
         <div
@@ -91,14 +91,14 @@ export function CompanyAdminWidgets({ data }: { data: CompanyAdminDashboardData 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-default bg-surface p-5 flex flex-col gap-1">
           <p className="text-xs text-muted">{t('dashboard.companyAdmin.kpi.teamBookings')}</p>
-          <p className="text-3xl font-bold text-primary leading-none tracking-tight">
+          <p className="text-2xl sm:text-3xl font-bold text-primary leading-none tracking-tight">
             {data.bookings_today}
           </p>
         </div>
 
         <div className="rounded-xl border border-default bg-surface p-5 flex flex-col gap-1">
           <p className="text-xs text-muted">{t('dashboard.companyAdmin.kpi.freeNow')}</p>
-          <p className="text-3xl font-bold text-primary leading-none tracking-tight">
+          <p className="text-2xl sm:text-3xl font-bold text-primary leading-none tracking-tight">
             {String(data.free_resources_now ?? '—')}
           </p>
         </div>
@@ -108,7 +108,7 @@ export function CompanyAdminWidgets({ data }: { data: CompanyAdminDashboardData 
           className="rounded-xl border border-default bg-surface p-5 flex flex-col gap-1 hover:bg-hover transition-colors"
         >
           <p className="text-xs text-muted">{t('dashboard.companyAdmin.kpi.openTasks')}</p>
-          <p className="text-3xl font-bold text-primary leading-none tracking-tight">
+          <p className="text-2xl sm:text-3xl font-bold text-primary leading-none tracking-tight">
             {tasksTotalCount}
           </p>
         </Link>
@@ -118,14 +118,14 @@ export function CompanyAdminWidgets({ data }: { data: CompanyAdminDashboardData 
           className="rounded-xl border border-default bg-surface p-5 flex flex-col gap-1 hover:bg-hover transition-colors"
         >
           <p className="text-xs text-muted">{t('dashboard.companyAdmin.kpi.unread')}</p>
-          <p className="text-3xl font-bold text-primary leading-none tracking-tight">
+          <p className="text-2xl sm:text-3xl font-bold text-primary leading-none tracking-tight">
             {unreadCount}
           </p>
         </Link>
       </div>
 
       {/* 2-col section: lg:grid-cols-4 — left=col-span-3, right=col-span-1 */}
-      <div className="grid gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
         {/* Left — Team bookings today */}
         <section className="lg:col-span-3 rounded-xl border border-default bg-surface overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-default">
@@ -155,7 +155,7 @@ export function CompanyAdminWidgets({ data }: { data: CompanyAdminDashboardData 
               return (
                 <li
                   key={`${b.user_initials}-${idx}`}
-                  className="flex items-center gap-3 px-5 py-3 hover:bg-hover transition-colors"
+                  className="flex flex-wrap items-center gap-3 px-5 py-3 hover:bg-hover transition-colors"
                 >
                   <span
                     className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand text-[10px] font-bold text-white"

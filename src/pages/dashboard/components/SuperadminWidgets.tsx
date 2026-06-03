@@ -62,7 +62,7 @@ export function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
     <div className="space-y-6">
       {/* Hero */}
       <section
-        className="relative overflow-hidden rounded-2xl p-6"
+        className="relative overflow-hidden rounded-2xl px-4 py-6 sm:px-6 sm:py-8"
         style={{ background: 'linear-gradient(135deg, var(--brand) 0%, #7c3aed 100%)' }}
       >
         {/* Decorative circle */}
@@ -109,7 +109,7 @@ export function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
       </div>
 
       {/* 2-col section */}
-      <div className="grid gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
         {/* Upcoming bookings table */}
         <section className="lg:col-span-3 rounded-xl border border-default bg-surface overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-default">
@@ -134,7 +134,7 @@ export function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[600px] text-sm">
                 <thead>
                   <tr className="border-b border-default bg-raised">
                     <th className="px-4 py-2.5 text-left text-xs font-medium text-muted">
