@@ -8,7 +8,10 @@
       "activeBookings": "Active bookings",
       "spaceLoad": "Space utilization",
       "openRequests": "Open requests",
-      "activeTenants": "Active tenants"
+      "activeTenants": "Active tenants",
+      "trendWeekDelta": "+{{count}} this week",
+      "trendClosedToday": "−{{count}} closed today",
+      "trendNewWeek": "+{{count}} this week"
     },
     "upcomingBookings": "Upcoming bookings",
     "acrossAllCompanies": "across all companies · today",
@@ -43,6 +46,7 @@
     "noBookings": "No upcoming bookings",
     "noAnnouncements": "No new announcements",
     "floorNoData": "No floor data available",
+    "floorOccupancyAria": "{{occupied}} of {{total}} spots occupied ({{pct}}%)",
     "tasksWidget": {
       "subheading": "{{tasksLabel}} · {{boardsLabel}}",
       "tasksCount_one": "{{count}} task",
@@ -1200,6 +1204,11 @@
     "legendTitle": "Legend",
     "editMode": "Edit mode",
     "addFloor": "Add floor",
+    "createFloor": "Create floor",
+    "floorsLoading": "Loading floors...",
+    "floorsLoadError": "Could not load floors list. Try refreshing the page.",
+    "floorsNotFound": "No floors found.",
+    "floorsContactAdmin": "Contact an administrator.",
     "schemaLabel": "view",
     "updatedAt": "Updated at",
     "loadingMap": "Loading map...",
@@ -1225,7 +1234,19 @@
       "unavailable": "Unavailable",
       "book": "Book",
       "details": "Details"
-    }
+    },
+    "toolbar": {
+      "disableEditMode": "Disable edit mode",
+      "enableEditMode": "Enable edit mode"
+    },
+    "addPanel": {
+      "resourceSelectHint": "Select a resource — point type will be taken from the resource"
+    },
+    "editModal": {
+      "pointTypeHint": "Point type is determined by the selected resource type"
+    },
+    "deleteFloorTitle": "Delete floor?",
+    "deleteFloorConfirm": "Floor \"{{name}}\" will be permanently deleted along with all map points and associated catalog resources."
   },
   "crm": {
     "priority": {

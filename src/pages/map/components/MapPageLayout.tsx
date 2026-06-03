@@ -1,4 +1,5 @@
-import { memo } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Loader2, Minus, Pencil, Plus, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 
@@ -27,6 +28,42 @@ import { BookingModal } from '@/shared/ui/BookingModal';
 import { ResourceDetailModal } from '@/shared/ui/ResourceDetailModal';
 
 export type MapPageLayoutProps = UseMapLogicReturn;
+
+const POPUP_W = 240;
+const POPUP_H = 220;
+
+function getPopupScreenPos(
+  canvasEl: HTMLDivElement,
+  point: { x: number; y: number; width?: number | null; height?: number | null },
+  zoom: number,
+  pan: { x: number; y: number },
+  viewMode: '2D' | '3D',
+): { left: number; top: number } {
+  const rect = canvasEl.getBoundingClientRect();
+  const w = point.width ?? 12;
+  const h = point.height ?? 8;
+
+  // Raw pixel position of the point's bottom-center within the canvas
+  const rawX = ((point.x + w / 2) / 100) * rect.width;
+  const rawY = ((point.y + h) / 100) * rect.height;
+
+  // Transform origin differs between 2D and 3D
+  const originX = rect.width / 2;
+  const originY = viewMode === '3D' ? 0 : rect.height / 2;
+
+  // Apply scale from origin + pan translation
+  const scaledX = originX + (rawX - originX) * zoom + pan.x;
+  const scaledY = originY + (rawY - originY) * zoom + pan.y;
+
+  const left = rect.left + scaledX - POPUP_W / 2;
+  const top = rect.top + scaledY + 8;
+
+  // Clamp so the popup stays fully within the viewport
+  const clampedLeft = Math.max(8, Math.min(left, window.innerWidth - POPUP_W - 8));
+  const clampedTop = Math.max(8, Math.min(top, window.innerHeight - POPUP_H - 8));
+
+  return { left: clampedLeft, top: clampedTop };
+}
 
 export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
   const {
@@ -107,6 +144,42 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
 
   const { t } = useTranslation();
 
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const panStart = useRef<{ mx: number; my: number; px: number; py: number } | null>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+
+  const handleZoomIn = () => setZoom((z) => Math.min(3, parseFloat((z + 0.2).toFixed(1))));
+  const handleZoomOut = () => setZoom((z) => Math.max(0.5, parseFloat((z - 0.2).toFixed(1))));
+
+  useEffect(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, [selectedFloorId]);
+
+  const handleCanvasMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (editMode) return;
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) return;
+    e.preventDefault();
+    panStart.current = { mx: e.clientX, my: e.clientY, px: pan.x, py: pan.y };
+    setIsPanning(true);
+  }, [editMode, pan]);
+
+  const handleCanvasMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!panStart.current) return;
+    const dx = e.clientX - panStart.current.mx;
+    const dy = e.clientY - panStart.current.my;
+    setPan({ x: panStart.current.px + dx, y: panStart.current.py + dy });
+  }, []);
+
+  const handleCanvasMouseUp = useCallback(() => {
+    panStart.current = null;
+    setIsPanning(false);
+  }, []);
+
   return (
     <div className="flex flex-col gap-4 p-6">
       {/* Page header + search */}
@@ -160,49 +233,77 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
 
           {floors?.map((floor) => {
             const isSelected = selectedFloorId === floor.id;
+            const pct = Math.max(0, Math.min(100, floor.occupancy_pct ?? 0));
             return (
               <div
                 key={floor.id}
                 role="tab"
                 aria-selected={isSelected}
                 className={cn(
-                  'group flex w-full items-center gap-1 rounded-md px-2.5 py-2 transition-colors',
+                  'group flex w-full flex-col gap-0.5 rounded-md px-2.5 py-2 transition-colors',
                   isSelected ? 'bg-active' : 'hover:bg-hover',
                 )}
               >
-                {/* Main select button */}
-                <button
-                  type="button"
-                  onClick={() => handleSelectFloor(floor.id)}
-                  className={cn(
-                    'min-w-0 flex-1 truncate text-left text-[13px] font-medium transition-colors',
-                    isSelected ? 'text-[var(--brand-text)] font-semibold' : 'text-secondary',
-                  )}
-                >
-                  {floor.name || `${t('map.floorFallbackName')} ${floor.number}`}
-                </button>
+                {/* Name row: select button + action buttons */}
+                <div className="flex w-full items-center gap-1">
+                  {/* Main select button */}
+                  <button
+                    type="button"
+                    onClick={() => handleSelectFloor(floor.id)}
+                    className={cn(
+                      'min-w-0 flex-1 truncate text-left text-[13px] font-medium transition-colors',
+                      isSelected ? 'text-[var(--brand-text)] font-semibold' : 'text-secondary',
+                    )}
+                  >
+                    {floor.name || `${t('map.floorFallbackName')} ${floor.number}`}
+                  </button>
 
-                {/* Action buttons — always visible in editMode (not behind hover) */}
-                {editMode && isSuperadmin && (
-                  <div className="flex shrink-0 items-center gap-0.5">
-                    <button
-                      type="button"
-                      aria-label={t('map.editFloorAria', { name: floor.name ?? floor.number })}
-                      onClick={() => onOpenEditFloor(floor)}
-                      className="flex h-5 w-5 items-center justify-center rounded text-muted hover:bg-[var(--bg-hover)] hover:text-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] transition-colors"
-                    >
-                      <Pencil className="h-3 w-3" aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={t('map.deleteFloor', { name: floor.name ?? floor.number })}
-                      onClick={() => handleDeleteFloor(floor)}
-                      className="flex h-5 w-5 items-center justify-center rounded text-muted hover:bg-rose-100 hover:text-[var(--danger)] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 transition-colors"
-                    >
-                      <Trash2 className="h-3 w-3" aria-hidden="true" />
-                    </button>
+                  {/* Action buttons — always visible in editMode (not behind hover) */}
+                  {editMode && isSuperadmin && (
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      <button
+                        type="button"
+                        aria-label={t('map.editFloorAria', { name: floor.name ?? floor.number })}
+                        onClick={() => onOpenEditFloor(floor)}
+                        className="flex h-5 w-5 items-center justify-center rounded text-muted hover:bg-[var(--bg-hover)] hover:text-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] transition-colors"
+                      >
+                        <Pencil className="h-3 w-3" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={t('map.deleteFloor', { name: floor.name ?? floor.number })}
+                        onClick={() => handleDeleteFloor(floor)}
+                        className="flex h-5 w-5 items-center justify-center rounded text-muted hover:bg-rose-100 hover:text-[var(--danger)] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 transition-colors"
+                      >
+                        <Trash2 className="h-3 w-3" aria-hidden="true" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Occupancy row */}
+                <div className="flex items-center gap-1.5 px-0 mt-1">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--bg-hover)]">
+                    <span
+                      role="progressbar"
+                      aria-valuenow={pct}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      className={cn(
+                        'block h-full rounded-full transition-all',
+                        pct > 70
+                          ? 'bg-[var(--danger)]'
+                          : pct >= 50
+                            ? 'bg-amber-500'
+                            : 'bg-emerald-500',
+                      )}
+                      style={{ width: `${pct}%` }}
+                    />
                   </div>
-                )}
+                  <span className="font-mono text-[10px] text-muted whitespace-nowrap">
+                    {pct}%
+                  </span>
+                </div>
               </div>
             );
           })}
@@ -362,7 +463,12 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
               <div className="relative">
                 {/* Canvas with dot-grid background */}
                 <div
-                  className="relative overflow-hidden rounded-xl border border-default"
+                  ref={canvasRef}
+                  className={cn(
+                    'relative overflow-hidden rounded-xl border border-default',
+                    !editMode && (isPanning ? 'cursor-grabbing' : 'cursor-grab'),
+                    editMode && 'cursor-crosshair',
+                  )}
                   style={{
                     background: `
                       linear-gradient(var(--border-faint) 1px, transparent 1px) 0 0/24px 24px,
@@ -370,18 +476,31 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
                       var(--bg-page)
                     `,
                   }}
+                  onMouseDown={handleCanvasMouseDown}
+                  onMouseMove={handleCanvasMouseMove}
+                  onMouseUp={handleCanvasMouseUp}
+                  onMouseLeave={handleCanvasMouseUp}
                 >
                   {/* 3D perspective wrapper */}
                   <div
                     style={
                       viewMode === '3D'
                         ? {
-                            transform: 'perspective(1200px) rotateX(22deg)',
-                            transformOrigin: 'top center',
-                            transition: 'transform 0.3s ease',
+                            filter: 'drop-shadow(0 40px 30px rgba(0,0,0,0.25))',
+                            transition: 'filter 0.3s ease',
                           }
-                        : { transition: 'transform 0.3s ease' }
+                        : { transition: 'filter 0.3s ease' }
                     }
+                  >
+                  <div
+                    style={{
+                      transform:
+                        viewMode === '3D'
+                          ? `translate(${pan.x}px, ${pan.y}px) perspective(900px) rotateX(35deg) rotateZ(-3deg) scale(${zoom})`
+                          : `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                      transformOrigin: viewMode === '3D' ? 'center top' : 'center center',
+                      transition: isPanning ? 'none' : 'transform 0.25s ease',
+                    }}
                   >
                     {editMode && isSuperadmin ? (
                       resolvedImageUrl ? (
@@ -431,21 +550,23 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
                       />
                     )}
                   </div>
-
-                  {/* Room popup — shown when a room is selected in view mode */}
-                  {selectedPointId !== null && !editMode && (() => {
-                    const point = floorMap.points.find((p) => p.id === selectedPointId);
-                    if (!point) return null;
-                    return (
-                      <MapRoomPopup
-                        point={point}
-                        floorName={floorMap.floor_name}
-                        onBook={handleBookPoint}
-                        onDetails={handleDetailsPoint}
-                        onClose={handleCloseRoomPopup}
-                      />
-                    );
-                  })()}
+                  {/* floor base — visible only in 3D mode */}
+                  {viewMode === '3D' && (
+                    <div
+                      aria-hidden="true"
+                      style={{
+                        position: 'absolute',
+                        bottom: -6,
+                        left: '4%',
+                        right: '4%',
+                        height: 12,
+                        background: 'linear-gradient(to bottom, var(--bg-raised), transparent)',
+                        borderRadius: '0 0 8px 8px',
+                        opacity: 0.6,
+                      }}
+                    />
+                  )}
+                  </div>
 
                   {/* Zoom controls — absolute bottom-right of canvas */}
                   <div
@@ -455,19 +576,45 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
                     <button
                       type="button"
                       aria-label={t('map.zoomIn')}
+                      onClick={handleZoomIn}
                       className="flex h-7 w-7 items-center justify-center text-secondary transition-colors hover:bg-hover"
                     >
                       <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                     </button>
+                    <div className="flex h-6 w-7 items-center justify-center border-t border-default">
+                      <span className="font-mono text-[9px] text-muted select-none">
+                        {Math.round(zoom * 100)}%
+                      </span>
+                    </div>
                     <button
                       type="button"
                       aria-label={t('map.zoomOut')}
+                      onClick={handleZoomOut}
                       className="flex h-7 w-7 items-center justify-center border-t border-default text-secondary transition-colors hover:bg-hover"
                     >
                       <Minus className="h-3.5 w-3.5" aria-hidden="true" />
                     </button>
                   </div>
                 </div>
+
+                {/* Room popup — rendered via portal so overflow-hidden cannot clip it */}
+                {selectedPointId !== null && !editMode && canvasRef.current && (() => {
+                  const point = floorMap.points.find((p) => p.id === selectedPointId);
+                  if (!point) return null;
+                  const { left, top } = getPopupScreenPos(canvasRef.current!, point, zoom, pan, viewMode);
+                  return createPortal(
+                    <MapRoomPopup
+                      point={point}
+                      floorName={floorMap.floor_name}
+                      onBook={handleBookPoint}
+                      onDetails={handleDetailsPoint}
+                      onClose={handleCloseRoomPopup}
+                      screenLeft={left}
+                      screenTop={top}
+                    />,
+                    document.body,
+                  );
+                })()}
 
                 {/* Add point panel */}
                 {addPanelOpen && isSuperadmin && editMode && selectedFloorId !== null && (

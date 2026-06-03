@@ -255,7 +255,7 @@ export const MapPointAddPanel = memo<MapPointAddPanelProps>(
                 value={form.point_type}
                 disabled
                 aria-disabled="true"
-                title="Выберите ресурс — тип точки возьмётся из ресурса"
+                title={t('map.addPanel.resourceSelectHint')}
                 className="cursor-not-allowed rounded-md border border-default bg-gray-600/40 px-2 py-1.5 text-sm text-secondary outline-none"
               >
                 {POINT_TYPES.map((pointType) => (

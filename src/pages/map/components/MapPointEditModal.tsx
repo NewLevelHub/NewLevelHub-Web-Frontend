@@ -178,7 +178,7 @@ export const MapPointEditModal = memo<MapPointEditModalProps>(
                   value={form.point_type}
                   disabled
                   aria-disabled="true"
-                  title="Тип точки определяется типом выбранного ресурса"
+                  title={t('map.editModal.pointTypeHint')}
                   className="cursor-not-allowed rounded-lg border border-default bg-gray-100 px-3 py-2 text-sm text-muted outline-none"
                 >
                   {POINT_TYPES.map((pointType) => (

@@ -15,6 +15,9 @@ export interface MapRoomPopupProps {
   onBook: (point: MapPoint) => void;
   onDetails: (point: MapPoint) => void;
   onClose: () => void;
+  /** When provided, the popup renders with fixed positioning at these screen coordinates */
+  screenLeft?: number;
+  screenTop?: number;
 }
 
 function getStatusBadgeStyle(status: ReturnType<typeof normalizePointStatus>): {
@@ -50,7 +53,7 @@ function getStatusBadgeStyle(status: ReturnType<typeof normalizePointStatus>): {
   }
 }
 
-export const MapRoomPopup = memo<MapRoomPopupProps>(({ point, floorName, onBook, onDetails, onClose }) => {
+export const MapRoomPopup = memo<MapRoomPopupProps>(({ point, floorName, onBook, onDetails, onClose, screenLeft, screenTop }) => {
   const { t } = useTranslation();
 
   const w = point.width ?? DEFAULT_W;
@@ -78,9 +81,17 @@ export const MapRoomPopup = memo<MapRoomPopupProps>(({ point, floorName, onBook,
     return t('map.popup.unavailable');
   })();
 
-  // Position: centered below the room rectangle
-  const left = `calc(${point.x + w / 2}% - 112px)`;
-  const top = `calc(${point.y + h}% + 8px)`;
+  // Position: fixed when screen coords are provided (portal mode), else absolute (fallback)
+  const isFixed = screenLeft !== undefined && screenTop !== undefined;
+  const positionStyle: React.CSSProperties = isFixed
+    ? { position: 'fixed', left: screenLeft, top: screenTop, zIndex: 9999, pointerEvents: 'auto' }
+    : {
+        position: 'absolute',
+        left: `calc(${point.x + w / 2}% - 112px)`,
+        top: `calc(${point.y + h}% + 8px)`,
+        zIndex: 9999,
+        pointerEvents: 'auto',
+      };
 
   // ESC close is handled in useMapLogic; stopPropagation on click prevents
   // the canvas click-outside handler from closing the popup when clicking inside.
@@ -90,8 +101,8 @@ export const MapRoomPopup = memo<MapRoomPopupProps>(({ point, floorName, onBook,
       role="dialog"
       aria-modal="false"
       aria-label={point.label}
-      className="absolute z-30 w-60 overflow-hidden rounded-xl border border-default bg-surface p-4 shadow-xl"
-      style={{ left, top }}
+      className="w-60 overflow-hidden rounded-xl border border-default bg-surface p-4 shadow-xl"
+      style={positionStyle}
       onClick={(e) => e.stopPropagation()}
     >
       {/* Title */}
@@ -136,7 +147,7 @@ export const MapRoomPopup = memo<MapRoomPopupProps>(({ point, floorName, onBook,
           type="button"
           disabled={isBookDisabled}
           onClick={() => {
-            if (!isBookDisabled) onBook(point);
+            if (!isBookDisabled) { onBook(point); onClose(); }
           }}
           className={cn(
             'w-full rounded-md px-3 py-1.5 text-sm font-medium transition-opacity',
@@ -151,7 +162,7 @@ export const MapRoomPopup = memo<MapRoomPopupProps>(({ point, floorName, onBook,
           type="button"
           disabled={!hasResource}
           onClick={() => {
-            if (hasResource) onDetails(point);
+            if (hasResource) { onDetails(point); onClose(); }
           }}
           className={cn(
             'w-full rounded-md border border-default px-3 py-1.5 text-sm font-medium text-secondary transition-colors hover:bg-hover',

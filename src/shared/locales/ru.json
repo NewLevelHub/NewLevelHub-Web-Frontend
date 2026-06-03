@@ -8,7 +8,10 @@
       "activeBookings": "Активные брони",
       "spaceLoad": "Загрузка пространств",
       "openRequests": "Открытые заявки",
-      "activeTenants": "Активные арендаторы"
+      "activeTenants": "Активные арендаторы",
+      "trendWeekDelta": "+{{count}} за неделю",
+      "trendClosedToday": "−{{count}} закрыто сегодня",
+      "trendNewWeek": "+{{count}} за неделю"
     },
     "upcomingBookings": "Ближайшие бронирования",
     "acrossAllCompanies": "по всем компаниям · сегодня",
@@ -43,6 +46,7 @@
     "noBookings": "Нет предстоящих бронирований",
     "noAnnouncements": "Нет новых объявлений",
     "floorNoData": "Нет данных по этажам",
+    "floorOccupancyAria": "{{occupied}} из {{total}} мест занято ({{pct}}%)",
     "tasksWidget": {
       "subheading": "{{tasksLabel}} · {{boardsLabel}}",
       "tasksCount_one": "{{count}} задача",
@@ -1204,6 +1208,11 @@
     "legendTitle": "Легенда",
     "editMode": "Редактирование",
     "addFloor": "Добавить этаж",
+    "createFloor": "Создать этаж",
+    "floorsLoading": "Загрузка этажей...",
+    "floorsLoadError": "Не удалось загрузить список этажей. Попробуйте обновить страницу.",
+    "floorsNotFound": "Этажи не найдены.",
+    "floorsContactAdmin": "Обратитесь к администратору.",
     "schemaLabel": "схема",
     "updatedAt": "Обновлено в",
     "loadingMap": "Загрузка карты...",
@@ -1229,7 +1238,19 @@
       "unavailable": "Недоступно",
       "book": "Забронировать",
       "details": "Подробнее"
-    }
+    },
+    "toolbar": {
+      "disableEditMode": "Выключить режим редактирования",
+      "enableEditMode": "Включить режим редактирования"
+    },
+    "addPanel": {
+      "resourceSelectHint": "Выберите ресурс — тип точки возьмётся из ресурса"
+    },
+    "editModal": {
+      "pointTypeHint": "Тип точки определяется типом выбранного ресурса"
+    },
+    "deleteFloorTitle": "Удалить этаж?",
+    "deleteFloorConfirm": "Этаж «{{name}}» будет безвозвратно удалён вместе со всеми точками на карте и связанными ресурсами каталога."
   },
   "crm": {
     "priority": {

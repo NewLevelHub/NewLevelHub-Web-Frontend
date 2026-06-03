@@ -29,7 +29,7 @@ export const STATUS_LABEL_CLASS: Record<PointUiStatus, string> = {
   none: 'text-stone-400',
 };
 
-export const LEGEND_STATUS_KEYS: PointUiStatus[] = ['free', 'occupied', 'soon_available', 'none'];
+export const LEGEND_STATUS_KEYS: PointUiStatus[] = ['free', 'occupied', 'soon_available'];
 
 export const LEGEND_ITEM_COLORS: Record<PointUiStatus, string> = {
   free: 'bg-emerald-500',

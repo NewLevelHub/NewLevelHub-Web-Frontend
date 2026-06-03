@@ -853,6 +853,7 @@ export interface ServiceFloor {
   number: number;
   plan_image: string | null;
   plan_image_url: string | null;
+  occupancy_pct?: number;
   created_at: string;
   updated_at: string;
 }
@@ -1127,8 +1128,11 @@ export interface DashboardAnnouncementRecentItem {
 }
 
 export interface FloorLoadItem {
+  floor_id: number;
   floor_number: number;
   floor_name: string;
+  total: number;
+  occupied: number;
   occupancy_pct: number;
 }
 

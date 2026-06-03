@@ -7,7 +7,7 @@ import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import type { SuperadminDashboardData } from '@/shared/types';
 import { KpiCard, type KpiCardProps } from '@/pages/dashboard/components/KpiCard';
 import { FloorLoadWidget } from '@/pages/dashboard/components/FloorLoadWidget';
-import { SPARKLINE_DATA, BOOKING_STATUS_BADGE } from '@/pages/dashboard/constants';
+import { BOOKING_STATUS_BADGE } from '@/pages/dashboard/constants';
 
 export function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
   const { t } = useTranslation();
@@ -27,36 +27,34 @@ export function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
     {
       label: t('dashboard.kpi.activeBookings'),
       value: String(data.bookings_today),
-      trend: `+${data.bookings_week_delta} за неделю`,
+      trend: t('dashboard.kpi.trendWeekDelta', { count: data.bookings_week_delta }),
       trendDir: data.bookings_week_delta >= 0 ? 'up' : 'down',
-      sparklineData: SPARKLINE_DATA.bookings,
     },
     {
       label: t('dashboard.kpi.spaceLoad'),
       value: `${data.space_load_pct}%`,
-      trend: '+4% к прошлой нед.',
-      trendDir: 'up',
-      sparklineData: SPARKLINE_DATA.spaceLoad,
     },
     {
       label: t('dashboard.kpi.openRequests'),
       value: String(data.open_service_requests),
-      trend: `−${data.service_requests_closed_today} закрыто сегодня`,
+      trend: t('dashboard.kpi.trendClosedToday', { count: data.service_requests_closed_today }),
       trendDir: 'neutral',
-      sparklineData: SPARKLINE_DATA.requests,
     },
     {
       label: t('dashboard.kpi.activeTenants'),
       value: String(data.total_companies),
-      trend: `+${data.new_companies_last_7d} за неделю`,
+      trend: t('dashboard.kpi.trendNewWeek', { count: data.new_companies_last_7d }),
       trendDir: data.new_companies_last_7d > 0 ? 'up' : 'neutral',
-      sparklineData: SPARKLINE_DATA.tenants,
     },
   ];
 
   const floorRows = (data.floor_load ?? [])
-    .filter(f => f.floor_name !== 'string' && f.floor_number !== 2147483647)
-    .map(f => ({ label: f.floor_name, pct: f.occupancy_pct }));
+    .map(f => ({
+      label: f.floor_name,
+      pct: f.occupancy_pct,
+      occupied: f.occupied,
+      total: f.total,
+    }));
 
   const userName = data.user?.full_name?.split(' ')[0] ?? '';
 
