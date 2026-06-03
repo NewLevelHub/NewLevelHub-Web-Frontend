@@ -236,27 +236,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!originalUser) return;
 
     queryClient.clear();
-
-    /**
-     * Сбрасываем токен в памяти: при следующем запросе apiClient использует null,
-     * что вызовет 401 и автоматически перенаправит на логин.
-     * Вместо этого мы сразу делаем bootstrap чтобы восстановить суперадмина через cookie.
-     */
     tokenStorage.clear();
     clearImpersonationStorage();
 
-    set({
-      user: originalUser,
-      isAuthenticated: true,
-      isImpersonating: false,
-      originalUser: null,
-    });
-
-    // Восстанавливаем актуальный access-токен через cookie refresh.
-    get()
-      .bootstrap()
-      .catch(() => {
-        /* bootstrap сам обработает ошибку */
-      });
+    // Hard reload зеркалит поведение startImpersonation и исключает race condition:
+    // смена состояния без hard reload триггерит ре-рендеры, которые сразу делают
+    // API-запросы с null-токеном; их 401 и одновременный bootstrap оба бьются за
+    // httpOnly cookie — BLACKLIST_AFTER_ROTATION гарантирует падение второго
+    // и window.location.href='/login' в перехватчике.
+    window.location.replace('/dashboard');
   },
 }));
