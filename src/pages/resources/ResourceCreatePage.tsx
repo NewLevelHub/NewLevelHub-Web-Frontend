@@ -474,8 +474,8 @@ export default function ResourceCreatePage() {
               type="submit"
               disabled={isPending}
               className={cn(
-                'inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] transition-colors',
-                'text-[color:var(--text-onbrand)] bg-[color:var(--brand)] hover:bg-[color:var(--brand-hover)]',
+                'inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)]',
+                'text-white bg-[color:var(--brand)] hover:opacity-90 transition-opacity',
                 'disabled:opacity-60 disabled:cursor-not-allowed',
               )}
             >

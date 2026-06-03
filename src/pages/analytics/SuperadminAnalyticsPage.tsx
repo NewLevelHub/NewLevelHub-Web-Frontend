@@ -41,6 +41,7 @@ import { useAuth } from '@/shared/hooks/useAuth';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
+import { fmtDayMonth, fmtTime } from '@/shared/lib/formatDate';
 import { filenameFromContentDisposition, triggerCsvFileDownload } from '@/shared/lib/csvDownload';
 import type {
   Booking,
@@ -108,16 +109,14 @@ function fmtMinutes(value: number): string {
   return `${hours} ч ${mins} мин`;
 }
 
-/** "2026-05-26T09:00:00+05:00" → "26 мая, 09:00" */
+/** "2026-05-26T09:00:00+05:00" → "26 мая, 09:00" (locale-aware) */
 function fmtDateTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  const date = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-  const time = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-  return `${date}, ${time}`;
+  return `${fmtDayMonth(d)}, ${fmtTime(d)}`;
 }
 
-/** "2026-W18" → "Нед. 18 (4 мая)" */
+/** "2026-W18" → "4 мая" (locale-aware) */
 function fmtWeek(weekStr: string): string {
   const m = weekStr.match(/^(\d{4})-W(\d+)$/);
   if (!m) return weekStr;
@@ -126,8 +125,7 @@ function fmtWeek(weekStr: string): string {
   const jan4 = new Date(Number(year), 0, 4);
   const monday = new Date(jan4);
   monday.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7) + (Number(week) - 1) * 7);
-  const dayStr = monday.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-  return `${dayStr}`;
+  return fmtDayMonth(monday);
 }
 
 /** "cleaning" → "Уборка" */

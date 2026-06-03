@@ -10,6 +10,7 @@ import { USER_ROLES, USER_ROLE_LABEL_KEYS, type UserRole } from '@/shared/config
 import { getApiError } from '@/shared/lib/getApiError';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
+import { fmtDateTime } from '@/shared/lib/formatDate';
 import { useAuth } from '@/shared/hooks/useAuth';
 import type { Company, CompanyInvitation, CompanyMember, PaginatedResponse } from '@/shared/types';
 
@@ -427,7 +428,7 @@ export default function CompanyMembersPage() {
                         <p className="mt-0.5 text-xs text-muted">
                           {t(USER_ROLE_LABEL_KEYS[inv.role as UserRole]) ?? inv.role}
                           {' · '}
-                          {t('common.end')}: {new Date(inv.expires_at).toLocaleString()}
+                          {t('common.end')}: {fmtDateTime(inv.expires_at)}
                           {inv.is_expired
                             ? ` · ${t('companies.expiredSuffix')}`
                             : inv.is_used

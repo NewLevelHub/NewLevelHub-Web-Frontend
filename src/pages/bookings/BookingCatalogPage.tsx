@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
+import { fmtDateTime } from '@/shared/lib/formatDate';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
@@ -58,7 +59,7 @@ function formatAvailableAt(iso: string | null): string | null {
   if (!iso) return null;
   try {
     const d = new Date(iso);
-    return d.toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' });
+    return fmtDateTime(d, { dateStyle: 'short', timeStyle: 'short' } as Intl.DateTimeFormatOptions);
   } catch {
     return null;
   }

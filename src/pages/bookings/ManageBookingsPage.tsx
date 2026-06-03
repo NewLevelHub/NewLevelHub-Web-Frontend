@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
+import { fmtDayMonth, fmtDateTime, fmtTime } from '@/shared/lib/formatDate';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BookMarked, Calendar, ChevronLeft, ChevronRight, MoreHorizontal, Repeat, X } from 'lucide-react';
@@ -516,7 +517,7 @@ export default function ManageBookingsPage() {
           >
             <Calendar className="w-3 h-3 flex-shrink-0" />
             {dateFrom || dateTo
-              ? `${dateFrom ? new Date(dateFrom).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : '…'} — ${dateTo ? new Date(dateTo).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : '…'}`
+              ? `${dateFrom ? fmtDayMonth(dateFrom) : '…'} — ${dateTo ? fmtDayMonth(dateTo) : '…'}`
               : t('booking.manage.allDates')
             }
           </button>
@@ -724,17 +725,9 @@ export default function ManageBookingsPage() {
                         </div>
                       </td>
                       <td className="px-3 py-2.5 align-middle font-mono text-[color:var(--text-primary)]">
-                        {new Date(booking.start_time).toLocaleString('ru-RU', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        {fmtDateTime(booking.start_time, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                         {' — '}
-                        {new Date(booking.end_time).toLocaleTimeString('ru-RU', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        {fmtTime(booking.end_time)}
                       </td>
                       <td className="px-3 py-2.5 align-middle text-[color:var(--text-muted)]">
                         {(booking.participants?.length ?? 0) > 0

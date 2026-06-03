@@ -642,7 +642,16 @@
     "settingsSubtitle": "Manage which notifications you receive and through which channels.",
     "typesHeading": "Notification types",
     "loadError": "Failed to load notification settings. Please reload the page.",
-    "dndLoadingAria": "Loading Do Not Disturb settings"
+    "dndLoadingAria": "Loading Do Not Disturb settings",
+    "dndEnabled": "Enabled",
+    "dndDisabled": "Disabled",
+    "dndActiveUntil": "Active until: {{date}}",
+    "dndActiveNoLimit": "Active with no time limit",
+    "dndUntilLabel": "Until (optional)",
+    "dndSave": "Save",
+    "dndSaved": "Settings saved.",
+    "dndErrorFuture": "Please specify a date and time in the future.",
+    "dndErrorGeneral": "Could not save settings. Please try again."
   },
   "header": {
     "markAllRead": "Mark all as read",
@@ -1268,7 +1277,10 @@
     "noArchivedBoards": "No archived boards",
     "archivedBoardsHint": "Archived boards will appear here.",
     "createFirstHint": "Create the first one!",
-    "loadErrorBoards": "Failed to load boards. Please reload the page."
+    "loadErrorBoards": "Failed to load boards. Please reload the page.",
+    "taskNotFound": "Task not found or was archived.",
+    "taskIdLabel": "Task #{{id}}",
+    "openBoardAria": "Open board {{name}}"
   },
   "auth": {
     "login": {
@@ -1412,12 +1424,16 @@
     "notYetActive": "Not active yet",
     "companyFilter": "Company name",
     "oneTime": "One-time pass",
+    "backToPasses": "Back to passes",
+    "visitDetails": "Visit details",
     "filters": {
       "all": "All",
       "active": "Active",
       "used": "Used",
       "expired": "Expired",
-      "revoked": "Revoked"
+      "revoked": "Revoked",
+      "allDates": "All dates",
+      "creatorEmail": "Creator email"
     },
     "reason": {
       "expired": "Expired",
@@ -1450,6 +1466,7 @@
     "loadError": "Failed to load pass details.",
     "passId": "Pass #{{id}}",
     "backToList": "Back to list",
+    "guestInfo": "Guest information",
     "actionsSection": "Actions",
     "revoking": "Revoking...",
     "cannotRevoke": "Cannot revoke a used, expired, or already revoked pass.",
@@ -1465,6 +1482,10 @@
     "columnValidated": "Validated",
     "columnMethod": "Method",
     "columnDetails": "Details",
+    "columnGuest": "Guest",
+    "columnVisitDate": "Visit date",
+    "columnVisitTime": "Time",
+    "columnActions": "Actions",
     "noPassesYet": "No passes yet.",
     "listTitle": "Guest passes",
     "listSubtitle": "Your digital passes with QR code.",
@@ -1487,7 +1508,34 @@
     "validatePageSubtitle": "Enter the QR code manually or scan it with the camera.",
     "uuidLabel": "QR code (UUID)",
     "uuidPlaceholder": "e.g. 64fdbf4f-465e-40e6-8ef4-3f3c96d34ac6",
-    "notYetActiveDetail": "Pass will be available from {{date}}"
+    "notYetActiveDetail": "Pass will be available from {{date}}",
+    "noCompany": "No company",
+    "qrPanel": {
+      "guestQR": "Guest Pass QR",
+      "download": "Download",
+      "sendEmail": "Send to email",
+      "sending": "Sending...",
+      "sent": "Sent!",
+      "countdownActive": "Pass is active",
+      "countdownExpired": "Pass expired",
+      "countdownUsed": "Used",
+      "countdownPending": "Until visit: {{hours}}h {{minutes}}m — pass activates automatically",
+      "selectHint": "Select a pass to view QR"
+    },
+    "qrCodeSection": "QR code",
+    "qrImageUnavailable": "QR image not available.",
+    "qrWillBeActiveFrom": "Will be active from",
+    "qrActiveIn": "Active in {{countdown}}",
+    "validationHistory": {
+      "title": "Validation history",
+      "total": "Total: {{count}}",
+      "checkedBy": "Checked by",
+      "entryPoint": "Entry point",
+      "loadError": "Failed to load validation history.",
+      "noHistory": "The guest has not validated this pass yet.",
+      "methodQr": "QR",
+      "methodManual": "Manual"
+    }
   },
   "home": {
     "badge": "Workspace operations platform",
@@ -1892,7 +1940,12 @@
     "publishingPlain": "Publishing…",
     "publish": "Publish",
     "formErrorTitleText": "Please fill in the title and text of the announcement.",
-    "formErrorCompany": "Select a recipient company or switch to «BC»."
+    "formErrorCompany": "Select a recipient company or switch to «BC».",
+    "unread": "Unread",
+    "buildingScope": "BC",
+    "markRead": "Mark as read",
+    "read": "Read",
+    "deleteAria": "Delete announcement"
   },
   "calendar": {
     "pageTitle": "Company calendar",

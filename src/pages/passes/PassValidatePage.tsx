@@ -9,6 +9,7 @@ import { useUser } from '@/shared/hooks/useAuth';
 import { cn } from '@/shared/lib/cn';
 import type { PassValidationResponse } from '@/shared/types';
 import { getApiError } from '@/shared/lib/getApiError';
+import { fmtDate, fmtDateTime } from '@/shared/lib/formatDate';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -27,25 +28,11 @@ const REASON_SUBTITLE_KEYS: Record<import('@/shared/types').PassValidationFailur
 };
 
 function formatDateTime(iso: string): string {
-  const d = new Date(iso);
-  const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
-  return `${d.getDate()} ${MONTHS[d.getMonth()]} в ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
-
-function fmtDate(iso: string): string {
-  const d = new Date(iso);
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const yyyy = d.getFullYear();
-  return `${dd}.${mm}.${yyyy}`;
+  return fmtDateTime(iso, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
 function formatPeriod(from: string, until: string): string {
-  const df = new Date(from);
-  const dt = new Date(until);
-  const fromTime = `${String(df.getHours()).padStart(2, '0')}:${String(df.getMinutes()).padStart(2, '0')}`;
-  const untilTime = `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
-  return `${fmtDate(from)}, ${fromTime} — ${fmtDate(until)}, ${untilTime}`;
+  return `${fmtDateTime(from, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })} — ${fmtDateTime(until, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
 }
 
 const CAMERA_CONSTRAINTS_CHAIN: MediaStreamConstraints[] = [

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
+import { fmtDateTime } from '@/shared/lib/formatDate';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useUser } from '@/shared/hooks/useAuth';
@@ -16,7 +17,7 @@ function fmt(value: string | null | undefined) {
   if (!value) return '—';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString('ru-RU');
+  return fmtDateTime(date);
 }
 
 export default function AccessLogPage() {

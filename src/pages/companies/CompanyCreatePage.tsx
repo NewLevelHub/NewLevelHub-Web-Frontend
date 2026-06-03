@@ -4,11 +4,9 @@ import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useNavigate } from 'react-router';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
-  ArrowLeft,
   Building2,
   Upload,
-  AlertTriangle,
-  Check,
+  Plus,
 } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
@@ -23,6 +21,7 @@ import {
 import { cn } from '@/shared/lib/cn';
 import { useAuth } from '@/shared/hooks/useAuth';
 import type { Company, ServiceFloor } from '@/shared/types';
+import { inputCls } from '@/pages/resources/utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -44,12 +43,7 @@ const CATEGORY_MAX_LEN = 50;
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function inputClass(hasError: boolean) {
-  return cn(
-    'w-full px-3 py-2 text-sm rounded-lg border text-primary focus:outline-none focus:ring-2 focus:border-transparent',
-    hasError
-      ? 'border-red-400 focus:ring-red-500'
-      : 'border-gray-300 focus:ring-blue-500',
-  );
+  return cn(inputCls, hasError && 'border-red-400 focus:ring-red-500/20');
 }
 
 const basicPlanLimits = COMPANY_PLAN_DEFAULT_LIMITS[COMPANY_TIERS.BASIC];
@@ -88,9 +82,9 @@ function TagInput({ tags, onChange, placeholder }: TagInputProps) {
   }
 
   return (
-    <div className="mt-1 flex flex-wrap gap-1.5 rounded-lg border border-default bg-surface px-3 py-2 focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-brand min-h-[38px]">
+    <div className="mt-1 flex flex-wrap gap-1.5 rounded-[var(--radius-sm)] border border-default bg-surface px-3 py-2 focus-within:ring-2 focus-within:ring-[color:var(--brand)]/20 focus-within:border-[color:var(--brand)] min-h-[38px]">
       {tags.map(tag => (
-        <span key={tag} className="inline-flex items-center gap-1 rounded bg-raised px-2 py-0.5 text-xs font-medium text-secondary">
+        <span key={tag} className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] bg-raised px-2 py-0.5 text-xs font-medium text-secondary">
           {tag}
           <button
             type="button"
@@ -248,298 +242,287 @@ export default function CompanyCreatePage() {
   }
 
   return (
-    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-2xl mx-auto space-y-6">
+    <div className="space-y-5">
       {/* Header */}
-      <div>
+      <div className="space-y-1">
         <button
           type="button"
           onClick={() => navigate(companiesBasePath)}
-          className="inline-flex items-center gap-2 text-sm font-medium text-muted hover:text-primary mb-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
-          aria-label={t('companies.backToListCreateAria')}
+          className="text-sm font-medium text-muted transition-colors hover:text-primary"
         >
-          <ArrowLeft size={16} aria-hidden="true" />
           {t('companies.backToList')}
         </button>
-        <h1 className="text-2xl font-bold text-primary">{t('companies.createTitle')}</h1>
-        <p className="mt-1 text-sm text-muted">{t('companies.createSubtitle')}</p>
+        <h1 className="text-xl font-semibold text-primary">{t('companies.createTitle')}</h1>
+        <p className="text-sm text-muted">{t('companies.createSubtitle')}</p>
       </div>
 
       {/* Form card */}
-      <section
-        className="bg-surface rounded-2xl border border-default shadow-sm p-6"
-        aria-label={t('companies.createSection')}
-      >
-        <form onSubmit={handleSubmit} noValidate className="space-y-5">
-          {generalError && (
-            <div
-              role="alert"
-              className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm"
-            >
-              <AlertTriangle size={15} className="shrink-0" aria-hidden="true" />
-              {generalError}
-            </div>
-          )}
-
-          {/* Logo upload */}
+      <div className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
+        {/* Card header */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[color:var(--border-faint)]">
           <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">{t('companies.logoLabel')}</p>
-            <div className="flex items-center gap-4">
-              {logoPreview ? (
-                <img
-                  src={logoPreview}
-                  alt={t('companies.logoPreview')}
-                  className="w-16 h-16 rounded-xl object-cover border border-default"
-                />
-              ) : (
-                <div
-                  className="w-16 h-16 rounded-xl bg-blue-50 flex items-center justify-center border border-default border-dashed"
-                  aria-hidden="true"
-                >
-                  <Building2 className="w-7 h-7 text-blue-300" />
-                </div>
-              )}
-              <div className="space-y-1">
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-surface border border-gray-300 rounded-lg hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors"
-                >
-                  <Upload size={14} aria-hidden="true" />
-                  {t('companies.selectImage')}
-                </button>
-                <p className="text-xs text-secondary">{t('companies.logoHint')}</p>
+            <h2 className="text-base font-semibold text-primary tracking-[-0.015em]">
+              {t('companies.createTitle')}
+            </h2>
+            <p className="text-xs text-muted mt-0.5">{t('companies.createSubtitle')}</p>
+          </div>
+        </div>
+
+        {/* Form body */}
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="px-6 py-5 space-y-4">
+            {generalError && (
+              <div className="rounded-[var(--radius-sm)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {generalError}
               </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                lang={dateLocale}
-                onChange={handleLogoChange}
-                className="sr-only"
-                aria-label={t('companies.selectLogoFile')}
-              />
-            </div>
-          </div>
-
-          <hr className="border-default" />
-
-          {/* Name */}
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              {t('companies.nameLabel')} <span className="text-red-500" aria-hidden="true">*</span>
-            </label>
-            <input
-              id="name"
-              type="text"
-              required
-              placeholder="Acme Corp"
-              value={form.name}
-              onChange={(e) => handleField('name', e.target.value)}
-              className={inputClass(!!fieldErrors.name)}
-              aria-describedby={fieldErrors.name ? 'name-error' : undefined}
-              maxLength={255}
-            />
-            {fieldErrors.name && (
-              <p id="name-error" className="mt-1 text-xs text-red-600" role="alert">
-                {fieldErrors.name}
-              </p>
             )}
-          </div>
 
-          {/* Description */}
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-              {t('companies.descriptionLabel')}
-            </label>
-            <textarea
-              id="description"
-              rows={3}
-              value={form.description}
-              onChange={(e) => handleField('description', e.target.value)}
-              className={cn(inputClass(false), 'resize-none')}
-            />
-          </div>
-
-          {/* Categories */}
-          <div>
-            <label className="block text-sm font-medium text-secondary mb-1">
-              {t('companies.categoriesCol')}
-            </label>
-            <TagInput
-              tags={form.categories}
-              onChange={cats => setForm(prev => ({ ...prev, categories: cats }))}
-              placeholder={t('companies.categoriesPlaceholder')}
-            />
-            <p className="mt-1 text-xs text-muted">{t('companies.categoriesHint')}</p>
-          </div>
-
-          <hr className="border-default" />
-          <p className="text-sm font-semibold text-gray-700">{t('companies.locationSection')}</p>
-
-          <div className="grid grid-cols-2 gap-4">
-            {/* Floor */}
-            <div>
-              <label htmlFor="floor_id" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('companies.floorLabel')}
-              </label>
-              <select
-                id="floor_id"
-                value={form.floor_id ?? ''}
-                disabled={floorsLoading}
-                onChange={(e) => setForm(f => ({ ...f, floor_id: e.target.value ? Number(e.target.value) : null }))}
-                className={inputClass(!!fieldErrors.floor_id)}
-              >
-                <option value="">{t('resources.create.floorSelectDefault')}</option>
-                {floorsData.map((f) => (
-                  <option key={f.id} value={String(f.id)}>
-                    {f.name
-                      ? t('resources.create.floorOptionWithName', { number: f.number, name: f.name })
-                      : t('resources.create.floorOptionNoName', { number: f.number })}
-                  </option>
-                ))}
-              </select>
-              {fieldErrors.floor_id && (
-                <p className="mt-1 text-xs text-red-600" role="alert">{fieldErrors.floor_id}</p>
-              )}
+            {/* Logo upload */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-secondary">{t('companies.logoLabel')}</label>
+              <div className="flex items-center gap-3">
+                {logoPreview ? (
+                  <img
+                    src={logoPreview}
+                    alt=""
+                    className="w-12 h-12 rounded-lg object-cover border border-default shrink-0"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-lg bg-raised flex items-center justify-center border border-default shrink-0">
+                    <Building2 className="w-5 h-5 text-[color:var(--text-muted)]" />
+                  </div>
+                )}
+                <div className="flex flex-col gap-1">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium text-secondary border border-default rounded-[var(--radius-sm)] hover:bg-raised transition-colors"
+                  >
+                    <Upload size={13} />
+                    {t('companies.selectImage')}
+                  </button>
+                  <p className="text-xs text-muted">{t('companies.logoHint')}</p>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  lang={dateLocale}
+                  onChange={handleLogoChange}
+                  className="sr-only"
+                  aria-label={t('companies.selectLogoFile')}
+                />
+              </div>
             </div>
 
-            {/* Office number */}
+            {/* Name */}
             <div>
-              <label htmlFor="office_number" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('companies.officeNumberLabel')}
+              <label htmlFor="name" className="block text-xs font-medium text-secondary mb-1">
+                {t('companies.nameLabel')} <span className="text-red-500" aria-hidden="true">*</span>
               </label>
               <input
-                id="office_number"
+                id="name"
                 type="text"
-                placeholder="301"
-                value={form.office_number}
-                onChange={(e) => handleField('office_number', e.target.value)}
-                className={inputClass(!!fieldErrors.office_number)}
-                maxLength={50}
+                required
+                placeholder="Acme Corp"
+                value={form.name}
+                onChange={(e) => handleField('name', e.target.value)}
+                className={inputClass(!!fieldErrors.name)}
+                aria-describedby={fieldErrors.name ? 'name-error' : undefined}
+                maxLength={255}
               />
-            </div>
-          </div>
-
-          <hr className="border-default" />
-          <p className="text-sm font-semibold text-gray-700">{t('companies.planSection')}</p>
-
-          {/* Plan */}
-          <div>
-            <label htmlFor="plan" className="block text-sm font-medium text-gray-700 mb-1">
-              {t('companies.planLabel')}
-            </label>
-            <select
-              id="plan"
-              value={form.plan}
-              onChange={(e) => handleField('plan', e.target.value)}
-              className={inputClass(!!fieldErrors.plan)}
-            >
-              <option value={COMPANY_TIERS.BASIC}>{t('companies.planBasic')}</option>
-              <option value={COMPANY_TIERS.STANDARD}>{t('companies.planStandard')}</option>
-              <option value={COMPANY_TIERS.PREMIUM}>{t('companies.planPremium')}</option>
-            </select>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Max employees */}
-            <div>
-              <label htmlFor="max_employees" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('companies.maxEmployeesLabel')}
-              </label>
-              <input
-                id="max_employees"
-                type="number"
-                min={1}
-                value={form.max_employees}
-                onChange={(e) => handleField('max_employees', e.target.value)}
-                className={inputClass(!!fieldErrors.max_employees)}
-                aria-describedby={fieldErrors.max_employees ? 'max-emp-error' : undefined}
-              />
-              {fieldErrors.max_employees && (
-                <p id="max-emp-error" className="mt-1 text-xs text-red-600" role="alert">
-                  {fieldErrors.max_employees}
+              {fieldErrors.name && (
+                <p id="name-error" className="text-xs text-red-600 mt-0.5" role="alert">
+                  {fieldErrors.name}
                 </p>
               )}
             </div>
 
-            {/* Max boards */}
+            {/* Description */}
             <div>
-              <label htmlFor="max_boards" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('companies.maxBoardsLabel')}
+              <label htmlFor="description" className="block text-xs font-medium text-secondary mb-1">
+                {t('companies.descriptionLabel')}
               </label>
-              <input
-                id="max_boards"
-                type="number"
-                min={1}
-                value={form.max_boards}
-                onChange={(e) => handleField('max_boards', e.target.value)}
-                className={inputClass(!!fieldErrors.max_boards)}
-                aria-describedby={fieldErrors.max_boards ? 'max-boards-error' : undefined}
+              <textarea
+                id="description"
+                rows={3}
+                value={form.description}
+                onChange={(e) => handleField('description', e.target.value)}
+                className={cn(inputClass(false), 'resize-none h-auto py-2')}
               />
-              {fieldErrors.max_boards && (
-                <p id="max-boards-error" className="mt-1 text-xs text-red-600" role="alert">
-                  {fieldErrors.max_boards}
-                </p>
-              )}
             </div>
 
-            {/* Storage limit */}
+            {/* Categories */}
             <div>
-              <label htmlFor="storage_limit_gb" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('companies.storageLabel')}
+              <label className="block text-xs font-medium text-secondary mb-1">
+                {t('companies.categoriesCol')}
               </label>
-              <input
-                id="storage_limit_gb"
-                type="number"
-                min={0}
-                step="0.1"
-                value={form.storage_limit_gb}
-                onChange={(e) => handleField('storage_limit_gb', e.target.value)}
-                className={inputClass(!!fieldErrors.storage_limit_gb)}
-                aria-describedby={fieldErrors.storage_limit_gb ? 'storage-error' : undefined}
+              <TagInput
+                tags={form.categories}
+                onChange={cats => setForm(prev => ({ ...prev, categories: cats }))}
+                placeholder={t('companies.categoriesPlaceholder')}
               />
-              {fieldErrors.storage_limit_gb && (
-                <p id="storage-error" className="mt-1 text-xs text-red-600" role="alert">
-                  {fieldErrors.storage_limit_gb}
-                </p>
-              )}
+              <p className="mt-1 text-xs text-muted">{t('companies.categoriesHint')}</p>
+            </div>
+
+            {/* Location section */}
+            <div className="rounded-xl border border-[color:var(--border-faint)] bg-raised px-4 py-3 space-y-3">
+              <p className="text-xs font-semibold text-secondary">{t('companies.locationSection')}</p>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Floor */}
+                <div>
+                  <label htmlFor="floor_id" className="block text-xs font-medium text-secondary mb-1">
+                    {t('companies.floorLabel')}
+                  </label>
+                  <select
+                    id="floor_id"
+                    value={form.floor_id ?? ''}
+                    disabled={floorsLoading}
+                    onChange={(e) => setForm(f => ({ ...f, floor_id: e.target.value ? Number(e.target.value) : null }))}
+                    className={inputClass(!!fieldErrors.floor_id)}
+                  >
+                    <option value="">{t('resources.create.floorSelectDefault')}</option>
+                    {floorsData.map((f) => (
+                      <option key={f.id} value={String(f.id)}>
+                        {f.name
+                          ? t('resources.create.floorOptionWithName', { number: f.number, name: f.name })
+                          : t('resources.create.floorOptionNoName', { number: f.number })}
+                      </option>
+                    ))}
+                  </select>
+                  {fieldErrors.floor_id && (
+                    <p className="text-xs text-red-600 mt-0.5" role="alert">{fieldErrors.floor_id}</p>
+                  )}
+                </div>
+
+                {/* Office number */}
+                <div>
+                  <label htmlFor="office_number" className="block text-xs font-medium text-secondary mb-1">
+                    {t('companies.officeNumberLabel')}
+                  </label>
+                  <input
+                    id="office_number"
+                    type="text"
+                    placeholder="301"
+                    value={form.office_number}
+                    onChange={(e) => handleField('office_number', e.target.value)}
+                    className={inputClass(!!fieldErrors.office_number)}
+                    maxLength={50}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Plan section */}
+            <div className="rounded-xl border border-[color:var(--border-faint)] bg-raised px-4 py-3 space-y-3">
+              <p className="text-xs font-semibold text-secondary">{t('companies.planSection')}</p>
+
+              {/* Plan */}
+              <div>
+                <label htmlFor="plan" className="block text-xs font-medium text-secondary mb-1">
+                  {t('companies.planLabel')}
+                </label>
+                <select
+                  id="plan"
+                  value={form.plan}
+                  onChange={(e) => handleField('plan', e.target.value)}
+                  className={inputClass(!!fieldErrors.plan)}
+                >
+                  <option value={COMPANY_TIERS.BASIC}>{t('companies.planBasic')}</option>
+                  <option value={COMPANY_TIERS.STANDARD}>{t('companies.planStandard')}</option>
+                  <option value={COMPANY_TIERS.PREMIUM}>{t('companies.planPremium')}</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Max employees */}
+                <div>
+                  <label htmlFor="max_employees" className="block text-xs font-medium text-secondary mb-1">
+                    {t('companies.maxEmployeesLabel')}
+                  </label>
+                  <input
+                    id="max_employees"
+                    type="number"
+                    min={1}
+                    value={form.max_employees}
+                    onChange={(e) => handleField('max_employees', e.target.value)}
+                    className={inputClass(!!fieldErrors.max_employees)}
+                    aria-describedby={fieldErrors.max_employees ? 'max-emp-error' : undefined}
+                  />
+                  {fieldErrors.max_employees && (
+                    <p id="max-emp-error" className="text-xs text-red-600 mt-0.5" role="alert">
+                      {fieldErrors.max_employees}
+                    </p>
+                  )}
+                </div>
+
+                {/* Max boards */}
+                <div>
+                  <label htmlFor="max_boards" className="block text-xs font-medium text-secondary mb-1">
+                    {t('companies.maxBoardsLabel')}
+                  </label>
+                  <input
+                    id="max_boards"
+                    type="number"
+                    min={1}
+                    value={form.max_boards}
+                    onChange={(e) => handleField('max_boards', e.target.value)}
+                    className={inputClass(!!fieldErrors.max_boards)}
+                    aria-describedby={fieldErrors.max_boards ? 'max-boards-error' : undefined}
+                  />
+                  {fieldErrors.max_boards && (
+                    <p id="max-boards-error" className="text-xs text-red-600 mt-0.5" role="alert">
+                      {fieldErrors.max_boards}
+                    </p>
+                  )}
+                </div>
+
+                {/* Storage limit */}
+                <div>
+                  <label htmlFor="storage_limit_gb" className="block text-xs font-medium text-secondary mb-1">
+                    {t('companies.storageLabel')}
+                  </label>
+                  <input
+                    id="storage_limit_gb"
+                    type="number"
+                    min={0}
+                    step="0.1"
+                    value={form.storage_limit_gb}
+                    onChange={(e) => handleField('storage_limit_gb', e.target.value)}
+                    className={inputClass(!!fieldErrors.storage_limit_gb)}
+                    aria-describedby={fieldErrors.storage_limit_gb ? 'storage-error' : undefined}
+                  />
+                  {fieldErrors.storage_limit_gb && (
+                    <p id="storage-error" className="text-xs text-red-600 mt-0.5" role="alert">
+                      {fieldErrors.storage_limit_gb}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Submit */}
-          <div className="flex items-center gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={isPending}
-              className={cn(
-                'inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
-                isPending
-                  ? 'bg-blue-300 text-primary cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white',
-              )}
-            >
-              {isPending ? (
-                <>
-                  <span
-                    className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin"
-                    aria-hidden="true"
-                  />{t('common.creatingPlain')}</>
-              ) : (
-                <>
-                  <Check size={15} aria-hidden="true" />
-                  {t('companies.createCompany')}
-                </>
-              )}
-            </button>
+          {/* Footer */}
+          <div className="flex justify-end gap-2 border-t border-[color:var(--border-faint)] px-6 pt-4 pb-5">
             <button
               type="button"
               onClick={() => navigate(companiesBasePath)}
+              className="h-8 px-4 text-sm font-medium text-secondary hover:bg-raised rounded-[var(--radius-sm)] transition-colors"
+            >
+              {t('common.cancel')}
+            </button>
+            <button
+              type="submit"
               disabled={isPending}
-              className="inline-flex items-center px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
-            >{t('common.cancel')}</button>
+              className="inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] text-white bg-[color:var(--brand)] hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <Plus size={14} />
+              {isPending ? t('common.savingPlain') : t('companies.createCompany')}
+            </button>
           </div>
         </form>
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }

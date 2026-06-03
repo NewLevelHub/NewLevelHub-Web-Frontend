@@ -1,54 +1,97 @@
-import { useTranslation } from 'react-i18next';
+import React from 'react';
 import { Link } from 'react-router';
+import { MoreHorizontal } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { fmtDate, fmtTime } from '@/shared/lib/formatDate';
 
 import { type PassStatus } from '@/shared/config/constants';
+import { cn } from '@/shared/lib/cn';
 import type { GuestPass } from '@/shared/types';
 import { PassStatusBadge } from '@/pages/passes/components/PassStatusBadge';
 
 interface PassRowProps {
   pass: GuestPass;
   isSuperadmin: boolean;
+  onRowClick?: (id: number) => void;
 }
 
-export function PassRow({ pass, isSuperadmin }: PassRowProps) {
-  const { t } = useTranslation();
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map((s) => s[0] ?? '')
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+export const PassRow = React.memo(function PassRow({ pass, onRowClick }: PassRowProps) {
+  const { i18n } = useTranslation();
+  void i18n.language; // subscribes to locale changes so fmtDate/fmtTime re-run
   return (
-    <tr className="text-secondary">
-      <td className="px-4 py-3 align-top">
-        <div className="font-medium text-primary">{pass.guest_name}</div>
-        <div className="text-xs text-secondary break-all">{pass.guest_email}</div>
+    <tr
+      className={cn(
+        'group border-b border-[color:var(--border)] transition-colors',
+        onRowClick && 'cursor-pointer hover:bg-[color:var(--bg-hover)]',
+      )}
+      onClick={onRowClick ? () => onRowClick(pass.id) : undefined}
+    >
+      {/* Guest: mini-avatar + name + email */}
+      <td className="px-3 py-3 align-middle">
+        <div className="flex items-center gap-2.5">
+          <div
+            aria-hidden="true"
+            className="w-[30px] h-[30px] rounded-full bg-[color:var(--bg-raised)] flex items-center justify-center text-[11px] font-semibold text-[color:var(--text-secondary)] shrink-0 select-none"
+          >
+            {getInitials(pass.guest_name)}
+          </div>
+          <div>
+            <div className="font-medium text-[color:var(--text-primary)] text-[13px]">{pass.guest_name}</div>
+            <div className="text-[11px] text-[color:var(--text-muted)]">{pass.guest_email}</div>
+          </div>
+        </div>
       </td>
-      <td className="px-4 py-3 text-secondary align-top">
-        <div>{pass.created_by_name || '—'}</div>
-        {isSuperadmin ? (
-          <div className="text-xs text-muted break-words">{pass.created_by_company_name || 'Без компании'}</div>
-        ) : null}
+
+      {/* Visit date */}
+      <td className="px-3 py-3 align-middle text-[color:var(--text-secondary)] text-[13px]">
+        {fmtDate(pass.valid_from)}
       </td>
-      <td className="px-4 py-3 align-top">{pass.purpose || '—'}</td>
-      <td className="px-4 py-3 text-xs text-secondary align-top whitespace-nowrap">
-        {new Date(pass.valid_from).toLocaleString('ru-RU')}
-        <br />
-        {new Date(pass.valid_until).toLocaleString('ru-RU')}
+
+      {/* Visit time range — monospace */}
+      <td className="px-3 py-3 align-middle font-mono text-[12px] text-[color:var(--text-primary)] whitespace-nowrap">
+        {fmtTime(pass.valid_from)}
+        {' — '}
+        {fmtTime(pass.valid_until)}
       </td>
-      <td className="px-4 py-3 align-top whitespace-nowrap">
+
+      {/* Status badge */}
+      <td className="px-3 py-3 align-middle">
         <PassStatusBadge status={pass.status as PassStatus} />
       </td>
-      <td className="px-4 py-3 text-xs text-secondary align-top">
-        {pass.last_validated_by || '—'}
-      </td>
-      <td className="px-4 py-3 text-xs text-secondary align-top whitespace-nowrap">
-        {pass.last_validated_at
-          ? new Date(pass.last_validated_at).toLocaleString('ru-RU')
-          : '—'}
-      </td>
-      <td className="px-4 py-3 text-xs text-secondary align-top">
-        {pass.last_method || '—'}
-      </td>
-      <td className="px-4 py-3 text-right align-top whitespace-nowrap">
-        <Link to={`/passes/${pass.id}`} className="text-brand hover:text-brand">
-          Открыть
-        </Link>
+
+      {/* Actions */}
+      <td
+        className="px-3 py-3 align-middle text-right pr-[18px]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="inline-flex items-center gap-1.5">
+          {onRowClick && (
+            <button
+              type="button"
+              aria-label="QR"
+              onClick={() => onRowClick(pass.id)}
+              className="h-[26px] px-2 text-[12px] font-medium rounded-[var(--radius-sm)] border border-[color:var(--border)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] hover:text-[color:var(--text-primary)] transition-colors"
+            >
+              QR
+            </button>
+          )}
+          <Link
+            to={`/passes/${pass.id}`}
+            className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors"
+          >
+            <MoreHorizontal className="w-4 h-4" />
+          </Link>
+        </div>
       </td>
     </tr>
   );
-}
+});

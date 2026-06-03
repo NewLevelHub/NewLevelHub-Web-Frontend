@@ -22,6 +22,7 @@ import { useAuth } from '@/shared/hooks/useAuth';
 import { isCompanyNotAssignedError } from '@/shared/lib/apiError';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
+import { fmtDate } from '@/shared/lib/formatDate';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import type { Company, PaginatedResponse } from '@/shared/types';
 
@@ -613,10 +614,7 @@ function CompanyRow({
   const tierLabelKey = COMPANY_TIER_LABEL_KEYS[company.plan as keyof typeof COMPANY_TIER_LABEL_KEYS];
   const tierClass = TIER_BADGE[company.plan] ?? 'bg-raised text-secondary';
 
-  const createdDate = new Date(company.created_at).toLocaleDateString('ru-RU', {
-    month: 'short',
-    year: 'numeric',
-  });
+  const createdDate = fmtDate(company.created_at, { month: 'short', year: 'numeric' });
 
   return (
     <tr className="group border-b border-[color:var(--border)] hover:bg-[color:var(--bg-hover)] transition-colors">

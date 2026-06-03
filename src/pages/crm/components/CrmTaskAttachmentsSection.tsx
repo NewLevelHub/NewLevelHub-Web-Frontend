@@ -195,11 +195,7 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
         <ul className="space-y-1.5" role="list" aria-label={t('common.attachmentsList')}>
           {attachments.map((attachment) => {
             const IconComponent = getFileIcon(attachment.mime_type);
-            const formattedDate = new Date(attachment.created_at).toLocaleDateString('ru-RU', {
-              day: 'numeric',
-              month: 'short',
-              year: 'numeric',
-            });
+            const formattedDate = new Date(attachment.created_at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', year: 'numeric' });
             const isDeleting = deleteMutation.isPending && deleteMutation.variables === attachment.id;
             const isDownloading =
               downloadMutation.isPending && downloadMutation.variables?.id === attachment.id;

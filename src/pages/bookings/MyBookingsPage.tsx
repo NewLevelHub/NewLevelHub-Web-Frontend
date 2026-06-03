@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { Link } from 'react-router';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, MoreHorizontal, Plus, Repeat } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
+import { fmtDate, fmtDateTime, fmtDayMonth, fmtTime } from '@/shared/lib/formatDate';
 import {
   BOOKING_STATUSES,
   BOOKING_STATUS_LABEL_KEYS,
@@ -521,7 +522,7 @@ export default function MyBookingsPage() {
                         </p>
                         {b.checked_in_at && (
                           <p className="text-[11px] text-[color:var(--status-free-text)] mt-0.5">
-                            {t('booking.myBookings.checkedIn', { time: new Date(b.checked_in_at).toLocaleString('ru-RU') })}
+                            {t('booking.myBookings.checkedIn', { time: fmtDateTime(b.checked_in_at) })}
                           </p>
                         )}
                       </td>
@@ -534,11 +535,11 @@ export default function MyBookingsPage() {
                         </div>
                       </td>
                       <td className="px-3 py-2.5 align-middle font-mono text-[color:var(--text-primary)] whitespace-nowrap">
-                        {start.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                        {fmtDayMonth(start)}
                         {' · '}
-                        {start.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                        {fmtTime(start)}
                         {' — '}
-                        {end.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                        {fmtTime(end)}
                       </td>
                       <td className="px-3 py-2.5 align-middle">
                         <StatusBadge status={b.status} />

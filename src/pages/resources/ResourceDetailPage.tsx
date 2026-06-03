@@ -458,7 +458,7 @@ export default function ResourceDetailPage() {
             <button
               type="submit"
               disabled={saveMutation.isPending}
-              className="inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] text-[color:var(--text-onbrand)] bg-[color:var(--brand)] hover:bg-[color:var(--brand-hover)] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] text-white bg-[color:var(--brand)] hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Save size={14} />
               {saveMutation.isPending ? t('common.saving') : t('common.save')}

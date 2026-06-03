@@ -21,6 +21,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { SUPERADMIN_UI_PREFIX, USER_ROLES, USER_ROLE_LABEL_KEYS } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
+import { fmtDate, fmtDateTime } from '@/shared/lib/formatDate';
 import { mapApiUser } from '@/shared/lib/mapUser';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
@@ -43,23 +44,11 @@ const ROLE_BADGE_COLORS: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 function formatDate(iso: string | null | undefined): string {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  return `${day}.${month}.${year}`;
+  return fmtDate(iso, { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 function formatDateTime(iso: string | null | undefined): string {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  const hours = String(d.getHours()).padStart(2, '0');
-  const minutes = String(d.getMinutes()).padStart(2, '0');
-  return `${day}.${month}.${year} ${hours}:${minutes}`;
+  return fmtDateTime(iso);
 }
 
 function getInitials(firstName: string, lastName: string): string {
@@ -568,8 +557,7 @@ export default function UserDetailPage() {
 
       {/* Date details */}
       <p className="text-xs text-secondary">
-        Зарегистрирован: {formatDate(user.date_joined)} · Последний вход:{' '}
-        {formatDate(user.last_login)}
+        {t('users.detail.registered', { date: formatDate(user.date_joined), lastLogin: formatDate(user.last_login) })}
       </p>
     </main>
   );

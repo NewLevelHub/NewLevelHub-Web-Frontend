@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
+import { fmtDateTime } from '@/shared/lib/formatDate';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -23,14 +24,7 @@ function formatBytes(value: number) {
 }
 
 function formatDateTime(value: string | null) {
-  if (!value) return '—';
-  return new Date(value).toLocaleString('ru-RU', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return fmtDateTime(value);
 }
 
 export default function AnalyticsDashboardPage() {

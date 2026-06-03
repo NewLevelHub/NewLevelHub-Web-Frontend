@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Loader2, Minus, Pencil, Plus, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 
 import { cn } from '@/shared/lib/cn';
+import { fmtTime } from '@/shared/lib/formatDate';
 import type { UseMapLogicReturn } from '@/pages/map/hooks/useMapLogic';
 import {
   LEGEND_ITEM_COLORS,
@@ -418,10 +419,7 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
               {floorMap && !mapLoading && !mapError && !editMode && (
                 <span className="text-[11px] text-muted">
                   {t('map.updatedAt')}{' '}
-                  {new Date(floorMap.at_time).toLocaleTimeString('ru-RU', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
+                  {fmtTime(floorMap.at_time)}
                 </span>
               )}
             </div>

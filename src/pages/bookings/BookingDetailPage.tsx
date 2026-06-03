@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
+import { fmtDateTime } from '@/shared/lib/formatDate';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -253,7 +254,7 @@ export default function BookingDetailPage() {
       <section className="rounded-2xl border border-default bg-surface p-6 shadow-sm space-y-3">
         <h1 className="text-xl font-bold text-primary">{data.resource_name}</h1>
         <p className="text-sm text-muted">
-          {start.toLocaleString('ru-RU')} — {end.toLocaleString('ru-RU')}
+          {fmtDateTime(start)} — {fmtDateTime(end)}
         </p>
         <p className="text-sm">
           <span className="font-medium text-secondary">{t('booking.detail.statusLabel')} </span>
@@ -274,7 +275,7 @@ export default function BookingDetailPage() {
         {data.checked_in_at ? (
           <p className="text-sm text-muted">
             <span className="font-medium text-secondary">{t('booking.detail.checkInLabel')} </span>
-            {new Date(data.checked_in_at).toLocaleString()}
+            {fmtDateTime(data.checked_in_at)}
           </p>
         ) : null}
         {data.description ? <p className="text-sm text-muted">{data.description}</p> : null}

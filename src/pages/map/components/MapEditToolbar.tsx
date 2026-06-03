@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ToggleLeft, ToggleRight } from 'lucide-react';
 
 import { cn } from '@/shared/lib/cn';
+import { fmtTime } from '@/shared/lib/formatDate';
 
 export interface MapEditToolbarProps {
   floorName: string;
@@ -44,10 +45,7 @@ export const MapEditToolbar = memo<MapEditToolbarProps>(
           {!editMode ? (
             <p className="text-xs text-secondary">
               {t('map.updatedAt')}{' '}
-              {new Date(atTimeIso).toLocaleTimeString('ru-RU', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              {fmtTime(atTimeIso)}
             </p>
           ) : null}
         </div>
