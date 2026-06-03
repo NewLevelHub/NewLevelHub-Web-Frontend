@@ -15,7 +15,7 @@ export function PassRow({ pass, isSuperadmin }: PassRowProps) {
   return (
     <tr className="text-secondary">
       <td className="px-4 py-3 align-top">
-        <div className="font-medium text-primary">{pass.guest_name}</div>
+        <div className="font-medium text-primary break-all">{pass.guest_name}</div>
         <div className="text-xs text-secondary break-all">{pass.guest_email}</div>
       </td>
       <td className="px-4 py-3 text-secondary align-top">
@@ -24,7 +24,7 @@ export function PassRow({ pass, isSuperadmin }: PassRowProps) {
           <div className="text-xs text-muted break-words">{pass.created_by_company_name || 'Без компании'}</div>
         ) : null}
       </td>
-      <td className="px-4 py-3 align-top">{pass.purpose || '—'}</td>
+      <td className="px-4 py-3 align-top break-all">{pass.purpose || '—'}</td>
       <td className="px-4 py-3 text-xs text-secondary align-top whitespace-nowrap">
         {new Date(pass.valid_from).toLocaleString('ru-RU')}
         <br />
