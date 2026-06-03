@@ -20,3 +20,5 @@ Read `CLAUDE.md` for the full project context before writing any code.
 3. Use `@/shared/config/constants.ts` for all enum values
 4. Use `@/shared/types/index.ts` for entity interfaces
 5. Use `cn()` from `@/shared/lib/cn.ts` for all classname logic
+
+Testing branch protection rule
