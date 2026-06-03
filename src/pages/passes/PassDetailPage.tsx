@@ -6,7 +6,6 @@ import { Info } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { PASS_STATUSES, USER_ROLES, type PassStatus } from '@/shared/config/constants';
-import { useActionToast } from '@/shared/hooks/useActionToast';
 import { useUser } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
 import type { GuestPass } from '@/shared/types';
@@ -15,13 +14,14 @@ import { PassValidationsList } from '@/pages/passes/components/PassValidationsLi
 import { QRCodeView } from '@/pages/passes/components/QRCodeView';
 import { usePassCountdown } from '@/pages/passes/hooks/usePassCountdown';
 import { usePassValidations } from '@/pages/passes/hooks/usePassValidations';
+import { useTimedMessage } from '@/pages/passes/hooks/useTimedMessage';
 
 export default function PassDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams();
   const user = useUser();
   const queryClient = useQueryClient();
-  const { showToast, dismissToast, Toast, isToastVisible } = useActionToast();
+  const { message: successMessage, showMessage, clearMessage, isMessageVisible } = useTimedMessage();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['guest-pass-detail', id],
@@ -37,10 +37,10 @@ export default function PassDetailPage() {
       await apiClient.post(API.passes.resend(String(id)));
     },
     onSuccess: async () => {
+      showMessage(t('passes.resendQr'));
       await queryClient.invalidateQueries({ queryKey: ['guest-pass-detail', id] });
-      showToast(t('passes.resendQr'));
     },
-    onError: () => dismissToast(),
+    onError: () => clearMessage(),
   });
 
   const revokeMutation = useMutation({
@@ -48,11 +48,11 @@ export default function PassDetailPage() {
       await apiClient.post(API.passes.revoke(String(id)));
     },
     onSuccess: async () => {
+      showMessage(t('passes.revokeSuccess'));
       await queryClient.invalidateQueries({ queryKey: ['guest-pass-detail', id] });
       await queryClient.invalidateQueries({ queryKey: ['guest-passes'], refetchType: 'all' });
-      showToast(t('passes.revokeSuccess'));
     },
-    onError: () => dismissToast(),
+    onError: () => clearMessage(),
   });
 
   const { isNowActive } = usePassCountdown(data?.valid_from);
@@ -99,7 +99,7 @@ export default function PassDetailPage() {
             <button
               type="button"
               onClick={() => {
-                dismissToast();
+                clearMessage();
                 resendMutation.mutate();
               }}
               disabled={resendMutation.isPending}
@@ -110,7 +110,7 @@ export default function PassDetailPage() {
             <button
               type="button"
               onClick={() => {
-                dismissToast();
+                clearMessage();
                 revokeMutation.mutate();
               }}
               disabled={!canRevoke || revokeMutation.isPending}
@@ -135,7 +135,10 @@ export default function PassDetailPage() {
               {getApiError(revokeMutation.error).message}
             </div>
           ) : null}
-          {!canRevoke && !isToastVisible ? (
+          {successMessage ? (
+            <div className="mt-3 text-sm text-success">{successMessage}</div>
+          ) : null}
+          {!canRevoke && !isMessageVisible ? (
             <div className="mt-3 text-xs text-secondary">{t('passes.cannotRevoke')}</div>
           ) : null}
         </section>
@@ -179,7 +182,6 @@ export default function PassDetailPage() {
       ) : null}
 
       <QRCodeView qrImage={data.qr_image} validFrom={data.valid_from} />
-      {Toast}
     </main>
   );
 }
