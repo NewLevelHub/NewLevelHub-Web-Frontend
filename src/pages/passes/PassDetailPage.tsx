@@ -145,7 +145,7 @@ export default function PassDetailPage() {
       <section className="grid gap-4 rounded-xl border border-default bg-raised p-5 text-sm text-secondary sm:grid-cols-2">
         <div>
           <div className="text-secondary">{t('team.roleGuest')}</div>
-          <div className="font-medium text-primary">{data.guest_name}</div>
+          <div className="font-medium text-primary break-all">{data.guest_name}</div>
           <div className="text-xs text-secondary">{data.guest_email}</div>
         </div>
         <div>
@@ -154,7 +154,7 @@ export default function PassDetailPage() {
         </div>
         <div>
           <div className="text-secondary">{t('passes.purpose')}</div>
-          <div>{data.purpose || '—'}</div>
+          <div className="break-all">{data.purpose || '—'}</div>
         </div>
         <div>
           <div className="text-secondary">{t('passes.timesUsed')}</div>

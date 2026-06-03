@@ -86,9 +86,13 @@ export default function PassCreatePage() {
           <input
             value={guestName}
             onChange={(event) => setGuestName(event.target.value)}
+            maxLength={70}
             className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             required
           />
+          <span className="mt-1 block text-right text-xs text-secondary">
+            {guestName.length}/70
+          </span>
         </label>
         <label className="block text-sm text-secondary">
           {t('passes.guestEmail')}
