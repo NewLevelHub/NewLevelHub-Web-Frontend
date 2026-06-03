@@ -114,9 +114,13 @@ export default function PassCreatePage() {
             value={purpose}
             onChange={(event) => setPurpose(event.target.value)}
             rows={3}
+            maxLength={70}
             className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             required
           />
+          <span className="mt-1 block text-right text-xs text-secondary">
+            {purpose.length}/70
+          </span>
         </label>
 
         <div className="grid gap-4 sm:grid-cols-2">

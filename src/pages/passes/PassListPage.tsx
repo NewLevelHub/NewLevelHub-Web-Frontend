@@ -121,18 +121,18 @@ export default function PassListPage() {
       {!isLoading && !isError ? (
         <div className="overflow-hidden rounded-xl border border-default bg-raised">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] divide-y divide-[color:var(--border)] text-sm">
+          <table className="w-full table-fixed min-w-[900px] divide-y divide-[color:var(--border)] text-sm">
               <thead className="bg-surface text-left">
                 <tr>
-                  <th className="px-4 py-3 font-medium text-primary">{t('team.roleGuest')}</th>
-                  <th className="px-4 py-3 font-medium text-primary">{t('passes.owner')}</th>
-                  <th className="px-4 py-3 font-medium text-primary">{t('passes.columnPurpose')}</th>
-                  <th className="px-4 py-3 font-medium text-primary">{t('passes.columnPeriod')}</th>
-                  <th className="px-4 py-3 font-medium text-primary">{t('common.status')}</th>
-                  <th className="px-4 py-3 font-medium text-primary">{t('passes.columnChecker')}</th>
-                  <th className="px-4 py-3 font-medium text-primary">{t('passes.columnValidated')}</th>
-                  <th className="px-4 py-3 font-medium text-primary">{t('passes.columnMethod')}</th>
-                  <th className="px-4 py-3 font-medium text-primary text-right">{t('passes.columnDetails')}</th>
+                  <th className="w-[16%] px-4 py-3 font-medium text-primary">{t('team.roleGuest')}</th>
+                  <th className="w-[13%] px-4 py-3 font-medium text-primary">{t('passes.owner')}</th>
+                  <th className="w-[14%] px-4 py-3 font-medium text-primary">{t('passes.columnPurpose')}</th>
+                  <th className="w-[13%] px-4 py-3 font-medium text-primary">{t('passes.columnPeriod')}</th>
+                  <th className="w-[9%] px-4 py-3 font-medium text-primary">{t('common.status')}</th>
+                  <th className="w-[12%] px-4 py-3 font-medium text-primary">{t('passes.columnChecker')}</th>
+                  <th className="w-[12%] px-4 py-3 font-medium text-primary">{t('passes.columnValidated')}</th>
+                  <th className="w-[7%] px-4 py-3 font-medium text-primary">{t('passes.columnMethod')}</th>
+                  <th className="w-[4%] px-4 py-3 font-medium text-primary text-right">{t('passes.columnDetails')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[color:var(--border)]">
