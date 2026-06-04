@@ -74,6 +74,9 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
   const todayStr = dayjs().tz(TZ).format('YYYY-MM-DD');
   const maxDateDesk = maxDateStr(14);
   const maxDateParking = maxDateStr(7);
+  // Parking starts at midnight — which is always "in the past" for today,
+  // so the backend rejects same-day bookings. Earliest valid date is tomorrow.
+  const minDateParking = maxDateStr(1);
   const maxDate = isDesk ? maxDateDesk : isParking ? maxDateParking : undefined;
 
   // Fetch company members for participant multi-select (only for meeting rooms)
@@ -174,8 +177,9 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
 
   /** Client-side validation before submit */
   function validateBooking(): string | null {
+    const parkingEndDate = selectedDate ? dayjs(selectedDate).add(1, 'day').format('YYYY-MM-DD') : '';
     const startDatetime = isParking ? `${selectedDate}T00:00` : `${selectedDate}T${startTime}`;
-    const endDatetime = isParking ? `${selectedDate}T23:59` : `${selectedDate}T${endTime}`;
+    const endDatetime = isParking ? `${parkingEndDate}T00:00` : `${selectedDate}T${endTime}`;
 
     const start = dayjs.tz(startDatetime, TZ);
     const end = dayjs.tz(endDatetime, TZ);
@@ -209,8 +213,9 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      const parkingEndDate = selectedDate ? dayjs(selectedDate).add(1, 'day').format('YYYY-MM-DD') : '';
       const startDatetime = isParking ? `${selectedDate}T00:00` : `${selectedDate}T${startTime}`;
-      const endDatetime = isParking ? `${selectedDate}T23:59` : `${selectedDate}T${endTime}`;
+      const endDatetime = isParking ? `${parkingEndDate}T00:00` : `${selectedDate}T${endTime}`;
 
       const start_time = toAlmatyIso(startDatetime);
       const end_time = toAlmatyIso(endDatetime);
@@ -406,7 +411,7 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
                     id="modal-booking-date"
                     type="date"
                     required
-                    min={todayStr}
+                    min={minDateParking}
                     max={maxDateParking}
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
