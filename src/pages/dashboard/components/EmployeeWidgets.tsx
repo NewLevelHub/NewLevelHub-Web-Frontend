@@ -74,13 +74,13 @@ export function EmployeeWidgets({
       </section>
 
       {/* KPI grid — 3 cards */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Link
           to="/bookings/my"
           className="rounded-xl border border-default bg-surface p-5 flex flex-col gap-1 hover:bg-hover transition-colors"
         >
           <p className="text-xs text-muted">{t('dashboard.employee.kpi.myBookings')}</p>
-          <p className="text-3xl font-bold text-primary leading-none tracking-tight">
+          <p className="text-2xl sm:text-3xl font-bold text-primary leading-none tracking-tight">
             {data.my_bookings_today}
           </p>
         </Link>
@@ -90,7 +90,7 @@ export function EmployeeWidgets({
           className="rounded-xl border border-default bg-surface p-5 flex flex-col gap-1 hover:bg-hover transition-colors"
         >
           <p className="text-xs text-muted">{t('dashboard.employee.kpi.myTasks')}</p>
-          <p className="text-3xl font-bold text-primary leading-none tracking-tight">
+          <p className="text-2xl sm:text-3xl font-bold text-primary leading-none tracking-tight">
             {tasksTotalCount}
           </p>
         </Link>
@@ -100,14 +100,14 @@ export function EmployeeWidgets({
           className="rounded-xl border border-default bg-surface p-5 flex flex-col gap-1 hover:bg-hover transition-colors"
         >
           <p className="text-xs text-muted">{t('dashboard.employee.kpi.unread')}</p>
-          <p className="text-3xl font-bold text-primary leading-none tracking-tight">
+          <p className="text-2xl sm:text-3xl font-bold text-primary leading-none tracking-tight">
             {data.unread_notifications_count}
           </p>
         </Link>
       </div>
 
       {/* 4-col grid — 3:1 */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Left — My upcoming bookings */}
         <section className="lg:col-span-2 rounded-xl border border-default bg-surface overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-default">
@@ -140,7 +140,7 @@ export function EmployeeWidgets({
                 return (
                   <li
                     key={booking.id}
-                    className="flex items-center gap-3 px-5 py-4"
+                    className="flex flex-wrap items-center gap-3 px-5 py-4"
                   >
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand-subtle">
                       <DoorOpen size={20} className="text-brand" />

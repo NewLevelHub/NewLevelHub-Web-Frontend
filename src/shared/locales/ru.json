@@ -8,7 +8,10 @@
       "activeBookings": "Активные брони",
       "spaceLoad": "Загрузка пространств",
       "openRequests": "Открытые заявки",
-      "activeTenants": "Активные арендаторы"
+      "activeTenants": "Активные арендаторы",
+      "trendWeek": "{{delta}} за неделю",
+      "trendSpaceLoad": "{{pct}}% к прошлой нед.",
+      "trendClosedToday": "−{{count}} закрыто сегодня"
     },
     "upcomingBookings": "Ближайшие бронирования",
     "acrossAllCompanies": "по всем компаниям · сегодня",

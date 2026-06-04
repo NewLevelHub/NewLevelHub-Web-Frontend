@@ -86,7 +86,7 @@ export default function ResourceListPage() {
   return (
     <div className="space-y-4">
       {/* Page header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
         <div>
           <h1 className="text-[22px] font-bold text-[color:var(--text-primary)]">
             {t('resources.list.title')}
@@ -142,7 +142,7 @@ export default function ResourceListPage() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder={t('resources.list.searchPlaceholder')}
-              className="h-[30px] pl-7 pr-2.5 text-[12px] border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-primary)] focus:outline-none placeholder:text-[color:var(--text-muted)] w-44"
+              className="h-[30px] pl-7 pr-2.5 text-[12px] border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-primary)] focus:outline-none placeholder:text-[color:var(--text-muted)] w-full sm:w-44 min-w-0"
             />
           </div>
 
@@ -241,7 +241,7 @@ export default function ResourceListPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-[13px]" role="table">
+            <table className="w-full min-w-[500px] border-collapse text-[13px]" role="table">
               <thead className="border-b border-[color:var(--border)]">
                 <tr>
                   <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">

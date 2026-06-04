@@ -81,7 +81,7 @@ export function AppLayout() {
   const { collapsed, toggle: toggleCollapsed } = useSidebarCollapsed();
 
   return (
-    <div className="min-h-screen bg-page text-primary">
+    <div className="min-h-screen overflow-x-hidden bg-page text-primary">
       <Sidebar
         mobileOpen={mobileNavOpen}
         onCloseMobile={() => setMobileNavOpen(false)}
