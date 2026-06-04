@@ -98,6 +98,16 @@
       "meetingRoomCapacity": "Meeting room · Capacity: {{count}} ppl."
     },
     "guest": {
+      "greeting": "Welcome, {{name}}!",
+      "subtitle": "{{date}} · {{bookings}} bookings today",
+      "bookResource": "Book a resource",
+      "serviceRequest": "Service request",
+      "inviteGuest": "Invite a guest",
+      "kpi": {
+        "myBookings": "Bookings today",
+        "availableDesks": "Available desks",
+        "availableRooms": "Available rooms"
+      },
       "bcAnnouncements": "Business center announcements"
     },
     "onboarding": {
