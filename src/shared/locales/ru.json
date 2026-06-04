@@ -105,6 +105,16 @@
       "meetingRoomCapacity": "Переговорка · Вместимость: {{count}} чел."
     },
     "guest": {
+      "greeting": "Добро пожаловать, {{name}}!",
+      "subtitle": "{{date}} · {{bookings}} бронирований сегодня",
+      "bookResource": "Забронировать",
+      "serviceRequest": "Сервис-заявка",
+      "inviteGuest": "Пригласить гостя",
+      "kpi": {
+        "myBookings": "Бронирований сегодня",
+        "availableDesks": "Свободных столов",
+        "availableRooms": "Свободных переговорных"
+      },
       "bcAnnouncements": "Объявления бизнес-центра"
     },
     "onboarding": {
@@ -1375,7 +1385,8 @@
       "active": "Активные",
       "used": "Использованные",
       "expired": "Истекшие",
-      "revoked": "Отозванные"
+      "revoked": "Отозванные",
+      "createdByEmail": "Email создателя"
     },
     "reason": {
       "expired": "Срок действия истёк",

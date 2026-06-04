@@ -4,10 +4,10 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import {
   Bookmark,
   Building2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   DoorOpen,
-  Filter,
   Search,
   X,
 } from 'lucide-react';
@@ -38,7 +38,7 @@ import {
 import { useAuth } from '@/shared/hooks/useAuth';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import { cn } from '@/shared/lib/cn';
-import type { BookingResourceDetail, BookingResourceListItem, PaginatedResponse } from '@/shared/types';
+import type { BookingResourceDetail, BookingResourceListItem, PaginatedResponse, ServiceFloor } from '@/shared/types';
 
 const PAGE_SIZE = 24;
 
@@ -188,6 +188,16 @@ export default function BookingCatalogPage() {
   useEffect(() => {
     setPhotoIdx(0);
   }, [panelResource?.id]);
+
+  const { data: floorsData } = useQuery({
+    queryKey: ['service-floors'],
+    queryFn: () => apiClient.get<{ results: ServiceFloor[] }>(API.map.floors).then((r) => r.data.results),
+    staleTime: 5 * 60 * 1000,
+  });
+  const floors = useMemo(
+    () => [...(floorsData ?? [])].sort((a, b) => a.number - b.number),
+    [floorsData],
+  );
 
   const { data: preselectedResource } = useQuery({
     queryKey: ['booking-resource-detail-for-modal', preselectResourceId],
@@ -359,24 +369,27 @@ export default function BookingCatalogPage() {
           {/* Separator */}
           <span className="hidden sm:block h-4 w-px bg-border" />
 
-          {/* Floor button */}
-          <button
-            type="button"
-            onClick={() => {
-              const val = window.prompt(t('catalog.floor'), floorFilter || '');
-              if (val === null) return;
-              setFloorFilter(val.trim());
-            }}
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
-              floorFilter
-                ? 'border-brand bg-brand/10 text-brand'
-                : 'border-default text-secondary hover:bg-hover',
-            )}
-          >
-            <Filter size={13} />
-            {floorFilter ? `${t('catalog.floor')}: ${floorFilter}` : t('catalog.floorAll')}
-          </button>
+          {/* Floor select */}
+          <div className="relative inline-flex items-center">
+            <select
+              value={floorFilter}
+              onChange={(e) => setFloorFilter(e.target.value)}
+              className={cn(
+                'appearance-none cursor-pointer rounded-full border pl-3 pr-7 py-1 text-sm font-medium transition-colors bg-transparent focus:outline-none',
+                floorFilter
+                  ? 'border-brand bg-brand/10 text-brand'
+                  : 'border-default text-secondary hover:bg-hover hover:text-primary',
+              )}
+            >
+              <option value="">{t('catalog.floorAll')}</option>
+              {floors.map((f) => (
+                <option key={f.id} value={String(f.number)}>
+                  {t('catalog.floor')} {f.number}{f.name ? ` · ${f.name}` : ''}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={12} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 opacity-50" />
+          </div>
 
           {/* Availability window toggle */}
           <button
@@ -574,7 +587,7 @@ export default function BookingCatalogPage() {
 
                   {/* Card body */}
                   <div
-                    className="flex flex-1 flex-col gap-2 p-4"
+                    className="flex flex-col gap-2 p-4 h-[156px] overflow-hidden"
                     onClick={() => setPanelResource(r)}
                   >
                     <h2 className="text-sm font-semibold text-primary leading-snug">{r.name}</h2>

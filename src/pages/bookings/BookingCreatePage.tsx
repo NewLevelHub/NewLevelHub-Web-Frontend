@@ -48,6 +48,7 @@ export default function BookingCreatePage() {
   const validResourceId = Number.isFinite(resourceId) ? String(resourceId) : null;
 
   const todayStr = dayjs().tz(TZ).format('YYYY-MM-DD');
+  const minDateParking = dayjs().tz(TZ).add(1, 'day').format('YYYY-MM-DD');
 
   const [selectedDate, setSelectedDate] = useState('');
   const [startLocal, setStartLocal] = useState('');
@@ -98,8 +99,9 @@ export default function BookingCreatePage() {
 
   /** Client-side validation */
   function validateBooking(): string | null {
+    const parkingEndDate = selectedDate ? dayjs(selectedDate).add(1, 'day').format('YYYY-MM-DD') : '';
     const startDatetime = isParking ? `${selectedDate}T00:00` : startLocal;
-    const endDatetime = isParking ? `${selectedDate}T23:59` : endLocal;
+    const endDatetime = isParking ? `${parkingEndDate}T00:00` : endLocal;
     const start = dayjs.tz(startDatetime, TZ);
     const end = dayjs.tz(endDatetime, TZ);
 
@@ -131,8 +133,9 @@ export default function BookingCreatePage() {
     mutationFn: async () => {
       if (!validResourceId) throw new Error(t('booking.create.noResource'));
 
+      const parkingEndDate = selectedDate ? dayjs(selectedDate).add(1, 'day').format('YYYY-MM-DD') : '';
       const startDatetime = isParking ? `${selectedDate}T00:00` : startLocal;
-      const endDatetime = isParking ? `${selectedDate}T23:59` : endLocal;
+      const endDatetime = isParking ? `${parkingEndDate}T00:00` : endLocal;
       const start_time = toAlmatyIso(startDatetime);
       const end_time = toAlmatyIso(endDatetime);
 
@@ -259,7 +262,7 @@ export default function BookingCreatePage() {
               id="booking-date"
               type="date"
               required
-              min={todayStr}
+              min={minDateParking}
               max={maxDate}
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
