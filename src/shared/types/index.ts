@@ -709,6 +709,7 @@ export interface StorageUsage {
   personal: {
     used_bytes: number;
     file_count: number;
+    limit_bytes: number | null;
   };
   company: {
     used_bytes: number;

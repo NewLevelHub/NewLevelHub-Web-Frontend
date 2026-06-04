@@ -1378,7 +1378,8 @@
       "active": "Active",
       "used": "Used",
       "expired": "Expired",
-      "revoked": "Revoked"
+      "revoked": "Revoked",
+      "createdByEmail": "Creator email"
     },
     "reason": {
       "expired": "Expired",

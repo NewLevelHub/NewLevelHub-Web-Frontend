@@ -189,9 +189,9 @@ export const router = createBrowserRouter([
           { path: '/profile', element: <ProfilePage /> },
           { path: '/profile/settings', element: <ProfileSettingsPage /> },
 
-          // Notifications — non-guest roles only
+          // Notifications — all authenticated roles
           {
-            element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE, RECEPTION]} />,
+            element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE, RECEPTION, GUEST]} />,
             children: [
               { path: '/notifications', element: <NotificationListPage /> },
               { path: '/settings/notifications', element: <NotificationPreferencesPage /> },

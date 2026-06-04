@@ -1382,7 +1382,8 @@
       "active": "Активные",
       "used": "Использованные",
       "expired": "Истекшие",
-      "revoked": "Отозванные"
+      "revoked": "Отозванные",
+      "createdByEmail": "Email создателя"
     },
     "reason": {
       "expired": "Срок действия истёк",
