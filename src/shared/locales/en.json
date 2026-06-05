@@ -1255,7 +1255,20 @@
       "enableEditMode": "Enable edit mode"
     },
     "addPanel": {
-      "resourceSelectHint": "Select a resource — point type will be taken from the resource"
+      "resourceSelectHint": "Select a resource — point type will be taken from the resource",
+      "title": "New point",
+      "xLabel": "X (0–100)",
+      "yLabel": "Y (0–100)",
+      "resourceLabel": "Resource",
+      "labelField": "Label",
+      "pointTypeLabel": "Point type",
+      "companyIdLabel": "Company ID",
+      "createBtn": "Create point",
+      "typeHint": "Point type is determined by the selected resource.",
+      "errorX": "X must be a number between 0 and 100",
+      "errorY": "Y must be a number between 0 and 100",
+      "errorCompany": "Company ID is required for office points",
+      "selectDefault": "— Select —"
     },
     "editModal": {
       "pointTypeHint": "Point type is determined by the selected resource type"

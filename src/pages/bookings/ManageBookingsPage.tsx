@@ -718,10 +718,14 @@ export default function ManageBookingsPage() {
                       )}
                       <td className="px-3 py-2.5 align-middle">
                         <div className="flex items-center gap-1.5">
-                          <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium bg-[color:var(--bg-raised)] text-[color:var(--text-secondary)] flex-shrink-0">
-                            {getInitials(booking.user_name ?? '')}
-                          </span>
-                          <span className="text-[color:var(--text-primary)]">{booking.user_name}</span>
+                          {booking.booked_by?.avatar ? (
+                            <img src={booking.booked_by.avatar} alt={booking.booked_by.full_name} className="h-6 w-6 rounded-full object-cover flex-shrink-0" />
+                          ) : (
+                            <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium bg-[color:var(--bg-raised)] text-[color:var(--text-secondary)] flex-shrink-0">
+                              {getInitials(booking.booked_by?.full_name ?? booking.user_name ?? '')}
+                            </span>
+                          )}
+                          <span className="text-[color:var(--text-primary)]">{booking.booked_by?.full_name ?? booking.user_name}</span>
                         </div>
                       </td>
                       <td className="px-3 py-2.5 align-middle font-mono text-[color:var(--text-primary)]">
@@ -793,7 +797,7 @@ export default function ManageBookingsPage() {
               {t('booking.manage.adminCancelTitle')}
             </h2>
             <p className="mt-1 text-sm text-[color:var(--text-muted)]">
-              #{cancelTarget.id} ({cancelTarget.resource_name}, {cancelTarget.user_name})
+              #{cancelTarget.id} ({cancelTarget.resource_name}, {cancelTarget.booked_by?.full_name ?? cancelTarget.user_name})
             </p>
 
             <label className="mt-4 block text-sm text-[color:var(--text-secondary)]">
@@ -856,7 +860,7 @@ export default function ManageBookingsPage() {
               {t('booking.manage.editTitle', { id: modalBooking?.id ?? editTarget.id })}
             </h2>
             <p className="mt-1 text-sm text-[color:var(--text-muted)]">
-              {modalBooking?.resource_name ?? editTarget.resource_name} · {modalBooking?.user_name ?? editTarget.user_name}
+              {modalBooking?.resource_name ?? editTarget.resource_name} · {(modalBooking?.booked_by?.full_name ?? modalBooking?.user_name) ?? (editTarget.booked_by?.full_name ?? editTarget.user_name)}
             </p>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">

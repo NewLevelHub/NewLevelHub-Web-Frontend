@@ -405,6 +405,17 @@ export interface Resource {
   availability_days: number[];
 }
 
+export interface BookedBy {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  avatar: string | null;
+  position: string | null;
+  role: string;
+}
+
 /** Бронирование: сериализатор бэкенда (resource — id, participants — email-строки). */
 export interface Booking {
   id: number;
@@ -413,6 +424,7 @@ export interface Booking {
   resource_type: ResourceType;
   user: number;
   user_name: string;
+  booked_by?: BookedBy | null;
   company: number | null;
   start_time: string;
   end_time: string;

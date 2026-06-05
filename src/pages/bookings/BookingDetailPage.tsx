@@ -279,10 +279,13 @@ export default function BookingDetailPage() {
           </p>
         ) : null}
         {data.description ? <p className="text-sm text-muted">{data.description}</p> : null}
-        {data.user_name ? (
-          <p className="text-sm text-muted">
+        {(data.booked_by || data.user_name) ? (
+          <p className="text-sm text-muted flex items-center gap-1.5">
             <span className="font-medium text-secondary">{t('booking.detail.bookedBy')} </span>
-            {data.user_name}
+            {data.booked_by?.avatar ? (
+              <img src={data.booked_by.avatar} alt={data.booked_by.full_name} className="h-5 w-5 rounded-full object-cover" />
+            ) : null}
+            {data.booked_by?.full_name ?? data.user_name}
           </p>
         ) : null}
       </section>
