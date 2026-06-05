@@ -1466,6 +1466,7 @@
     "loadingPass": "Загрузка пропуска...",
     "loadError": "Не удалось загрузить детали пропуска.",
     "passId": "Пропуск #{{id}}",
+    "passIdLabel": "ID пропуска",
     "backToList": "Назад к списку",
     "guestInfo": "Информация о госте",
     "actionsSection": "Действия",
@@ -1521,7 +1522,8 @@
       "countdownExpired": "Пропуск истёк",
       "countdownUsed": "Использован",
       "countdownPending": "До визита {{hours}} ч {{minutes}} мин — пропуск активируется автоматически",
-      "selectHint": "Выберите пропуск для просмотра QR"
+      "selectHint": "Выберите пропуск для просмотра QR",
+      "downloading": "Скачивание..."
     },
     "qrCodeSection": "QR-код",
     "qrImageUnavailable": "QR изображение недоступно.",
@@ -1651,7 +1653,7 @@
     "categoriesHint": "Нажмите Enter или запятую для добавления",
     "domainCol": "Домен",
     "footerCount": "записей",
-    "footerSum": "сотр. всего",
+    "footerSum": "сотрудников всего",
     "nameRequired": "Название обязательно",
     "createTitle": "Создать компанию",
     "createSubtitle": "Заполните данные новой компании-арендатора",

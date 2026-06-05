@@ -1471,6 +1471,7 @@
     "loadingPass": "Loading pass...",
     "loadError": "Failed to load pass details.",
     "passId": "Pass #{{id}}",
+    "passIdLabel": "Pass ID",
     "backToList": "Back to list",
     "guestInfo": "Guest information",
     "actionsSection": "Actions",
@@ -1526,7 +1527,8 @@
       "countdownExpired": "Pass expired",
       "countdownUsed": "Used",
       "countdownPending": "Until visit: {{hours}}h {{minutes}}m — pass activates automatically",
-      "selectHint": "Select a pass to view QR"
+      "selectHint": "Select a pass to view QR",
+      "downloading": "Downloading..."
     },
     "qrCodeSection": "QR code",
     "qrImageUnavailable": "QR image not available.",
@@ -1655,8 +1657,8 @@
     "categoriesPlaceholder": "Tech, B2B, SaaS…",
     "categoriesHint": "Press Enter or comma to add a tag",
     "domainCol": "Domain",
-    "footerCount": "count",
-    "footerSum": "sum",
+    "footerCount": "companies",
+    "footerSum": "employees total",
     "nameRequired": "Name is required",
     "createTitle": "Create company",
     "createSubtitle": "Fill in the new tenant company details",

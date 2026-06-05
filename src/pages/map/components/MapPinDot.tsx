@@ -50,14 +50,14 @@ export const MapPinDot = memo<MapPinDotProps>(({ point, isHighlighted, onClick }
         }}
       >
         <span
-          className="block truncate text-[11px] font-semibold leading-tight"
+          className="block w-full truncate text-[11px] font-semibold leading-tight"
           style={{ color: styles.nameText }}
         >
           {point.label}
         </span>
         {point.resource_name && (
           <span
-            className="block truncate text-[9px] leading-tight"
+            className="block w-full truncate text-[9px] leading-tight"
             style={{ color: styles.text, fontFamily: 'var(--font-mono)', opacity: 0.85 }}
           >
             {point.resource_name}

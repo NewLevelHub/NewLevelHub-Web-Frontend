@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router';
 import { MoreHorizontal } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { fmtDate, fmtTime } from '@/shared/lib/formatDate';
+import { fmtDateTime } from '@/shared/lib/formatDate';
 
 import { type PassStatus } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
@@ -26,7 +26,7 @@ function getInitials(name: string): string {
 
 export const PassRow = React.memo(function PassRow({ pass, onRowClick }: PassRowProps) {
   const { i18n } = useTranslation();
-  void i18n.language; // subscribes to locale changes so fmtDate/fmtTime re-run
+  void i18n.language; // subscribes to locale changes so fmtDateTime re-runs
   return (
     <tr
       className={cn(
@@ -51,16 +51,9 @@ export const PassRow = React.memo(function PassRow({ pass, onRowClick }: PassRow
         </div>
       </td>
 
-      {/* Visit date */}
-      <td className="px-3 py-3 align-middle text-[color:var(--text-secondary)] text-[13px]">
-        {fmtDate(pass.valid_from)}
-      </td>
-
-      {/* Visit time range — monospace */}
-      <td className="px-3 py-3 align-middle font-mono text-[12px] text-[color:var(--text-primary)] whitespace-nowrap">
-        {fmtTime(pass.valid_from)}
-        {' — '}
-        {fmtTime(pass.valid_until)}
+      {/* Period: full datetime range */}
+      <td className="px-3 py-3 align-middle text-[13px] text-[color:var(--text-secondary)] whitespace-nowrap">
+        {fmtDateTime(pass.valid_from)} — {fmtDateTime(pass.valid_until)}
       </td>
 
       {/* Status badge */}
@@ -69,16 +62,16 @@ export const PassRow = React.memo(function PassRow({ pass, onRowClick }: PassRow
       </td>
 
       {/* Actions */}
-      <td
-        className="px-3 py-3 align-middle text-right pr-[18px]"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <td className="px-3 py-3 align-middle text-right pr-[18px]">
         <div className="inline-flex items-center gap-1.5">
           {onRowClick && (
             <button
               type="button"
               aria-label="QR"
-              onClick={() => onRowClick(pass.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRowClick(pass.id);
+              }}
               className="h-[26px] px-2 text-[12px] font-medium rounded-[var(--radius-sm)] border border-[color:var(--border)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] hover:text-[color:var(--text-primary)] transition-colors"
             >
               QR
@@ -86,6 +79,7 @@ export const PassRow = React.memo(function PassRow({ pass, onRowClick }: PassRow
           )}
           <Link
             to={`/passes/${pass.id}`}
+            onClick={(e) => e.stopPropagation()}
             className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors"
           >
             <MoreHorizontal className="w-4 h-4" />

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { QrCode, Download, Send, Clock, Loader2 } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
-import { fmtDate, fmtTime } from '@/shared/lib/formatDate';
+import { fmtDateTime } from '@/shared/lib/formatDate';
 import { API } from '@/shared/api/endpoints';
 import { PASS_STATUSES } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
@@ -81,21 +81,31 @@ function CountdownBanner({ pass }: { pass: GuestPass }) {
 }
 
 function PassQRContent({ pass }: { pass: GuestPass }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  void i18n.language;
   const [sendState, setSendState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [isDownloading, setIsDownloading] = useState(false);
 
-  const visitDate = fmtDate(pass.valid_from);
-  const visitTimeFrom = fmtTime(pass.valid_from);
-  const visitTimeTo = fmtTime(pass.valid_until);
-
-  function handleDownload() {
+  async function handleDownload() {
     if (!pass.qr_image) return;
-    const link = document.createElement('a');
-    link.href = pass.qr_image;
-    link.download = `pass-qr-${pass.id}.png`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    setIsDownloading(true);
+    try {
+      const response = await fetch(pass.qr_image);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `pass-qr-${pass.id}.png`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      // fallback: open in new tab
+      window.open(pass.qr_image, '_blank');
+    } finally {
+      setIsDownloading(false);
+    }
   }
 
   async function handleSendEmail() {
@@ -118,7 +128,7 @@ function PassQRContent({ pass }: { pass: GuestPass }) {
           {pass.guest_name}
         </p>
         <p className="mt-0.5 text-[12px] text-[color:var(--text-muted)]">
-          {visitDate} · {visitTimeFrom} — {visitTimeTo}
+          {fmtDateTime(pass.valid_from)} — {fmtDateTime(pass.valid_until)}
         </p>
       </div>
 
@@ -147,7 +157,7 @@ function PassQRContent({ pass }: { pass: GuestPass }) {
         <button
           type="button"
           onClick={handleDownload}
-          disabled={!pass.qr_image}
+          disabled={!pass.qr_image || isDownloading}
           className={cn(
             'h-[32px] px-3 text-[12px] font-medium rounded-[var(--radius-sm)]',
             'inline-flex items-center justify-center gap-1.5 transition-colors flex-1',
@@ -155,8 +165,17 @@ function PassQRContent({ pass }: { pass: GuestPass }) {
             'hover:bg-[color:var(--bg-hover)] disabled:cursor-not-allowed disabled:opacity-50',
           )}
         >
-          <Download size={13} />
-          {t('passes.qrPanel.download')}
+          {isDownloading ? (
+            <>
+              <Loader2 size={13} className="animate-spin" />
+              {t('passes.qrPanel.downloading')}
+            </>
+          ) : (
+            <>
+              <Download size={13} />
+              {t('passes.qrPanel.download')}
+            </>
+          )}
         </button>
         <button
           type="button"

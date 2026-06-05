@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Info } from 'lucide-react';
+import { ArrowLeft, Info } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -67,11 +67,19 @@ export default function PassDetailPage() {
   } = usePassValidations(id, isMultiUse);
 
   if (isLoading) {
-    return <div className="p-3 sm:p-4 md:p-6 text-sm text-secondary">{t('passes.loadingPass')}</div>;
+    return (
+      <div className="space-y-5">
+        <p className="text-sm text-secondary">{t('passes.loadingPass')}</p>
+      </div>
+    );
   }
 
   if (isError || !data) {
-    return <div className="p-3 sm:p-4 md:p-6 text-sm text-danger">{t('passes.loadError')}</div>;
+    return (
+      <div className="space-y-5">
+        <p className="text-sm text-red-400">{t('passes.loadError')}</p>
+      </div>
+    );
   }
 
   const activatesAt = new Date(data.valid_from);
@@ -87,145 +95,126 @@ export default function PassDetailPage() {
 
   return (
     <div className="space-y-5">
-      {/* Page header */}
-      <div className="space-y-1">
-        <button
-          type="button"
-          onClick={() => navigate('/passes')}
-          className="text-sm font-medium text-muted transition-colors hover:text-primary"
-        >
-          {t('passes.backToList')}
-        </button>
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-semibold text-primary">{t('passes.passId', { id: data.id })}</h1>
-          <PassStatusBadge status={data.status as PassStatus} />
-        </div>
-      </div>
+      <button
+        type="button"
+        onClick={() => navigate('/passes')}
+        className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-primary"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        {t('passes.backToList')}
+      </button>
 
       {/* Info card */}
       <div className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[color:var(--border-faint)]">
-          <h2 className="text-base font-semibold text-primary tracking-[-0.015em]">
-            {t('passes.guestInfo')}
-          </h2>
-        </div>
-        <div className="px-6 py-5 grid sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-          {/* Guest name + email — spans 2 cols */}
-          <div className="flex flex-col gap-0.5 sm:col-span-2">
-            <span className="text-xs font-medium text-[color:var(--text-muted)]">
-              {t('team.roleGuest')}
-            </span>
-            <span className="text-sm font-medium text-[color:var(--text-primary)]">
+        <div className="px-6 pt-5 pb-4 border-b border-[color:var(--border-faint)]">
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-base font-semibold text-primary tracking-[-0.015em]">
               {data.guest_name}
-            </span>
-            <span className="text-xs text-[color:var(--text-muted)]">{data.guest_email}</span>
+            </h2>
+            <PassStatusBadge status={data.status as PassStatus} />
+          </div>
+          <p className="text-xs text-muted mt-0.5">{data.guest_email}</p>
+        </div>
+
+        <div className="px-6 py-5 grid sm:grid-cols-2 gap-x-6 gap-y-4">
+          {/* Pass ID */}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-secondary">{t('passes.passIdLabel')}</span>
+            <span className="text-sm text-primary">#{data.id}</span>
+          </div>
+
+          {/* Purpose */}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-secondary">{t('passes.purpose')}</span>
+            <span className="text-sm text-primary">{data.purpose || '—'}</span>
+          </div>
+
+          {/* Times used */}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-secondary">{t('passes.timesUsed')}</span>
+            <span className="text-sm text-primary">{data.times_used}</span>
           </div>
 
           {/* Status */}
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xs font-medium text-[color:var(--text-muted)]">
-              {t('common.status')}
-            </span>
-            <span className="text-sm text-[color:var(--text-primary)]">
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-secondary">{t('common.status')}</span>
+            <span className="text-sm text-primary">
               <PassStatusBadge status={data.status as PassStatus} />
             </span>
           </div>
 
-          {/* Purpose */}
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xs font-medium text-[color:var(--text-muted)]">
-              {t('passes.purpose')}
-            </span>
-            <span className="text-sm text-[color:var(--text-primary)]">{data.purpose || '—'}</span>
-          </div>
-
-          {/* Times used */}
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xs font-medium text-[color:var(--text-muted)]">
-              {t('passes.timesUsed')}
-            </span>
-            <span className="text-sm text-[color:var(--text-primary)]">{data.times_used}</span>
-          </div>
-
           {/* Valid from */}
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xs font-medium text-[color:var(--text-muted)]">
-              {t('passes.validFrom')}
-            </span>
-            <span className="text-sm text-[color:var(--text-primary)]">
-              {fmtDateTime(data.valid_from)}
-            </span>
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-secondary">{t('passes.validFrom')}</span>
+            <span className="text-sm text-primary">{fmtDateTime(data.valid_from)}</span>
           </div>
 
           {/* Valid until */}
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xs font-medium text-[color:var(--text-muted)]">
-              {t('passes.validUntil')}
-            </span>
-            <span className="text-sm text-[color:var(--text-primary)]">
-              {fmtDateTime(data.valid_until)}
-            </span>
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-secondary">{t('passes.validUntil')}</span>
+            <span className="text-sm text-primary">{fmtDateTime(data.valid_until)}</span>
           </div>
         </div>
       </div>
 
-      {/* Actions card — only for canManagePass */}
+      {/* Actions card */}
       {canManagePass ? (
         <div className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
-          <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[color:var(--border-faint)]">
+          <div className="px-6 pt-5 pb-4 border-b border-[color:var(--border-faint)]">
             <h2 className="text-base font-semibold text-primary tracking-[-0.015em]">
               {t('passes.actionsSection')}
             </h2>
           </div>
-          <div className="px-6 py-5 space-y-3">
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  clearMessage();
-                  resendMutation.mutate();
-                }}
-                disabled={resendMutation.isPending}
-                className="h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] border border-[color:var(--border)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-50"
-              >
-                {resendMutation.isPending ? t('common.submittingPlain') : t('passes.resendQr')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  clearMessage();
-                  revokeMutation.mutate();
-                }}
-                disabled={!canRevoke || revokeMutation.isPending}
-                className="h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] border border-rose-500/50 text-rose-400 hover:bg-rose-500/10 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {revokeMutation.isPending ? t('passes.revoking') : t('passes.revoke')}
-              </button>
+
+          {resendMutation.isError && (
+            <div role="alert" className="mx-6 mt-5 rounded-[var(--radius-sm)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {getApiError(resendMutation.error).message}
             </div>
-            {isNotYetActive ? (
-              <div className="flex items-start gap-2 text-xs text-[color:var(--text-muted)]">
+          )}
+          {revokeMutation.isError && (
+            <div role="alert" className="mx-6 mt-5 rounded-[var(--radius-sm)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {getApiError(revokeMutation.error).message}
+            </div>
+          )}
+
+          <div className="px-6 py-5 space-y-3">
+            {isNotYetActive && (
+              <div className="flex items-start gap-2 text-xs text-secondary">
                 <Info size={14} className="mt-0.5 shrink-0" />
                 <span>{t('passes.qrActiveHint', { date: fmtDateTime(activatesAt) })}</span>
               </div>
-            ) : null}
-            {resendMutation.isError ? (
-              <div className="rounded-[var(--radius-sm)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {getApiError(resendMutation.error).message}
-              </div>
-            ) : null}
-            {revokeMutation.isError ? (
-              <div className="rounded-[var(--radius-sm)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {getApiError(revokeMutation.error).message}
-              </div>
-            ) : null}
-            {successMessage ? (
-              <div className="text-sm text-[color:var(--status-free-text)]">{successMessage}</div>
-            ) : null}
-            {!canRevoke && !isMessageVisible ? (
-              <div className="text-xs text-[color:var(--text-muted)]">
-                {t('passes.cannotRevoke')}
-              </div>
-            ) : null}
+            )}
+            {successMessage && (
+              <p className="text-xs text-[color:var(--status-free-text)]">{successMessage}</p>
+            )}
+            {!canRevoke && !isMessageVisible && (
+              <p className="text-xs text-muted">{t('passes.cannotRevoke')}</p>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 border-t border-[color:var(--border-faint)] px-6 pt-4 pb-5">
+            <button
+              type="button"
+              onClick={() => {
+                clearMessage();
+                resendMutation.mutate();
+              }}
+              disabled={resendMutation.isPending}
+              className="h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] border border-[color:var(--border)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {resendMutation.isPending ? t('common.submittingPlain') : t('passes.resendQr')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                clearMessage();
+                revokeMutation.mutate();
+              }}
+              disabled={!canRevoke || revokeMutation.isPending}
+              className="h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {revokeMutation.isPending ? t('passes.revoking') : t('passes.revoke')}
+            </button>
           </div>
         </div>
       ) : null}

@@ -9,7 +9,8 @@ interface QRCodeViewProps {
 }
 
 export function QRCodeView({ qrImage, validFrom }: QRCodeViewProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  void i18n.language; // triggers re-render on locale change
   const { countdownDisplay, isNowActive } = usePassCountdown(validFrom);
   const activatesAt = new Date(validFrom);
   const isNotYetActive = !isNowActive && activatesAt > new Date();

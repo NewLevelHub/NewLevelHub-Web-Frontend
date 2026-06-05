@@ -284,10 +284,7 @@ export default function PassListPage() {
                         {t('passes.columnGuest')}
                       </th>
                       <th className="text-[11px] font-medium text-[color:var(--text-muted)] uppercase tracking-[0.02em] px-3 py-2.5 border-b border-[color:var(--border)] text-left">
-                        {t('passes.columnVisitDate')}
-                      </th>
-                      <th className="text-[11px] font-medium text-[color:var(--text-muted)] uppercase tracking-[0.02em] px-3 py-2.5 border-b border-[color:var(--border)] text-left">
-                        {t('passes.columnVisitTime')}
+                        {t('passes.columnPeriod')}
                       </th>
                       <th className="text-[11px] font-medium text-[color:var(--text-muted)] uppercase tracking-[0.02em] px-3 py-2.5 border-b border-[color:var(--border)] text-left">
                         {t('common.status')}
