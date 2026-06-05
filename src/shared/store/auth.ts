@@ -6,6 +6,11 @@ import { env } from '@/shared/config/env';
 import { mapApiUser } from '@/shared/lib/mapUser';
 import { queryClient } from '@/shared/lib/queryClient';
 import { tokenStorage } from '@/shared/lib/storage';
+import {
+  clearSessionExpiredState,
+  isSessionExpired,
+  markSessionActive,
+} from '@/shared/lib/sessionManager';
 import type { User } from '@/shared/types';
 
 /** Подсказка: когда-то логинились — при перезагрузке пробуем refresh по httpOnly cookie. */
@@ -95,6 +100,8 @@ interface AuthState {
   register: (payload: RegisterPayload) => Promise<void>;
   registerByInvite: (payload: InviteRegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
+  /** Local cleanup without backend call — used for idle-timeout exit from warning modal. */
+  logoutLocal: () => void;
   fetchMe: () => Promise<void>;
   bootstrap: () => Promise<void>;
 
@@ -114,6 +121,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   originalUser: storedOriginalUser,
 
   login: async (email, password, rememberMe = false) => {
+    clearSessionExpiredState();
     const { data } = await apiClient.post(API.auth.login, {
       email,
       password,
@@ -122,6 +130,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     queryClient.clear();
     tokenStorage.setAccessFromAuthResponse(data.tokens.access);
     setSessionHint();
+    clearSessionExpiredState();
+    markSessionActive();
     set({ user: mapApiUser(data.user as Record<string, unknown>), isAuthenticated: true });
   },
 
@@ -130,6 +140,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     queryClient.clear();
     tokenStorage.setAccessFromAuthResponse(data.tokens.access);
     setSessionHint();
+    clearSessionExpiredState();
+    markSessionActive();
     set({ user: mapApiUser(data.user as Record<string, unknown>), isAuthenticated: true });
   },
 
@@ -141,17 +153,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       await apiClient.post(API.auth.logout, {});
     } finally {
-      tokenStorage.clear();
-      clearSessionHint();
-      clearImpersonationStorage();
-      queryClient.clear();
-      set({
-        user: null,
-        isAuthenticated: false,
-        isImpersonating: false,
-        originalUser: null,
-      });
+      get().logoutLocal();
     }
+  },
+
+  logoutLocal: () => {
+    tokenStorage.clear();
+    clearSessionHint();
+    clearImpersonationStorage();
+    queryClient.clear();
+    set({
+      user: null,
+      isAuthenticated: false,
+      isImpersonating: false,
+      originalUser: null,
+    });
   },
 
   fetchMe: async () => {
@@ -160,6 +176,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   bootstrap: async () => {
+    if (isSessionExpired()) {
+      get().logoutLocal();
+      set({ isLoading: false });
+      return;
+    }
+
     try {
       // Перехватываем impersonation-токен, сохранённый перед hard-reload.
       const pendingImpersonationToken = tokenStorage.consumeImpersonationAccess();
@@ -180,6 +202,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return;
       }
       await get().fetchMe();
+      markSessionActive();
 
       /**
        * Если после bootstrap мы обнаруживаем, что в localStorage есть originalUser,

@@ -4,6 +4,8 @@ import { AlertTriangle, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Sidebar } from '@/shared/ui/navigation/Sidebar';
 import { Header } from '@/shared/ui/navigation/Header';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
+import { useIdleSession } from '@/shared/hooks/useIdleSession';
 import { useAuthStore } from '@/shared/store/auth';
 import { USER_ROLE_LABEL_KEYS, type UserRole } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
@@ -79,9 +81,30 @@ function ImpersonationBanner() {
 export function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { collapsed, toggle: toggleCollapsed } = useSidebarCollapsed();
+  const {
+    showWarning,
+    isExtending,
+    extendSession,
+    exitSession,
+    warningTitle,
+    warningDescription,
+    extendLabel,
+    exitLabel,
+  } = useIdleSession();
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-page text-primary">
+      <ConfirmModal
+        isOpen={showWarning}
+        onClose={exitSession}
+        onConfirm={extendSession}
+        title={warningTitle}
+        description={warningDescription}
+        confirmLabel={extendLabel}
+        cancelLabel={exitLabel}
+        variant="warning"
+        isLoading={isExtending}
+      />
       <Sidebar
         mobileOpen={mobileNavOpen}
         onCloseMobile={() => setMobileNavOpen(false)}
