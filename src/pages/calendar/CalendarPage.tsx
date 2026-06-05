@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { CalendarDays, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 
 import i18n from '@/shared/lib/i18n';
+import { fmtDate, fmtDateTime as fmtDT, fmtDayMonth, fmtMonthYear } from '@/shared/lib/formatDate';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import {
@@ -89,25 +90,19 @@ function shiftAnchor(anchorDate: Date, view: CalendarView, direction: -1 | 1) {
 
 function formatPeriodLabel(anchorDate: Date, view: CalendarView) {
   if (view === CALENDAR_VIEWS.DAY) {
-    return anchorDate.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
+    return fmtDate(anchorDate, { day: '2-digit', month: 'long', year: 'numeric' });
   }
   if (view === CALENDAR_VIEWS.WEEK) {
     const weekStart = startOfWeek(anchorDate);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
-    return `${weekStart.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })} - ${weekEnd.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+    return `${fmtDayMonth(weekStart)} - ${fmtDate(weekEnd, { day: '2-digit', month: 'short', year: 'numeric' })}`;
   }
-  return anchorDate.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+  return fmtMonthYear(anchorDate);
 }
 
 function formatDateTime(value: string) {
-  return new Date(value).toLocaleString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return fmtDT(value);
 }
 
 const EVENT_BADGE_CLASS: Record<CalendarEventType, string> = {
@@ -401,7 +396,7 @@ export default function CalendarPage() {
               {groupedEvents.map(([day, items]) => (
                 <div key={day} className="rounded-xl border border-default bg-raised">
                   <div className="border-b border-default px-4 py-3 text-sm font-semibold text-secondary">
-                    {new Date(day).toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' })}
+                    {fmtDate(day, { day: '2-digit', month: 'long', year: 'numeric' })}
                   </div>
                   <ul className="divide-y divide-[color:var(--border)]/70">
                     {items.map((event) => (

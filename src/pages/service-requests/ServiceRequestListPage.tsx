@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
+import { fmtDate } from '@/shared/lib/formatDate';
 import { Star } from 'lucide-react';
 import { useLocation } from 'react-router';
 
@@ -527,7 +528,7 @@ export default function ServiceRequestListPage() {
                       </td>
                       <td className="px-4 py-3">{formatServiceRequestFloorCell(req, floors, t)}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-secondary">
-                        {new Date(req.created_at).toLocaleDateString('ru-RU')}
+                        {fmtDate(req.created_at)}
                       </td>
                       <td className="px-4 py-3">
                         {req.rating !== null ? (

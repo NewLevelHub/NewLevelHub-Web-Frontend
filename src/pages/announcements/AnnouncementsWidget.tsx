@@ -10,6 +10,7 @@ import {
   type AnnouncementCategory,
 } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
+import { fmtDateTime } from '@/shared/lib/formatDate';
 import type { Announcement, CursorPaginatedResponse } from '@/shared/types';
 
 const CATEGORY_ICON: Record<AnnouncementCategory, React.ComponentType<{ size?: number; className?: string }>> = {
@@ -114,7 +115,7 @@ export function AnnouncementsWidget() {
                   </div>
                   <p className="mt-0.5 line-clamp-2 text-xs text-secondary">{a.text}</p>
                   <p className="mt-1 text-[11px] text-muted">
-                    {new Date(a.created_at).toLocaleString('ru-RU')}
+                    {fmtDateTime(a.created_at)}
                   </p>
                 </div>
               </li>

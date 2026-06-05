@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
+import { fmtTime } from '@/shared/lib/formatDate';
 import { Link, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Bookmark, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -259,7 +260,7 @@ export default function BookingResourceSchedulePage() {
           <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-amber-400" aria-hidden="true" />
           <p className="text-sm text-amber-300">
             {t('resources.list.freeAt', {
-              time: new Date(detail.available_at).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }),
+              time: fmtTime(detail.available_at),
             })}
           </p>
         </div>

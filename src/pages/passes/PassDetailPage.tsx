@@ -1,13 +1,14 @@
 import { useTranslation } from 'react-i18next';
-import { Link, useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Info } from 'lucide-react';
+import { ArrowLeft, Info } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { PASS_STATUSES, USER_ROLES, type PassStatus } from '@/shared/config/constants';
 import { useUser } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
+import { fmtDateTime } from '@/shared/lib/formatDate';
 import type { GuestPass } from '@/shared/types';
 import { PassStatusBadge } from '@/pages/passes/components/PassStatusBadge';
 import { PassValidationsList } from '@/pages/passes/components/PassValidationsList';
@@ -19,6 +20,7 @@ import { useTimedMessage } from '@/pages/passes/hooks/useTimedMessage';
 export default function PassDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams();
+  const navigate = useNavigate();
   const user = useUser();
   const queryClient = useQueryClient();
   const { message: successMessage, showMessage, clearMessage, isMessageVisible } = useTimedMessage();
@@ -65,11 +67,19 @@ export default function PassDetailPage() {
   } = usePassValidations(id, isMultiUse);
 
   if (isLoading) {
-    return <main className="p-3 sm:p-4 md:p-6 text-sm text-secondary">{t('passes.loadingPass')}</main>;
+    return (
+      <div className="space-y-5">
+        <p className="text-sm text-secondary">{t('passes.loadingPass')}</p>
+      </div>
+    );
   }
 
   if (isError || !data) {
-    return <main className="p-3 sm:p-4 md:p-6 text-sm text-danger">{t('passes.loadError')}</main>;
+    return (
+      <div className="space-y-5">
+        <p className="text-sm text-red-400">{t('passes.loadError')}</p>
+      </div>
+    );
   }
 
   const activatesAt = new Date(data.valid_from);
@@ -84,18 +94,105 @@ export default function PassDetailPage() {
     data.status !== PASS_STATUSES.REVOKED;
 
   return (
-    <main className="mx-auto max-w-3xl space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-primary">{t('passes.passId', { id: data.id })}</h1>
-        <Link to="/passes" className="text-sm text-brand hover:text-brand">
-          {t('passes.backToList')}
-        </Link>
+    <div className="space-y-5">
+      <button
+        type="button"
+        onClick={() => navigate('/passes')}
+        className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-primary"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        {t('passes.backToList')}
+      </button>
+
+      {/* Info card */}
+      <div className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
+        <div className="px-6 pt-5 pb-4 border-b border-[color:var(--border-faint)]">
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-base font-semibold text-primary tracking-[-0.015em]">
+              {data.guest_name}
+            </h2>
+            <PassStatusBadge status={data.status as PassStatus} />
+          </div>
+          <p className="text-xs text-muted mt-0.5">{data.guest_email}</p>
+        </div>
+
+        <div className="px-6 py-5 grid sm:grid-cols-2 gap-x-6 gap-y-4">
+          {/* Pass ID */}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-secondary">{t('passes.passIdLabel')}</span>
+            <span className="text-sm text-primary">#{data.id}</span>
+          </div>
+
+          {/* Purpose */}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-secondary">{t('passes.purpose')}</span>
+            <span className="text-sm text-primary">{data.purpose || '—'}</span>
+          </div>
+
+          {/* Times used */}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-secondary">{t('passes.timesUsed')}</span>
+            <span className="text-sm text-primary">{data.times_used}</span>
+          </div>
+
+          {/* Status */}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-secondary">{t('common.status')}</span>
+            <span className="text-sm text-primary">
+              <PassStatusBadge status={data.status as PassStatus} />
+            </span>
+          </div>
+
+          {/* Valid from */}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-secondary">{t('passes.validFrom')}</span>
+            <span className="text-sm text-primary">{fmtDateTime(data.valid_from)}</span>
+          </div>
+
+          {/* Valid until */}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-secondary">{t('passes.validUntil')}</span>
+            <span className="text-sm text-primary">{fmtDateTime(data.valid_until)}</span>
+          </div>
+        </div>
       </div>
 
+      {/* Actions card */}
       {canManagePass ? (
-        <section className="rounded-xl border border-default bg-raised p-5">
-          <h2 className="mb-3 text-lg font-semibold text-primary">{t('passes.actionsSection')}</h2>
-          <div className="flex flex-wrap gap-2">
+        <div className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
+          <div className="px-6 pt-5 pb-4 border-b border-[color:var(--border-faint)]">
+            <h2 className="text-base font-semibold text-primary tracking-[-0.015em]">
+              {t('passes.actionsSection')}
+            </h2>
+          </div>
+
+          {resendMutation.isError && (
+            <div role="alert" className="mx-6 mt-5 rounded-[var(--radius-sm)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {getApiError(resendMutation.error).message}
+            </div>
+          )}
+          {revokeMutation.isError && (
+            <div role="alert" className="mx-6 mt-5 rounded-[var(--radius-sm)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {getApiError(revokeMutation.error).message}
+            </div>
+          )}
+
+          <div className="px-6 py-5 space-y-3">
+            {isNotYetActive && (
+              <div className="flex items-start gap-2 text-xs text-secondary">
+                <Info size={14} className="mt-0.5 shrink-0" />
+                <span>{t('passes.qrActiveHint', { date: fmtDateTime(activatesAt) })}</span>
+              </div>
+            )}
+            {successMessage && (
+              <p className="text-xs text-[color:var(--status-free-text)]">{successMessage}</p>
+            )}
+            {!canRevoke && !isMessageVisible && (
+              <p className="text-xs text-muted">{t('passes.cannotRevoke')}</p>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 border-t border-[color:var(--border-faint)] px-6 pt-4 pb-5">
             <button
               type="button"
               onClick={() => {
@@ -103,7 +200,7 @@ export default function PassDetailPage() {
                 resendMutation.mutate();
               }}
               disabled={resendMutation.isPending}
-              className="inline-flex items-center rounded-lg border border-default px-4 py-2 text-sm font-medium text-brand hover:bg-brand-subtle disabled:opacity-50"
+              className="h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] border border-[color:var(--border)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {resendMutation.isPending ? t('common.submittingPlain') : t('passes.resendQr')}
             </button>
@@ -114,63 +211,13 @@ export default function PassDetailPage() {
                 revokeMutation.mutate();
               }}
               disabled={!canRevoke || revokeMutation.isPending}
-              className="inline-flex items-center rounded-lg border border-rose-700 px-4 py-2 text-sm font-medium text-rose-300 hover:bg-rose-700/10 disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
               {revokeMutation.isPending ? t('passes.revoking') : t('passes.revoke')}
             </button>
           </div>
-          {isNotYetActive ? (
-            <div className="mt-3 flex items-start gap-2 text-xs text-blue-300">
-              <Info size={14} className="mt-0.5 shrink-0" />
-              <span>{t('passes.qrActiveHint', { date: activatesAt.toLocaleString() })}</span>
-            </div>
-          ) : null}
-          {resendMutation.isError ? (
-            <div className="mt-3 text-sm text-rose-300">
-              {getApiError(resendMutation.error).message}
-            </div>
-          ) : null}
-          {revokeMutation.isError ? (
-            <div className="mt-3 text-sm text-rose-300">
-              {getApiError(revokeMutation.error).message}
-            </div>
-          ) : null}
-          {successMessage ? (
-            <div className="mt-3 text-sm text-success">{successMessage}</div>
-          ) : null}
-          {!canRevoke && !isMessageVisible ? (
-            <div className="mt-3 text-xs text-secondary">{t('passes.cannotRevoke')}</div>
-          ) : null}
-        </section>
+        </div>
       ) : null}
-
-      <section className="grid gap-4 rounded-xl border border-default bg-raised p-5 text-sm text-secondary sm:grid-cols-2">
-        <div>
-          <div className="text-secondary">{t('team.roleGuest')}</div>
-          <div className="font-medium text-primary break-all">{data.guest_name}</div>
-          <div className="text-xs text-secondary">{data.guest_email}</div>
-        </div>
-        <div>
-          <div className="text-secondary">{t('common.status')}</div>
-          <div><PassStatusBadge status={data.status as PassStatus} /></div>
-        </div>
-        <div>
-          <div className="text-secondary">{t('passes.purpose')}</div>
-          <div className="break-all">{data.purpose || '—'}</div>
-        </div>
-        <div>
-          <div className="text-secondary">{t('passes.timesUsed')}</div>
-          <div>{data.times_used}</div>
-        </div>
-        <div>
-          <div className="text-secondary">{t('passes.validFrom')}</div>
-          <div>{new Date(data.valid_from).toLocaleString()}</div>
-        </div>
-        <div>
-          <div className="text-secondary">{t('passes.validUntil')}</div>
-          <div>{new Date(data.valid_until).toLocaleString()}</div>
-        </div>
-      </section>
 
       {isMultiUse ? (
         <PassValidationsList
@@ -182,6 +229,6 @@ export default function PassDetailPage() {
       ) : null}
 
       <QRCodeView qrImage={data.qr_image} validFrom={data.valid_from} />
-    </main>
+    </div>
   );
 }

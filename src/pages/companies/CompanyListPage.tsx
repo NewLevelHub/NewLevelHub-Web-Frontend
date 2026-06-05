@@ -6,16 +6,13 @@ import {
   Plus,
   Search,
   Building2,
-  Users,
-  HardDrive,
-  CheckCircle2,
-  XCircle,
+  ChevronDown,
   Trash2,
   PowerOff,
   Power,
   ChevronLeft,
   ChevronRight,
-  ExternalLink,
+  Sparkle,
 } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
@@ -25,6 +22,7 @@ import { useAuth } from '@/shared/hooks/useAuth';
 import { isCompanyNotAssignedError } from '@/shared/lib/apiError';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
+import { fmtDate } from '@/shared/lib/formatDate';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import type { Company, PaginatedResponse } from '@/shared/types';
 
@@ -32,11 +30,27 @@ import type { Company, PaginatedResponse } from '@/shared/types';
 
 const PAGE_SIZE = 20;
 
-const PLAN_COLORS: Record<string, string> = {
-  [COMPANY_TIERS.BASIC]: 'bg-hover text-secondary',
-  [COMPANY_TIERS.STANDARD]: 'bg-blue-900/60 text-blue-300',
-  [COMPANY_TIERS.PREMIUM]: 'bg-purple-900/60 text-purple-300',
+const TIER_BADGE: Record<string, string> = {
+  [COMPANY_TIERS.PREMIUM]: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
+  [COMPANY_TIERS.STANDARD]: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  [COMPANY_TIERS.BASIC]: 'bg-[color:var(--bg-raised)] text-[color:var(--text-secondary)]',
 };
+
+const CATEGORY_COLORS: Record<string, string> = {
+  Tech: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  B2B: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  SaaS: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  AI: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
+  Дизайн: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300',
+  Медиа: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  Ритейл: 'bg-lime-100 text-lime-700 dark:bg-lime-900/30 dark:text-lime-300',
+};
+const DEFAULT_CAT_COLOR = 'bg-[color:var(--bg-raised)] text-[color:var(--text-secondary)]';
+
+const AVATAR_COLORS = [
+  '#10b981', '#6366f1', '#f59e0b', '#84cc16', '#0ea5e9',
+  '#ec4899', '#475569', '#7c3aed', '#0e7490', '#dc2626',
+];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -48,6 +62,18 @@ interface ModalState {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getCompanyInitials(name: string): string {
+  const words = name.trim().split(/\s+/);
+  if (words.length === 1) return name.slice(0, 2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+}
+
+function getCompanyColor(name: string): string {
+  let hash = 0;
+  for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) & 0xffffffff;
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
 
 function modalConfig(action: ModalAction, companyName: string, t: (k: string, opts?: Record<string, unknown>) => string) {
   switch (action) {
@@ -78,22 +104,30 @@ function modalConfig(action: ModalAction, companyName: string, t: (k: string, op
 // ─── Skeleton row ─────────────────────────────────────────────────────────────
 
 function SkeletonRow() {
+  const cell = 'bg-[color:var(--bg-raised)] animate-pulse rounded-[var(--radius-sm)]';
   return (
-    <tr className="animate-pulse">
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gray-200 shrink-0" />
+    <tr className="border-b border-[color:var(--border)]">
+      <td className="px-3 py-2.5">
+        <div className="flex items-center gap-2.5">
+          <div className={cn('w-6 h-6 rounded-md shrink-0', cell)} />
           <div className="space-y-1.5">
-            <div className="w-36 h-4 rounded bg-gray-200" />
-            <div className="w-24 h-3 rounded bg-gray-200" />
+            <div className={cn('w-36 h-3', cell)} />
+            <div className={cn('w-20 h-2.5', cell)} />
           </div>
         </div>
       </td>
-      <td className="px-4 py-3"><div className="w-20 h-5 rounded-full bg-gray-200" /></td>
-      <td className="px-4 py-3"><div className="w-12 h-4 rounded bg-gray-200" /></td>
-      <td className="px-4 py-3"><div className="w-16 h-4 rounded bg-gray-200" /></td>
-      <td className="px-4 py-3"><div className="w-16 h-5 rounded-full bg-gray-200" /></td>
-      <td className="px-4 py-3"><div className="w-20 h-8 rounded-lg bg-gray-200" /></td>
+      <td className="px-3 py-2.5">
+        <div className="flex items-center gap-1">
+          <div className={cn('w-12 h-5 rounded-full', cell)} />
+          <div className={cn('w-10 h-5 rounded-full', cell)} />
+        </div>
+      </td>
+      <td className="px-3 py-2.5"><div className={cn('w-16 h-5 rounded-full', cell)} /></td>
+      <td className="px-3 py-2.5"><div className={cn('w-8 h-3 ml-auto', cell)} /></td>
+      <td className="px-3 py-2.5"><div className={cn('w-28 h-3', cell)} /></td>
+      <td className="px-3 py-2.5"><div className={cn('w-14 h-4 rounded-full', cell)} /></td>
+      <td className="px-3 py-2.5"><div className={cn('w-16 h-3', cell)} /></td>
+      <td className="px-3 py-2.5" />
     </tr>
   );
 }
@@ -149,6 +183,7 @@ export default function CompanyListPage() {
         .get<PaginatedResponse<Company>>(API.companies.list, { params: queryParams })
         .then((r) => r.data),
     enabled: Boolean(user) && !authLoading,
+    staleTime: 0,
   });
 
   const companies = data?.results ?? [];
@@ -235,39 +270,48 @@ export default function CompanyListPage() {
 
   if (isError && isCompanyNotAssignedError(error)) {
     return (
-      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-7xl mx-auto">
-        <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 rounded-2xl border border-amber-900/50 bg-warning-subtle px-6 py-12 text-center">
-          <Building2 className="h-12 w-12 text-amber-400/90" aria-hidden="true" />
-          <h1 className="text-lg font-semibold text-primary">{t('companies.notAssignedTitle')}</h1>
-          <p className="max-w-md text-sm text-secondary">
+      <div className="space-y-4">
+        <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 rounded-[var(--radius-lg)] border border-[color:var(--status-soon-bg)] bg-[color:var(--status-soon-bg)] px-6 py-12 text-center">
+          <Building2 className="h-12 w-12 text-[color:var(--status-soon-text)]" aria-hidden="true" />
+          <h1 className="text-[22px] font-bold text-[color:var(--text-primary)]">{t('companies.notAssignedTitle')}</h1>
+          <p className="max-w-md text-[13px] text-[color:var(--text-secondary)]">
             {t('companies.notAssignedDesc')}
           </p>
         </div>
-      </main>
+      </div>
     );
   }
 
   if (isError) {
     return (
-      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-7xl mx-auto">
+      <div className="space-y-4">
         <div className="flex h-64 flex-col items-center justify-center gap-2 text-center">
-          <p className="text-sm font-medium text-danger">{t('companies.loadError')}</p>
-          <p className="text-xs text-secondary">{t('companies.loadErrorHint')}</p>
+          <p className="text-[13px] font-medium text-[color:var(--danger)]">{t('companies.loadError')}</p>
+          <p className="text-[12px] text-[color:var(--text-secondary)]">{t('companies.loadErrorHint')}</p>
         </div>
-      </main>
+      </div>
     );
   }
 
   const currentModal = modal ? modalConfig(modal.action, modal.company.name, t) : null;
 
+  const planChips = [
+    { value: '', label: t('common.all') },
+    { value: COMPANY_TIERS.PREMIUM, label: t('companies.planPremium') },
+    { value: COMPANY_TIERS.STANDARD, label: t('companies.planStandard') },
+    { value: COMPANY_TIERS.BASIC, label: t('companies.planBasic') },
+  ];
+
   return (
-    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
+    <div className="space-y-4">
       {/* Page header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-primary">{t('companies.tenantsTitle')}</h1>
+          <h1 className="text-[22px] font-bold text-[color:var(--text-primary)] leading-tight">
+            {t('companies.tenantsTitle')}
+          </h1>
           {!showLoading && (
-            <p className="mt-1 text-sm text-secondary">
+            <p className="text-[13px] text-[color:var(--text-muted)] mt-0.5">
               {t('companies.tenantsTotal', { count: totalCount })}
             </p>
           )}
@@ -275,9 +319,9 @@ export default function CompanyListPage() {
         {isSuperadmin && (
           <Link
             to={`${companiesBasePath}/new`}
-            className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand)]/50 flex-shrink-0 self-start"
           >
-            <Plus className="h-4 w-4" aria-hidden="true" />
+            <Plus className="w-4 h-4" aria-hidden="true" />
             {t('companies.createCompany')}
           </Link>
         )}
@@ -287,24 +331,21 @@ export default function CompanyListPage() {
       {mutationError && (
         <div
           role="alert"
-          className="rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-4 py-3 text-sm text-danger"
+          className="rounded-[var(--radius-sm)] border border-[color:var(--status-busy-bg)] bg-[color:var(--status-busy-bg)] px-4 py-3 text-[13px] text-[color:var(--status-busy-text)]"
         >
           {mutationError}
         </div>
       )}
 
-      {/* Filters — superadmin only */}
-      {isSuperadmin && (
-        <section
-          className="bg-raised rounded-2xl border border-default p-4"
-          aria-label={t('companies.filterLabel')}
-        >
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            {/* Search */}
-            <div className="relative w-full sm:flex-1 sm:min-w-52">
+      {/* Table card */}
+      <div className="bg-[color:var(--bg-surface)] border border-[color:var(--border)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
+        {/* Inline toolbar */}
+        {isSuperadmin && (
+          <div className="flex items-center gap-1.5 flex-wrap px-4 py-3 border-b border-[color:var(--border)]">
+            {/* Search input */}
+            <div className="relative flex items-center">
               <Search
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary pointer-events-none"
+                className="w-3.5 h-3.5 text-[color:var(--text-muted)] flex-shrink-0 absolute left-2.5 pointer-events-none"
                 aria-hidden="true"
               />
               <input
@@ -313,109 +354,154 @@ export default function CompanyListPage() {
                 onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder={t('common.searchByNameEmail')}
                 aria-label={t('companies.searchCompanies')}
-                className="w-full rounded-lg border border-default bg-surface py-2 pl-9 pr-3 text-sm text-primary placeholder:text-muted focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="h-[30px] pl-7 pr-2.5 text-[12px] border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-primary)] focus:outline-none placeholder:text-[color:var(--text-muted)] w-44 min-w-0"
               />
             </div>
 
-            {/* Plan filter */}
-            <select
-              value={planFilter}
-              onChange={(e) => setPlanFilter(e.target.value)}
-              aria-label={t('companies.filterLabel')}
-              className="w-full sm:w-auto rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            >
-              <option value="">{t('companies.allPlans')}</option>
-              <option value={COMPANY_TIERS.BASIC}>{t('companies.planBasic')}</option>
-              <option value={COMPANY_TIERS.STANDARD}>{t('companies.planStandard')}</option>
-              <option value={COMPANY_TIERS.PREMIUM}>{t('companies.planPremium')}</option>
-            </select>
+            {/* Divider */}
+            <span className="self-stretch w-px bg-[color:var(--border)] flex-shrink-0 my-0.5" aria-hidden="true" />
 
-            {/* Status filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              aria-label={t('common.status')}
-              className="w-full sm:w-auto rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            {/* Plan filter chips */}
+            <div role="group" aria-label={t('companies.filterLabel')} className="flex items-center gap-1 flex-wrap">
+              {planChips.map((chip) => (
+                <button
+                  key={chip.value}
+                  type="button"
+                  onClick={() => { setPlanFilter(chip.value); setPage(1); }}
+                  className={cn(
+                    'inline-flex items-center px-2.5 py-1 text-[12px] rounded-full transition-colors',
+                    planFilter === chip.value
+                      ? 'border-transparent bg-[color:var(--brand-subtle)] text-[color:var(--brand-text)] cursor-pointer'
+                      : 'border border-[color:var(--border)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] cursor-pointer',
+                  )}
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Active only toggle */}
+            <button
+              type="button"
+              onClick={() => { setStatusFilter(statusFilter === 'true' ? '' : 'true'); setPage(1); }}
+              className={cn(
+                'inline-flex items-center px-2.5 py-1 text-[12px] rounded-full transition-colors',
+                statusFilter === 'true'
+                  ? 'border-transparent bg-[color:var(--brand-subtle)] text-[color:var(--brand-text)] cursor-pointer'
+                  : 'border border-[color:var(--border)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] cursor-pointer',
+              )}
             >
-              <option value="">{t('common.allStatuses')}</option>
-              <option value="true">{t('passes.filters.active')}</option>
-              <option value="false">{t('companies.inactive')}</option>
-            </select>
+              {t('common.active')}
+            </button>
+
+            {/* Right: count */}
+            {!showLoading && totalCount > 0 && (
+              <div className="ml-auto flex items-center gap-1.5 text-[12px] text-[color:var(--text-muted)]">
+                {t('companies.paginationRange', { start: rangeStart, end: rangeEnd, total: totalCount })}
+              </div>
+            )}
           </div>
-        </section>
-      )}
+        )}
 
-      {/* Table */}
-      <div className="bg-raised rounded-2xl border border-default overflow-hidden">
+        {/* Table */}
         <div className="overflow-x-auto">
           <table
-            className="w-full min-w-[820px] text-sm"
+            className="w-full min-w-[900px] border-collapse text-[13px]"
             role="table"
             aria-label={t('companies.tableList')}
           >
             <thead>
-              <tr className="border-b border-default bg-surface/60 text-left">
+              <tr className="border-b border-[color:var(--border)]">
                 <th
                   scope="col"
-                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-secondary"
-                >{t('common.company')}</th>
+                  className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap"
+                >
+                  {t('common.company')}
+                </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-secondary"
+                  className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap"
+                >
+                  <span className="inline-flex items-center gap-1">
+                    <Sparkle className="h-3 w-3 text-brand/60" aria-hidden="true" />
+                    {t('companies.categoriesCol')}
+                  </span>
+                </th>
+                <th
+                  scope="col"
+                  className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap"
                 >
                   {t('companies.tablePlan')}
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-secondary"
+                  className="px-3 py-2 text-right text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap"
                 >
-                  <span className="inline-flex items-center gap-1">
-                    <Users className="h-3.5 w-3.5" aria-hidden="true" />
-                    {t('companies.tableEmployees')}
-                  </span>
+                  {t('companies.tableEmployees')}
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-secondary"
+                  className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap"
                 >
-                  <span className="inline-flex items-center gap-1">
-                    <HardDrive className="h-3.5 w-3.5" aria-hidden="true" />
-                    {t('companies.tableStorage')}
-                  </span>
+                  {t('companies.adminContact')}
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-secondary"
-                >{t('common.status')}</th>
-                <th scope="col" className="px-4 py-3">
+                  className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap"
+                >
+                  {t('common.status')}
+                </th>
+                <th
+                  scope="col"
+                  className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap"
+                >
+                  {t('companies.createdLabel')}
+                </th>
+                <th scope="col" className="px-3 py-2 w-10">
                   <span className="sr-only">{t('companies.tableActions')}</span>
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[color:var(--border)]/60">
+            <tbody>
               {showLoading ? (
                 Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)
               ) : companies.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-16 text-center">
+                  <td colSpan={8} className="py-16 text-center">
                     <div className="flex flex-col items-center gap-2">
-                      <Building2 className="h-8 w-8 text-secondary" aria-hidden="true" />
-                      <p className="text-sm text-secondary">{t('companies.notFound')}</p>
+                      <Building2 className="h-8 w-8 text-[color:var(--text-muted)]" aria-hidden="true" />
+                      <p className="text-[13px] text-[color:var(--text-secondary)]">{t('companies.notFound')}</p>
                     </div>
                   </td>
                 </tr>
               ) : (
-                companies.map((company) => (
-                  <CompanyRow
-                    key={company.id}
-                    company={company}
-                    detailBasePath={companiesBasePath}
-                    isSuperadmin={isSuperadmin}
-                    onDeactivate={() => openModal('deactivate', company)}
-                    onActivate={() => openModal('activate', company)}
-                    onDelete={() => openModal('delete', company)}
-                  />
-                ))
+                <>
+                  {companies.map((company) => (
+                    <CompanyRow
+                      key={company.id}
+                      company={company}
+                      detailBasePath={companiesBasePath}
+                      isSuperadmin={isSuperadmin}
+                      onDeactivate={() => openModal('deactivate', company)}
+                      onActivate={() => openModal('activate', company)}
+                      onDelete={() => openModal('delete', company)}
+                    />
+                  ))}
+                  <tr className="bg-[color:var(--bg-raised)]/40 border-t border-[color:var(--border)]">
+                    <td className="px-3 py-2 text-[11px] font-medium text-[color:var(--text-muted)]">
+                      {companies.length} {t('companies.footerCount')}
+                    </td>
+                    <td className="px-3 py-2" />
+                    <td className="px-3 py-2" />
+                    <td className="px-3 py-2 text-right font-mono text-[11px] text-[color:var(--text-muted)]">
+                      {companies.reduce((s, c) => s + c.max_employees, 0)} {t('companies.footerSum')}
+                    </td>
+                    <td className="px-3 py-2" />
+                    <td className="px-3 py-2" />
+                    <td className="px-3 py-2" />
+                    <td className="px-3 py-2" />
+                  </tr>
+                </>
               )}
             </tbody>
           </table>
@@ -425,7 +511,7 @@ export default function CompanyListPage() {
       {/* Pagination */}
       {!showLoading && totalCount > 0 && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-secondary">
+          <p className="text-[13px] text-[color:var(--text-secondary)]">
             {t('companies.paginationRange', { start: rangeStart, end: rangeEnd, total: totalCount })}
           </p>
 
@@ -435,14 +521,9 @@ export default function CompanyListPage() {
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
               aria-label={t('common.previousPage')}
-              className={cn(
-                'rounded-lg border p-2 text-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
-                page === 1
-                  ? 'cursor-not-allowed border-default text-muted'
-                  : 'border-default hover:bg-hover',
-              )}
+              className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] disabled:opacity-40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand)]/50"
             >
-              <ChevronLeft size={16} aria-hidden="true" />
+              <ChevronLeft size={14} aria-hidden="true" />
             </button>
 
             {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -456,7 +537,7 @@ export default function CompanyListPage() {
                 item === 'ellipsis' ? (
                   <span
                     key={`ellipsis-${idx}`}
-                    className="px-2 text-secondary text-sm select-none"
+                    className="px-1 text-[color:var(--text-muted)] text-[12px] select-none"
                   >
                     …
                   </span>
@@ -468,10 +549,10 @@ export default function CompanyListPage() {
                     aria-label={t('companies.pageButton', { item })}
                     aria-current={item === page ? 'page' : undefined}
                     className={cn(
-                      'h-9 w-9 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
+                      'w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[12px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand)]/50',
                       item === page
-                        ? 'bg-brand text-white'
-                        : 'border border-default text-secondary hover:bg-hover',
+                        ? 'bg-[color:var(--brand)] text-white'
+                        : 'text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)]',
                     )}
                   >
                     {item}
@@ -484,14 +565,9 @@ export default function CompanyListPage() {
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
               aria-label={t('common.nextPage')}
-              className={cn(
-                'rounded-lg border p-2 text-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
-                page === totalPages
-                  ? 'cursor-not-allowed border-default text-muted'
-                  : 'border-default hover:bg-hover',
-              )}
+              className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] disabled:opacity-40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand)]/50"
             >
-              <ChevronRight size={16} aria-hidden="true" />
+              <ChevronRight size={14} aria-hidden="true" />
             </button>
           </nav>
         </div>
@@ -510,7 +586,7 @@ export default function CompanyListPage() {
           isLoading={isPending}
         />
       )}
-    </main>
+    </div>
   );
 }
 
@@ -534,36 +610,43 @@ function CompanyRow({
   onDelete,
 }: CompanyRowProps) {
   const { t } = useTranslation();
+
+  const tierLabelKey = COMPANY_TIER_LABEL_KEYS[company.plan as keyof typeof COMPANY_TIER_LABEL_KEYS];
+  const tierClass = TIER_BADGE[company.plan] ?? 'bg-raised text-secondary';
+
+  const createdDate = fmtDate(company.created_at, { month: 'short', year: 'numeric' });
+
   return (
-    <tr className="group transition-colors hover:bg-hover/40">
-      {/* Logo + Name + office */}
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-3">
+    <tr className="group border-b border-[color:var(--border)] hover:bg-[color:var(--bg-hover)] transition-colors">
+      {/* Company column: avatar + name + floor/office */}
+      <td className="px-3 py-2.5 align-middle font-medium text-[color:var(--text-primary)]">
+        <div className="flex items-center gap-2.5">
           {company.logo ? (
             <img
               src={company.logo}
-              alt={company.name}
-              className="w-8 h-8 rounded-lg object-cover shrink-0"
+              alt=""
+              className="w-6 h-6 rounded-md object-cover shrink-0"
             />
           ) : (
             <div
-              className="w-8 h-8 rounded-lg bg-blue-900/40 flex items-center justify-center shrink-0"
+              className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 text-white text-[10px] font-bold leading-none"
+              style={{ backgroundColor: getCompanyColor(company.name) }}
               aria-hidden="true"
             >
-              <Building2 className="w-4 h-4 text-blue-300" />
+              {getCompanyInitials(company.name)}
             </div>
           )}
           <div>
             <Link
               to={`${detailBasePath}/${company.id}`}
-              className="font-medium text-blue-300 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+              className="hover:text-[color:var(--brand)] transition-colors"
             >
               {company.name}
             </Link>
-            {(company.floor != null || company.office_number) && (
-              <div className="mt-0.5 text-xs text-muted">
-                {company.floor != null && t('companies.floorOffice', { floor: company.floor })}
-                {company.floor != null && company.office_number && ', '}
+            {(company.floor_id != null || company.office_number) && (
+              <div className="mt-0.5 text-[11px] text-[color:var(--text-muted)] font-mono">
+                {company.floor_id != null && t('companies.floorOffice', { floor: company.floor_number ?? company.floor_id })}
+                {company.floor_id != null && company.office_number && ', '}
                 {company.office_number && t('companies.officeNumber', { number: company.office_number })}
               </div>
             )}
@@ -571,51 +654,96 @@ function CompanyRow({
         </div>
       </td>
 
-      {/* Plan badge */}
-      <td className="px-4 py-3">
-        <span
-          className={cn(
-            'inline-block rounded-full px-2.5 py-0.5 text-xs font-medium',
-            PLAN_COLORS[company.plan] ?? 'bg-hover text-secondary',
-          )}
-        >
-          {t(COMPANY_TIER_LABEL_KEYS[company.plan as keyof typeof COMPANY_TIER_LABEL_KEYS] ?? company.plan)}
-        </span>
-      </td>
-
-      {/* Max employees */}
-      <td className="px-4 py-3 text-secondary">{company.max_employees}</td>
-
-      {/* Storage limit */}
-      <td className="px-4 py-3 text-secondary">{t('companies.storageGb', { value: company.storage_limit_gb })}</td>
-
-      {/* Status */}
-      <td className="px-4 py-3">
-        {company.is_active ? (
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-success">
-            <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-            {t('companies.companyActive')}
-          </span>
+      {/* Categories */}
+      <td className="px-3 py-2.5 align-middle">
+        {company.categories.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-1">
+            {company.categories.slice(0, 3).map((cat) => (
+              <span
+                key={cat}
+                className={cn(
+                  'inline-flex items-center h-5 px-2 rounded text-[11px] font-medium',
+                  CATEGORY_COLORS[cat] ?? DEFAULT_CAT_COLOR,
+                )}
+              >
+                {cat}
+              </span>
+            ))}
+            {company.categories.length > 3 && (
+              <span className={cn('inline-flex items-center h-5 px-2 rounded text-[11px] font-medium', DEFAULT_CAT_COLOR)}>
+                +{company.categories.length - 3}
+              </span>
+            )}
+          </div>
         ) : (
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-secondary">
-            <XCircle className="h-3.5 w-3.5" aria-hidden="true" />
-            {t('companies.companyInactive')}
-          </span>
+          <span className="text-[color:var(--text-muted)] text-[12px]">—</span>
         )}
       </td>
 
-      {/* Actions */}
-      <td className="px-4 py-3">
-        <div className="flex flex-wrap items-center gap-1">
-          <Link
-            to={`${detailBasePath}/${company.id}`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-300 bg-blue-900/30 hover:bg-blue-900/50 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            aria-label={t('companies.openCompany', { name: company.name })}
-          >
-            <ExternalLink size={13} aria-hidden="true" />
-            {t('companies.open')}
-          </Link>
+      {/* Tier badge */}
+      <td className="px-3 py-2.5 align-middle">
+        <span className={cn('inline-block rounded-full px-2.5 py-0.5 text-xs font-medium', tierClass)}>
+          {tierLabelKey ? t(tierLabelKey) : company.plan}
+        </span>
+      </td>
 
+      {/* Employees */}
+      <td className="px-3 py-2.5 align-middle text-right font-mono text-[13px] text-[color:var(--text-secondary)]">
+        {company.max_employees}
+      </td>
+
+      {/* Contact / company admin */}
+      <td className="px-3 py-2.5 align-middle">
+        {company.company_admin ? (
+          <div className="flex items-center gap-1.5">
+            {company.company_admin.avatar ? (
+              <img
+                src={company.company_admin.avatar}
+                alt=""
+                className="w-6 h-6 rounded-full object-cover shrink-0"
+              />
+            ) : (
+              <div className="w-6 h-6 rounded-full bg-[color:var(--bg-raised)] flex items-center justify-center text-[10px] font-semibold text-[color:var(--text-secondary)] shrink-0">
+                {getCompanyInitials(company.company_admin.full_name)}
+              </div>
+            )}
+            <span className="text-[12px] text-[color:var(--text-muted)] truncate max-w-[140px]">{company.company_admin.full_name}</span>
+          </div>
+        ) : company.contact_email ? (
+          <div className="flex items-center gap-1.5">
+            <div className="w-6 h-6 rounded-full bg-[color:var(--bg-raised)] flex items-center justify-center text-[10px] font-semibold text-[color:var(--text-secondary)] shrink-0">
+              {(company.contact_email.split('@')[0][0] ?? '?').toUpperCase()}
+            </div>
+            <span className="text-[12px] text-[color:var(--text-muted)] truncate max-w-[140px]">{company.contact_email}</span>
+          </div>
+        ) : (
+          <span className="text-[color:var(--text-muted)] text-[12px]">—</span>
+        )}
+      </td>
+
+      {/* Status */}
+      <td className="px-3 py-2.5 align-middle">
+        <span
+          className={cn(
+            'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium',
+            company.is_active
+              ? 'bg-[color:var(--status-free-bg)] text-[color:var(--status-free-text)]'
+              : 'bg-[color:var(--status-na-bg)] text-[color:var(--status-na-text)]',
+          )}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" aria-hidden="true" />
+          {company.is_active ? t('companies.companyActive') : t('companies.companyInactive')}
+        </span>
+      </td>
+
+      {/* Created date */}
+      <td className="px-3 py-2.5 align-middle text-[12px] text-[color:var(--text-muted)]">
+        {createdDate}
+      </td>
+
+      {/* Actions */}
+      <td className="px-3 py-2.5 align-middle">
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           {isSuperadmin && (
             <>
               {company.is_active ? (
@@ -623,9 +751,9 @@ function CompanyRow({
                   type="button"
                   onClick={onDeactivate}
                   title={t('common.deactivate')}
-                  className="rounded-lg p-1.5 text-amber-400 transition-colors hover:bg-warning-subtle hover:text-warning focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                  className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:text-[color:var(--status-busy-text)] hover:bg-[color:var(--status-busy-bg)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50"
                 >
-                  <PowerOff className="h-4 w-4" aria-hidden="true" />
+                  <PowerOff className="h-3.5 w-3.5" aria-hidden="true" />
                   <span className="sr-only">{t('companies.deactivateCompany', { name: company.name })}</span>
                 </button>
               ) : (
@@ -633,9 +761,9 @@ function CompanyRow({
                   type="button"
                   onClick={onActivate}
                   title={t('common.activate')}
-                  className="rounded-lg p-1.5 text-emerald-400 transition-colors hover:bg-success-subtle hover:text-success focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:text-[color:var(--status-free-text)] hover:bg-[color:var(--status-free-bg)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
                 >
-                  <Power className="h-4 w-4" aria-hidden="true" />
+                  <Power className="h-3.5 w-3.5" aria-hidden="true" />
                   <span className="sr-only">{t('companies.activateCompany', { name: company.name })}</span>
                 </button>
               )}
@@ -644,9 +772,9 @@ function CompanyRow({
                 type="button"
                 onClick={onDelete}
                 title={t('common.delete')}
-                className="rounded-lg p-1.5 text-red-400 transition-colors hover:bg-danger-subtle hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:text-[color:var(--danger)] hover:bg-[color:var(--status-busy-bg)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
               >
-                <Trash2 className="h-4 w-4" aria-hidden="true" />
+                <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                 <span className="sr-only">{t('companies.deleteCompany', { name: company.name })}</span>
               </button>
             </>

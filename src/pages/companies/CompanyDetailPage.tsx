@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useParams, useNavigate, Link } from 'react-router';
@@ -35,7 +35,7 @@ import {
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
-import type { CompanyDetail, CompanyLimits } from '@/shared/types';
+import type { CompanyDetail, CompanyLimits, ServiceFloor } from '@/shared/types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -140,6 +140,7 @@ interface LimitBarProps {
 }
 
 function LimitBar({ label, current, max, unit = '', unlimited, currentFormatted, maxFormatted }: LimitBarProps) {
+  const { t } = useTranslation();
   const safeCurrent = Number(current ?? 0) || 0;
   const safeMax = Number(max ?? 0) || 0;
   const percent = unlimited ? (safeMax > 0 ? Math.min(100, Math.round((safeCurrent / safeMax) * 100)) : 0) : getUsagePercent(safeCurrent, safeMax);
@@ -155,7 +156,7 @@ function LimitBar({ label, current, max, unit = '', unlimited, currentFormatted,
           <div className="h-full rounded-full bg-brand-hover transition-all duration-500" style={{ width: '0%' }} />
         </div>
         <p className="text-xs text-secondary">
-          {currentFormatted ?? `${safeCurrent}${unit}`} — без ограничений
+          {currentFormatted ?? `${safeCurrent}${unit}`} — {t('companies.unlimited')}
         </p>
       </div>
     );
@@ -187,7 +188,7 @@ function LimitBar({ label, current, max, unit = '', unlimited, currentFormatted,
         <div className={cn('h-full rounded-full transition-all duration-500', barColor)} style={{ width: `${percent}%` }} />
       </div>
       <p className="text-xs text-secondary">
-        {valueLabel} из {maxLabel}
+        {valueLabel} {t('companies.outOf', { max: maxLabel })}
       </p>
     </div>
   );
@@ -243,20 +244,86 @@ function DetailSkeleton() {
   );
 }
 
+// ─── TagInput ─────────────────────────────────────────────────────────────────
+
+interface TagInputProps {
+  tags: string[];
+  onChange: (tags: string[]) => void;
+  placeholder?: string;
+}
+
+function TagInput({ tags, onChange, placeholder }: TagInputProps) {
+  const [input, setInput] = useState('');
+  const atLimit = tags.length >= CATEGORIES_MAX;
+
+  function addTag(value: string) {
+    const trimmed = value.trim().slice(0, CATEGORY_MAX_LEN);
+    if (trimmed && !tags.includes(trimmed) && tags.length < CATEGORIES_MAX) {
+      onChange([...tags, trimmed]);
+    }
+    setInput('');
+  }
+
+  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addTag(input);
+    } else if (e.key === 'Backspace' && !input && tags.length > 0) {
+      onChange(tags.slice(0, -1));
+    }
+  }
+
+  function handleBlur() {
+    if (input.trim()) addTag(input);
+  }
+
+  return (
+    <div className="mt-1 flex flex-wrap gap-1.5 rounded-lg border border-default bg-surface px-3 py-2 focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-brand min-h-[38px]">
+      {tags.map(tag => (
+        <span key={tag} className="inline-flex items-center gap-1 rounded bg-raised px-2 py-0.5 text-xs font-medium text-secondary">
+          {tag}
+          <button
+            type="button"
+            onClick={() => onChange(tags.filter(t => t !== tag))}
+            className="text-muted hover:text-primary leading-none"
+            aria-label={`Remove ${tag}`}
+          >
+            ×
+          </button>
+        </span>
+      ))}
+      {!atLimit && (
+        <input
+          type="text"
+          value={input}
+          onChange={e => setInput(e.target.value.slice(0, CATEGORY_MAX_LEN))}
+          onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
+          placeholder={tags.length === 0 ? placeholder : ''}
+          className="min-w-[120px] flex-1 bg-transparent text-sm text-primary placeholder:text-muted focus:outline-none"
+          maxLength={CATEGORY_MAX_LEN}
+        />
+      )}
+    </div>
+  );
+}
+
 // ─── Edit form ────────────────────────────────────────────────────────────────
 
 interface EditFormData {
   name: string;
   description: string;
-  contact_email: string;
-  contact_phone: string;
-  floor: string;
+  floor_id: number | null;
   office_number: string;
   plan: string;
   max_employees: string;
   max_boards: string;
   storage_limit_gb: string;
+  categories: string[];
 }
+
+const CATEGORIES_MAX = 10;
+const CATEGORY_MAX_LEN = 50;
 
 interface EditFormProps {
   company: CompanyDetail;
@@ -273,14 +340,21 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
   const [form, setForm] = useState<EditFormData>({
     name: company.name,
     description: company.description ?? '',
-    contact_email: company.contact_email ?? '',
-    contact_phone: company.contact_phone ?? '',
-    floor: company.floor != null ? String(company.floor) : '',
+    floor_id: company.floor_id ?? null,
     office_number: company.office_number ?? '',
     plan: company.plan,
     max_employees: String(company.max_employees),
     max_boards: String(company.max_boards),
     storage_limit_gb: String(company.storage_limit_gb),
+    categories: company.categories ?? [],
+  });
+
+  const { data: floorsData = [], isLoading: floorsLoading } = useQuery({
+    queryKey: ['map-floors'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ results: ServiceFloor[] }>(API.map.floors);
+      return data.results ?? [];
+    },
   });
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -298,19 +372,22 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
   const { mutate, isPending } = useMutation({
     mutationFn: () => {
       const formData = new FormData();
+      // Fields accepted by both superadmin and company_admin
       formData.append('name', form.name);
       formData.append('description', form.description);
-      formData.append('contact_email', form.contact_email);
-      formData.append('contact_phone', form.contact_phone);
+      formData.append('categories', JSON.stringify(form.categories));
+      if (logoFile) formData.append('logo', logoFile);
+      // Superadmin-only fields — silently ignored by backend for company_admin,
+      // but we skip them on the client side to be explicit
       if (isSuperadmin) {
-        if (form.floor) formData.append('floor', form.floor);
+        if (form.floor_id != null) formData.append('floor_id', String(form.floor_id));
+        else formData.append('floor_id', '');
         if (form.office_number) formData.append('office_number', form.office_number);
         formData.append('plan', form.plan);
         formData.append('max_employees', form.max_employees);
         formData.append('max_boards', form.max_boards);
-        formData.append('storage_limit_gb', form.storage_limit_gb);
+        formData.append('storage_limit_gb', String(form.storage_limit_gb));
       }
-      if (logoFile) formData.append('logo', logoFile);
 
       return apiClient.patch<CompanyDetail>(
         API.companies.detail(String(company.id)),
@@ -372,7 +449,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
     setLogoPreview(url);
   }
 
-  function handleField(field: keyof EditFormData, value: string) {
+  function handleField(field: Exclude<keyof EditFormData, 'floor_id' | 'categories'>, value: string) {
     setForm((prev) => {
       if (field === 'plan') {
         const limits =
@@ -388,7 +465,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
       }
       return { ...prev, [field]: value };
     });
-    const keysToClear: (keyof EditFormData)[] =
+    const keysToClear: string[] =
       field === 'plan'
         ? ['plan', 'max_employees', 'max_boards', 'storage_limit_gb']
         : [field];
@@ -494,6 +571,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
             value={form.name}
             onChange={(e) => handleField('name', e.target.value)}
             className={inputClass('name')}
+            maxLength={255}
           />
           {fieldErrors.name && (
             <p className="mt-1 text-xs text-red-600" role="alert">{fieldErrors.name}</p>
@@ -514,38 +592,17 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
           />
         </div>
 
-        {/* Contact email */}
+        {/* Categories */}
         <div>
-          <label htmlFor="edit-contact-email" className="block text-xs text-muted mb-1">
-            {t('companies.contactEmail')}
+          <label className="block text-xs text-muted mb-1">
+            {t('companies.categoriesCol')}
           </label>
-          <input
-            id="edit-contact-email"
-            type="email"
-            value={form.contact_email}
-            onChange={(e) => handleField('contact_email', e.target.value)}
-            className={inputClass('contact_email')}
+          <TagInput
+            tags={form.categories}
+            onChange={cats => setForm(prev => ({ ...prev, categories: cats }))}
+            placeholder={t('companies.categoriesPlaceholder')}
           />
-          {fieldErrors.contact_email && (
-            <p className="mt-1 text-xs text-red-600" role="alert">{fieldErrors.contact_email}</p>
-          )}
-        </div>
-
-        {/* Contact phone */}
-        <div>
-          <label htmlFor="edit-contact-phone" className="block text-xs text-muted mb-1">
-            {t('companies.contactPhone')}
-          </label>
-          <input
-            id="edit-contact-phone"
-            type="tel"
-            value={form.contact_phone}
-            onChange={(e) => handleField('contact_phone', e.target.value)}
-            className={inputClass('contact_phone')}
-          />
-          {fieldErrors.contact_phone && (
-            <p className="mt-1 text-xs text-red-600" role="alert">{fieldErrors.contact_phone}</p>
-          )}
+          <p className="mt-1 text-xs text-muted">{t('companies.categoriesHint')}</p>
         </div>
 
         {/* Superadmin-only fields */}
@@ -557,14 +614,25 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
                 <label htmlFor="edit-floor" className="block text-xs text-muted mb-1">
                   {t('companies.floorLabel')}
                 </label>
-                <input
+                <select
                   id="edit-floor"
-                  type="number"
-                  min={1}
-                  value={form.floor}
-                  onChange={(e) => handleField('floor', e.target.value)}
-                  className={inputClass('floor')}
-                />
+                  value={form.floor_id ?? ''}
+                  disabled={floorsLoading}
+                  onChange={(e) => setForm(prev => ({ ...prev, floor_id: e.target.value ? Number(e.target.value) : null }))}
+                  className={inputClass('floor_id')}
+                >
+                  <option value="">{t('resources.create.floorSelectDefault')}</option>
+                  {floorsData.map((f) => (
+                    <option key={f.id} value={String(f.id)}>
+                      {f.name
+                        ? t('resources.create.floorOptionWithName', { number: f.number, name: f.name })
+                        : t('resources.create.floorOptionNoName', { number: f.number })}
+                    </option>
+                  ))}
+                </select>
+                {fieldErrors.floor_id && (
+                  <p className="mt-1 text-xs text-red-600" role="alert">{fieldErrors.floor_id}</p>
+                )}
               </div>
 
               {/* Office number */}
@@ -578,6 +646,7 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
                   value={form.office_number}
                   onChange={(e) => handleField('office_number', e.target.value)}
                   className={inputClass('office_number')}
+                  maxLength={50}
                 />
               </div>
             </div>
@@ -638,7 +707,8 @@ function EditForm({ company, isSuperadmin, onCancel, onSaved }: EditFormProps) {
                 <input
                   id="edit-storage"
                   type="number"
-                  min={1}
+                  min={0}
+                  step="0.1"
                   value={form.storage_limit_gb}
                   onChange={(e) => handleField('storage_limit_gb', e.target.value)}
                   className={inputClass('storage_limit_gb')}
@@ -731,11 +801,11 @@ export default function CompanyDetailPage() {
             className="inline-flex items-center gap-2 text-sm font-medium text-muted hover:text-primary mb-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
           >
             <ArrowLeft size={16} aria-hidden="true" />
-            Назад к списку
+            {t('companies.backToList')}
           </button>
         )}
         <p className="text-red-600 font-medium text-sm">
-          Не удалось загрузить данные компании. Попробуйте перезагрузить страницу.
+          {t('companies.loadDetailError')}
         </p>
       </main>
     );
@@ -765,10 +835,10 @@ export default function CompanyDetailPage() {
               type="button"
               onClick={() => navigate(companiesBasePath)}
               className="inline-flex items-center gap-2 text-sm font-medium text-secondary hover:text-secondary mb-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
-              aria-label="Назад к списку компаний"
+              aria-label={t('companies.backToListAria')}
             >
               <ArrowLeft size={16} aria-hidden="true" />
-              Назад к списку
+              {t('companies.backToList')}
             </button>
           )}
           <h1 className="text-2xl font-bold text-primary">{company.name}</h1>
@@ -780,10 +850,10 @@ export default function CompanyDetailPage() {
               <Link
                 to={`/company/settings?company=${company.id}`}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-default text-secondary hover:bg-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 shrink-0"
-                aria-label="Настройки компании"
+                aria-label={t('companies.settingsLink')}
               >
                 <Settings size={15} aria-hidden="true" />
-                Настройки
+                {t('companies.settings')}
               </Link>
             )}
             {canEdit && (
@@ -791,7 +861,7 @@ export default function CompanyDetailPage() {
                 type="button"
                 onClick={() => setIsEditing(true)}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-brand hover:bg-brand-hover text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 shrink-0"
-                aria-label="Редактировать компанию"
+                aria-label={t('companies.editAria')}
               >
                 <Pencil size={15} aria-hidden="true" />{t('common.edit')}</button>
             )}
@@ -802,14 +872,14 @@ export default function CompanyDetailPage() {
       {/* Profile card */}
       <section
         className="bg-raised rounded-2xl border border-default p-6 space-y-6"
-        aria-label="Информация о компании"
+        aria-label={t('companies.infoSection')}
       >
         {/* Logo + name row */}
         <div className="flex flex-col sm:flex-row items-start gap-5">
           {company.logo ? (
             <img
               src={company.logo}
-              alt={`Логотип ${company.name}`}
+              alt={t('companies.currentLogo')}
               className="w-24 h-24 rounded-2xl object-cover ring-2 ring-gray-700 shadow-md shrink-0"
             />
           ) : (
@@ -843,7 +913,7 @@ export default function CompanyDetailPage() {
                     : 'bg-danger-subtle text-danger border border-red-200 dark:border-red-800',
                 )}
               >
-                {company.is_active ? 'Активна' : 'Неактивна'}
+                {company.is_active ? t('companies.companyActive') : t('companies.companyInactive')}
               </span>
             </div>
           </div>
@@ -860,39 +930,41 @@ export default function CompanyDetailPage() {
         ) : (
           <dl
             className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-4"
-            aria-label="Контактная информация"
+            aria-label={t('companies.contactInfo')}
           >
             {company.contact_email && (
               <InfoRow
                 icon={<Mail size={16} aria-hidden="true" />}
-                label="Контактный email"
+                label={t('companies.contactEmail')}
                 value={company.contact_email}
               />
             )}
             {company.contact_phone && (
               <InfoRow
                 icon={<Phone size={16} aria-hidden="true" />}
-                label="Контактный телефон"
+                label={t('companies.contactPhone')}
                 value={company.contact_phone}
               />
             )}
-            {company.floor != null && (
+            {company.floor_id != null && (
               <InfoRow
                 icon={<MapPin size={16} aria-hidden="true" />}
-                label="Этаж"
-                value={company.floor}
+                label={t('companies.floorLabel')}
+                value={company.floor_name
+                  ? t('resources.create.floorOptionWithName', { number: company.floor_number ?? company.floor_id, name: company.floor_name })
+                  : t('resources.create.floorOptionNoName', { number: company.floor_number ?? company.floor_id })}
               />
             )}
             {company.office_number && (
               <InfoRow
                 icon={<Hash size={16} aria-hidden="true" />}
-                label="Номер офиса"
+                label={t('companies.officeNumberLabel')}
                 value={company.office_number}
               />
             )}
             <InfoRow
               icon={<CalendarDays size={16} aria-hidden="true" />}
-              label="Создана"
+              label={t('companies.createdLabel')}
               value={formatDate(company.created_at)}
             />
           </dl>
@@ -902,22 +974,22 @@ export default function CompanyDetailPage() {
       {/* Stats */}
       <section
         className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-        aria-label="Статистика компании"
+        aria-label={t('companies.stats')}
       >
         <StatCard
           icon={<Users size={22} aria-hidden="true" />}
-          label={`Сотрудников (макс. ${limitEmployeesMax})`}
+          label={t('companies.employeesMax', { max: limitEmployeesMax })}
           value={limitEmployeesCurrent}
         />
         <StatCard
           icon={<Columns3 size={22} aria-hidden="true" />}
-          label={`Досок (макс. ${limitBoardsMax || '—'})`}
+          label={t('companies.boardsMax', { max: limitBoardsMax || '—' })}
           value={limitBoardsCurrent}
         />
 
         <StatCard
           icon={<HardDrive size={22} aria-hidden="true" />}
-          label={storageUnlimited ? 'Хранилище (без ограничений)' : `Хранилище (всего ${storageMaxFormatted})`}
+          label={storageUnlimited ? t('companies.storageUnlimited') : t('companies.storageMax', { max: storageMaxFormatted })}
           value={
             <span>
               {storageUsedFormatted}{' '}
@@ -932,17 +1004,17 @@ export default function CompanyDetailPage() {
       {/* Limits widget */}
       <section
         className="bg-raised rounded-2xl border border-default p-5"
-        aria-label="Лимиты компании"
+        aria-label={t('companies.limits')}
       >
         <div className="mb-4">
-          <p className="text-base font-semibold text-primary">Лимиты тарифа</p>
-          <p className="text-sm text-secondary">Индикаторы меняют цвет с 80% и 95% использования.</p>
+          <p className="text-base font-semibold text-primary">{t('companies.limitsTier')}</p>
+          <p className="text-sm text-secondary">{t('companies.limitsHint')}</p>
         </div>
         <div className="space-y-5">
-          <LimitBar label="Сотрудники" current={limitEmployeesCurrent} max={limitEmployeesMax} />
-          <LimitBar label="Доски" current={limitBoardsCurrent} max={limitBoardsMax} />
+          <LimitBar label={t('companies.limitEmployees')} current={limitEmployeesCurrent} max={limitEmployeesMax} />
+          <LimitBar label={t('companies.limitBoards')} current={limitBoardsCurrent} max={limitBoardsMax} />
           <LimitBar
-            label="Хранилище"
+            label={t('companies.limitStorage')}
             current={limitStorageUsedGb}
             max={limitStorageMaxGb}
             unlimited={storageUnlimited}

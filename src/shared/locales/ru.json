@@ -9,9 +9,9 @@
       "spaceLoad": "Загрузка пространств",
       "openRequests": "Открытые заявки",
       "activeTenants": "Активные арендаторы",
-      "trendWeek": "{{delta}} за неделю",
-      "trendSpaceLoad": "{{pct}}% к прошлой нед.",
-      "trendClosedToday": "−{{count}} закрыто сегодня"
+      "trendWeekDelta": "+{{count}} за неделю",
+      "trendClosedToday": "−{{count}} закрыто сегодня",
+      "trendNewWeek": "+{{count}} за неделю"
     },
     "upcomingBookings": "Ближайшие бронирования",
     "acrossAllCompanies": "по всем компаниям · сегодня",
@@ -46,6 +46,7 @@
     "noBookings": "Нет предстоящих бронирований",
     "noAnnouncements": "Нет новых объявлений",
     "floorNoData": "Нет данных по этажам",
+    "floorOccupancyAria": "{{occupied}} из {{total}} мест занято ({{pct}}%)",
     "tasksWidget": {
       "subheading": "{{tasksLabel}} · {{boardsLabel}}",
       "tasksCount_one": "{{count}} задача",
@@ -765,7 +766,10 @@
     "detailLoading": "Загрузка…",
     "capacityLabel": "Вместимость",
     "modeLabel": "Режим",
-    "back": "Назад в бронирования (админ)"
+    "back": "Назад в бронирования (админ)",
+    "photoPrev": "Предыдущее фото",
+    "photoNext": "Следующее фото",
+    "photoGoTo": "Перейти к фото {{n}}"
   },
   "profile": {
     "title": "Профиль",
@@ -1221,7 +1225,68 @@
     "buildingMap": "Карта здания",
     "freeAt": "Свободен в {{time}}",
     "noPoints": "Точки для этого этажа не заданы",
-    "clickToPlace": "Нажмите на карту, чтобы разместить точку"
+    "clickToPlace": "Нажмите на карту, чтобы разместить точку",
+    "floorsTitle": "Этажи",
+    "floorFallbackName": "Этаж",
+    "legendTitle": "Легенда",
+    "editMode": "Редактирование",
+    "addFloor": "Добавить этаж",
+    "createFloor": "Создать этаж",
+    "floorsLoading": "Загрузка этажей...",
+    "floorsLoadError": "Не удалось загрузить список этажей. Попробуйте обновить страницу.",
+    "floorsNotFound": "Этажи не найдены.",
+    "floorsContactAdmin": "Обратитесь к администратору.",
+    "schemaLabel": "схема",
+    "updatedAt": "Обновлено в",
+    "loadingMap": "Загрузка карты...",
+    "loadError": "Не удалось загрузить карту этажа.",
+    "selectFloor": "Выберите этаж для просмотра карты",
+    "clickToBook": "Нажмите на точку, чтобы открыть бронирование.",
+    "zoomIn": "Увеличить",
+    "zoomOut": "Уменьшить",
+    "editFloor": "Редактировать этаж",
+    "editFloorHint": "Изменения применятся для всех пользователей.",
+    "currentPlan": "Текущая схема",
+    "replacePlan": "Заменить схему",
+    "replacePlanHint": "Выберите новый файл для замены",
+    "removePlan": "Удалить схему",
+    "editFloorAria": "Редактировать этаж {{name}}",
+    "floorNumber": "Номер этажа",
+    "floorNameLabel": "Название",
+    "floorPlanLabel": "Схема этажа",
+    "popup": {
+      "freeNow": "Свободно сейчас",
+      "occupiedUntil": "Занято до {{time}}",
+      "freeInMin": "Освободится через {{n}} мин",
+      "unavailable": "Недоступно",
+      "book": "Забронировать",
+      "details": "Подробнее"
+    },
+    "toolbar": {
+      "disableEditMode": "Выключить режим редактирования",
+      "enableEditMode": "Включить режим редактирования"
+    },
+    "addPanel": {
+      "resourceSelectHint": "Выберите ресурс — тип точки возьмётся из ресурса",
+      "title": "Новая точка",
+      "xLabel": "X (0–100)",
+      "yLabel": "Y (0–100)",
+      "resourceLabel": "Ресурс",
+      "labelField": "Метка",
+      "pointTypeLabel": "Тип точки",
+      "companyIdLabel": "ID компании",
+      "createBtn": "Создать точку",
+      "typeHint": "Тип точки определяется типом выбранного ресурса.",
+      "errorX": "X должно быть числом от 0 до 100",
+      "errorY": "Y должно быть числом от 0 до 100",
+      "errorCompany": "ID компании обязателен для офисной точки",
+      "selectDefault": "— Выбрать —"
+    },
+    "editModal": {
+      "pointTypeHint": "Тип точки определяется типом выбранного ресурса"
+    },
+    "deleteFloorTitle": "Удалить этаж?",
+    "deleteFloorConfirm": "Этаж «{{name}}» будет безвозвратно удалён вместе со всеми точками на карте и связанными ресурсами каталога."
   },
   "crm": {
     "priority": {
@@ -1243,7 +1308,10 @@
     "noArchivedBoards": "Нет архивных досок",
     "archivedBoardsHint": "Архивированные доски появятся здесь.",
     "createFirstHint": "Создайте первую!",
-    "loadErrorBoards": "Не удалось загрузить доски. Попробуйте обновить страницу."
+    "loadErrorBoards": "Не удалось загрузить доски. Попробуйте обновить страницу.",
+    "taskNotFound": "Задача не найдена или была архивирована.",
+    "taskIdLabel": "Задача #{{id}}",
+    "openBoardAria": "Открыть доску {{name}}"
   },
   "auth": {
     "login": {
@@ -1387,13 +1455,16 @@
     "notYetActive": "Ещё не активен",
     "companyFilter": "Название компании",
     "oneTime": "Одноразовый пропуск",
+    "backToPasses": "Назад к пропускам",
+    "visitDetails": "Детали визита",
     "filters": {
       "all": "Все",
       "active": "Активные",
       "used": "Использованные",
       "expired": "Истекшие",
       "revoked": "Отозванные",
-      "createdByEmail": "Email создателя"
+      "allDates": "Все даты",
+      "creatorEmail": "Email создателя"
     },
     "reason": {
       "expired": "Срок действия истёк",
@@ -1425,7 +1496,9 @@
     "loadingPass": "Загрузка пропуска...",
     "loadError": "Не удалось загрузить детали пропуска.",
     "passId": "Пропуск #{{id}}",
+    "passIdLabel": "ID пропуска",
     "backToList": "Назад к списку",
+    "guestInfo": "Информация о госте",
     "actionsSection": "Действия",
     "revoking": "Отзыв...",
     "cannotRevoke": "Нельзя отозвать использованный, истекший или уже отозванный пропуск.",
@@ -1441,6 +1514,10 @@
     "columnValidated": "Валидирован",
     "columnMethod": "Метод",
     "columnDetails": "Детали",
+    "columnGuest": "Гость",
+    "columnVisitDate": "Дата визита",
+    "columnVisitTime": "Время",
+    "columnActions": "Действия",
     "noPassesYet": "Пропусков пока нет.",
     "listTitle": "Гостевые пропуска",
     "listSubtitle": "Ваши цифровые пропуска с QR-кодом.",
@@ -1463,7 +1540,35 @@
     "validatePageSubtitle": "Введите QR-код вручную или отсканируйте его камерой.",
     "uuidLabel": "QR-код (UUID)",
     "uuidPlaceholder": "например, 64fdbf4f-465e-40e6-8ef4-3f3c96d34ac6",
-    "notYetActiveDetail": "Пропуск будет доступен с {{date}}"
+    "notYetActiveDetail": "Пропуск будет доступен с {{date}}",
+    "noCompany": "Без компании",
+    "qrPanel": {
+      "guestQR": "QR-код пропуска",
+      "download": "Скачать",
+      "sendEmail": "Отправить на email",
+      "sending": "Отправка...",
+      "sent": "Отправлено!",
+      "countdownActive": "Пропуск активен",
+      "countdownExpired": "Пропуск истёк",
+      "countdownUsed": "Использован",
+      "countdownPending": "До визита {{hours}} ч {{minutes}} мин — пропуск активируется автоматически",
+      "selectHint": "Выберите пропуск для просмотра QR",
+      "downloading": "Скачивание..."
+    },
+    "qrCodeSection": "QR-код",
+    "qrImageUnavailable": "QR изображение недоступно.",
+    "qrWillBeActiveFrom": "Будет активен в",
+    "qrActiveIn": "Активен через {{countdown}}",
+    "validationHistory": {
+      "title": "История валидаций",
+      "total": "Всего: {{count}}",
+      "checkedBy": "Проверил",
+      "entryPoint": "Точка",
+      "loadError": "Не удалось загрузить историю валидаций.",
+      "noHistory": "Гость ещё ни разу не валидировался по этому пропуску.",
+      "methodQr": "QR",
+      "methodManual": "Вручную"
+    }
   },
   "home": {
     "badge": "Workspace operations platform",
@@ -1563,6 +1668,7 @@
     "nameLabel": "Название",
     "descriptionLabel": "Описание",
     "contactEmail": "Контактный email",
+    "adminContact": "Администратор",
     "contactPhone": "Контактный телефон",
     "floorLabel": "Этаж",
     "officeNumberLabel": "Номер офиса",
@@ -1572,6 +1678,12 @@
     "storageLabel": "Хранилище (ГБ)",
     "editForm": "Редактирование компании",
     "createdLabel": "Создана",
+    "categoriesCol": "Категории",
+    "categoriesPlaceholder": "Tech, B2B, SaaS…",
+    "categoriesHint": "Нажмите Enter или запятую для добавления",
+    "domainCol": "Домен",
+    "footerCount": "записей",
+    "footerSum": "сотрудников всего",
     "nameRequired": "Название обязательно",
     "createTitle": "Создать компанию",
     "createSubtitle": "Заполните данные новой компании-арендатора",
@@ -1593,6 +1705,8 @@
     "selectCompanyToView": "Выберите компанию, чтобы просмотреть участников и инвайты.",
     "newInvitation": "Новое приглашение",
     "sendInvitation": "Отправить приглашение",
+    "inviteEmailPlaceholder": "colleague@company.com",
+    "templateNamePlaceholder": "Employee onboarding",
     "membersTitle": "Сотрудники",
     "noMembers": "Пока нет сотрудников",
     "invitationsTitle": "Приглашения",
@@ -1641,6 +1755,7 @@
     "noLabels": "Лейблы пока не добавлены.",
     "labelNamePlaceholder": "Название лейбла",
     "addLabel": "Добавить",
+    "labelDeleteAria": "Удалить метку {{name}}",
     "labelCreateError": "Не удалось создать лейбл.",
     "saveSettings": "Сохранить настройки",
     "onboardingTitle": "Шаблоны онбординга",
@@ -1858,7 +1973,12 @@
     "publishingPlain": "Публикация…",
     "publish": "Опубликовать",
     "formErrorTitleText": "Заполните заголовок и текст объявления.",
-    "formErrorCompany": "Выберите компанию-получателя или переключите на «БЦ»."
+    "formErrorCompany": "Выберите компанию-получателя или переключите на «БЦ».",
+    "unread": "Непрочитано",
+    "buildingScope": "БЦ",
+    "markRead": "Отметить прочитанным",
+    "read": "Прочитано",
+    "deleteAria": "Удалить объявление"
   },
   "calendar": {
     "pageTitle": "Календарь компании",

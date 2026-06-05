@@ -1,9 +1,11 @@
 import { cn } from '@/shared/lib/cn';
 import { useTranslation } from 'react-i18next';
 
-interface FloorRow {
+export interface FloorRow {
   label: string;
   pct: number;
+  occupied: number;
+  total: number;
 }
 
 function FloorLoadBar({ pct }: { pct: number }) {
@@ -14,7 +16,7 @@ function FloorLoadBar({ pct }: { pct: number }) {
         ? 'bg-amber-500'
         : 'bg-emerald-500';
   return (
-    <div className="h-1.5 w-[130px] shrink-0 overflow-hidden rounded-full bg-raised">
+    <div className="h-1.5 w-[100px] shrink-0 overflow-hidden rounded-full bg-raised">
       <div
         className={cn('h-full rounded-full transition-all', colorClass)}
         style={{ width: `${pct}%` }}
@@ -55,8 +57,11 @@ export function FloorLoadWidget({ rows }: FloorLoadWidgetProps) {
               {row.label}
             </span>
             <FloorLoadBar pct={row.pct} />
-            <span className="w-8 shrink-0 text-right font-mono text-xs text-muted">
-              {row.pct}%
+            <span
+              className="w-14 shrink-0 text-right font-mono text-xs text-muted"
+              aria-label={t('dashboard.floorOccupancyAria', { occupied: row.occupied, total: row.total, pct: row.pct })}
+            >
+              {row.occupied}/{row.total}
             </span>
           </li>
         ))}

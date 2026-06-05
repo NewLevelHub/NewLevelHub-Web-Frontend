@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
+import { fmtDayMonth, fmtDateTime, fmtTime } from '@/shared/lib/formatDate';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BookMarked, Calendar, ChevronLeft, ChevronRight, MoreHorizontal, Repeat, X } from 'lucide-react';
@@ -516,7 +517,7 @@ export default function ManageBookingsPage() {
           >
             <Calendar className="w-3 h-3 flex-shrink-0" />
             {dateFrom || dateTo
-              ? `${dateFrom ? new Date(dateFrom).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : '…'} — ${dateTo ? new Date(dateTo).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : '…'}`
+              ? `${dateFrom ? fmtDayMonth(dateFrom) : '…'} — ${dateTo ? fmtDayMonth(dateTo) : '…'}`
               : t('booking.manage.allDates')
             }
           </button>
@@ -705,7 +706,7 @@ export default function ManageBookingsPage() {
                       <td className="px-3 py-2.5 align-middle">
                         <Link
                           to={`${STAFF_UI_PREFIX}/bookings/${booking.id}`}
-                          className="font-medium text-[color:var(--text-primary)] hover:text-[color:var(--brand)] transition-colors"
+                          className="hover:text-[color:var(--brand)] transition-colors"
                         >
                           {booking.resource_name}
                         </Link>
@@ -717,24 +718,20 @@ export default function ManageBookingsPage() {
                       )}
                       <td className="px-3 py-2.5 align-middle">
                         <div className="flex items-center gap-1.5">
-                          <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium bg-[color:var(--bg-raised)] text-[color:var(--text-secondary)] flex-shrink-0">
-                            {getInitials(booking.user_name ?? '')}
-                          </span>
-                          <span className="text-[color:var(--text-primary)]">{booking.user_name}</span>
+                          {booking.booked_by?.avatar ? (
+                            <img src={booking.booked_by.avatar} alt={booking.booked_by.full_name} className="h-6 w-6 rounded-full object-cover flex-shrink-0" />
+                          ) : (
+                            <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium bg-[color:var(--bg-raised)] text-[color:var(--text-secondary)] flex-shrink-0">
+                              {getInitials(booking.booked_by?.full_name ?? booking.user_name ?? '')}
+                            </span>
+                          )}
+                          <span className="text-[color:var(--text-primary)]">{booking.booked_by?.full_name ?? booking.user_name}</span>
                         </div>
                       </td>
                       <td className="px-3 py-2.5 align-middle font-mono text-[color:var(--text-primary)]">
-                        {new Date(booking.start_time).toLocaleString('ru-RU', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        {fmtDateTime(booking.start_time, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                         {' — '}
-                        {new Date(booking.end_time).toLocaleTimeString('ru-RU', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        {fmtTime(booking.end_time)}
                       </td>
                       <td className="px-3 py-2.5 align-middle text-[color:var(--text-muted)]">
                         {(booking.participants?.length ?? 0) > 0
@@ -800,7 +797,7 @@ export default function ManageBookingsPage() {
               {t('booking.manage.adminCancelTitle')}
             </h2>
             <p className="mt-1 text-sm text-[color:var(--text-muted)]">
-              #{cancelTarget.id} ({cancelTarget.resource_name}, {cancelTarget.user_name})
+              #{cancelTarget.id} ({cancelTarget.resource_name}, {cancelTarget.booked_by?.full_name ?? cancelTarget.user_name})
             </p>
 
             <label className="mt-4 block text-sm text-[color:var(--text-secondary)]">
@@ -863,7 +860,7 @@ export default function ManageBookingsPage() {
               {t('booking.manage.editTitle', { id: modalBooking?.id ?? editTarget.id })}
             </h2>
             <p className="mt-1 text-sm text-[color:var(--text-muted)]">
-              {modalBooking?.resource_name ?? editTarget.resource_name} · {modalBooking?.user_name ?? editTarget.user_name}
+              {modalBooking?.resource_name ?? editTarget.resource_name} · {(modalBooking?.booked_by?.full_name ?? modalBooking?.user_name) ?? (editTarget.booked_by?.full_name ?? editTarget.user_name)}
             </p>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">

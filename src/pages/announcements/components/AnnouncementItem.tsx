@@ -4,6 +4,7 @@ import { Building2, Eye, Pin, Trash2 } from 'lucide-react';
 
 import { USER_ROLES } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
+import { fmtDateTime } from '@/shared/lib/formatDate';
 import type { Announcement } from '@/shared/types';
 
 import { AnnouncementCategoryBadge } from '@/pages/announcements/components/AnnouncementCategoryBadge';
@@ -29,6 +30,7 @@ export const AnnouncementItem = memo<AnnouncementItemProps>(function Announcemen
   currentUserId,
   isSuperadmin,
 }) {
+  const { t } = useTranslation();
   const isBuilding = a.scope === 'building' || a.company_id === null;
   const isAuthor =
     currentUserId !== undefined &&
@@ -52,7 +54,7 @@ export const AnnouncementItem = memo<AnnouncementItemProps>(function Announcemen
             {!a.is_read ? (
               <span
                 className="inline-block h-2 w-2 shrink-0 rounded-full bg-indigo-400"
-                aria-label="Непрочитано"
+                aria-label={t('announcements.unread')}
               />
             ) : null}
             <h2 className={cn('font-semibold', a.is_read ? 'text-secondary' : 'text-white')}>
@@ -61,7 +63,7 @@ export const AnnouncementItem = memo<AnnouncementItemProps>(function Announcemen
             {isBuilding ? (
               <span className="inline-flex items-center gap-1 rounded-full border border-default px-2 py-0.5 text-xs text-secondary">
                 <Building2 size={12} aria-hidden="true" />
-                БЦ
+                {t('announcements.buildingScope')}
               </span>
             ) : null}
           </div>
@@ -76,7 +78,7 @@ export const AnnouncementItem = memo<AnnouncementItemProps>(function Announcemen
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-muted">
               {a.author_name ? `${a.author_name} · ` : ''}
-              {new Date(a.created_at).toLocaleString('ru-RU')}
+              {fmtDateTime(a.created_at)}
             </p>
             <div className="flex items-center gap-3">
               {isAuthor ? (
@@ -92,10 +94,10 @@ export const AnnouncementItem = memo<AnnouncementItemProps>(function Announcemen
                   disabled={isMarkingRead}
                   className="text-xs text-brand hover:text-brand disabled:opacity-40"
                 >
-                  Отметить прочитанным
+                  {t('announcements.markRead')}
                 </button>
               ) : (
-                <span className="text-xs text-muted">Прочитано</span>
+                <span className="text-xs text-muted">{t('announcements.read')}</span>
               )}
             </div>
           </div>
@@ -106,7 +108,7 @@ export const AnnouncementItem = memo<AnnouncementItemProps>(function Announcemen
             onClick={() => onDelete(a.id)}
             disabled={isDeleting}
             className="shrink-0 rounded p-1 text-secondary hover:bg-danger-subtle hover:text-danger disabled:opacity-40"
-            aria-label="Удалить объявление"
+            aria-label={t('announcements.deleteAria')}
           >
             <Trash2 size={16} aria-hidden="true" />
           </button>

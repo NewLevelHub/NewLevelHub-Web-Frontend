@@ -7,6 +7,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { SUPERADMIN_UI_PREFIX, USER_ROLES, USER_ROLE_LABEL_KEYS } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
+import { fmtDate } from '@/shared/lib/formatDate';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import type { Company, UserListItem, PaginatedResponse } from '@/shared/types';
 
@@ -35,12 +36,7 @@ const ORDERING_OPTIONS = [
 // ---------------------------------------------------------------------------
 
 function formatDate(iso: string | null | undefined): string {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  return `${day}.${month}.${year}`;
+  return fmtDate(iso, { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 function getInitials(firstName: string, lastName: string): string {

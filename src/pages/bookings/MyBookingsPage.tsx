@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { Link } from 'react-router';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, MoreHorizontal, Plus, Repeat } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
+import { fmtDate, fmtDateTime, fmtDayMonth, fmtTime } from '@/shared/lib/formatDate';
 import {
   BOOKING_STATUSES,
   BOOKING_STATUS_LABEL_KEYS,
@@ -521,24 +522,28 @@ export default function MyBookingsPage() {
                         </p>
                         {b.checked_in_at && (
                           <p className="text-[11px] text-[color:var(--status-free-text)] mt-0.5">
-                            {t('booking.myBookings.checkedIn', { time: new Date(b.checked_in_at).toLocaleString('ru-RU') })}
+                            {t('booking.myBookings.checkedIn', { time: fmtDateTime(b.checked_in_at) })}
                           </p>
                         )}
                       </td>
                       <td className="px-3 py-2.5 align-middle">
                         <div className="flex items-center gap-1.5">
-                          <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium bg-[color:var(--bg-raised)] text-[color:var(--text-secondary)] flex-shrink-0">
-                            {getInitials(b.user_name ?? '')}
-                          </span>
-                          <span className="text-[color:var(--text-primary)]">{b.user_name}</span>
+                          {b.booked_by?.avatar ? (
+                            <img src={b.booked_by.avatar} alt={b.booked_by.full_name} className="h-6 w-6 rounded-full object-cover flex-shrink-0" />
+                          ) : (
+                            <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium bg-[color:var(--bg-raised)] text-[color:var(--text-secondary)] flex-shrink-0">
+                              {getInitials(b.booked_by?.full_name ?? b.user_name ?? '')}
+                            </span>
+                          )}
+                          <span className="text-[color:var(--text-primary)]">{b.booked_by?.full_name ?? b.user_name}</span>
                         </div>
                       </td>
                       <td className="px-3 py-2.5 align-middle font-mono text-[color:var(--text-primary)] whitespace-nowrap">
-                        {start.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                        {fmtDayMonth(start)}
                         {' · '}
-                        {start.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                        {fmtTime(start)}
                         {' — '}
-                        {end.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                        {fmtTime(end)}
                       </td>
                       <td className="px-3 py-2.5 align-middle">
                         <StatusBadge status={b.status} />
@@ -635,7 +640,7 @@ export default function MyBookingsPage() {
               {t('common.edit')} #{modalBooking?.id ?? editTarget.id}
             </h2>
             <p className="mt-1 text-sm text-[color:var(--text-muted)]">
-              {modalBooking?.resource_name ?? editTarget.resource_name} · {modalBooking?.user_name ?? editTarget.user_name}
+              {modalBooking?.resource_name ?? editTarget.resource_name} · {(modalBooking?.booked_by?.full_name ?? modalBooking?.user_name) ?? (editTarget.booked_by?.full_name ?? editTarget.user_name)}
             </p>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">

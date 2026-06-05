@@ -443,7 +443,7 @@ export default function TeamDirectoryPage() {
 
                   <div className="flex items-center gap-2 text-xs text-secondary">
                     <CalendarClock className="h-4 w-4" aria-hidden="true" />
-                    Последний вход: {formatDate(profileData.last_login)}
+                    {t('team.lastLogin')}: {formatDate(profileData.last_login)}
                   </div>
                   <div className="inline-flex items-center gap-1 text-xs text-emerald-400">
                     <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />

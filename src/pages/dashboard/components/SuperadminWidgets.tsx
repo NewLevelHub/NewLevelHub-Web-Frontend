@@ -7,7 +7,7 @@ import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import type { SuperadminDashboardData } from '@/shared/types';
 import { KpiCard, type KpiCardProps } from '@/pages/dashboard/components/KpiCard';
 import { FloorLoadWidget } from '@/pages/dashboard/components/FloorLoadWidget';
-import { SPARKLINE_DATA, BOOKING_STATUS_BADGE } from '@/pages/dashboard/constants';
+import { BOOKING_STATUS_BADGE } from '@/pages/dashboard/constants';
 
 export function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
   const { t } = useTranslation();
@@ -27,36 +27,34 @@ export function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
     {
       label: t('dashboard.kpi.activeBookings'),
       value: String(data.bookings_today),
-      trend: t('dashboard.kpi.trendWeek', { delta: (data.bookings_week_delta >= 0 ? '+' : '') + data.bookings_week_delta }),
+      trend: t('dashboard.kpi.trendWeekDelta', { count: data.bookings_week_delta }),
       trendDir: data.bookings_week_delta >= 0 ? 'up' : 'down',
-      sparklineData: SPARKLINE_DATA.bookings,
     },
     {
       label: t('dashboard.kpi.spaceLoad'),
       value: `${data.space_load_pct}%`,
-      trend: t('dashboard.kpi.trendSpaceLoad', { pct: 4 }),
-      trendDir: 'up',
-      sparklineData: SPARKLINE_DATA.spaceLoad,
     },
     {
       label: t('dashboard.kpi.openRequests'),
       value: String(data.open_service_requests),
       trend: t('dashboard.kpi.trendClosedToday', { count: data.service_requests_closed_today }),
       trendDir: 'neutral',
-      sparklineData: SPARKLINE_DATA.requests,
     },
     {
       label: t('dashboard.kpi.activeTenants'),
       value: String(data.total_companies),
-      trend: t('dashboard.kpi.trendWeek', { delta: (data.new_companies_last_7d > 0 ? '+' : '') + data.new_companies_last_7d }),
+      trend: t('dashboard.kpi.trendNewWeek', { count: data.new_companies_last_7d }),
       trendDir: data.new_companies_last_7d > 0 ? 'up' : 'neutral',
-      sparklineData: SPARKLINE_DATA.tenants,
     },
   ];
 
   const floorRows = (data.floor_load ?? [])
-    .filter(f => f.floor_name !== 'string' && f.floor_number !== 2147483647)
-    .map(f => ({ label: f.floor_name, pct: f.occupancy_pct }));
+    .map(f => ({
+      label: f.floor_name,
+      pct: f.occupancy_pct,
+      occupied: f.occupied,
+      total: f.total,
+    }));
 
   const userName = data.user?.full_name?.split(' ')[0] ?? '';
 
@@ -164,7 +162,7 @@ export function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
                     const end = new Date(b.end_time);
                     const timeStr = `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')} – ${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`;
                     return (
-                      <tr key={b.id} className="hover:bg-hover transition-colors">
+                      <tr key={b.id} className="border-b border-[color:var(--border)] hover:bg-[color:var(--bg-hover)] transition-colors">
                         <td className="px-4 py-3 font-medium text-primary whitespace-nowrap">
                           {b.resource_name}
                         </td>

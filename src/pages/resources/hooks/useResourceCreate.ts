@@ -27,7 +27,7 @@ export type EquipmentState = Record<ResourceEquipmentKey, boolean>;
 export type ResourceCreatePayload = {
   type: ResourceTypeValue;
   name: string;
-  floor: number;
+  floor_id: number;
   zone?: string;
   description?: string;
   capacity?: number;
@@ -274,7 +274,7 @@ export function useResourceCreate() {
   function buildTemplate(): Omit<ResourceCreatePayload, 'name'> {
     const payload: Omit<ResourceCreatePayload, 'name'> = {
       type: form.type,
-      floor: Number(form.floor),
+      floor_id: Number(form.floor),
       availability_start: form.availability_start,
       availability_end: form.availability_end,
       availability_days: form.availability_days,

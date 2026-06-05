@@ -24,6 +24,7 @@ import type {
   ResourceBlock,
   ResourcePhoto,
   ResourceScheduleSlot,
+  ServiceFloor,
 } from '@/shared/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -142,6 +143,14 @@ export function useResourceDetail() {
     },
   });
 
+  const { data: floors = [], isLoading: floorsLoading } = useQuery({
+    queryKey: ['map-floors'],
+    queryFn: async () => {
+      const { data: res } = await apiClient.get<{ results: ServiceFloor[] }>(API.map.floors);
+      return res.results;
+    },
+  });
+
   // ── derived ───────────────────────────────────────────────────────────────
 
   const activeBlock = useMemo(() => {
@@ -173,7 +182,7 @@ export function useResourceDetail() {
     if (!data) return;
     setType(data.type);
     setName(data.name);
-    setFloor(data.floor);
+    setFloor(data.floor_id ?? data.floor_number ?? data.floor ?? 1);
     setZone(data.zone);
     setDescription(data.description);
     setCapacity(data.capacity);
@@ -200,7 +209,7 @@ export function useResourceDetail() {
     const base: Record<string, unknown> = {
       type,
       name: name.trim(),
-      floor,
+      floor_id: floor,
       zone: zone.trim(),
       description: description.trim(),
       capacity,
@@ -491,6 +500,8 @@ export function useResourceDetail() {
     setCapsuleZone,
     // data
     companies,
+    floors,
+    floorsLoading,
     // mutations
     saveMutation,
     activateMutation,

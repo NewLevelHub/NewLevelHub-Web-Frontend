@@ -31,7 +31,7 @@ export const MapDeleteFloorDialog = memo<MapDeleteFloorDialogProps>(
         onSuccess(id);
       },
       onError: (err: unknown) => {
-        setDeleteError(getApiErrorMessage(err, 'Не удалось удалить этаж'));
+        setDeleteError(getApiErrorMessage(err, t('map.deleteFloorError')));
       },
     });
 
@@ -51,11 +51,10 @@ export const MapDeleteFloorDialog = memo<MapDeleteFloorDialogProps>(
         <div className="w-full max-w-sm rounded-2xl bg-surface shadow-2xl">
           <div className="px-6 py-5">
             <h2 id="delete-floor-title" className="text-base font-semibold text-primary">
-              Удалить этаж?
+              {t('map.deleteFloorTitle')}
             </h2>
             <p className="mt-2 text-sm text-muted">
-              Этаж <span className="font-medium text-gray-700">«{formatFloorTabLabel(floor)}»</span> будет безвозвратно
-              удалён вместе со всеми точками на карте и связанными ресурсами каталога.
+              {t('map.deleteFloorConfirm', { name: formatFloorTabLabel(floor) })}
             </p>
 
             {deleteError ? (
@@ -84,7 +83,7 @@ export const MapDeleteFloorDialog = memo<MapDeleteFloorDialogProps>(
               {deleteMutation.isPending ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
               ) : null}
-              Удалить
+              {t('common.delete')}
             </button>
           </div>
         </div>

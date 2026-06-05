@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Archive, ArchiveRestore, LayoutGrid, Calendar } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
+import { fmtDateLong } from '@/shared/lib/formatDate';
 import type { CrmBoard } from '@/shared/types';
 
 export interface BoardListCardProps {
@@ -19,11 +20,7 @@ export const BoardListCard = memo(function BoardListCard({
   onClick,
   canManage,
 }: BoardListCardProps) {
-  const formattedDate = new Date(board.created_at).toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  const formattedDate = fmtDateLong(board.created_at);
 
   const handleArchiveClick = (e: React.MouseEvent) => {
     e.stopPropagation();
