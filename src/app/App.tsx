@@ -5,6 +5,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { router } from './router';
 import { useAuthStore } from '@/shared/store/auth';
 import { queryClient } from '@/shared/lib/queryClient';
+import { initSessionSync } from '@/shared/lib/sessionManager';
 
 export default function App() {
   const bootstrap = useAuthStore((s) => s.bootstrap);
@@ -12,6 +13,8 @@ export default function App() {
   useEffect(() => {
     bootstrap();
   }, [bootstrap]);
+
+  useEffect(() => initSessionSync(), []);
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -829,6 +829,13 @@
     "cancel": "Cancel",
     "close": "Close"
   },
+  "session": {
+    "expired": "Your session has ended due to inactivity. Please sign in again.",
+    "warningTitle": "Session ending soon",
+    "warningDescription": "Your session will end in about {{minutes}} minute(s) due to inactivity.",
+    "extend": "Stay signed in",
+    "exit": "Sign out"
+  },
   "booking": {
     "create": {
       "title": "New booking",

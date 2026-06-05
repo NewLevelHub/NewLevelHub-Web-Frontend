@@ -3,6 +3,11 @@ import { env } from '@/shared/config/env';
 import { API } from '@/shared/api/endpoints';
 import { queryClient } from '@/shared/lib/queryClient';
 import { tokenStorage } from '@/shared/lib/storage';
+import {
+  handleSessionExpired,
+  isSessionExpired,
+  isSessionIdleTimeoutError,
+} from '@/shared/lib/sessionManager';
 import i18n from '@/shared/lib/i18n';
 
 export const apiClient = axios.create({
@@ -13,6 +18,10 @@ export const apiClient = axios.create({
 
 apiClient.interceptors.request.use((config) => {
   const token = tokenStorage.getAccessToken();
+  // Block only authenticated calls after idle logout — allow fresh login/register.
+  if (isSessionExpired() && token) {
+    return Promise.reject(new axios.Cancel('Session expired'));
+  }
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -35,17 +44,34 @@ function processQueue(error: unknown, token: string | null) {
   failedQueue = [];
 }
 
+function rejectSessionExpired(error: unknown) {
+  handleSessionExpired({ noticeKey: 'session.expired' });
+  return Promise.reject(error);
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
+    if (axios.isCancel(error)) {
+      return Promise.reject(error);
+    }
+
     const originalRequest = error.config;
     const reqUrl = String(originalRequest?.url ?? '');
 
-    // Не пытаемся «refresh» повторно при ошибке самого refresh — иначе цикл.
+    if (isSessionIdleTimeoutError(error)) {
+      return rejectSessionExpired(error);
+    }
+
+    if (isSessionExpired()) {
+      return Promise.reject(error);
+    }
+
     if (reqUrl.includes('/auth/token/refresh/')) {
-      tokenStorage.clear();
-      queryClient.clear();
-      window.location.href = '/login';
+      if (isSessionIdleTimeoutError(error)) {
+        return rejectSessionExpired(error);
+      }
+      handleSessionExpired({ noticeKey: 'session.expired' });
       return Promise.reject(error);
     }
 
@@ -69,7 +95,6 @@ apiClient.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      // Refresh в httpOnly cookie; тело может быть пустым, если cookie есть.
       const { data } = await axios.post<{ access: string }>(
         `${env.API_BASE_URL}${API.auth.refreshToken}`,
         {},
@@ -87,9 +112,10 @@ apiClient.interceptors.response.use(
       return apiClient(originalRequest);
     } catch (refreshError) {
       processQueue(refreshError, null);
-      tokenStorage.clear();
-      queryClient.clear();
-      window.location.href = '/login';
+      if (isSessionIdleTimeoutError(refreshError)) {
+        return rejectSessionExpired(refreshError);
+      }
+      handleSessionExpired({ noticeKey: 'session.expired' });
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;

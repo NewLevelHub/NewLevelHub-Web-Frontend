@@ -55,6 +55,9 @@ jobs:
           tags: |
             ${{ steps.meta.outputs.latest_image_ref }}
             ${{ steps.meta.outputs.sha_image_ref }}
+          build-args: |
+            VITE_IDLE_SESSION_TIMEOUT_MINUTES=${{ vars.VITE_IDLE_SESSION_TIMEOUT_MINUTES || 30 }}
+            VITE_IDLE_SESSION_WARNING_MINUTES=${{ vars.VITE_IDLE_SESSION_WARNING_MINUTES || 2 }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
