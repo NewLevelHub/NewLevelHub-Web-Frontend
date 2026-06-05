@@ -381,6 +381,7 @@ export default function FileBrowserPage() {
     rootFoldersQuery.isLoading || folderDetailQuery.isLoading || searchedFilesQuery.isLoading || rootFilesQuery.isLoading;
   const isError = rootFoldersQuery.isError || folderDetailQuery.isError || searchedFilesQuery.isError || rootFilesQuery.isError;
 
+  const isGuest = user?.role === USER_ROLES.GUEST;
   const isAdmin = user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN;
   const canManageFile = (file: StorageFile) =>
     scope === 'personal' || file.owner === user?.id || isAdmin;
@@ -454,7 +455,10 @@ export default function FileBrowserPage() {
 
   const usageData = storageUsageQuery.data;
   const usedBytes = usageData?.[scope]?.used_bytes ?? 0;
-  const limitBytes = scope === 'company' ? (usageData?.company?.limit_bytes ?? 0) : 0;
+  const limitBytes =
+    scope === 'company'
+      ? (usageData?.company?.limit_bytes ?? 0)
+      : (usageData?.personal?.limit_bytes ?? 0);
   const fileCount = usageData?.[scope]?.file_count ?? 0;
   const usedPercent = limitBytes > 0 ? (usedBytes / limitBytes) * 100 : 0;
 
@@ -465,44 +469,46 @@ export default function FileBrowserPage() {
         <p className="mt-1 text-sm text-slate-400">Личное и общее хранилище с навигацией по папкам.</p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={() => {
-            setScope('personal');
-            setTrail([]);
-            setUploadFile(null);
-            setUploadError(null);
-            setUploadSuccess(null);
-            setUploadInputKey((k) => k + 1);
-          }}
-          className={`rounded-md border px-3 py-1.5 text-sm ${
-            scope === 'personal'
-              ? 'border-default bg-brand text-white'
-              : 'border-slate-700 text-slate-300 bg-slate-800'
-          }`}
-        >
-          Личное
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setScope('company');
-            setTrail([]);
-            setUploadFile(null);
-            setUploadError(null);
-            setUploadSuccess(null);
-            setUploadInputKey((k) => k + 1);
-          }}
-          className={`rounded-md border px-3 py-1.5 text-sm ${
-            scope === 'company'
-              ? 'border-default bg-brand text-white'
-              : 'border-slate-700 text-slate-300 bg-slate-800'
-          }`}
-        >
-          Общее хранилище
-        </button>
-      </div>
+      {!isGuest && (
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setScope('personal');
+              setTrail([]);
+              setUploadFile(null);
+              setUploadError(null);
+              setUploadSuccess(null);
+              setUploadInputKey((k) => k + 1);
+            }}
+            className={`rounded-md border px-3 py-1.5 text-sm ${
+              scope === 'personal'
+                ? 'border-default bg-brand text-white'
+                : 'border-slate-700 text-slate-300 bg-slate-800'
+            }`}
+          >
+            Личное
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setScope('company');
+              setTrail([]);
+              setUploadFile(null);
+              setUploadError(null);
+              setUploadSuccess(null);
+              setUploadInputKey((k) => k + 1);
+            }}
+            className={`rounded-md border px-3 py-1.5 text-sm ${
+              scope === 'company'
+                ? 'border-default bg-brand text-white'
+                : 'border-slate-700 text-slate-300 bg-slate-800'
+            }`}
+          >
+            Общее хранилище
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-2 text-sm text-slate-400">
         <button type="button" onClick={resetToRoot} className="text-brand hover:underline">
@@ -545,36 +551,6 @@ export default function FileBrowserPage() {
         ) : (
           <p className="text-xs text-slate-400">Введите имя файла для поиска</p>
         )}
-      </div>
-
-      <div className="rounded-lg border border-slate-700 bg-slate-800 p-4">
-        <div className="mb-2 flex items-center justify-between text-sm">
-          <p className="font-medium text-slate-200">Использование хранилища</p>
-          <p className="text-slate-300">
-            {scope === 'company'
-              ? `${formatFileSize(usedBytes)} / ${formatFileSize(limitBytes)}`
-              : formatFileSize(usedBytes)}
-          </p>
-        </div>
-        {scope === 'company' && limitBytes > 0 && (
-          <>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-700">
-              <div
-                className={cn(
-                  'h-full rounded-full transition-all',
-                  usedPercent >= 95 ? 'bg-red-500' : usedPercent >= 80 ? 'bg-amber-500' : 'bg-brand-hover',
-                )}
-                style={{ width: `${Math.max(0, Math.min(100, usedPercent))}%` }}
-              />
-            </div>
-            <p className="mt-2 text-xs text-slate-400">
-              {storageUsageQuery.isError
-                ? 'Не удалось обновить лимиты хранилища'
-                : `${usedPercent.toFixed(1)}% использовано`}
-            </p>
-          </>
-        )}
-        <p className="mt-1 text-xs text-slate-500">{fileCount} файлов</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -669,7 +645,7 @@ export default function FileBrowserPage() {
                         <span className="text-xs text-slate-500">{formatFileSize(file.size ?? file.file_size)}</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
-                        {scope === 'personal' ? (
+                        {scope === 'personal' && !isGuest ? (
                           <button
                             type="button"
                             onClick={() => handleSelectShareFile(file)}
@@ -715,7 +691,7 @@ export default function FileBrowserPage() {
             </section>
           </div>
 
-          {scope === 'personal' ? (
+          {scope === 'personal' && !isGuest ? (
           <>
           <section className="rounded-lg border border-slate-700 bg-slate-800 p-4">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">Шаринг файла</h2>
@@ -837,6 +813,36 @@ export default function FileBrowserPage() {
           ) : null}
         </>
       ) : null}
+
+      <div className="rounded-lg border border-slate-700 bg-slate-800 p-4">
+        <div className="mb-2 flex items-center justify-between text-sm">
+          <p className="font-medium text-slate-200">Использование хранилища</p>
+          <p className="text-slate-300">
+            {limitBytes > 0
+              ? `${formatFileSize(usedBytes)} / ${formatFileSize(limitBytes)}`
+              : formatFileSize(usedBytes)}
+          </p>
+        </div>
+        {limitBytes > 0 && (
+          <>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-700">
+              <div
+                className={cn(
+                  'h-full rounded-full transition-all',
+                  usedPercent >= 95 ? 'bg-red-500' : usedPercent >= 80 ? 'bg-amber-500' : 'bg-brand-hover',
+                )}
+                style={{ width: `${Math.max(0, Math.min(100, usedPercent))}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-slate-400">
+              {storageUsageQuery.isError
+                ? 'Не удалось обновить лимиты хранилища'
+                : `${usedPercent.toFixed(1)}% использовано`}
+            </p>
+          </>
+        )}
+        <p className="mt-1 text-xs text-slate-500">{fileCount} файлов</p>
+      </div>
 
       <ConfirmModal
         isOpen={confirmAction !== null}

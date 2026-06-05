@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { cn } from '@/shared/lib/cn';
 import { PASS_STATUSES, PASS_STATUS_LABEL_KEYS, type PassStatus } from '@/shared/config/constants';
 
 interface PassFiltersProps {
@@ -46,83 +47,90 @@ export function PassFilters({
     ],
     [t],
   );
+
+  const inputClass = 'mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary';
+
   return (
     <div className="rounded-xl border border-default bg-raised p-4">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {isAdminView ? (
-          <label className="text-sm text-secondary">{t('common.status')}<select
-              value={statusFilter}
-              onChange={(event) => onStatusChange(event.target.value as PassStatus | '')}
-              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-            >
-              {statusOptions.map(option => (
-                <option key={option.label} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+      <div className={cn(
+        'grid gap-3 sm:grid-cols-2',
+        isAdminView ? 'lg:grid-cols-5' : 'lg:grid-cols-3',
+      )}>
+        {/* Status — shown to all roles */}
+        <label className="text-sm text-secondary">
+          {t('common.status')}
+          <select
+            value={statusFilter}
+            onChange={(e) => onStatusChange(e.target.value as PassStatus | '')}
+            className={inputClass}
+          >
+            {statusOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </label>
 
-        {isAdminView ? (
+        {/* Creator email — admin only */}
+        {isAdminView && (
           <label className="text-sm text-secondary">
-            Email создателя
+            {t('passes.filters.createdByEmail')}
             <input
               type="email"
               value={createdByEmailFilter}
-              onChange={(event) => onCreatedByEmailChange(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+              onChange={(e) => onCreatedByEmailChange(e.target.value)}
+              className={inputClass}
               placeholder="creator@company.com"
             />
           </label>
-        ) : null}
+        )}
 
-        {isSuperadmin ? (
-          <label className="text-sm text-secondary">{t('common.company')}<input
+        {/* Company name — superadmin only */}
+        {isSuperadmin && (
+          <label className="text-sm text-secondary">
+            {t('passes.companyFilter')}
+            <input
               type="text"
               value={companyNameFilter}
-              onChange={(event) => onCompanyNameChange(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-              placeholder="Название компании"
+              onChange={(e) => onCompanyNameChange(e.target.value)}
+              className={inputClass}
             />
           </label>
-        ) : null}
+        )}
 
-        {isAdminView ? (
-          <label className="text-sm text-secondary">
-            Дата от
-            <input
-              type="date"
-              value={dateFromFilter}
-              onChange={(event) => onDateFromChange(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-            />
-          </label>
-        ) : null}
+        {/* Date from — shown to all roles */}
+        <label className="text-sm text-secondary">
+          {t('common.dateFrom')}
+          <input
+            type="date"
+            value={dateFromFilter}
+            onChange={(e) => onDateFromChange(e.target.value)}
+            className={inputClass}
+          />
+        </label>
 
-        {isAdminView ? (
-          <label className="text-sm text-secondary">
-            Дата до
-            <input
-              type="date"
-              value={dateToFilter}
-              onChange={(event) => onDateToChange(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-            />
-          </label>
-        ) : null}
+        {/* Date to — shown to all roles */}
+        <label className="text-sm text-secondary">
+          {t('common.dateTo')}
+          <input
+            type="date"
+            value={dateToFilter}
+            onChange={(e) => onDateToChange(e.target.value)}
+            className={inputClass}
+          />
+        </label>
       </div>
 
-      {isAdminView ? (
+      {hasActiveFilters && (
         <div className="mt-3">
           <button
             type="button"
             onClick={onReset}
-            disabled={!hasActiveFilters}
-            className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
-          >{t('common.resetFilters')}</button>
+            className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover"
+          >
+            {t('common.resetFilters')}
+          </button>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

@@ -113,7 +113,7 @@ import UnsubscribeInvalidPage from '@/pages/unsubscribe/UnsubscribeInvalidPage';
 import NotFoundPage from '@/pages/errors/NotFoundPage';
 import ForbiddenPage from '@/pages/errors/ForbiddenPage';
 
-const { SUPERADMIN, RECEPTION, SERVICE_MANAGER, COMPANY_ADMIN, EMPLOYEE } = USER_ROLES;
+const { SUPERADMIN, RECEPTION, SERVICE_MANAGER, COMPANY_ADMIN, EMPLOYEE, GUEST } = USER_ROLES;
 
 /** Old `/admin/bookings` SPA URLs → `/staff/bookings` (shared staff UI, not Django admin). */
 function SuperadminLegacyRedirect() {
@@ -186,23 +186,28 @@ export const router = createBrowserRouter([
         children: [
           // Guest-accessible routes
           { path: '/dashboard', element: <DashboardPage /> },
-          { path: '/announcements', element: <AnnouncementListPage /> },
           { path: '/profile', element: <ProfilePage /> },
           { path: '/profile/settings', element: <ProfileSettingsPage /> },
 
-          // Non-guest roles only
+          // Notifications — all authenticated roles
           {
-            element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE, RECEPTION]} />,
+            element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE, RECEPTION, GUEST]} />,
             children: [
               { path: '/notifications', element: <NotificationListPage /> },
               { path: '/settings/notifications', element: <NotificationPreferencesPage /> },
+            ],
+          },
+
+          // Bookings + map + passes — available to guests
+          {
+            element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE, RECEPTION, GUEST]} />,
+            children: [
               { path: '/bookings', element: <Navigate to="/bookings/catalog" replace /> },
               { path: '/bookings/catalog', element: <BookingCatalogPage /> },
               { path: '/bookings/resources/:id', element: <BookingResourceSchedulePage /> },
               { path: '/bookings/new', element: <BookingCreatePage /> },
               { path: '/bookings/my', element: <MyBookingsPage /> },
               { path: '/bookings/:id', element: <BookingDetailPage /> },
-              // { path: '/building/map', element: <BuildingMapPage /> },
               { path: 'building/map', element: <MapPage /> },
               { path: '/passes', element: <PassListPage /> },
               { path: '/passes/new', element: <PassCreatePage /> },
@@ -221,9 +226,19 @@ export const router = createBrowserRouter([
           // service_manager is building-wide and only needs access to the
           // service-requests views (no /new since they can't create on behalf).
           {
-            element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE, SERVICE_MANAGER]} />,
+            element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE, SERVICE_MANAGER, GUEST]} />,
             children: [
               { path: '/service-requests', element: <ServiceRequestListPage /> },
+            ],
+          },
+
+          // Service request creation + files/storage — available to guests
+          {
+            element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE, GUEST]} />,
+            children: [
+              { path: '/service-requests/new', element: <ServiceRequestCreatePage /> },
+              { path: '/files', element: <FileBrowserPage /> },
+              { path: '/storage', element: <FileBrowserPage /> },
             ],
           },
 
@@ -231,10 +246,7 @@ export const router = createBrowserRouter([
           {
             element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE]} />,
             children: [
-              { path: '/service-requests/new', element: <ServiceRequestCreatePage /> },
               { path: '/bookings/recurring', element: <RecurringBookingsPage /> },
-              { path: '/files', element: <FileBrowserPage /> },
-              { path: '/storage', element: <FileBrowserPage /> },
               { path: '/crm', element: <BoardListPage /> },
               { path: '/crm/boards/:id', element: <BoardDetailPage /> },
               { path: '/crm/tasks/:id', element: <TaskDetailPage /> },
@@ -247,6 +259,14 @@ export const router = createBrowserRouter([
               { path: '/hr/leaves/:id/edit', element: <LeaveRequestEditPage /> },
               { path: '/leave', element: <Navigate to="/hr/leaves" replace /> },
               { path: '/leave/new', element: <Navigate to="/hr/leaves/new" replace /> },
+            ],
+          },
+
+          // Announcements — company users only (not guests)
+          {
+            element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE]} />,
+            children: [
+              { path: '/announcements', element: <AnnouncementListPage /> },
             ],
           },
 

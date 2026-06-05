@@ -168,12 +168,12 @@ const guestNav: NavSection[] = [
   {
     titleKey: 'sidebar.navSection.services',
     items: [
-      { labelKey: 'sidebar.navItem.announcements',   path: '/announcements',                        icon: Megaphone },
+      { labelKey: 'sidebar.navItem.bookings',        path: '/bookings/my',                          icon: CalendarDays },
+      { labelKey: 'sidebar.navItem.buildingMap',     path: '/building/map',                         icon: Map },
+      { labelKey: 'sidebar.navItem.serviceRequest',  path: '/service-requests',                     icon: Wrench },
+      { labelKey: 'sidebar.navItem.files',           path: '/storage',                              icon: FileText },
+      { labelKey: 'sidebar.navItem.guestPasses',     path: '/passes',                               icon: ShieldCheck },
     ],
-  },
-  {
-    titleKey: 'sidebar.navSection.profile',
-    items: [{ labelKey: 'sidebar.navItem.settings',  path: '/profile',                              icon: Settings }],
   },
 ];
 
