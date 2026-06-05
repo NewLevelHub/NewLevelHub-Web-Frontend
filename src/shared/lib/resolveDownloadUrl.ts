@@ -96,7 +96,23 @@ export async function downloadFromApiEndpoint(
     const json = JSON.parse(text) as DownloadUrlResponse;
     if (!json?.url) throw new Error('Download URL missing in response');
     const url = resolveFetchedDownloadUrl(json.url);
-    openSignedDownloadUrl(url, { filename: options?.filename, openInNewTab: false });
+    // The `download` attribute is ignored by browsers for cross-origin URLs (S3).
+    // Fetch the signed URL as a blob to get a same-origin blob URL that respects `download`.
+    try {
+      const fileResponse = await fetch(url);
+      const blob = await fileResponse.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = blobUrl;
+      if (options?.filename) anchor.download = options.filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    } catch {
+      // CORS fallback: open in new tab if direct fetch fails.
+      openSignedDownloadUrl(url, { filename: options?.filename, openInNewTab: true });
+    }
     return;
   }
 
