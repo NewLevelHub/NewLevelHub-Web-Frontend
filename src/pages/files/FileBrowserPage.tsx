@@ -247,10 +247,10 @@ export default function FileBrowserPage() {
   });
 
   const searchedFilesQuery = useQuery({
-    queryKey: ['storage', 'files-search', normalizedSearchTerm],
+    queryKey: ['storage', 'files-search', normalizedSearchTerm, scope],
     queryFn: async () => {
       const { data } = await apiClient.get<PaginatedResponse<StorageFile>>(API.storage.files, {
-        params: { search: normalizedSearchTerm, ordering: 'name', page_size: 100 },
+        params: { search: normalizedSearchTerm, scope, ordering: 'name', page_size: 100 },
       });
       return data;
     },
