@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import {
+  Bookmark,
   Building2,
   ChevronDown,
   ChevronLeft,
+  ChevronRight,
   DoorOpen,
   Search,
   X,
@@ -47,6 +49,13 @@ const statusDotClass: Record<string, string> = {
   [BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED]: 'bg-rose-400',
   [BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED]: 'bg-slate-400',
   [BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE]: 'bg-amber-400',
+};
+
+const STATUS_BADGE_CLASS: Record<string, string> = {
+  [BOOKING_RESOURCE_CATALOG_STATUS.FREE]: 'bg-emerald-600/90',
+  [BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED]: 'bg-rose-600/90',
+  [BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED]: 'bg-slate-700/90',
+  [BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE]: 'bg-amber-600/90',
 };
 
 function emptyEquipmentFilters(): Record<ResourceEquipmentKey, boolean> {
