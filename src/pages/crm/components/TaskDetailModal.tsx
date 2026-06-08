@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { X, User, Archive, AlertCircle } from 'lucide-react';
+import { X, Archive, AlertCircle } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
@@ -156,11 +156,19 @@ export function TaskDetailModal({ taskId, boardId, boardCompanyId, onClose }: Ta
       aria-modal="true"
       aria-labelledby="task-detail-title"
     >
-      <div className="w-full max-w-xl rounded-xl border border-default bg-surface shadow-2xl mb-8">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-default">
-          <h2 id="task-detail-title" className="text-sm font-semibold text-secondary uppercase tracking-wide">
-            Задача
-          </h2>
+      <div className="w-full max-w-2xl rounded-2xl border border-default bg-surface shadow-xl overflow-hidden mb-8">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[color:var(--border-faint)]">
+          <div>
+            <h2 id="task-detail-title" className="text-base font-semibold text-primary tracking-[-0.015em]">
+              {task?.title ?? t('crm.taskLabel')}
+            </h2>
+            {task && (
+              <p className="text-xs text-muted mt-0.5">
+                {t('crm.taskIdLabel', { id: task.id })}
+              </p>
+            )}
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -171,7 +179,8 @@ export function TaskDetailModal({ taskId, boardId, boardCompanyId, onClose }: Ta
           </button>
         </div>
 
-        <div className="px-6 py-5 space-y-5">
+        {/* Body */}
+        <div className="px-6 py-5 space-y-4">
           {isLoading && (
             <div className="animate-pulse space-y-4">
               <div className="h-6 w-3/4 rounded bg-hover" />
@@ -185,15 +194,16 @@ export function TaskDetailModal({ taskId, boardId, boardCompanyId, onClose }: Ta
           {isError && (
             <div className="flex items-center gap-2 rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-4 py-3 text-sm text-danger">
               <AlertCircle size={16} className="shrink-0" />
-              <span>Не удалось загрузить задачу. Возможно, она архивирована или была удалена.</span>
+              <span>{t('crm.failedToLoad')}</span>
             </div>
           )}
 
           {task && !isLoading && (
             <>
-              <div className="space-y-1.5">
-                <label htmlFor="task-title" className="block text-xs font-medium text-muted uppercase tracking-wide">
-                  Название
+              {/* Title */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="task-title" className="text-xs font-medium text-secondary">
+                  {t('crm.titleLabel')}
                 </label>
                 <input
                   id="task-title"
@@ -203,17 +213,18 @@ export function TaskDetailModal({ taskId, boardId, boardCompanyId, onClose }: Ta
                   maxLength={255}
                   disabled={patchMutation.isPending}
                   className={cn(
-                    'w-full rounded-lg border bg-raised px-3 py-2 text-base font-medium text-primary',
-                    'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-default',
+                    'w-full h-9 px-3 text-sm font-medium border border-default rounded-[var(--radius-sm)] bg-surface',
+                    'focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)] transition-colors',
                     'disabled:opacity-60',
                   )}
                 />
               </div>
 
+              {/* Priority + Deadline */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label htmlFor="task-priority" className="block text-xs font-medium text-muted uppercase tracking-wide">
-                    Приоритет
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="task-priority" className="text-xs font-medium text-secondary">
+                    {t('crm.priorityLabel')}
                   </label>
                   <select
                     id="task-priority"
@@ -221,8 +232,8 @@ export function TaskDetailModal({ taskId, boardId, boardCompanyId, onClose }: Ta
                     onChange={(e) => setPriority(e.target.value as TaskPriorityValue)}
                     disabled={patchMutation.isPending}
                     className={cn(
-                      'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary',
-                      'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-default',
+                      'w-full h-9 px-3 text-sm border border-default rounded-[var(--radius-sm)] bg-surface',
+                      'focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)] transition-colors',
                       'disabled:opacity-60',
                     )}
                   >
@@ -232,9 +243,9 @@ export function TaskDetailModal({ taskId, boardId, boardCompanyId, onClose }: Ta
                   </select>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label htmlFor="task-deadline" className="block text-xs font-medium text-muted uppercase tracking-wide">
-                    Дедлайн
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="task-deadline" className="text-xs font-medium text-secondary">
+                    {t('crm.deadlineLabel')}
                   </label>
                   <input
                     id="task-deadline"
@@ -243,56 +254,52 @@ export function TaskDetailModal({ taskId, boardId, boardCompanyId, onClose }: Ta
                     onChange={(e) => setDeadline(e.target.value)}
                     disabled={patchMutation.isPending}
                     className={cn(
-                      'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary',
-                      'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-default',
+                      'w-full h-9 px-3 text-sm border border-default rounded-[var(--radius-sm)] bg-surface',
+                      'focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)] transition-colors',
                       '[color-scheme:dark] disabled:opacity-60',
                     )}
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="task-assignee"
-                  className="block text-xs font-medium text-muted uppercase tracking-wide"
-                >
-                  Исполнитель
+              {/* Assignee */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="task-assignee" className="text-xs font-medium text-secondary">
+                  {t('crm.assigneeLabel')}
                 </label>
-                <div className="relative">
-                  <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
-                  <select
-                    id="task-assignee"
-                    value={assigneeId}
-                    onChange={(e) => setAssigneeId(e.target.value)}
-                    disabled={patchMutation.isPending}
-                    className={cn(
-                      'w-full rounded-lg border bg-raised pl-8 pr-3 py-2 text-sm text-primary',
-                      'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-default',
-                      'disabled:opacity-60 disabled:cursor-not-allowed',
-                    )}
-                  >
-                    <option value="">— Не назначен —</option>
-                    {task.assignee && !members.some((m) => String(m.id) === String(task.assignee!.id)) ? (
-                      <option value={String(task.assignee.id)}>
-                        {`${task.assignee.first_name} ${task.assignee.last_name}`.trim()}
+                <select
+                  id="task-assignee"
+                  value={assigneeId}
+                  onChange={(e) => setAssigneeId(e.target.value)}
+                  disabled={patchMutation.isPending}
+                  className={cn(
+                    'w-full h-9 px-3 text-sm border border-default rounded-[var(--radius-sm)] bg-surface',
+                    'focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)] transition-colors',
+                    'disabled:opacity-60 disabled:cursor-not-allowed',
+                  )}
+                >
+                  <option value="">— {t('common.notAssigned')} —</option>
+                  {task.assignee && !members.some((m) => String(m.id) === String(task.assignee!.id)) ? (
+                    <option value={String(task.assignee.id)}>
+                      {`${task.assignee.first_name} ${task.assignee.last_name}`.trim()}
+                    </option>
+                  ) : null}
+                  {members
+                    .filter((m) => m.is_active)
+                    .map((m) => (
+                      <option key={m.id} value={String(m.id)}>
+                        {m.full_name}
                       </option>
-                    ) : null}
-                    {members
-                      .filter((m) => m.is_active)
-                      .map((m) => (
-                        <option key={m.id} value={String(m.id)}>
-                          {m.full_name}
-                        </option>
-                      ))}
-                  </select>
-                </div>
+                    ))}
+                </select>
               </div>
 
               <TaskLabelsSection taskId={taskId} boardId={boardId} taskLabels={task.labels ?? []} />
 
-              <div className="space-y-1.5">
-                <label htmlFor="task-description" className="block text-xs font-medium text-muted uppercase tracking-wide">
-                  Описание
+              {/* Description */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="task-description" className="text-xs font-medium text-secondary">
+                  {t('common.description')}
                 </label>
                 <textarea
                   id="task-description"
@@ -302,21 +309,22 @@ export function TaskDetailModal({ taskId, boardId, boardCompanyId, onClose }: Ta
                   placeholder={t('common.addDescription')}
                   disabled={patchMutation.isPending}
                   className={cn(
-                    'w-full rounded-lg border bg-raised px-3 py-2 text-sm text-primary placeholder-gray-600',
-                    'focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors border-default resize-none',
-                    'disabled:opacity-60',
+                    'w-full px-3 py-2 text-sm border border-default rounded-[var(--radius-sm)] bg-surface',
+                    'focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)] resize-none transition-colors',
+                    'placeholder:text-[color:var(--text-muted)] disabled:opacity-60',
                   )}
                 />
               </div>
 
-              <div className="flex items-center gap-3 pt-1">
+              {/* Save / Cancel */}
+              <div className="flex items-center gap-2 pt-1">
                 <button
                   type="button"
                   onClick={handleSave}
                   disabled={patchMutation.isPending}
                   className={cn(
-                    'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-                    'bg-blue-600 text-white hover:bg-blue-500',
+                    'inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)]',
+                    'text-white bg-[color:var(--brand)] hover:opacity-90 transition-opacity',
                     'disabled:opacity-50 disabled:cursor-not-allowed',
                   )}
                 >
@@ -327,14 +335,16 @@ export function TaskDetailModal({ taskId, boardId, boardCompanyId, onClose }: Ta
                   onClick={handleCancel}
                   disabled={patchMutation.isPending}
                   className={cn(
-                    'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-                    'text-secondary hover:text-primary hover:bg-hover',
-                    'disabled:opacity-50 disabled:cursor-not-allowed',
+                    'h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)]',
+                    'border border-default text-secondary hover:bg-hover transition-colors',
+                    'disabled:opacity-50',
                   )}
                 >
-                  Отменить
+                  {t('common.cancel')}
                 </button>
-                {patchMutation.isError && <p className="text-xs text-red-400">Не удалось сохранить изменения.</p>}
+                {patchMutation.isError && (
+                  <p className="text-xs text-danger">{t('crm.failedToSave')}</p>
+                )}
               </div>
 
               <ChecklistSection taskId={taskId} boardId={boardId} checklists={task.checklists ?? []} />
@@ -345,12 +355,13 @@ export function TaskDetailModal({ taskId, boardId, boardCompanyId, onClose }: Ta
 
               <HistorySection taskId={taskId} />
 
-              <div className="pt-2 border-t border-default">
+              {/* Archive / Unarchive */}
+              <div className="pt-2 border-t border-[color:var(--border-faint)]">
                 {archiveMutation.isError && (
-                  <p className="text-xs text-red-400 mb-2">Не удалось архивировать задачу.</p>
+                  <p className="text-xs text-danger mb-2">{t('crm.failedToArchive')}</p>
                 )}
                 {unarchiveFromDetailMutation.isError && (
-                  <p className="text-xs text-red-400 mb-2">Не удалось разархивировать задачу.</p>
+                  <p className="text-xs text-danger mb-2">{t('crm.failedToUnarchive')}</p>
                 )}
                 {task.is_archived ? (
                   <button
@@ -358,8 +369,8 @@ export function TaskDetailModal({ taskId, boardId, boardCompanyId, onClose }: Ta
                     onClick={() => unarchiveFromDetailMutation.mutate()}
                     disabled={unarchiveFromDetailMutation.isPending}
                     className={cn(
-                      'flex items-center gap-1.5 text-sm transition-colors',
-                      'text-blue-400 hover:text-blue-300',
+                      'inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)]',
+                      'border border-[color:var(--info)] text-[color:var(--info)] hover:bg-hover transition-colors',
                       'disabled:opacity-50 disabled:cursor-not-allowed',
                     )}
                   >
@@ -372,8 +383,8 @@ export function TaskDetailModal({ taskId, boardId, boardCompanyId, onClose }: Ta
                     onClick={handleArchive}
                     disabled={archiveMutation.isPending}
                     className={cn(
-                      'flex items-center gap-1.5 text-sm transition-colors',
-                      'text-red-400 hover:text-danger',
+                      'inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)]',
+                      'border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors',
                       'disabled:opacity-50 disabled:cursor-not-allowed',
                     )}
                   >

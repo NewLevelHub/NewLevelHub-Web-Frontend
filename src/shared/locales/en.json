@@ -421,6 +421,8 @@
     "impersonate": "Impersonate",
     "addMember": "Add member",
     "addColumn": "Add column",
+    "noColumns": "This board has no columns",
+    "reorderError": "Failed to save column order. Order has been restored.",
     "createFolder": "Create folder",
     "createBoard": "Create board",
     "createTask": "Create task",
@@ -468,7 +470,11 @@
     "kanbanBoard": "Kanban board: {{name}}",
     "kanbanView": "Kanban view",
     "listView": "List view",
+    "kanban": "Kanban",
+    "list": "List",
     "dragColumn": "Drag column",
+    "addTask": "Add task",
+    "noTasks": "No tasks",
     "wipLimitReached": "Column WIP limit reached. Free up space to add a task.",
     "wipCannotRestore": "Cannot restore: column WIP limit exceeded. Free up space.",
     "searchTasks": "Search tasks",
@@ -1295,6 +1301,17 @@
     "deleteFloorConfirm": "Floor \"{{name}}\" will be permanently deleted along with all map points and associated catalog resources."
   },
   "crm": {
+    "filter": {
+      "assignee": "Assignee",
+      "allAssignees": "All",
+      "onlyMine": "Only mine",
+      "allLabels": "All labels",
+      "labelsSelected": "Labels: {{count}}",
+      "noLabels": "No labels",
+      "allPriorities": "All priorities",
+      "allDeadlines": "All deadlines",
+      "thisWeek": "This week"
+    },
     "priority": {
       "low": "Low",
       "medium": "Medium",
@@ -1317,7 +1334,19 @@
     "loadErrorBoards": "Failed to load boards. Please reload the page.",
     "taskNotFound": "Task not found or was archived.",
     "taskIdLabel": "Task #{{id}}",
-    "openBoardAria": "Open board {{name}}"
+    "openBoardAria": "Open board {{name}}",
+    "taskLabel": "Task",
+    "titleLabel": "Title",
+    "detailsLabel": "Details",
+    "actionsLabel": "Actions",
+    "priorityLabel": "Priority",
+    "deadlineLabel": "Deadline",
+    "assigneeLabel": "Assignee",
+    "createdLabel": "Created",
+    "failedToLoad": "Failed to load task. It may have been archived or deleted.",
+    "failedToSave": "Failed to save changes.",
+    "failedToArchive": "Failed to archive task.",
+    "failedToUnarchive": "Failed to unarchive task."
   },
   "auth": {
     "login": {

@@ -40,7 +40,7 @@ export function ColumnHeaderMenu({ column, onEdit, onDelete }: ColumnHeaderMenuP
 
       {open && (
         <div
-          className="absolute right-0 top-full mt-1 w-40 rounded-lg border border-default bg-surface shadow-xl z-20 py-1"
+          className="absolute right-0 top-full mt-1 w-40 rounded-lg border border-default bg-surface shadow-xl z-50 py-1"
           role="menu"
         >
           <button
