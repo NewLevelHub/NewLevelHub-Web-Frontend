@@ -441,7 +441,7 @@ export default function FileBrowserPage() {
 
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: number[]) => {
-      await Promise.all(ids.map((id) => apiClient.delete(API.storage.file(String(id)))));
+      await apiClient.post(API.storage.filesBulkDelete, { ids });
     },
     onSuccess: () => {
       setSelectedFileIds(new Set());

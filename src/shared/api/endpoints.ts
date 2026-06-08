@@ -202,6 +202,7 @@ export const API = {
     folder: (id: string) => `/storage/folders/${id}/`,
     files: '/storage/files/',
     file: (id: string) => `/storage/files/${id}/`,
+    filesBulkDelete: '/storage/files/bulk_delete/',
     fileDownload: (id: string) => `/storage/files/${id}/download/`,
     fileMove: (id: string) => `/storage/files/${id}/move/`,
     shares: '/storage/shares/',
