@@ -2,12 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
+import { fmtDayMonth, fmtDateTime, fmtTime } from '@/shared/lib/formatDate';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BookMarked, Calendar, ChevronLeft, ChevronRight, Filter, MoreHorizontal, Repeat } from 'lucide-react';
+import { BookMarked, Calendar, ChevronLeft, ChevronRight, MoreHorizontal, Repeat, X } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
+import { FilterSearchSelect } from '@/shared/ui/FilterSearchSelect';
 import {
   BOOKING_STATUSES,
   BOOKING_STATUS_LABEL_KEYS,
@@ -132,6 +134,7 @@ export default function ManageBookingsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [showDateFilter, setShowDateFilter] = useState(false);
 
   const [openActionsId, setOpenActionsId] = useState<number | null>(null);
   const [dropdownCoords, setDropdownCoords] = useState<{ top: number; right: number } | null>(null);
@@ -379,6 +382,7 @@ export default function ManageBookingsPage() {
     setStatusFilter('');
     setDateFrom('');
     setDateTo('');
+    setShowDateFilter(false);
   };
 
   const openCancelModal = (booking: Booking) => {
@@ -449,8 +453,6 @@ export default function ManageBookingsPage() {
     { value: BOOKING_STATUSES.CANCELLED, label: t(BOOKING_STATUS_LABEL_KEYS[BOOKING_STATUSES.CANCELLED]) },
   ], [t]);
 
-  const selectClass = 'w-full rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-2.5 py-1.5 text-[13px] text-[color:var(--text-primary)] focus:outline-none';
-
   return (
     <div className="space-y-4">
       {/* Page header */}
@@ -465,10 +467,10 @@ export default function ManageBookingsPage() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-shrink-0 sm:items-center">
           <Link
             to="/bookings/my"
-            className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 h-[34px] px-3 text-[13px] font-medium border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors w-full sm:w-auto sm:justify-start"
           >
             <BookMarked className="w-3.5 h-3.5" />
             {t('common.myBookings')}
@@ -476,7 +478,7 @@ export default function ManageBookingsPage() {
           {(user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN) && (
             <Link
               to="/bookings/recurring"
-              className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 h-[34px] px-3 text-[13px] font-medium border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors w-full sm:w-auto sm:justify-start"
             >
               <Repeat className="w-3.5 h-3.5" />
               {t('sidebar.navItem.recurringBookings')}
@@ -484,88 +486,11 @@ export default function ManageBookingsPage() {
           )}
           <Link
             to="/bookings/catalog"
-            className="inline-flex items-center gap-1.5 h-8 px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity"
+            className="inline-flex items-center justify-center gap-1.5 h-8 px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity w-full sm:w-auto sm:justify-start"
           >
             {t('booking.manage.createBooking')}
           </Link>
         </div>
-      </div>
-
-      {/* Secondary filter row */}
-      <div className={cn(
-        'grid gap-2 grid-cols-2 sm:grid-cols-3',
-        isSuperadmin ? 'lg:grid-cols-7' : 'lg:grid-cols-6',
-      )}>
-        {isSuperadmin && (
-          <select
-            value={companyId}
-            onChange={(e) => { setCompanyId(e.target.value); setPage(1); }}
-            className={selectClass}
-            aria-label={t('common.allCompanies')}
-          >
-            <option value="">{t('common.allCompanies')}</option>
-            {companyOptions.map((option) => (
-              <option key={option.id} value={String(option.id)}>{option.label}</option>
-            ))}
-          </select>
-        )}
-        <select
-          value={userId}
-          onChange={(e) => { setUserId(e.target.value); setPage(1); }}
-          className={selectClass}
-          aria-label={t('booking.manage.allUsers')}
-        >
-          <option value="">{t('booking.manage.allUsers')}</option>
-          {userOptions.map((option) => (
-            <option key={option.id} value={String(option.id)}>{option.label}</option>
-          ))}
-        </select>
-        <select
-          value={resourceId}
-          onChange={(e) => { setResourceId(e.target.value); setPage(1); }}
-          className={selectClass}
-          aria-label={t('booking.manage.allResources')}
-        >
-          <option value="">{t('booking.manage.allResources')}</option>
-          {resourceOptions.map((option) => (
-            <option key={option.id} value={String(option.id)}>{option.label}</option>
-          ))}
-        </select>
-        <select
-          value={resourceType}
-          onChange={(e) => { setResourceType(e.target.value); setPage(1); }}
-          className={selectClass}
-          aria-label={t('common.bookingFilter.allTypes')}
-        >
-          {resourceTypeOptions.map((option) => (
-            <option key={option.value || 'all'} value={option.value}>{option.label}</option>
-          ))}
-        </select>
-        <input
-          type="datetime-local"
-          value={dateFrom}
-          onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-          lang={dateLocale}
-          className={selectClass}
-          aria-label={t('common.dateFrom')}
-          title={t('common.dateFrom')}
-        />
-        <input
-          type="datetime-local"
-          value={dateTo}
-          onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-          lang={dateLocale}
-          className={selectClass}
-          aria-label={t('common.dateTo')}
-          title={t('common.dateTo')}
-        />
-        <button
-          type="button"
-          onClick={resetFilters}
-          className={cn(selectClass, 'text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors cursor-pointer')}
-        >
-          {t('common.resetFilters')}
-        </button>
       </div>
 
       {queryErrorText && (
@@ -579,42 +504,66 @@ export default function ManageBookingsPage() {
 
         {/* Filter bar */}
         <div className="flex items-center gap-1.5 flex-wrap px-4 py-3 border-b border-[color:var(--border)]">
-          {/* Date range button (display only) */}
+          {/* Date range button */}
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 h-[30px] px-2.5 text-[12px] border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors"
+            onClick={() => setShowDateFilter((v) => !v)}
+            className={cn(
+              'inline-flex items-center gap-1.5 h-[30px] px-2.5 text-[12px] border rounded-[var(--radius-sm)] transition-colors',
+              (dateFrom || dateTo)
+                ? 'border-[color:var(--brand)] bg-[color:var(--brand)]/10 text-[color:var(--brand-text)]'
+                : 'border-[color:var(--border)] bg-[color:var(--bg-surface)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)]',
+            )}
           >
             <Calendar className="w-3 h-3 flex-shrink-0" />
             {dateFrom || dateTo
-              ? `${dateFrom ? new Date(dateFrom).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : '…'} — ${dateTo ? new Date(dateTo).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : '…'}`
+              ? `${dateFrom ? fmtDayMonth(dateFrom) : '…'} — ${dateTo ? fmtDayMonth(dateTo) : '…'}`
               : t('booking.manage.allDates')
             }
           </button>
 
           {/* Company filter (superadmin) */}
           {isSuperadmin && (
-            <button
-              type="button"
-              className="inline-flex items-center gap-1.5 h-[30px] px-2.5 text-[12px] border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors"
-            >
-              <Filter className="w-3 h-3 flex-shrink-0" />
-              {companyId
-                ? (companyNameById.get(Number(companyId)) ?? t('common.allCompanies'))
-                : t('common.allCompanies')
-              }
-            </button>
+            <FilterSearchSelect
+              value={companyId}
+              onChange={(v) => { setCompanyId(v); setPage(1); }}
+              options={companyOptions}
+              placeholder={t('common.allCompanies')}
+            />
           )}
 
+          {/* User filter */}
+          <FilterSearchSelect
+            value={userId}
+            onChange={(v) => { setUserId(v); setPage(1); }}
+            options={userOptions}
+            placeholder={t('booking.manage.allUsers')}
+          />
+
           {/* Resource filter */}
-          <button
-            type="button"
-            className="inline-flex items-center gap-1.5 h-[30px] px-2.5 text-[12px] border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors"
+          <select
+            value={resourceId}
+            onChange={(e) => { setResourceId(e.target.value); setPage(1); }}
+            className={cn(
+              'inline-flex items-center h-[30px] px-2.5 text-[12px] border rounded-[var(--radius-sm)] transition-colors focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)]/20 bg-[color:var(--bg-surface)] [&>option]:bg-[color:var(--bg-surface)] [&>option]:text-[color:var(--text-primary)]',
+              resourceId ? 'border-[color:var(--brand)] bg-[color:var(--brand)]/10 text-[color:var(--brand-text)]' : 'border-[color:var(--border)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)]',
+            )}
           >
-            {resourceId
-              ? (resourceOptions.find((r) => String(r.id) === resourceId)?.label ?? t('booking.manage.allResources'))
-              : t('booking.manage.allResources')
-            }
-          </button>
+            <option value="">{t('booking.manage.allResources')}</option>
+            {resourceOptions.map((o) => <option key={o.id} value={String(o.id)}>{o.label}</option>)}
+          </select>
+
+          {/* Resource type filter */}
+          <select
+            value={resourceType}
+            onChange={(e) => { setResourceType(e.target.value); setPage(1); }}
+            className={cn(
+              'inline-flex items-center h-[30px] px-2.5 text-[12px] border rounded-[var(--radius-sm)] transition-colors focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)]/20 bg-[color:var(--bg-surface)] [&>option]:bg-[color:var(--bg-surface)] [&>option]:text-[color:var(--text-primary)]',
+              resourceType ? 'border-[color:var(--brand)] bg-[color:var(--brand)]/10 text-[color:var(--brand-text)]' : 'border-[color:var(--border)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)]',
+            )}
+          >
+            {resourceTypeOptions.map((o) => <option key={o.value || 'all'} value={o.value}>{o.label}</option>)}
+          </select>
 
           {/* Separator */}
           <span className="self-stretch w-px bg-[color:var(--border)] flex-shrink-0 my-0.5" aria-hidden="true" />
@@ -667,6 +616,34 @@ export default function ManageBookingsPage() {
             </div>
           )}
         </div>
+
+        {/* Date range expand row */}
+        {showDateFilter && (
+          <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-[color:var(--border)] bg-[color:var(--bg-raised)]">
+            <input
+              type="datetime-local"
+              value={dateFrom}
+              onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+              className="h-7 rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-2 text-[12px] text-[color:var(--text-primary)]"
+            />
+            <span className="text-[11px] text-[color:var(--text-muted)]">—</span>
+            <input
+              type="datetime-local"
+              value={dateTo}
+              onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+              className="h-7 rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-2 text-[12px] text-[color:var(--text-primary)]"
+            />
+            {(dateFrom || dateTo) && (
+              <button
+                type="button"
+                onClick={() => { setDateFrom(''); setDateTo(''); setPage(1); }}
+                className="ml-auto rounded-full p-0.5 text-[color:var(--text-muted)] hover:text-[color:var(--text-secondary)]"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Table */}
         {isLoading ? (
@@ -729,7 +706,7 @@ export default function ManageBookingsPage() {
                       <td className="px-3 py-2.5 align-middle">
                         <Link
                           to={`${STAFF_UI_PREFIX}/bookings/${booking.id}`}
-                          className="font-medium text-[color:var(--text-primary)] hover:text-[color:var(--brand)] transition-colors"
+                          className="hover:text-[color:var(--brand)] transition-colors"
                         >
                           {booking.resource_name}
                         </Link>
@@ -741,24 +718,20 @@ export default function ManageBookingsPage() {
                       )}
                       <td className="px-3 py-2.5 align-middle">
                         <div className="flex items-center gap-1.5">
-                          <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium bg-[color:var(--bg-raised)] text-[color:var(--text-secondary)] flex-shrink-0">
-                            {getInitials(booking.user_name ?? '')}
-                          </span>
-                          <span className="text-[color:var(--text-primary)]">{booking.user_name}</span>
+                          {booking.booked_by?.avatar ? (
+                            <img src={booking.booked_by.avatar} alt={booking.booked_by.full_name} className="h-6 w-6 rounded-full object-cover flex-shrink-0" />
+                          ) : (
+                            <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium bg-[color:var(--bg-raised)] text-[color:var(--text-secondary)] flex-shrink-0">
+                              {getInitials(booking.booked_by?.full_name ?? booking.user_name ?? '')}
+                            </span>
+                          )}
+                          <span className="text-[color:var(--text-primary)]">{booking.booked_by?.full_name ?? booking.user_name}</span>
                         </div>
                       </td>
                       <td className="px-3 py-2.5 align-middle font-mono text-[color:var(--text-primary)]">
-                        {new Date(booking.start_time).toLocaleString('ru-RU', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        {fmtDateTime(booking.start_time, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                         {' — '}
-                        {new Date(booking.end_time).toLocaleTimeString('ru-RU', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        {fmtTime(booking.end_time)}
                       </td>
                       <td className="px-3 py-2.5 align-middle text-[color:var(--text-muted)]">
                         {(booking.participants?.length ?? 0) > 0
@@ -824,7 +797,7 @@ export default function ManageBookingsPage() {
               {t('booking.manage.adminCancelTitle')}
             </h2>
             <p className="mt-1 text-sm text-[color:var(--text-muted)]">
-              #{cancelTarget.id} ({cancelTarget.resource_name}, {cancelTarget.user_name})
+              #{cancelTarget.id} ({cancelTarget.resource_name}, {cancelTarget.booked_by?.full_name ?? cancelTarget.user_name})
             </p>
 
             <label className="mt-4 block text-sm text-[color:var(--text-secondary)]">
@@ -887,7 +860,7 @@ export default function ManageBookingsPage() {
               {t('booking.manage.editTitle', { id: modalBooking?.id ?? editTarget.id })}
             </h2>
             <p className="mt-1 text-sm text-[color:var(--text-muted)]">
-              {modalBooking?.resource_name ?? editTarget.resource_name} · {modalBooking?.user_name ?? editTarget.user_name}
+              {modalBooking?.resource_name ?? editTarget.resource_name} · {(modalBooking?.booked_by?.full_name ?? modalBooking?.user_name) ?? (editTarget.booked_by?.full_name ?? editTarget.user_name)}
             </p>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">

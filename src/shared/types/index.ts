@@ -36,26 +36,43 @@ export interface User {
   last_login?: string | null;
 }
 
+export interface CompanyAdmin {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  avatar: string | null;
+  position: string;
+}
+
 export interface Company {
   id: number;
   name: string;
   description: string | null;
   logo: string | null;
-  floor: number | null;
+  floor_id: number | null;
+  floor_number: number | null;
+  floor_name: string | null;
   office_number: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  company_admin: CompanyAdmin | null;
+  categories: string[];
   plan: CompanyTier;
   max_employees: number;
   max_boards: number;
   storage_limit_gb: number;
   is_active: boolean;
+  employee_count: number;
+  working_hours_start: string | null;
+  working_hours_end: string | null;
   created_at: string;
   updated_at: string;
+  domain?: string | null;
 }
 
 export interface CompanyDetail extends Company {
-  employee_count: number;
   storage_used: number;
 }
 
@@ -275,7 +292,10 @@ export interface BookingResourceListItem {
   id: number;
   type: ResourceType;
   name: string;
-  floor: number;
+  floor?: number;
+  floor_id?: number | null;
+  floor_number?: number | null;
+  floor_name?: string | null;
   zone: string;
   photo: string | null;
   photo_url: string | null;
@@ -320,7 +340,10 @@ export interface BookingResourceDetail {
   id: number;
   type: ResourceType;
   name: string;
-  floor: number;
+  floor?: number;
+  floor_id?: number | null;
+  floor_number?: number | null;
+  floor_name?: string | null;
   zone: string;
   description: string;
   photo: string | null;
@@ -359,7 +382,10 @@ export interface Resource {
   id: number;
   name: string;
   type: ResourceType;
-  floor: number;
+  floor?: number;
+  floor_id?: number | null;
+  floor_number?: number | null;
+  floor_name?: string | null;
   zone: string;
   description: string;
   photo: string | null;
@@ -379,6 +405,17 @@ export interface Resource {
   availability_days: number[];
 }
 
+export interface BookedBy {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  avatar: string | null;
+  position: string | null;
+  role: string;
+}
+
 /** Бронирование: сериализатор бэкенда (resource — id, participants — email-строки). */
 export interface Booking {
   id: number;
@@ -387,6 +424,7 @@ export interface Booking {
   resource_type: ResourceType;
   user: number;
   user_name: string;
+  booked_by?: BookedBy | null;
   company: number | null;
   start_time: string;
   end_time: string;
@@ -823,6 +861,8 @@ export interface MapPoint {
   label: string;
   x: number;
   y: number;
+  width: number | null;   // % от ширины canvas, null → дефолт 12
+  height: number | null;  // % от высоты canvas, null → дефолт 8
   resource_id: number | null;
   resource_name: string | null;
   resource_status: MapPointStatus | null;
@@ -843,6 +883,7 @@ export interface ServiceFloor {
   number: number;
   plan_image: string | null;
   plan_image_url: string | null;
+  occupancy_pct?: number;
   created_at: string;
   updated_at: string;
 }
@@ -850,6 +891,12 @@ export interface ServiceFloor {
 /** POST /services/floors/ (JSON). `plan_image` передаётся только через multipart. */
 export interface ServiceFloorCreatePayload {
   number: number;
+  name?: string;
+}
+
+/** PATCH /services/floors/{id}/ */
+export interface ServiceFloorUpdatePayload {
+  number?: number;
   name?: string;
 }
 
@@ -871,6 +918,8 @@ export interface MapPointCreatePayload {
   label: string;
   x: number;
   y: number;
+  width?: number;
+  height?: number;
   resource?: number | null;
   company?: number | null;
 }
@@ -1109,8 +1158,11 @@ export interface DashboardAnnouncementRecentItem {
 }
 
 export interface FloorLoadItem {
+  floor_id: number;
   floor_number: number;
   floor_name: string;
+  total: number;
+  occupied: number;
   occupancy_pct: number;
 }
 

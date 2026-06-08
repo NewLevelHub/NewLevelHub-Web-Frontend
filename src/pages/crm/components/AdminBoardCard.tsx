@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LayoutGrid, Calendar, Building2 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
+import { fmtDateLong } from '@/shared/lib/formatDate';
 import type { CrmBoard } from '@/shared/types';
 
 export interface AdminBoardCardProps {
@@ -15,17 +16,14 @@ export const AdminBoardCard = memo(function AdminBoardCard({
   companyName,
   onClick,
 }: AdminBoardCardProps) {
-  const formattedDate = new Date(board.created_at).toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  const { t } = useTranslation();
+  const formattedDate = fmtDateLong(board.created_at);
 
   return (
     <div
       role="button"
       tabIndex={0}
-      aria-label={`Открыть доску ${board.name}`}
+      aria-label={t('crm.openBoardAria', { name: board.name })}
       onClick={() => onClick(board)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {

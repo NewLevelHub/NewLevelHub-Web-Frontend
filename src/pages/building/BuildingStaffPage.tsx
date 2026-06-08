@@ -8,6 +8,7 @@ import { USER_ROLES, USER_ROLE_LABELS, type UserRole } from '@/shared/config/con
 import { getApiError } from '@/shared/lib/getApiError';
 import { mapApiUser } from '@/shared/lib/mapUser';
 import { cn } from '@/shared/lib/cn';
+import { fmtDateTime } from '@/shared/lib/formatDate';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import type { CompanyInvitation, CompanyMember, PaginatedResponse } from '@/shared/types';
@@ -350,7 +351,7 @@ export default function BuildingStaffPage() {
                     <p className="font-medium text-primary">{inv.email}</p>
                     <p className="text-xs text-muted">
                       {USER_ROLE_LABELS[inv.role as UserRole] ?? inv.role} · до{' '}
-                      {new Date(inv.expires_at).toLocaleString('ru-RU')}
+                      {fmtDateTime(inv.expires_at)}
                       {inv.is_expired ? ' · просрочено' : inv.is_used ? ' · использовано' : ''}
                     </p>
                   </div>

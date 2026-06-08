@@ -8,7 +8,10 @@
       "activeBookings": "Active bookings",
       "spaceLoad": "Space utilization",
       "openRequests": "Open requests",
-      "activeTenants": "Active tenants"
+      "activeTenants": "Active tenants",
+      "trendWeekDelta": "+{{count}} this week",
+      "trendClosedToday": "−{{count}} closed today",
+      "trendNewWeek": "+{{count}} this week"
     },
     "upcomingBookings": "Upcoming bookings",
     "acrossAllCompanies": "across all companies · today",
@@ -43,6 +46,7 @@
     "noBookings": "No upcoming bookings",
     "noAnnouncements": "No new announcements",
     "floorNoData": "No floor data available",
+    "floorOccupancyAria": "{{occupied}} of {{total}} spots occupied ({{pct}}%)",
     "tasksWidget": {
       "subheading": "{{tasksLabel}} · {{boardsLabel}}",
       "tasksCount_one": "{{count}} task",
@@ -649,7 +653,16 @@
     "settingsSubtitle": "Manage which notifications you receive and through which channels.",
     "typesHeading": "Notification types",
     "loadError": "Failed to load notification settings. Please reload the page.",
-    "dndLoadingAria": "Loading Do Not Disturb settings"
+    "dndLoadingAria": "Loading Do Not Disturb settings",
+    "dndEnabled": "Enabled",
+    "dndDisabled": "Disabled",
+    "dndActiveUntil": "Active until: {{date}}",
+    "dndActiveNoLimit": "Active with no time limit",
+    "dndUntilLabel": "Until (optional)",
+    "dndSave": "Save",
+    "dndSaved": "Settings saved.",
+    "dndErrorFuture": "Please specify a date and time in the future.",
+    "dndErrorGeneral": "Could not save settings. Please try again."
   },
   "header": {
     "markAllRead": "Mark all as read",
@@ -759,7 +772,10 @@
     "detailLoading": "Loading…",
     "capacityLabel": "Capacity",
     "modeLabel": "Mode",
-    "back": "Back to bookings (admin)"
+    "back": "Back to bookings (admin)",
+    "photoPrev": "Previous photo",
+    "photoNext": "Next photo",
+    "photoGoTo": "Go to photo {{n}}"
   },
   "profile": {
     "title": "Profile",
@@ -826,6 +842,13 @@
     "confirm": "Confirm",
     "cancel": "Cancel",
     "close": "Close"
+  },
+  "session": {
+    "expired": "Your session has ended due to inactivity. Please sign in again.",
+    "warningTitle": "Session ending soon",
+    "warningDescription": "Your session will end in about {{minutes}} minute(s) due to inactivity.",
+    "extend": "Stay signed in",
+    "exit": "Sign out"
   },
   "booking": {
     "create": {
@@ -1208,7 +1231,68 @@
     "buildingMap": "Building map",
     "freeAt": "Free at {{time}}",
     "noPoints": "No points defined for this floor",
-    "clickToPlace": "Click on the map to place a point"
+    "clickToPlace": "Click on the map to place a point",
+    "floorsTitle": "Floors",
+    "floorFallbackName": "Floor",
+    "legendTitle": "Legend",
+    "editMode": "Edit mode",
+    "addFloor": "Add floor",
+    "createFloor": "Create floor",
+    "floorsLoading": "Loading floors...",
+    "floorsLoadError": "Could not load floors list. Try refreshing the page.",
+    "floorsNotFound": "No floors found.",
+    "floorsContactAdmin": "Contact an administrator.",
+    "schemaLabel": "view",
+    "updatedAt": "Updated at",
+    "loadingMap": "Loading map...",
+    "loadError": "Could not load the floor map.",
+    "selectFloor": "Select a floor to view the map",
+    "clickToBook": "Click a point to open a booking.",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "editFloor": "Edit Floor",
+    "editFloorHint": "Changes will apply to all users.",
+    "currentPlan": "Current Plan",
+    "replacePlan": "Replace Plan",
+    "replacePlanHint": "Select a new file to replace",
+    "removePlan": "Remove plan",
+    "editFloorAria": "Edit floor {{name}}",
+    "floorNumber": "Floor number",
+    "floorNameLabel": "Name",
+    "floorPlanLabel": "Floor plan",
+    "popup": {
+      "freeNow": "Free now",
+      "occupiedUntil": "Occupied until {{time}}",
+      "freeInMin": "Available in {{n}} min",
+      "unavailable": "Unavailable",
+      "book": "Book",
+      "details": "Details"
+    },
+    "toolbar": {
+      "disableEditMode": "Disable edit mode",
+      "enableEditMode": "Enable edit mode"
+    },
+    "addPanel": {
+      "resourceSelectHint": "Select a resource — point type will be taken from the resource",
+      "title": "New point",
+      "xLabel": "X (0–100)",
+      "yLabel": "Y (0–100)",
+      "resourceLabel": "Resource",
+      "labelField": "Label",
+      "pointTypeLabel": "Point type",
+      "companyIdLabel": "Company ID",
+      "createBtn": "Create point",
+      "typeHint": "Point type is determined by the selected resource.",
+      "errorX": "X must be a number between 0 and 100",
+      "errorY": "Y must be a number between 0 and 100",
+      "errorCompany": "Company ID is required for office points",
+      "selectDefault": "— Select —"
+    },
+    "editModal": {
+      "pointTypeHint": "Point type is determined by the selected resource type"
+    },
+    "deleteFloorTitle": "Delete floor?",
+    "deleteFloorConfirm": "Floor \"{{name}}\" will be permanently deleted along with all map points and associated catalog resources."
   },
   "crm": {
     "priority": {
@@ -1230,7 +1314,10 @@
     "noArchivedBoards": "No archived boards",
     "archivedBoardsHint": "Archived boards will appear here.",
     "createFirstHint": "Create the first one!",
-    "loadErrorBoards": "Failed to load boards. Please reload the page."
+    "loadErrorBoards": "Failed to load boards. Please reload the page.",
+    "taskNotFound": "Task not found or was archived.",
+    "taskIdLabel": "Task #{{id}}",
+    "openBoardAria": "Open board {{name}}"
   },
   "auth": {
     "login": {
@@ -1374,13 +1461,16 @@
     "notYetActive": "Not active yet",
     "companyFilter": "Company name",
     "oneTime": "One-time pass",
+    "backToPasses": "Back to passes",
+    "visitDetails": "Visit details",
     "filters": {
       "all": "All",
       "active": "Active",
       "used": "Used",
       "expired": "Expired",
       "revoked": "Revoked",
-      "createdByEmail": "Creator email"
+      "allDates": "All dates",
+      "creatorEmail": "Creator email"
     },
     "reason": {
       "expired": "Expired",
@@ -1412,7 +1502,9 @@
     "loadingPass": "Loading pass...",
     "loadError": "Failed to load pass details.",
     "passId": "Pass #{{id}}",
+    "passIdLabel": "Pass ID",
     "backToList": "Back to list",
+    "guestInfo": "Guest information",
     "actionsSection": "Actions",
     "revoking": "Revoking...",
     "cannotRevoke": "Cannot revoke a used, expired, or already revoked pass.",
@@ -1428,6 +1520,10 @@
     "columnValidated": "Validated",
     "columnMethod": "Method",
     "columnDetails": "Details",
+    "columnGuest": "Guest",
+    "columnVisitDate": "Visit date",
+    "columnVisitTime": "Time",
+    "columnActions": "Actions",
     "noPassesYet": "No passes yet.",
     "listTitle": "Guest passes",
     "listSubtitle": "Your digital passes with QR code.",
@@ -1450,7 +1546,35 @@
     "validatePageSubtitle": "Enter the QR code manually or scan it with the camera.",
     "uuidLabel": "QR code (UUID)",
     "uuidPlaceholder": "e.g. 64fdbf4f-465e-40e6-8ef4-3f3c96d34ac6",
-    "notYetActiveDetail": "Pass will be available from {{date}}"
+    "notYetActiveDetail": "Pass will be available from {{date}}",
+    "noCompany": "No company",
+    "qrPanel": {
+      "guestQR": "Guest Pass QR",
+      "download": "Download",
+      "sendEmail": "Send to email",
+      "sending": "Sending...",
+      "sent": "Sent!",
+      "countdownActive": "Pass is active",
+      "countdownExpired": "Pass expired",
+      "countdownUsed": "Used",
+      "countdownPending": "Until visit: {{hours}}h {{minutes}}m — pass activates automatically",
+      "selectHint": "Select a pass to view QR",
+      "downloading": "Downloading..."
+    },
+    "qrCodeSection": "QR code",
+    "qrImageUnavailable": "QR image not available.",
+    "qrWillBeActiveFrom": "Will be active from",
+    "qrActiveIn": "Active in {{countdown}}",
+    "validationHistory": {
+      "title": "Validation history",
+      "total": "Total: {{count}}",
+      "checkedBy": "Checked by",
+      "entryPoint": "Entry point",
+      "loadError": "Failed to load validation history.",
+      "noHistory": "The guest has not validated this pass yet.",
+      "methodQr": "QR",
+      "methodManual": "Manual"
+    }
   },
   "home": {
     "badge": "Workspace operations platform",
@@ -1550,6 +1674,7 @@
     "nameLabel": "Name",
     "descriptionLabel": "Description",
     "contactEmail": "Contact email",
+    "adminContact": "Administrator",
     "contactPhone": "Contact phone",
     "floorLabel": "Floor",
     "officeNumberLabel": "Office number",
@@ -1559,6 +1684,12 @@
     "storageLabel": "Storage (GB)",
     "editForm": "Edit company",
     "createdLabel": "Created",
+    "categoriesCol": "Categories",
+    "categoriesPlaceholder": "Tech, B2B, SaaS…",
+    "categoriesHint": "Press Enter or comma to add a tag",
+    "domainCol": "Domain",
+    "footerCount": "companies",
+    "footerSum": "employees total",
     "nameRequired": "Name is required",
     "createTitle": "Create company",
     "createSubtitle": "Fill in the new tenant company details",
@@ -1580,6 +1711,8 @@
     "selectCompanyToView": "Select a company to view members and invites.",
     "newInvitation": "New invitation",
     "sendInvitation": "Send invitation",
+    "inviteEmailPlaceholder": "colleague@company.com",
+    "templateNamePlaceholder": "Employee onboarding",
     "membersTitle": "Employees",
     "noMembers": "No employees yet",
     "invitationsTitle": "Invitations",
@@ -1628,6 +1761,7 @@
     "noLabels": "No labels added yet.",
     "labelNamePlaceholder": "Label name",
     "addLabel": "Add",
+    "labelDeleteAria": "Delete label {{name}}",
     "labelCreateError": "Failed to create label.",
     "saveSettings": "Save settings",
     "onboardingTitle": "Onboarding templates",
@@ -1877,7 +2011,12 @@
     "publishingPlain": "Publishing…",
     "publish": "Publish",
     "formErrorTitleText": "Please fill in the title and text of the announcement.",
-    "formErrorCompany": "Select a recipient company or switch to «BC»."
+    "formErrorCompany": "Select a recipient company or switch to «BC».",
+    "unread": "Unread",
+    "buildingScope": "BC",
+    "markRead": "Mark as read",
+    "read": "Read",
+    "deleteAria": "Delete announcement"
   },
   "calendar": {
     "pageTitle": "Company calendar",

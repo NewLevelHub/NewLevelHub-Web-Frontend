@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
+import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Save, ListChecks, Pencil, Trash2, Star } from 'lucide-react';
+import { Plus, Save, ListChecks, Pencil, Trash2, Star, Settings2, Users, AlertCircle, CheckCircle2, ClipboardList } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
+import { cn } from '@/shared/lib/cn';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { getApiError } from '@/shared/lib/getApiError';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
@@ -35,6 +37,10 @@ function normalizeSteps(steps: OnboardingTemplateStepInput[]): OnboardingTemplat
     order: index + 1,
   }));
 }
+
+const inputClass =
+  'mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand';
+const labelClass = 'block text-sm font-medium text-secondary';
 
 export default function CompanyOnboardingTemplatesPage() {
   const { t } = useTranslation();
@@ -92,19 +98,19 @@ export default function CompanyOnboardingTemplatesPage() {
         steps: normalizeSteps(form.steps).filter((step) => step.title.length > 0),
       };
       if (!payload.name) {
-        throw new Error('Введите название шаблона.');
+        throw new Error(t('companies.templateNameRequired'));
       }
       if (payload.steps.length === 0) {
-        throw new Error('Добавьте хотя бы один шаг.');
+        throw new Error(t('companies.templateStepRequired'));
       }
 
       if (editingTemplateId) {
         await apiClient.patch(API.onboarding.template(editingTemplateId), payload);
-        return 'Шаблон обновлён.';
+        return t('companies.templateUpdated');
       }
 
       await apiClient.post(templatesUrl, payload);
-      return 'Шаблон создан.';
+      return t('companies.templateCreated');
     },
     onSuccess: async (message) => {
       setError(null);
@@ -122,7 +128,7 @@ export default function CompanyOnboardingTemplatesPage() {
   const deleteMutation = useMutation({
     mutationFn: async (templateId: number) => {
       await apiClient.delete(API.onboarding.template(templateId));
-      return 'Шаблон удалён.';
+      return t('companies.templateDeleted');
     },
     onSuccess: async (message, templateId) => {
       setError(null);
@@ -144,7 +150,7 @@ export default function CompanyOnboardingTemplatesPage() {
       apiClient.post<OnboardingTemplate>(API.onboarding.templateSetDefault(templateId)).then((r) => r.data),
     onSuccess: async () => {
       setError(null);
-      setSuccess('Шаблон по умолчанию обновлён.');
+      setSuccess(t('companies.templateDefaultUpdated'));
       await queryClient.invalidateQueries({ queryKey: ['onboarding-templates'] });
     },
     onError: (mutationError: unknown) => {
@@ -196,13 +202,15 @@ export default function CompanyOnboardingTemplatesPage() {
   };
 
   const companySelector = isSuperadmin ? (
-    <section className="rounded-xl border border-default bg-surface/50 p-4">
-      <label className="block text-sm font-medium text-secondary" htmlFor="company-select-onboarding">{t('common.company')}</label>
+    <section className="rounded-xl border border-default bg-surface p-4">
+      <label className={labelClass} htmlFor="company-select-onboarding">
+        {t('common.company')}
+      </label>
       <select
         id="company-select-onboarding"
         value={selectedCompanyId}
         onChange={(e) => setSelectedCompanyId(e.target.value)}
-        className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+        className={inputClass}
       >
         <option value="">{t('common.selectCompany')}</option>
         {(companiesData?.results ?? []).map((company) => (
@@ -215,33 +223,74 @@ export default function CompanyOnboardingTemplatesPage() {
   ) : null;
 
   return (
-    <div className="max-w-5xl space-y-6">
-      <div className="flex items-center gap-2">
-        <ListChecks className="h-5 w-5 text-brand" aria-hidden="true" />
-        <h1 className="text-2xl font-semibold text-primary">Шаблоны онбординга</h1>
+    <div className="space-y-4">
+      {/* Page header */}
+      <div>
+        <div className="flex items-center gap-3">
+          <ListChecks className="h-6 w-6 text-brand" aria-hidden="true" />
+          <h1 className="text-2xl font-semibold text-primary">{t('companies.onboardingTitle')}</h1>
+        </div>
       </div>
 
+      {/* Tab navigation */}
+      <nav className="flex flex-wrap gap-2" aria-label={t('companies.onboardingTitle')}>
+        <Link
+          to={`/company/settings${companyId ? `?company=${companyId}` : ''}`}
+          className="inline-flex items-center gap-1.5 rounded-full border border-default px-4 py-1.5 text-sm text-secondary hover:bg-hover"
+        >
+          <Settings2 className="h-3.5 w-3.5" aria-hidden="true" />
+          {t('companies.generalSettings')}
+        </Link>
+        <Link
+          to={`/company/settings/members${companyId ? `?company=${companyId}` : ''}`}
+          className="inline-flex items-center gap-1.5 rounded-full border border-default px-4 py-1.5 text-sm text-secondary hover:bg-hover"
+        >
+          <Users className="h-3.5 w-3.5" aria-hidden="true" />
+          {t('companies.membersTitle')}
+        </Link>
+        <span
+          className="inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white"
+          aria-current="page"
+        >
+          <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
+          {t('companies.onboardingTemplatesLink')}
+        </span>
+      </nav>
+
+      {/* Superadmin company selector */}
       {companySelector}
 
+      {/* Alert banners */}
       {error && (
-        <div className="rounded-lg border border-red-200 dark:border-red-900/40 bg-danger-subtle px-4 py-3 text-sm text-danger">
-          {error}
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-lg border border-default bg-danger-subtle px-4 py-3 text-sm text-danger"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>{error}</span>
         </div>
       )}
       {success && (
-        <div className="rounded-lg border border-emerald-900/70 bg-success-subtle px-4 py-3 text-sm text-success">
-          {success}
+        <div
+          role="status"
+          className="flex items-start gap-3 rounded-lg border border-default bg-success-subtle px-4 py-3 text-sm text-success"
+        >
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>{success}</span>
         </div>
       )}
 
       {isSuperadmin && !companyId ? (
-        <p className="text-sm text-secondary">Выберите компанию, чтобы управлять шаблонами онбординга.</p>
+        <section className="rounded-xl border border-default bg-surface p-6">
+          <p className="text-sm text-secondary">{t('companies.selectCompanyForTemplates')}</p>
+        </section>
       ) : (
         <>
-          <section className="rounded-xl border border-default bg-surface/50 p-6">
-            <div className="mb-4 flex items-center justify-between">
+          {/* Template form */}
+          <section className="rounded-xl border border-default bg-surface p-6">
+            <div className="mb-5 flex items-center justify-between">
               <h2 className="text-base font-semibold text-primary">
-                {editingTemplateId ? 'Редактирование шаблона' : t('common.newTemplate')}
+                {editingTemplateId ? t('companies.editTemplate') : t('common.newTemplate')}
               </h2>
               {editingTemplateId && (
                 <button
@@ -253,51 +302,66 @@ export default function CompanyOnboardingTemplatesPage() {
                     setSuccess(null);
                   }}
                   className="rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:bg-hover"
-                >{t('common.reset')}</button>
+                >
+                  {t('common.reset')}
+                </button>
               )}
             </div>
 
             <div className="space-y-4">
-              <label className="block text-sm text-secondary">
-                Название шаблона
+              <div>
+                <label className={labelClass} htmlFor="template-name">
+                  {t('companies.templateName')}
+                </label>
                 <input
+                  id="template-name"
                   type="text"
                   value={form.name}
                   onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-primary"
-                  placeholder="Employee onboarding"
+                  className={inputClass}
+                  placeholder={t('companies.templateNamePlaceholder')}
                 />
-              </label>
+              </div>
 
               <div className="space-y-3">
                 {form.steps.map((step, index) => (
-                  <div key={index} className="rounded-lg border border-default bg-surface p-4">
-                    <p className="mb-2 text-xs uppercase tracking-wide text-muted">Шаг {index + 1}</p>
+                  <div
+                    key={index}
+                    className="rounded-lg border border-default bg-raised p-4"
+                  >
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-brand text-xs font-semibold text-white shrink-0">
+                          {index + 1}
+                        </span>
+                        <span className="text-xs font-medium text-muted">
+                          {t('companies.stepLabel', { number: index + 1 })}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeStep(index)}
+                        disabled={form.steps.length === 1}
+                        className="rounded-lg border border-default bg-danger-subtle px-3 py-1.5 text-xs text-danger disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {t('companies.removeStep')}
+                      </button>
+                    </div>
                     <div className="grid gap-3">
                       <input
                         type="text"
                         value={step.title}
                         onChange={(event) => updateStep(index, { title: event.target.value })}
-                        className="rounded-lg border border-default bg-page px-3 py-2 text-sm text-primary"
-                        placeholder="Название шага"
+                        className="rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                        placeholder={t('companies.stepTitle')}
                       />
                       <textarea
                         value={step.description}
                         onChange={(event) => updateStep(index, { description: event.target.value })}
                         rows={3}
-                        className="rounded-lg border border-default bg-page px-3 py-2 text-sm text-primary"
-                        placeholder="Описание шага"
+                        className="rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                        placeholder={t('companies.stepDescription')}
                       />
-                      <div className="flex justify-end">
-                        <button
-                          type="button"
-                          onClick={() => removeStep(index)}
-                          disabled={form.steps.length === 1}
-                          className="rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-3 py-1.5 text-xs text-danger disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          Удалить шаг
-                        </button>
-                      </div>
                     </div>
                   </div>
                 ))}
@@ -307,10 +371,10 @@ export default function CompanyOnboardingTemplatesPage() {
                 <button
                   type="button"
                   onClick={addStep}
-                  className="inline-flex items-center gap-1 rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover"
                 >
                   <Plus className="h-4 w-4" aria-hidden="true" />
-                  Добавить шаг
+                  {t('companies.addStep')}
                 </button>
                 <button
                   type="button"
@@ -320,48 +384,73 @@ export default function CompanyOnboardingTemplatesPage() {
                     saveMutation.mutate();
                   }}
                   disabled={saveMutation.isPending}
-                  className="inline-flex items-center gap-1 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
                 >
                   <Save className="h-4 w-4" aria-hidden="true" />
-                  {saveMutation.isPending ? t('common.savingPlain') : editingTemplateId ? t('common.save') : t('common.create')}
+                  {saveMutation.isPending
+                    ? t('common.savingPlain')
+                    : editingTemplateId
+                      ? t('common.save')
+                      : t('common.create')}
                 </button>
               </div>
             </div>
           </section>
 
-          <section className="rounded-xl border border-default bg-surface/50 p-6">
-            <h2 className="mb-4 text-base font-semibold text-primary">Существующие шаблоны</h2>
-            {templatesQuery.isLoading && <p className="text-sm text-secondary">Загрузка шаблонов...</p>}
+          {/* Existing templates */}
+          <section className="rounded-xl border border-default bg-surface p-6">
+            <h2 className="mb-5 text-base font-semibold text-primary">
+              {t('companies.existingTemplates')}
+            </h2>
+
+            {templatesQuery.isLoading && (
+              <p className="text-sm text-muted">{t('companies.templatesLoading')}</p>
+            )}
             {templatesQuery.isError && (
-              <p className="text-sm text-red-400">Не удалось загрузить шаблоны онбординга.</p>
+              <div className="rounded-lg border border-default bg-danger-subtle px-4 py-3 text-sm text-danger">
+                {t('companies.templatesError')}
+              </div>
             )}
             {!templatesQuery.isLoading && !templates.length && (
-              <p className="text-sm text-muted">Шаблоны пока не созданы.</p>
+              <div className="flex flex-col items-center justify-center py-12">
+                <ClipboardList className="mb-3 h-10 w-10 text-muted" aria-hidden="true" />
+                <p className="text-sm font-medium text-secondary">{t('companies.noTemplates')}</p>
+              </div>
             )}
+
             <div className="space-y-3">
               {templates.map((template) => (
                 <div
                   key={template.id}
-                  className={`rounded-lg border bg-surface p-4 ${template.is_default ? 'border-brand/50' : 'border-default'}`}
+                  className={cn(
+                    'rounded-lg border bg-surface p-4',
+                    template.is_default
+                      ? 'border-brand/50 border-l-2 border-l-brand'
+                      : 'border-default',
+                  )}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <p className="font-medium text-primary">{template.name}</p>
                         {template.is_default && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-brand-subtle px-2 py-0.5 text-xs font-medium text-brand">
                             <Star className="h-3 w-3" aria-hidden="true" />
-                            По умолчанию
+                            {t('companies.templateDefault')}
                           </span>
                         )}
                       </div>
                       <p className="mt-1 text-xs text-secondary">
-                        {template.steps.length} {template.steps.length === 1 ? 'шаг' : 'шагов'}
+                        {template.steps.length === 1
+                          ? t('companies.stepsCount', { count: template.steps.length })
+                          : t('companies.stepsCountMany', { count: template.steps.length })}
                         {' · '}
-                        {template.is_active ? 'активный' : 'неактивный'}
+                        {template.is_active
+                          ? t('companies.templateActive')
+                          : t('companies.templateInactive')}
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
                       {template.is_active && !template.is_default && (
                         <button
                           type="button"
@@ -371,28 +460,32 @@ export default function CompanyOnboardingTemplatesPage() {
                             setSuccess(null);
                             setDefaultMutation.mutate(template.id);
                           }}
-                          className="inline-flex items-center gap-1 rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:border-brand/50 hover:bg-brand-subtle hover:text-brand disabled:opacity-50"
-                          aria-label={`Сделать шаблон «${template.name}» шаблоном по умолчанию`}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:border-brand/50 hover:bg-brand-subtle hover:text-brand disabled:opacity-50"
+                          aria-label={t('companies.setDefaultAria', { name: template.name })}
                         >
                           <Star className="h-3.5 w-3.5" aria-hidden="true" />
-                          Сделать дефолтным
+                          {t('companies.setDefault')}
                         </button>
                       )}
                       <button
                         type="button"
                         onClick={() => startEditing(template)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:bg-hover"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:bg-hover"
                       >
                         <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                        Изменить
+                        {t('companies.editTemplateBtn')}
                       </button>
                       <button
                         type="button"
                         disabled={deleteMutation.isPending}
-                        onClick={() => setTemplatePendingDelete({ id: template.id, name: template.name })}
-                        className="inline-flex items-center gap-1 rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-3 py-1.5 text-xs text-danger hover:bg-danger-subtle disabled:opacity-50"
+                        onClick={() =>
+                          setTemplatePendingDelete({ id: template.id, name: template.name })
+                        }
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-default bg-danger-subtle px-3 py-1.5 text-xs text-danger hover:opacity-80 disabled:opacity-50"
                       >
-                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />{t('common.delete')}</button>
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                        {t('common.delete')}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -412,10 +505,10 @@ export default function CompanyOnboardingTemplatesPage() {
           setSuccess(null);
           deleteMutation.mutate(id, { onSettled: () => setTemplatePendingDelete(null) });
         }}
-        title="Удалить шаблон?"
+        title={t('companies.deleteTemplateModal')}
         description={
           templatePendingDelete
-            ? `Шаблон «${templatePendingDelete.name}» будет удалён без возможности восстановления.`
+            ? t('companies.deleteTemplateDesc', { name: templatePendingDelete.name })
             : ''
         }
         variant="danger"

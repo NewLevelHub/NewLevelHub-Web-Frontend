@@ -16,6 +16,7 @@ import {
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
+import { fmtDate } from '@/shared/lib/formatDate';
 import { cn } from '@/shared/lib/cn';
 import type { LeaveBalance, LeaveRequest, PaginatedResponse, TeamLeaveBalance } from '@/shared/types';
 import { useReviewerOptions } from './useReviewerOptions';
@@ -290,9 +291,9 @@ export default function LeaveRequestListPage() {
                     {t(LEAVE_TYPE_LABEL_KEYS[leave.leave_type]) ?? leave.leave_type}
                   </td>
                   <td className="px-4 py-3">
-                    {new Date(leave.start_date).toLocaleDateString('ru-RU')}
+                    {fmtDate(leave.start_date)}
                     {' - '}
-                    {new Date(leave.end_date).toLocaleDateString('ru-RU')}
+                    {fmtDate(leave.end_date)}
                   </td>
                   <td className="px-4 py-3">
                     <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE_CLASS[leave.status])}>

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ToggleLeft, ToggleRight } from 'lucide-react';
 
 import { cn } from '@/shared/lib/cn';
+import { fmtTime } from '@/shared/lib/formatDate';
 
 export interface MapEditToolbarProps {
   floorName: string;
@@ -14,6 +15,7 @@ export interface MapEditToolbarProps {
 
 export const MapEditToolbar = memo<MapEditToolbarProps>(
   ({ floorName, atTimeIso, editMode, onToggleEditMode, isSuperadmin }) => {
+    const { t } = useTranslation();
     return (
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold text-primary">{floorName}</h2>
@@ -29,24 +31,21 @@ export const MapEditToolbar = memo<MapEditToolbarProps>(
                   : 'border-default bg-surface text-muted hover:border-gray-300 hover:bg-raised',
               )}
               aria-pressed={editMode}
-              aria-label={editMode ? 'Выключить режим редактирования' : 'Включить режим редактирования'}
+              aria-label={editMode ? t('map.toolbar.disableEditMode') : t('map.toolbar.enableEditMode')}
             >
               {editMode ? (
                 <ToggleRight className="h-4 w-4" aria-hidden="true" />
               ) : (
                 <ToggleLeft className="h-4 w-4" aria-hidden="true" />
               )}
-              Режим редактирования
+              {t('map.editMode')}
             </button>
           ) : null}
 
           {!editMode ? (
             <p className="text-xs text-secondary">
-              Актуально на{' '}
-              {new Date(atTimeIso).toLocaleTimeString('ru-RU', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              {t('map.updatedAt')}{' '}
+              {fmtTime(atTimeIso)}
             </p>
           ) : null}
         </div>

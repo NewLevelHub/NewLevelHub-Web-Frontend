@@ -5,6 +5,7 @@ import { MessageSquare, Send } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
+import { fmtDateTime } from '@/shared/lib/formatDate';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import type { CrmComment } from '@/shared/types';
@@ -12,14 +13,7 @@ import type { CrmComment } from '@/shared/types';
 // ─── Comment helpers ──────────────────────────────────────────────────────────
 
 function formatCommentDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleString('ru-RU', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return fmtDateTime(iso, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 // ─── Comment Item ─────────────────────────────────────────────────────────────

@@ -2,17 +2,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import {
-  Bookmark,
   Building2,
   ChevronDown,
   ChevronLeft,
-  ChevronRight,
   DoorOpen,
   Search,
   X,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
+import { fmtDateTime } from '@/shared/lib/formatDate';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
@@ -50,13 +49,6 @@ const statusDotClass: Record<string, string> = {
   [BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE]: 'bg-amber-400',
 };
 
-const STATUS_BADGE_CLASS: Record<string, string> = {
-  [BOOKING_RESOURCE_CATALOG_STATUS.FREE]: 'bg-emerald-600/90',
-  [BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED]: 'bg-rose-600/90',
-  [BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED]: 'bg-slate-700/90',
-  [BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE]: 'bg-amber-600/90',
-};
-
 function emptyEquipmentFilters(): Record<ResourceEquipmentKey, boolean> {
   return Object.fromEntries(
     RESOURCE_EQUIPMENT_KEYS.map((k) => [k, false]),
@@ -67,7 +59,7 @@ function formatAvailableAt(iso: string | null): string | null {
   if (!iso) return null;
   try {
     const d = new Date(iso);
-    return d.toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' });
+    return fmtDateTime(d, { dateStyle: 'short', timeStyle: 'short' } as Intl.DateTimeFormatOptions);
   } catch {
     return null;
   }
@@ -125,7 +117,7 @@ export default function BookingCatalogPage() {
   const queryParams: Record<string, string | number> = { page, page_size: PAGE_SIZE, ordering };
   if (typeFilter) queryParams.type = typeFilter;
   if (floorFilter !== '' && !Number.isNaN(Number(floorFilter))) {
-    queryParams.floor = Number(floorFilter);
+    queryParams.floor_id = Number(floorFilter);
   }
   if (debouncedSearch.trim()) queryParams.search = debouncedSearch.trim();
   const capMinN = Number(capacityMin);
@@ -216,6 +208,7 @@ export default function BookingCatalogPage() {
     () => [...(floorsData ?? [])].sort((a, b) => a.number - b.number),
     [floorsData],
   );
+
 
   const { data: preselectedResource } = useQuery({
     queryKey: ['booking-resource-detail-for-modal', preselectResourceId],
@@ -330,7 +323,7 @@ export default function BookingCatalogPage() {
     <div className="space-y-5">
       {/* ── Page header ── */}
       <div>
-        <h1 className="text-xl font-bold text-primary">{t('catalog.title')}</h1>
+        <h1 className="text-lg sm:text-xl font-bold text-primary">{t('catalog.title')}</h1>
         <p className="mt-0.5 text-sm text-muted">
           {t('catalog.subtitle', { total: totalCount, free: freeCount })}
         </p>
@@ -440,16 +433,16 @@ export default function BookingCatalogPage() {
           </button>
 
           {/* Right-side controls */}
-          <div className="ml-auto flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:ml-auto">
             {/* Search */}
-            <div className="relative">
+            <div className="relative flex-1 sm:flex-none">
               <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
               <input
                 type="search"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder={t('catalog.searchPlaceholder')}
-                className="h-8 w-44 rounded-lg border border-default bg-surface pl-8 pr-3 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/20"
+                className="h-8 w-full min-w-0 rounded-lg border border-default bg-surface pl-8 pr-3 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/20 sm:w-44"
               />
             </div>
 
@@ -549,7 +542,7 @@ export default function BookingCatalogPage() {
       ) : sortedResults.length === 0 ? (
         <div className="py-20 text-center text-sm text-secondary">{t('catalog.noResults')}</div>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {sortedResults.map((r) => {
             const firstPhotoSrc = r.photos?.[0]?.image_url ?? r.photos?.[0]?.image ?? null;
             const imgSrc =
@@ -664,14 +657,14 @@ export default function BookingCatalogPage() {
 
                   {/* Actions */}
                   <div
-                    className="flex gap-2 px-4 pb-4 pt-0"
+                    className="flex flex-col gap-2 px-4 pb-4 pt-0 sm:flex-row"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {r.status === BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED ? (
                       <button
                         type="button"
                         disabled
-                        className="flex-1 rounded-lg bg-raised px-3 py-2 text-sm font-medium text-muted cursor-not-allowed"
+                        className="w-full sm:flex-1 rounded-lg bg-raised px-3 py-2 text-sm font-medium text-muted cursor-not-allowed"
                       >
                         {t('catalog.occupied')}
                       </button>
@@ -679,7 +672,7 @@ export default function BookingCatalogPage() {
                       <button
                         type="button"
                         disabled
-                        className="flex-1 rounded-lg bg-raised px-3 py-2 text-sm font-medium text-muted cursor-not-allowed"
+                        className="w-full sm:flex-1 rounded-lg bg-raised px-3 py-2 text-sm font-medium text-muted cursor-not-allowed"
                       >
                         {t('catalog.blocked')}
                       </button>
@@ -687,7 +680,7 @@ export default function BookingCatalogPage() {
                       <button
                         type="button"
                         onClick={() => setSelectedResource(r)}
-                        className="flex-1 rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-hover transition-colors"
+                        className="w-full sm:flex-1 rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-hover transition-colors"
                       >
                         {t('catalog.book')}
                       </button>
@@ -695,7 +688,7 @@ export default function BookingCatalogPage() {
                     <button
                       type="button"
                       onClick={() => setPanelResource(r)}
-                      className="rounded-lg border border-default px-3 py-2 text-sm font-medium text-secondary hover:bg-hover transition-colors"
+                      className="w-full sm:w-auto rounded-lg border border-default px-3 py-2 text-sm font-medium text-secondary hover:bg-hover transition-colors"
                     >
                       {t('catalog.details')}
                     </button>

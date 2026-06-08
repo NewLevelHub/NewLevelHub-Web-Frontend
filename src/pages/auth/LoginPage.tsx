@@ -1,16 +1,38 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router';
 import { useAuthStore } from '@/shared/store/auth';
 import { getApiError } from '@/shared/lib/getApiError';
+import { clearSessionExpiredState, consumeLoginNoticeKey } from '@/shared/lib/sessionManager';
 import { authInput, authLabel, authPrimaryBtn, authLink } from '@/shared/ui/authFormStyles';
 import { AuthPasswordField } from '@/shared/ui/AuthPasswordField';
+
+type LoginLocationState = {
+  notice?: string;
+  noticeKey?: string;
+};
 
 export default function LoginPage() {
   const { t } = useTranslation();
   const login = useAuthStore((s) => s.login);
   const location = useLocation();
-  const notice = typeof location.state === 'object' && location.state !== null ? (location.state as { notice?: string }).notice : '';
+  const [loginNotice] = useState(() => {
+    const locationState =
+      typeof location.state === 'object' && location.state !== null
+        ? (location.state as LoginLocationState)
+        : {};
+    const key = locationState.noticeKey ?? consumeLoginNoticeKey();
+    return {
+      text: key ? '' : (locationState.notice ?? ''),
+      key,
+    };
+  });
+  const notice = loginNotice.key ? t(loginNotice.key) : loginNotice.text;
+  const isSessionNotice = loginNotice.key === 'session.expired';
+
+  useEffect(() => {
+    clearSessionExpiredState();
+  }, []);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,7 +60,13 @@ export default function LoginPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {notice ? (
-          <div className="rounded-lg border border-green-200 bg-success-subtle px-3 py-2 text-sm text-success dark:border-green-900/40">
+          <div
+            className={
+              isSessionNotice
+                ? 'rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100'
+                : 'rounded-lg border border-green-200 bg-success-subtle px-3 py-2 text-sm text-success dark:border-green-900/40'
+            }
+          >
             {notice}
           </div>
         ) : null}

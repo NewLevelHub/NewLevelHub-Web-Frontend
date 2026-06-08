@@ -29,6 +29,7 @@
   --text-subtle:    #9ba39d;
   --text-placeholder: #9ba39d;
   --text-on-brand:  #ffffff;
+  --text-onbrand:   #ffffff;
 
   /* Brand (accent) — Variant A: emerald */
   --brand:          #059669;
@@ -101,6 +102,7 @@
   --text-subtle:    #4f5e54;
   --text-placeholder: #4f5e54;
   --text-on-brand:  #042818;
+  --text-onbrand:   #042818;
 
   /* Brand — emerald, lightened for dark backgrounds */
   --brand:          #10b981;

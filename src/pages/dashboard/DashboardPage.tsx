@@ -78,7 +78,9 @@ export default function DashboardPage() {
     queryKey: ['dashboard'],
     queryFn: () => apiClient.get<DashboardData>(API.dashboard).then((r) => r.data),
     enabled: Boolean(user),
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   const [resendMsg, setResendMsg] = useState('');

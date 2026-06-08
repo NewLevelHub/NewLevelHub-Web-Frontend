@@ -43,10 +43,12 @@ export const MapPointEditModal = memo<MapPointEditModalProps>(
     }, [initialData, open]);
 
     const { data: resourcesData, isLoading: resourcesLoading } = useQuery({
-      queryKey: ['booking-resources-list'],
+      queryKey: ['booking-resources-list', floorId],
       queryFn: () =>
         apiClient
-          .get<PaginatedResponse<BookingResourceListItem>>(API.bookings.resources.list)
+          .get<PaginatedResponse<BookingResourceListItem>>(API.bookings.resources.list, {
+            params: { floor_id: floorId, page_size: 200 },
+          })
           .then((r) => r.data),
       enabled: open && requiresResource(form.point_type),
       staleTime: 60_000,
@@ -176,7 +178,7 @@ export const MapPointEditModal = memo<MapPointEditModalProps>(
                   value={form.point_type}
                   disabled
                   aria-disabled="true"
-                  title="Тип точки определяется типом выбранного ресурса"
+                  title={t('map.editModal.pointTypeHint')}
                   className="cursor-not-allowed rounded-lg border border-default bg-gray-100 px-3 py-2 text-sm text-muted outline-none"
                 >
                   {POINT_TYPES.map((pointType) => (

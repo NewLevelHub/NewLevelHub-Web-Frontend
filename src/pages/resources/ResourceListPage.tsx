@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { ChevronDown, ChevronLeft, ChevronRight, ExternalLink, LayoutGrid, Plus, Search } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, LayoutGrid, Plus, Search } from 'lucide-react';
 
 import { cn } from '@/shared/lib/cn';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
@@ -86,7 +86,7 @@ export default function ResourceListPage() {
   return (
     <div className="space-y-4">
       {/* Page header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
         <div>
           <h1 className="text-[22px] font-bold text-[color:var(--text-primary)]">
             {t('resources.list.title')}
@@ -142,7 +142,7 @@ export default function ResourceListPage() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder={t('resources.list.searchPlaceholder')}
-              className="h-[30px] pl-7 pr-2.5 text-[12px] border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-primary)] focus:outline-none placeholder:text-[color:var(--text-muted)] w-44"
+              className="h-[30px] pl-7 pr-2.5 text-[12px] border border-[color:var(--border)] bg-[color:var(--bg-surface)] rounded-[var(--radius-sm)] text-[color:var(--text-primary)] focus:outline-none placeholder:text-[color:var(--text-muted)] w-full sm:w-44 min-w-0"
             />
           </div>
 
@@ -241,7 +241,7 @@ export default function ResourceListPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-[13px]" role="table">
+            <table className="w-full min-w-[500px] border-collapse text-[13px]" role="table">
               <thead className="border-b border-[color:var(--border)]">
                 <tr>
                   <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
@@ -328,15 +328,7 @@ export default function ResourceListPage() {
                       <td className="px-3 py-2.5 align-middle">
                         <ResourceStatusBadge resource={r} />
                       </td>
-                      <td className="w-10 px-3 py-2.5 align-middle">
-                        <Link
-                          to={`/resources/${r.id}`}
-                          aria-label={t('resources.list.open')}
-                          className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)] hover:bg-[color:var(--bg-hover)] transition-colors"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </Link>
-                      </td>
+                      <td className="w-10 px-3 py-2.5 align-middle" />
                     </tr>
                   );
                 })}

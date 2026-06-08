@@ -11,6 +11,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
+import { fmtDateLong } from '@/shared/lib/formatDate';
 import type { CrmTask } from '@/shared/types';
 import { CRM_PRIORITY_BADGE_CLASS, CRM_PRIORITY_LABEL_KEYS } from '@/pages/crm/utils/crm-display';
 import { ChecklistSection } from '@/pages/crm/components/CrmTaskChecklistSection';
@@ -72,24 +73,20 @@ export function TaskDetailView(props: TaskDetailViewProps) {
       <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-4xl mx-auto space-y-4">
         <div className="flex items-center gap-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-warning-subtle px-4 py-3 text-sm text-warning">
           <AlertCircle size={16} className="shrink-0" />
-          <span>Задача не найдена или была архивирована.</span>
+          <span>{t('crm.taskNotFound')}</span>
         </div>
         <Link
           to="/crm"
           className="inline-flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300"
         >
           <ChevronLeft size={16} />
-          Вернуться к доскам
+          {t('common.backToBoards')}
         </Link>
       </main>
     );
   }
 
-  const createdDate = new Date(task.created_at).toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  const createdDate = fmtDateLong(task.created_at);
 
   return (
     <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-4xl mx-auto space-y-6">
@@ -102,7 +99,7 @@ export function TaskDetailView(props: TaskDetailViewProps) {
       </Link>
 
       <div className="space-y-1">
-        <p className="text-xs text-muted uppercase tracking-wide font-medium">Задача #{task.id}</p>
+        <p className="text-xs text-muted uppercase tracking-wide font-medium">{t('crm.taskIdLabel', { id: task.id })}</p>
         <input
           id="page-task-title"
           type="text"

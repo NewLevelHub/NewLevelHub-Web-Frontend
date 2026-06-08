@@ -5,6 +5,8 @@ export interface MapPointFormState {
   label: string;
   x: string;
   y: string;
+  width: string;
+  height: string;
   resource: string;
   company: string;
 }
@@ -14,6 +16,8 @@ export const EMPTY_FORM: MapPointFormState = {
   label: '',
   x: '',
   y: '',
+  width: '',
+  height: '',
   resource: '',
   company: '',
 };

@@ -7,7 +7,7 @@ import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import type { SuperadminDashboardData } from '@/shared/types';
 import { KpiCard, type KpiCardProps } from '@/pages/dashboard/components/KpiCard';
 import { FloorLoadWidget } from '@/pages/dashboard/components/FloorLoadWidget';
-import { SPARKLINE_DATA, BOOKING_STATUS_BADGE } from '@/pages/dashboard/constants';
+import { BOOKING_STATUS_BADGE } from '@/pages/dashboard/constants';
 
 export function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
   const { t } = useTranslation();
@@ -27,36 +27,34 @@ export function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
     {
       label: t('dashboard.kpi.activeBookings'),
       value: String(data.bookings_today),
-      trend: `+${data.bookings_week_delta} за неделю`,
+      trend: t('dashboard.kpi.trendWeekDelta', { count: data.bookings_week_delta }),
       trendDir: data.bookings_week_delta >= 0 ? 'up' : 'down',
-      sparklineData: SPARKLINE_DATA.bookings,
     },
     {
       label: t('dashboard.kpi.spaceLoad'),
       value: `${data.space_load_pct}%`,
-      trend: '+4% к прошлой нед.',
-      trendDir: 'up',
-      sparklineData: SPARKLINE_DATA.spaceLoad,
     },
     {
       label: t('dashboard.kpi.openRequests'),
       value: String(data.open_service_requests),
-      trend: `−${data.service_requests_closed_today} закрыто сегодня`,
+      trend: t('dashboard.kpi.trendClosedToday', { count: data.service_requests_closed_today }),
       trendDir: 'neutral',
-      sparklineData: SPARKLINE_DATA.requests,
     },
     {
       label: t('dashboard.kpi.activeTenants'),
       value: String(data.total_companies),
-      trend: `+${data.new_companies_last_7d} за неделю`,
+      trend: t('dashboard.kpi.trendNewWeek', { count: data.new_companies_last_7d }),
       trendDir: data.new_companies_last_7d > 0 ? 'up' : 'neutral',
-      sparklineData: SPARKLINE_DATA.tenants,
     },
   ];
 
   const floorRows = (data.floor_load ?? [])
-    .filter(f => f.floor_name !== 'string' && f.floor_number !== 2147483647)
-    .map(f => ({ label: f.floor_name, pct: f.occupancy_pct }));
+    .map(f => ({
+      label: f.floor_name,
+      pct: f.occupancy_pct,
+      occupied: f.occupied,
+      total: f.total,
+    }));
 
   const userName = data.user?.full_name?.split(' ')[0] ?? '';
 
@@ -64,7 +62,7 @@ export function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
     <div className="space-y-6">
       {/* Hero */}
       <section
-        className="relative overflow-hidden rounded-2xl p-6"
+        className="relative overflow-hidden rounded-2xl px-4 py-6 sm:px-6 sm:py-8"
         style={{ background: 'linear-gradient(135deg, var(--brand) 0%, #7c3aed 100%)' }}
       >
         {/* Decorative circle */}
@@ -111,7 +109,7 @@ export function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
       </div>
 
       {/* 2-col section */}
-      <div className="grid gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
         {/* Upcoming bookings table */}
         <section className="lg:col-span-3 rounded-xl border border-default bg-surface overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-default">
@@ -136,7 +134,7 @@ export function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[600px] text-sm">
                 <thead>
                   <tr className="border-b border-default bg-raised">
                     <th className="px-4 py-2.5 text-left text-xs font-medium text-muted">
@@ -164,7 +162,7 @@ export function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
                     const end = new Date(b.end_time);
                     const timeStr = `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')} – ${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`;
                     return (
-                      <tr key={b.id} className="hover:bg-hover transition-colors">
+                      <tr key={b.id} className="border-b border-[color:var(--border)] hover:bg-[color:var(--bg-hover)] transition-colors">
                         <td className="px-4 py-3 font-medium text-primary whitespace-nowrap">
                           {b.resource_name}
                         </td>

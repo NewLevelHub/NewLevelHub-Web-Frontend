@@ -35,6 +35,7 @@ import { USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import i18n from '@/shared/lib/i18n';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
+import { fmtDate as fmtDateLocale } from '@/shared/lib/formatDate';
 import { getApiError } from '@/shared/lib/getApiError';
 import { mapApiUser } from '@/shared/lib/mapUser';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
@@ -85,12 +86,7 @@ function buildOrdering(field: OrderingField, dir: OrderingDir): string {
 }
 
 function formatDate(iso: string | null | undefined): string {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
+  return fmtDateLocale(iso, { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 function getInitials(fullName: string): string {
@@ -776,7 +772,7 @@ function DirectoryTab({ companyId }: DirectoryTabProps) {
               </div>
               <div className="flex items-center gap-2 text-xs text-secondary">
                 <CalendarClock className="h-4 w-4" aria-hidden="true" />
-                Последний вход: {formatDateTime(profileData.last_login)}
+                {t('team.lastLogin')}: {formatDateTime(profileData.last_login)}
               </div>
             </div>
           )}

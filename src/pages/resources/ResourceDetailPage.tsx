@@ -86,6 +86,8 @@ export default function ResourceDetailPage() {
     capsuleZone,
     setCapsuleZone,
     companies,
+    floors,
+    floorsLoading,
     saveMutation,
     activateMutation,
     deactivateMutation,
@@ -171,7 +173,7 @@ export default function ResourceDetailPage() {
         <div className="px-6 pt-5 pb-4 border-b border-[color:var(--border-faint)]">
           <h2 className="text-base font-semibold text-primary tracking-[-0.015em]">{data.name}</h2>
           <p className="text-xs text-muted mt-0.5">
-            {t(RESOURCE_TYPE_LABEL_KEYS[data.type])} · {t('resources.detail.floorLabel', { floor: data.floor })}
+            {t(RESOURCE_TYPE_LABEL_KEYS[data.type])} · {t('resources.detail.floorLabel', { floor: data.floor_number ?? data.floor })}
           </p>
           {activeBlock && (
             <p className="mt-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-full inline-block px-2.5 py-0.5">
@@ -224,16 +226,25 @@ export default function ResourceDetailPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-secondary">{t('resources.detail.floorFieldLabel')}</label>
-                <input
-                  type="number"
+                <select
                   required
-                  value={floor}
+                  value={String(floor)}
+                  disabled={floorsLoading}
                   onChange={(e) => setFloor(Number(e.target.value))}
                   className={inputCls}
-                />
+                >
+                  <option value="">{t('resources.create.floorSelectDefault')}</option>
+                  {floors.map((f) => (
+                    <option key={f.id} value={String(f.id)}>
+                      {f.name
+                        ? t('resources.create.floorOptionWithName', { number: f.number, name: f.name })
+                        : t('resources.create.floorOptionNoName', { number: f.number })}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-secondary">{t('resources.detail.capacityLabel')}</label>
@@ -332,7 +343,7 @@ export default function ResourceDetailPage() {
             {type === RESOURCE_TYPES.MEETING_ROOM && (
               <div className="rounded-xl border border-[color:var(--border-faint)] bg-raised px-4 py-3 space-y-4">
                 <p className="text-xs font-semibold text-secondary mb-2">{t('resources.detail.meetingRoomSettings')}</p>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {RESOURCE_EQUIPMENT_KEYS.map((key) => (
                     <label key={key} className="inline-flex items-center gap-2 text-xs text-secondary cursor-pointer">
                       <input
@@ -344,7 +355,7 @@ export default function ResourceDetailPage() {
                     </label>
                   ))}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-medium text-secondary">{t('resources.detail.minMinutesLabel')}</label>
                     <input
@@ -411,7 +422,7 @@ export default function ResourceDetailPage() {
 
             <div className="rounded-xl border border-[color:var(--border-faint)] bg-raised px-4 py-3 space-y-3">
               <p className="text-xs font-semibold text-secondary mb-2">{t('resources.detail.bookingPolicyLabel')}</p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="advance_booking_days" className="text-xs font-medium text-secondary">
                     {t('resources.detail.advanceDaysLabel')}
@@ -443,11 +454,11 @@ export default function ResourceDetailPage() {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center gap-2 border-t border-[color:var(--border-faint)] px-6 pt-4 pb-5">
+          <div className="flex flex-wrap items-center gap-2 border-t border-[color:var(--border-faint)] px-6 pt-4 pb-5">
             <button
               type="submit"
               disabled={saveMutation.isPending}
-              className="inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] text-[color:var(--text-onbrand)] bg-[color:var(--brand)] hover:bg-[color:var(--brand-hover)] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] text-white bg-[color:var(--brand)] hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Save size={14} />
               {saveMutation.isPending ? t('common.saving') : t('common.save')}
