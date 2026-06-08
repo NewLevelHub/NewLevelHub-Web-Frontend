@@ -18,6 +18,7 @@ import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
 
 import { BookingModal } from '@/shared/ui/BookingModal';
+import { ResourceDayTimeline } from '@/pages/bookings/components/ResourceDayTimeline';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -38,7 +39,7 @@ import {
 import { useAuth } from '@/shared/hooks/useAuth';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import { cn } from '@/shared/lib/cn';
-import type { BookingResourceDetail, BookingResourceListItem, PaginatedResponse, ServiceFloor } from '@/shared/types';
+import type { BookingResourceDetail, BookingResourceListItem, PaginatedResponse, ResourceScheduleSlot, ServiceFloor } from '@/shared/types';
 
 const PAGE_SIZE = 24;
 
@@ -82,6 +83,7 @@ export default function BookingCatalogPage() {
   const [selectedResource, setSelectedResource] = useState<BookingResourceListItem | null>(null);
   const [panelResource, setPanelResource] = useState<BookingResourceListItem | null>(null);
   const [photoIdx, setPhotoIdx] = useState(0);
+  const [panelDay, setPanelDay] = useState(() => localIsoDate(new Date()));
   const autoOpenedForRef = useRef<number | null>(null);
 
   // Filter state — all kept, sidebar removed
@@ -187,7 +189,23 @@ export default function BookingCatalogPage() {
 
   useEffect(() => {
     setPhotoIdx(0);
+    setPanelDay(localIsoDate(new Date()));
   }, [panelResource?.id]);
+
+  const todayIso = useMemo(() => localIsoDate(new Date()), []);
+  const maxPanelDay = useMemo(() => addDays(todayIso, 14), [todayIso]);
+
+  const { data: panelDaySlots = [], isLoading: panelScheduleLoading } = useQuery<ResourceScheduleSlot[]>({
+    queryKey: ['resource-panel-schedule', panelResource?.id, panelDay],
+    enabled: panelResource != null,
+    staleTime: 60_000,
+    queryFn: () =>
+      apiClient
+        .get<ResourceScheduleSlot[]>(API.bookings.resources.schedule(String(panelResource!.id)), {
+          params: { date: panelDay },
+        })
+        .then((r) => r.data),
+  });
 
   const { data: floorsData } = useQuery({
     queryKey: ['service-floors'],
@@ -864,6 +882,44 @@ export default function BookingCatalogPage() {
                   </ul>
                 </div>
               )}
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-medium text-muted uppercase tracking-wide">
+                    {t('resources.list.schedule')}
+                  </p>
+                  <div className="flex items-center gap-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setPanelDay((d) => addDays(d, -1))}
+                      disabled={panelDay <= todayIso}
+                      className="p-1 rounded-lg border border-default text-secondary hover:bg-raised transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <ChevronLeft size={13} />
+                    </button>
+                    <span className="px-1.5 text-xs font-medium text-secondary tabular-nums">
+                      {panelDay.slice(8, 10)}.{panelDay.slice(5, 7)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPanelDay((d) => addDays(d, 1))}
+                      disabled={panelDay >= maxPanelDay}
+                      className="p-1 rounded-lg border border-default text-secondary hover:bg-raised transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <ChevronRight size={13} />
+                    </button>
+                  </div>
+                </div>
+
+                {panelScheduleLoading ? (
+                  <div className="animate-pulse h-14 rounded-lg bg-raised" />
+                ) : (
+                  <>
+                    <ResourceDayTimeline dayDate={panelDay} slots={panelDaySlots} />
+                    <p className="text-[10px] text-muted">{t('resources.list.timelineLegend')}</p>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Footer */}
@@ -918,6 +974,18 @@ export default function BookingCatalogPage() {
       )}
     </div>
   );
+}
+
+function localIsoDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function addDays(iso: string, delta: number): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  return localIsoDate(new Date(y, m - 1, d + delta));
 }
 
 function useDebouncedValue<T>(value: T, ms: number): T {
