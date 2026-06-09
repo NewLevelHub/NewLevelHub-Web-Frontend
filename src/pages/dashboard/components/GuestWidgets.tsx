@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { ChevronRight, Map, Sparkles } from 'lucide-react';
+import { CleaningModal } from '@/pages/service-requests/components/CleaningModal';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import type { GuestDashboardData } from '@/shared/types';
 import { AnnouncementFeed } from '@/pages/dashboard/components/AnnouncementFeed';
 
 export function GuestWidgets({ data }: { data: GuestDashboardData }) {
+  const [showCleaning, setShowCleaning] = useState(false);
   const { t, i18n } = useTranslation();
   const locale = dateLocaleTag(i18n.language);
 
@@ -61,6 +65,21 @@ export function GuestWidgets({ data }: { data: GuestDashboardData }) {
           >
             {t('dashboard.guest.inviteGuest')}
           </Link>
+          <Link
+            to="/building/map"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/30 px-4 py-2 text-sm font-medium text-white hover:bg-white/10 transition-colors"
+          >
+            <Map size={15} />
+            {t('dashboard.guest.buildingMap')}
+          </Link>
+          <button
+            type="button"
+            onClick={() => setShowCleaning(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/30 px-4 py-2 text-sm font-medium text-white hover:bg-white/10 transition-colors"
+          >
+            <Sparkles size={15} />
+            {t('dashboard.callCleaning')}
+          </button>
         </div>
       </section>
 
@@ -97,8 +116,28 @@ export function GuestWidgets({ data }: { data: GuestDashboardData }) {
         </Link>
       </div>
 
+      {/* Building Map mini-widget */}
+      <Link
+        to="/building/map"
+        className="group flex items-center gap-4 rounded-xl border border-default bg-surface p-5 hover:bg-hover transition-colors"
+      >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand/10">
+          <Map size={20} className="text-brand" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-primary">{t('dashboard.guest.buildingMap')}</p>
+          <p className="text-xs text-muted mt-0.5">{t('dashboard.guest.buildingMapHint')}</p>
+        </div>
+        <ChevronRight size={16} className="text-muted group-hover:text-secondary transition-colors shrink-0" />
+      </Link>
+
       {/* Building announcements (shown only when not empty) */}
       <AnnouncementFeed items={data.bc_announcements} title={t('dashboard.guest.bcAnnouncements')} />
+
+      <CleaningModal
+        isOpen={showCleaning}
+        onClose={() => setShowCleaning(false)}
+      />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { mapApiUser } from '@/shared/lib/mapUser';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import { useAuth } from '@/shared/hooks/useAuth';
 import type { User as UserType } from '@/shared/types';
+import { ChangePasswordSection } from './ChangePasswordSection';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -570,6 +571,7 @@ export default function ProfilePage() {
       </section>
 
       <ProfileActivitySection />
+      <ChangePasswordSection />
     </main>
   );
 }
