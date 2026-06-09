@@ -102,7 +102,7 @@ export function CalendarMonthView({
                     key={eventKey(event)}
                     type="button"
                     className={cn(
-                      'block w-full truncate rounded-md border border-l-[3px] px-1.5 py-0.5 text-left text-[10.5px] font-semibold',
+                      'block w-full truncate rounded-lg border border-l-[3px] px-1.5 py-1 text-left text-[11px] font-semibold',
                       CALENDAR_EVENT_BLOCK_CLASS[event.type],
                     )}
                     onClick={(e) => onEventClick(event, e.currentTarget)}

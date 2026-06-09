@@ -466,10 +466,20 @@ export default function CalendarPage() {
                 type="checkbox"
                 checked={myOnly}
                 onChange={(event) => setMyOnly(event.target.checked)}
-                className="peer sr-only"
+                className="sr-only"
               />
-              <span className="flex h-[19px] w-[19px] items-center justify-center rounded-md border-[1.5px] border-[var(--border-strong)] bg-surface transition-colors peer-checked:border-brand peer-checked:bg-brand [&_svg]:opacity-0 peer-checked:[&_svg]:opacity-100">
-                <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
+              <span
+                className={cn(
+                  'flex h-[19px] w-[19px] items-center justify-center rounded-md border-[1.5px] transition-colors',
+                  myOnly
+                    ? 'border-[var(--brand)] bg-[var(--brand)]'
+                    : 'border-[var(--border-strong)] bg-surface',
+                )}
+              >
+                <Check
+                  className={cn('h-3.5 w-3.5 text-white transition-opacity', myOnly ? 'opacity-100' : 'opacity-0')}
+                  strokeWidth={3}
+                />
               </span>
               {t('common.onlyMine')}
             </label>

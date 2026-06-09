@@ -11,6 +11,13 @@ export const CALENDAR_EVENT_LEGEND: { type: CalendarEventType; color: string }[]
   { type: CALENDAR_EVENT_TYPES.GUEST_VISIT, color: '#10A072' },
 ];
 
+/** Shared layout for time-grid event cards (colors come from CALENDAR_EVENT_BLOCK_CLASS). */
+export const CALENDAR_GRID_EVENT_LAYOUT_CLASS =
+  'overflow-hidden rounded-lg border border-l-[3px] px-1.5 py-1 text-left shadow-sm';
+
+/** Minimum card height to always show icon + title + time range. */
+export const CALENDAR_CARD_MIN_HEIGHT_PX = 44;
+
 export const CALENDAR_EVENT_BLOCK_CLASS: Record<CalendarEventType, string> = {
   [CALENDAR_EVENT_TYPES.BOOKING]:
     'border-[#c4d8fb] bg-[#eaf1fe] text-[#1e54b7] border-l-[#3B82F6]',
