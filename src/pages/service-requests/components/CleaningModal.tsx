@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
@@ -25,9 +25,11 @@ export interface CleaningModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  initialFloorId?: string;
+  initialLocation?: string;
 }
 
-export function CleaningModal({ isOpen, onClose, onSuccess }: CleaningModalProps) {
+export function CleaningModal({ isOpen, onClose, onSuccess, initialFloorId, initialLocation }: CleaningModalProps) {
   const { t, i18n } = useTranslation();
   const dateLocale = dateLocaleTag(i18n.language);
 
@@ -41,8 +43,16 @@ export function CleaningModal({ isOpen, onClose, onSuccess }: CleaningModalProps
   const queryClient = useQueryClient();
 
   const [description, setDescription] = useState('');
-  const [floorId, setFloorId] = useState('');
-  const [location, setLocation] = useState('');
+  const [floorId, setFloorId] = useState(initialFloorId ?? '');
+  const [location, setLocation] = useState(initialLocation ?? '');
+
+  useEffect(() => {
+    if (initialFloorId) setFloorId(initialFloorId);
+  }, [initialFloorId]);
+
+  useEffect(() => {
+    if (initialLocation) setLocation(initialLocation);
+  }, [initialLocation]);
   const [photo, setPhoto] = useState<File | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
 
