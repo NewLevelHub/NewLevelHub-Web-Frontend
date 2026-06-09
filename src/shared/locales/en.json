@@ -820,7 +820,17 @@
     "personalData": "Personal data",
     "cannotChange": "(cannot be changed)",
     "saving": "Saving...",
-    "loadError": "Failed to load profile. Please reload the page."
+    "loadError": "Failed to load profile. Please reload the page.",
+    "activity": {
+      "title": "Activity History",
+      "bookings": "Recent Bookings",
+      "tasks": "Recent Tasks",
+      "passes": "Recent Passes",
+      "viewAll": "View all",
+      "noBookings": "No bookings yet",
+      "noTasks": "No tasks yet",
+      "noPasses": "No passes yet"
+    }
   },
   "layout": {
     "openSidebar": "Open sidebar menu",
@@ -1483,6 +1493,12 @@
       "revoked": "Pass was revoked by an administrator",
       "already_used": "Pass was already used",
       "not_found": "Pass not found in the system"
+    },
+    "status": {
+      "active": "Active",
+      "used": "Used",
+      "expired": "Expired",
+      "revoked": "Revoked"
     },
     "statusActive": "Active",
     "statusExpired": "Expired",

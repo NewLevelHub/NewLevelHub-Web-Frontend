@@ -1253,3 +1253,36 @@ export type DashboardData =
   | CompanyAdminDashboardData
   | EmployeeDashboardData
   | GuestDashboardData;
+
+// ── Profile activity ──────────────────────────────────────────────────
+
+export interface BookingActivity {
+  id: number;
+  resource_name: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+}
+
+export interface TaskActivity {
+  id: number;
+  title: string;
+  priority: string;
+  deadline: string | null;
+  board_name: string;
+  board_id: number;
+}
+
+export interface PassActivity {
+  id: number;
+  guest_name: string;
+  status: string;
+  valid_from: string;
+  valid_until: string;
+}
+
+export interface UserActivityResponse {
+  bookings: BookingActivity[];
+  tasks: TaskActivity[];
+  passes: PassActivity[];
+}
