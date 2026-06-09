@@ -820,7 +820,16 @@
     "personalData": "Personal data",
     "cannotChange": "(cannot be changed)",
     "saving": "Saving...",
-    "loadError": "Failed to load profile. Please reload the page."
+    "loadError": "Failed to load profile. Please reload the page.",
+    "changePasswordTitle": "Change Password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "changePasswordBtn": "Change password",
+    "changingPassword": "Saving…",
+    "changePasswordSuccess": "Password changed successfully.",
+    "changePasswordError": "Could not change password. Try again.",
+    "passwordsMismatch": "Passwords do not match."
   },
   "layout": {
     "openSidebar": "Open sidebar menu",
