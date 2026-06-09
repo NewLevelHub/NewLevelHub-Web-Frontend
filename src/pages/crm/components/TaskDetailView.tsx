@@ -3,12 +3,8 @@ import { Link } from 'react-router';
 import {
   ChevronLeft,
   AlertCircle,
-  User,
   Archive,
   Paperclip,
-  Calendar,
-  Flag,
-  Clock,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { fmtDateLong } from '@/shared/lib/formatDate';
@@ -77,7 +73,7 @@ export function TaskDetailView(props: TaskDetailViewProps) {
         </div>
         <Link
           to="/crm"
-          className="inline-flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300"
+          className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-primary"
         >
           <ChevronLeft size={16} />
           {t('common.backToBoards')}
@@ -90,252 +86,295 @@ export function TaskDetailView(props: TaskDetailViewProps) {
 
   return (
     <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-4xl mx-auto space-y-6">
+      {/* Back link */}
       <Link
         to={boardId ? `/crm/boards/${boardId}` : '/crm'}
-        className="inline-flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300 transition-colors"
+        className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-primary"
       >
         <ChevronLeft size={16} />
         {boardId ? t('common.toBoard') : t('common.toBoards')}
       </Link>
 
-      <div className="space-y-1">
-        <p className="text-xs text-muted uppercase tracking-wide font-medium">{t('crm.taskIdLabel', { id: task.id })}</p>
-        <input
-          id="page-task-title"
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          maxLength={255}
-          disabled={patchMutation.isPending}
-          className={cn(
-            'w-full bg-transparent text-2xl font-bold text-primary outline-none',
-            'border-b-2 border-transparent focus:border-blue-500 transition-colors py-1',
-            'disabled:opacity-60',
-          )}
-        />
+      {/* Title card */}
+      <div className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
+        <div className="px-6 pt-5 pb-5">
+          <p className="text-xs text-muted mb-1">{t('crm.taskIdLabel', { id: task.id })}</p>
+          <input
+            id="page-task-title"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            maxLength={255}
+            disabled={patchMutation.isPending}
+            className={cn(
+              'w-full bg-transparent text-2xl font-bold text-primary outline-none',
+              'border-b-2 border-transparent focus:border-[color:var(--brand)] transition-colors py-1',
+              'disabled:opacity-60',
+            )}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left column */}
         <div className="lg:col-span-2 space-y-6">
-          <section className="rounded-2xl border border-default bg-surface p-5 space-y-2">
-            <label htmlFor="page-task-description" className="block text-sm font-semibold text-secondary">
-              Описание
-            </label>
-            <textarea
-              id="page-task-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={6}
-              placeholder={t('common.addTaskDescription')}
-              disabled={patchMutation.isPending}
-              className={cn(
-                'w-full rounded-lg border border-default bg-raised px-3 py-2.5 text-sm text-primary',
-                'placeholder-gray-600 resize-none',
-                'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors',
-                'disabled:opacity-60',
-              )}
-            />
-          </section>
-
-          {boardId && (
-            <section className="rounded-2xl border border-default bg-surface p-5">
-              <ChecklistSection taskId={taskId} boardId={boardId} checklists={task.checklists ?? []} />
-            </section>
-          )}
-
-          <section className="rounded-2xl border border-default bg-surface p-5">
-            <CommentSection taskId={taskId} boardId={boardId} />
-          </section>
-
-          <section className="rounded-2xl border border-default bg-surface p-5">
-            <HistorySection taskId={taskId} />
-          </section>
-        </div>
-
-        <div className="space-y-5">
-          <section className="rounded-2xl border border-default bg-surface p-5 space-y-4">
-            <h2 className="text-sm font-semibold text-secondary">Детали</h2>
-
-            <div className="space-y-1.5">
-              <label
-                htmlFor="page-task-priority"
-                className="flex items-center gap-1.5 text-xs font-medium text-muted uppercase tracking-wide"
-              >
-                <Flag size={12} />
-                Приоритет
-              </label>
-              <select
-                id="page-task-priority"
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as CrmTask['priority'])}
-                disabled={patchMutation.isPending}
-                className={cn(
-                  'w-full rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary',
-                  'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors',
-                  'disabled:opacity-60',
-                )}
-              >
-                {(Object.keys(CRM_PRIORITY_LABEL_KEYS) as CrmTask['priority'][]).map((val) => (
-                  <option key={val} value={val}>
-                    {t(CRM_PRIORITY_LABEL_KEYS[val])}
-                  </option>
-                ))}
-              </select>
-              <span
-                className={cn(
-                  'inline-block rounded-full px-2.5 py-0.5 text-xs font-medium border',
-                  CRM_PRIORITY_BADGE_CLASS[priority],
-                )}
-              >
-                {t(CRM_PRIORITY_LABEL_KEYS[priority]) ?? priority}
-              </span>
+          {/* Description */}
+          <section className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
+            <div className="px-6 pt-5 pb-4 border-b border-[color:var(--border-faint)]">
+              <h2 className="text-base font-semibold text-primary tracking-[-0.015em]">
+                {t('common.description')}
+              </h2>
             </div>
-
-            <div className="space-y-1.5">
-              <label
-                htmlFor="page-task-deadline"
-                className="flex items-center gap-1.5 text-xs font-medium text-muted uppercase tracking-wide"
-              >
-                <Calendar size={12} />
-                Дедлайн
-              </label>
-              <input
-                id="page-task-deadline"
-                type="date"
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
+            <div className="px-6 py-5">
+              <textarea
+                id="page-task-description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={6}
+                placeholder={t('common.addTaskDescription')}
                 disabled={patchMutation.isPending}
                 className={cn(
-                  'w-full rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary [color-scheme:dark]',
-                  'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors',
-                  'disabled:opacity-60',
+                  'w-full px-3 py-2 text-sm border border-default rounded-[var(--radius-sm)] bg-surface',
+                  'focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)] resize-none transition-colors',
+                  'placeholder:text-[color:var(--text-muted)] disabled:opacity-60',
                 )}
               />
             </div>
-
-            <div className="space-y-1.5">
-              <label
-                htmlFor="page-task-assignee"
-                className="flex items-center gap-1.5 text-xs font-medium text-muted uppercase tracking-wide"
-              >
-                <User size={12} />
-                Исполнитель
-              </label>
-              <select
-                id="page-task-assignee"
-                value={assigneeId}
-                onChange={(e) => setAssigneeId(e.target.value)}
-                disabled={patchMutation.isPending}
-                className={cn(
-                  'w-full rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary',
-                  'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors',
-                  'disabled:opacity-60 disabled:cursor-not-allowed',
-                )}
-              >
-                <option value="">— Не назначен —</option>
-                {task.assignee && !members.some((m) => String(m.id) === String(task.assignee!.id)) ? (
-                  <option value={String(task.assignee.id)}>
-                    {`${task.assignee.first_name} ${task.assignee.last_name}`.trim()}
-                  </option>
-                ) : null}
-                {members
-                  .filter((m) => m.is_active)
-                  .map((m) => (
-                    <option key={m.id} value={String(m.id)}>
-                      {m.full_name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <span className="flex items-center gap-1.5 text-xs font-medium text-muted uppercase tracking-wide">
-                <Clock size={12} />
-                Создана
-              </span>
-              <p className="text-sm text-secondary">{createdDate}</p>
-            </div>
-
-            {task.attachments_count > 0 && (
-              <div className="flex items-center gap-1.5 text-sm text-muted pt-1 border-t border-default">
-                <Paperclip size={14} />
-                {task.attachments_count} {task.attachments_count === 1 ? 'файл' : 'файлов'}
-              </div>
-            )}
           </section>
 
+          {/* Checklist */}
           {boardId && (
-            <section className="rounded-2xl border border-default bg-surface p-5">
-              <TaskLabelsSection taskId={taskId} boardId={boardId} taskLabels={task.labels ?? []} />
+            <section className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
+              <div className="px-6 py-5">
+                <ChecklistSection taskId={taskId} boardId={boardId} checklists={task.checklists ?? []} />
+              </div>
             </section>
           )}
 
-          <section className="rounded-2xl border border-default bg-surface p-5 space-y-3">
-            <h2 className="text-sm font-semibold text-secondary">Действия</h2>
+          {/* Comments */}
+          <section className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
+            <div className="px-6 py-5">
+              <CommentSection taskId={taskId} boardId={boardId} />
+            </div>
+          </section>
 
-            <div className="flex flex-col gap-2">
+          {/* History */}
+          <section className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
+            <div className="px-6 py-5">
+              <HistorySection taskId={taskId} />
+            </div>
+          </section>
+        </div>
+
+        {/* Right column */}
+        <div className="space-y-5">
+          {/* Details */}
+          <section className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
+            <div className="px-6 pt-5 pb-4 border-b border-[color:var(--border-faint)]">
+              <h2 className="text-base font-semibold text-primary tracking-[-0.015em]">
+                {t('crm.detailsLabel')}
+              </h2>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              {/* Priority */}
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="page-task-priority"
+                  className="text-xs font-medium text-secondary"
+                >
+                  {t('crm.priorityLabel')}
+                </label>
+                <select
+                  id="page-task-priority"
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as CrmTask['priority'])}
+                  disabled={patchMutation.isPending}
+                  className={cn(
+                    'w-full h-9 px-3 text-sm border border-default rounded-[var(--radius-sm)] bg-surface',
+                    'focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)] transition-colors',
+                    'disabled:opacity-60',
+                  )}
+                >
+                  {(Object.keys(CRM_PRIORITY_LABEL_KEYS) as CrmTask['priority'][]).map((val) => (
+                    <option key={val} value={val}>
+                      {t(CRM_PRIORITY_LABEL_KEYS[val])}
+                    </option>
+                  ))}
+                </select>
+                <span
+                  className={cn(
+                    'inline-block rounded-full px-2.5 py-0.5 text-xs font-medium border',
+                    CRM_PRIORITY_BADGE_CLASS[priority],
+                  )}
+                >
+                  {t(CRM_PRIORITY_LABEL_KEYS[priority]) ?? priority}
+                </span>
+              </div>
+
+              {/* Deadline */}
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="page-task-deadline"
+                  className="text-xs font-medium text-secondary"
+                >
+                  {t('crm.deadlineLabel')}
+                </label>
+                <input
+                  id="page-task-deadline"
+                  type="date"
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                  disabled={patchMutation.isPending}
+                  className={cn(
+                    'w-full h-9 px-3 text-sm border border-default rounded-[var(--radius-sm)] bg-surface',
+                    'focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)] transition-colors',
+                    '[color-scheme:dark] disabled:opacity-60',
+                  )}
+                />
+              </div>
+
+              {/* Assignee */}
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="page-task-assignee"
+                  className="text-xs font-medium text-secondary"
+                >
+                  {t('crm.assigneeLabel')}
+                </label>
+                <select
+                  id="page-task-assignee"
+                  value={assigneeId}
+                  onChange={(e) => setAssigneeId(e.target.value)}
+                  disabled={patchMutation.isPending}
+                  className={cn(
+                    'w-full h-9 px-3 text-sm border border-default rounded-[var(--radius-sm)] bg-surface',
+                    'focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)] transition-colors',
+                    'disabled:opacity-60 disabled:cursor-not-allowed',
+                  )}
+                >
+                  <option value="">— {t('common.notAssigned')} —</option>
+                  {task.assignee && !members.some((m) => String(m.id) === String(task.assignee!.id)) ? (
+                    <option value={String(task.assignee.id)}>
+                      {`${task.assignee.first_name} ${task.assignee.last_name}`.trim()}
+                    </option>
+                  ) : null}
+                  {members
+                    .filter((m) => m.is_active)
+                    .map((m) => (
+                      <option key={m.id} value={String(m.id)}>
+                        {m.full_name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              {/* Created date */}
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-secondary">
+                  {t('crm.createdLabel')}
+                </span>
+                <p className="text-sm text-secondary">{createdDate}</p>
+              </div>
+
+              {/* Attachments count */}
+              {task.attachments_count > 0 && (
+                <div className="flex items-center gap-1.5 text-sm text-muted pt-1 border-t border-[color:var(--border-faint)]">
+                  <Paperclip size={14} />
+                  {task.attachments_count}{' '}
+                  {task.attachments_count === 1 ? t('common.file') : t('common.files')}
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Labels */}
+          {boardId && (
+            <section className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
+              <div className="px-6 py-5">
+                <TaskLabelsSection taskId={taskId} boardId={boardId} taskLabels={task.labels ?? []} />
+              </div>
+            </section>
+          )}
+
+          {/* Actions */}
+          <section className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
+            <div className="px-6 pt-5 pb-4 border-b border-[color:var(--border-faint)]">
+              <h2 className="text-base font-semibold text-primary tracking-[-0.015em]">
+                {t('crm.actionsLabel')}
+              </h2>
+            </div>
+            <div className="flex flex-col gap-2 px-6 py-5">
+              {/* Save */}
               <button
                 type="button"
                 onClick={handleSave}
                 disabled={patchMutation.isPending}
                 className={cn(
-                  'flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-                  'bg-blue-600 text-white hover:bg-blue-500',
-                  'disabled:opacity-50 disabled:cursor-not-allowed',
+                  'inline-flex items-center justify-center gap-1.5 h-8 px-4 text-sm font-medium w-full',
+                  'rounded-[var(--radius-sm)] text-white bg-[color:var(--brand)] hover:opacity-90 transition-opacity',
+                  'disabled:opacity-60 disabled:cursor-not-allowed',
                 )}
               >
                 {patchMutation.isPending ? t('common.savingPlain') : t('common.save')}
               </button>
+
+              {/* Cancel */}
               <button
                 type="button"
                 onClick={handleCancel}
                 disabled={patchMutation.isPending}
                 className={cn(
-                  'flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-                  'border border-default text-secondary hover:text-primary hover:bg-hover',
-                  'disabled:opacity-50 disabled:cursor-not-allowed',
+                  'h-8 px-4 text-sm font-medium w-full rounded-[var(--radius-sm)]',
+                  'border border-default text-secondary hover:bg-hover transition-colors',
+                  'disabled:opacity-60',
                 )}
               >
-                Отменить
+                {t('common.cancel')}
               </button>
+
+              {patchMutation.isError && (
+                <p className="text-xs text-danger">{t('crm.failedToSave')}</p>
+              )}
+
+              {archiveMutation.isError && (
+                <p className="text-xs text-danger">{t('crm.failedToArchive')}</p>
+              )}
+              {unarchiveMutation.isError && (
+                <p className="text-xs text-danger">{t('crm.failedToUnarchive')}</p>
+              )}
+
+              {/* Archive / Unarchive */}
+              {task.is_archived ? (
+                <button
+                  type="button"
+                  onClick={() => unarchiveMutation.mutate()}
+                  disabled={unarchiveMutation.isPending}
+                  className={cn(
+                    'inline-flex items-center justify-center gap-1.5 h-8 px-4 text-sm font-medium w-full',
+                    'rounded-[var(--radius-sm)] border border-[color:var(--info)] text-[color:var(--info)]',
+                    'hover:bg-hover transition-colors',
+                    'disabled:opacity-50 disabled:cursor-not-allowed',
+                  )}
+                >
+                  <Archive size={14} />
+                  {unarchiveMutation.isPending ? t('common.unarchivingPlain') : t('common.unarchiveTask')}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => archiveMutation.mutate()}
+                  disabled={archiveMutation.isPending}
+                  className={cn(
+                    'inline-flex items-center justify-center gap-1.5 h-8 px-4 text-sm font-medium w-full',
+                    'rounded-[var(--radius-sm)] border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors',
+                    'disabled:opacity-50 disabled:cursor-not-allowed',
+                  )}
+                >
+                  <Archive size={14} />
+                  {archiveMutation.isPending ? t('common.archivingPlain') : t('common.archiveTask')}
+                </button>
+              )}
             </div>
-
-            {patchMutation.isError && <p className="text-xs text-red-400">Не удалось сохранить изменения.</p>}
-
-            {archiveMutation.isError && <p className="text-xs text-red-400">Не удалось архивировать задачу.</p>}
-            {unarchiveMutation.isError && (
-              <p className="text-xs text-red-400">Не удалось разархивировать задачу.</p>
-            )}
-
-            {task.is_archived ? (
-              <button
-                type="button"
-                onClick={() => unarchiveMutation.mutate()}
-                disabled={unarchiveMutation.isPending}
-                className={cn(
-                  'flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-                  'border border-blue-800 text-blue-400 bg-blue-900/30 hover:bg-blue-900/50',
-                  'disabled:opacity-50 disabled:cursor-not-allowed',
-                )}
-              >
-                <Archive size={14} />
-                {unarchiveMutation.isPending ? t('common.unarchivingPlain') : t('common.unarchiveTask')}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => archiveMutation.mutate()}
-                disabled={archiveMutation.isPending}
-                className={cn(
-                  'flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-                  'border border-red-200 dark:border-red-800 text-red-400 bg-danger-subtle hover:bg-danger-subtle',
-                  'disabled:opacity-50 disabled:cursor-not-allowed',
-                )}
-              >
-                <Archive size={14} />
-                {archiveMutation.isPending ? t('common.archivingPlain') : t('common.archiveTask')}
-              </button>
-            )}
           </section>
         </div>
       </div>

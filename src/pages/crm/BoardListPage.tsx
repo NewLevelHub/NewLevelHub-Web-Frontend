@@ -61,8 +61,8 @@ export default function BoardListPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl font-semibold text-primary">CRM — Доски</h1>
-            <p className="text-sm text-muted mt-0.5">Канбан-доски вашей компании</p>
+            <h1 className="text-[22px] font-bold text-[color:var(--text-primary)]">{t('crm.boardsTitle')}</h1>
+            <p className="text-[13px] text-[color:var(--text-muted)] mt-0.5">{t('crm.boardsSubtitle')}</p>
           </div>
           <div className="flex items-center gap-2">
             {canManage && (
@@ -70,23 +70,20 @@ export default function BoardListPage() {
                 type="button"
                 onClick={() => setShowArchived((v) => !v)}
                 className={cn(
-                  'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors border',
+                  'inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium rounded-[var(--radius-sm)] transition-colors',
                   showArchived
-                    ? 'bg-amber-600/20 border-amber-600 text-amber-400'
-                    : 'border-default text-secondary hover:text-primary hover:border-gray-500',
+                    ? 'bg-[color:var(--warning-bg)] text-[color:var(--warning-text)] border border-[color:var(--warning)]'
+                    : 'border border-[color:var(--border)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)]',
                 )}
               >
-                <Archive size={16} />
-                {showArchived ? t('common.hideArchive') : 'Архив'}
+                <Archive size={15} />
+                {showArchived ? t('common.hideArchive') : t('crm.archiveLabel')}
               </button>
             )}
             <button
               type="button"
               onClick={() => setShowCreateModal(true)}
-              className={cn(
-                'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-                'bg-blue-600 text-white hover:bg-blue-500',
-              )}
+              className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity"
             >
               <Plus size={16} />{t('common.createBoard')}</button>
           </div>
@@ -109,7 +106,7 @@ export default function BoardListPage() {
               <button
                 type="button"
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+                className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity"
               >
                 <Plus size={16} />{t('common.createBoard')}</button>
             )}

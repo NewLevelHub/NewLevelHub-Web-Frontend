@@ -23,7 +23,7 @@ import i18n from '@/shared/lib/i18n';
 import { useDebounce } from '@/pages/crm/hooks/useDebounce';
 import type { BoardFilters } from '@/pages/crm/components/BoardFilterBar';
 import { DEFAULT_BOARD_FILTERS } from '@/pages/crm/components/BoardFilterBar';
-import type { CrmBoard, CrmColumn, CrmTask } from '@/shared/types';
+import type { CrmBoard, CrmColumn, CrmTask, CrmLabel, CompanyMember, PaginatedResponse } from '@/shared/types';
 
 export function useBoardDetail() {
   const { id } = useParams<{ id: string }>();
@@ -96,11 +96,38 @@ export function useBoardDetail() {
     enabled: Boolean(boardId),
   });
 
+  const companyId = board?.company != null ? String(board.company) : null;
+
+  const { data: membersData } = useQuery({
+    queryKey: ['company-members', companyId, 'board-filter'],
+    enabled: Boolean(companyId),
+    queryFn: () =>
+      apiClient
+        .get<PaginatedResponse<CompanyMember>>(API.companies.members(companyId!), {
+          params: { page_size: 100, is_active: 'true' },
+        })
+        .then((r) => r.data),
+  });
+
+  const members = membersData?.results ?? [];
+
+  const { data: labelsData } = useQuery({
+    queryKey: ['crm', 'labels'],
+    queryFn: () =>
+      apiClient.get<CrmLabel[]>(API.crm.labels).then((r) => {
+        const d = r.data;
+        return Array.isArray(d) ? d : (d as { results: CrmLabel[] }).results;
+      }),
+  });
+  const boardLabels = labelsData ?? [];
+
   const taskQueryParams: Record<string, string | number> = { board_id: boardId };
   if (debouncedSearch) taskQueryParams.search = debouncedSearch;
   if (filters.priority) taskQueryParams.priority = filters.priority;
   if (filters.deadline) taskQueryParams.deadline = filters.deadline;
   if (filters.ordering) taskQueryParams.ordering = filters.ordering;
+  if (filters.assignee_id) taskQueryParams.assignee_id = filters.assignee_id;
+  if (filters.label_ids.length > 0) taskQueryParams.label_ids = filters.label_ids.join(',');
   if (filters.view === 'list') taskQueryParams.view = 'list';
 
   const { data: tasksData, isLoading: isTasksLoading } = useQuery({
@@ -458,6 +485,8 @@ export function useBoardDetail() {
     boardError,
     filters,
     setFilters,
+    members,
+    boardLabels,
     localColumns,
     localTasksByColumn,
     activeColumn,

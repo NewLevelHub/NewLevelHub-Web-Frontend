@@ -441,6 +441,8 @@
     "impersonate": "Войти от имени",
     "addMember": "Добавить участника",
     "addColumn": "Добавить колонку",
+    "noColumns": "В этой доске нет колонок",
+    "reorderError": "Не удалось сохранить порядок колонок. Порядок восстановлен.",
     "createFolder": "Создать папку",
     "createBoard": "Создать доску",
     "createTask": "Создать задачу",
@@ -488,7 +490,11 @@
     "kanbanBoard": "Канбан-доска: {{name}}",
     "kanbanView": "Вид канбан",
     "listView": "Вид список",
+    "kanban": "Канбан",
+    "list": "Список",
     "dragColumn": "Перетащить колонку",
+    "addTask": "Добавить задачу",
+    "noTasks": "Нет задач",
     "wipLimitReached": "Достигнут WIP-лимит колонки. Освободите место, чтобы добавить задачу.",
     "wipCannotRestore": "Нельзя восстановить: превышен WIP-лимит этой колонки. Освободите место.",
     "searchTasks": "Поиск задач",
@@ -1322,6 +1328,17 @@
     "deleteFloorConfirm": "Этаж «{{name}}» будет безвозвратно удалён вместе со всеми точками на карте и связанными ресурсами каталога."
   },
   "crm": {
+    "filter": {
+      "assignee": "Исполнитель",
+      "allAssignees": "Все",
+      "onlyMine": "Только мои",
+      "allLabels": "Все лейблы",
+      "labelsSelected": "Лейблы: {{count}}",
+      "noLabels": "Нет лейблов",
+      "allPriorities": "Все приоритеты",
+      "allDeadlines": "Все дедлайны",
+      "thisWeek": "На этой неделе"
+    },
     "priority": {
       "low": "Низкий",
       "medium": "Средний",
@@ -1344,7 +1361,19 @@
     "loadErrorBoards": "Не удалось загрузить доски. Попробуйте обновить страницу.",
     "taskNotFound": "Задача не найдена или была архивирована.",
     "taskIdLabel": "Задача #{{id}}",
-    "openBoardAria": "Открыть доску {{name}}"
+    "openBoardAria": "Открыть доску {{name}}",
+    "taskLabel": "Задача",
+    "titleLabel": "Название",
+    "detailsLabel": "Детали",
+    "actionsLabel": "Действия",
+    "priorityLabel": "Приоритет",
+    "deadlineLabel": "Дедлайн",
+    "assigneeLabel": "Исполнитель",
+    "createdLabel": "Создана",
+    "failedToLoad": "Не удалось загрузить задачу. Возможно, она архивирована или была удалена.",
+    "failedToSave": "Не удалось сохранить изменения.",
+    "failedToArchive": "Не удалось архивировать задачу.",
+    "failedToUnarchive": "Не удалось разархивировать задачу."
   },
   "auth": {
     "login": {
