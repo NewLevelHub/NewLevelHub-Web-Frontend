@@ -16,6 +16,7 @@ const NOTIFICATION_LABELS: Record<NotificationType, string> = {
   announcement: 'Объявление',
   invitation: 'Приглашение',
   leave_review: 'Проверка отпуска',
+  new_employee: 'Новый сотрудник',
   system: 'Системное',
 };
 
@@ -28,6 +29,7 @@ const EMAIL_SUPPORTED_TYPES = new Set<NotificationType>([
   'leave_review',
   'guest_validated',
   'announcement',
+  'new_employee',
 ]);
 
 export interface PreferencesTableProps {
