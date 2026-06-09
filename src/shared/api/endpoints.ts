@@ -8,7 +8,7 @@ export const API = {
     refreshToken: '/auth/token/refresh/',
     forgotPassword: '/auth/password/reset/',
     resetPassword: '/auth/password/reset/confirm/',
-    changePassword: '/auth/password/change/',
+    changePassword: '/auth/me/password/',
     verifyEmail: '/auth/email/verify/',
     resendVerification: '/auth/email/resend/',
     roles: '/auth/roles/',

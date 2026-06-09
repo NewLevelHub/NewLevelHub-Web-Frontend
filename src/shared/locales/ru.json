@@ -853,7 +853,16 @@
     "personalData": "Личные данные",
     "cannotChange": "(нельзя изменить)",
     "saving": "Сохраняем...",
-    "loadError": "Не удалось загрузить профиль. Попробуйте перезагрузить страницу."
+    "loadError": "Не удалось загрузить профиль. Попробуйте перезагрузить страницу.",
+    "changePasswordTitle": "Сменить пароль",
+    "currentPassword": "Текущий пароль",
+    "newPassword": "Новый пароль",
+    "confirmPassword": "Подтвердите новый пароль",
+    "changePasswordBtn": "Сменить пароль",
+    "changingPassword": "Сохраняем…",
+    "changePasswordSuccess": "Пароль успешно изменён.",
+    "changePasswordError": "Не удалось сменить пароль. Попробуйте снова.",
+    "passwordsMismatch": "Пароли не совпадают."
   },
   "layout": {
     "openSidebar": "Открыть боковое меню",
