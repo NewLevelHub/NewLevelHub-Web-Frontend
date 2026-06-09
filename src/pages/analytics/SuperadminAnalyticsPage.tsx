@@ -1088,7 +1088,7 @@ export default function SuperadminAnalyticsPage() {
                     />
                     <YAxis tick={{ fill: '#9ca3af', fontSize: 12 }} allowDecimals={false} width={28} />
                     <Tooltip
-                      contentStyle={{ background: '#111827', border: '1px solid #374151', color: '#f9fafb', borderRadius: 8 }}
+                      contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-strong)', color: 'var(--text-primary)', borderRadius: 8 }}
                       cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                       labelFormatter={(label) => `Неделя с ${fmtWeek(String(label))}`}
                     />
@@ -1118,7 +1118,7 @@ export default function SuperadminAnalyticsPage() {
                     />
                     <YAxis tick={{ fill: '#9ca3af', fontSize: 12 }} allowDecimals={false} width={28} />
                     <Tooltip
-                      contentStyle={{ background: '#111827', border: '1px solid #374151', color: '#f9fafb', borderRadius: 8 }}
+                      contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-strong)', color: 'var(--text-primary)', borderRadius: 8 }}
                       cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                       labelFormatter={(label) => fmtType(String(label))}
                     />

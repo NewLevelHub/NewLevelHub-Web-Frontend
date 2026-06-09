@@ -69,7 +69,13 @@ function darkenHex(hex: string, amount: number): string {
   return hslToHex(h, s, Math.max(0, l - amount));
 }
 
-const BRAND_VARS = ['--brand', '--brand-hover', '--brand-subtle', '--brand-text'] as const;
+const BRAND_VARS = [
+  '--brand', '--brand-hover', '--brand-subtle', '--brand-text', '--brand-gradient-end',
+  '--bg-page', '--bg-surface', '--bg-raised', '--bg-hover', '--bg-active', '--bg-sidebar',
+  '--border', '--border-strong', '--border-faint',
+  '--nav-active-bg', '--nav-active-border', '--nav-hover-bg',
+  '--status-free-bg', '--status-free-text', '--status-na-bg',
+] as const;
 
 /**
  * Side-effect-only hook. Reads the company's brand colour from the API and
@@ -99,24 +105,82 @@ export function useBrandTheme(): void {
 
   useEffect(() => {
     if (brandColor) {
-      const hover = darkenHex(brandColor, 0.08);
-      const [h] = hexToHsl(brandColor);
-      const subtle = hslToHex(h, 0.3, 0.95);
+      const applyVars = (color: string) => {
+        const isDark = document.documentElement.classList.contains('dark');
+        const [h, s, l] = hexToHsl(color);
 
-      document.documentElement.style.setProperty('--brand', brandColor);
-      document.documentElement.style.setProperty('--brand-hover', hover);
-      document.documentElement.style.setProperty('--brand-subtle', subtle);
-      document.documentElement.style.setProperty('--brand-text', hover);
+        if (isDark) {
+          document.documentElement.style.setProperty('--brand', hslToHex(h, s, Math.min(0.95, l + 0.10)));
+          document.documentElement.style.setProperty('--brand-hover', hslToHex(h, s, Math.min(0.95, l + 0.22)));
+          document.documentElement.style.setProperty('--brand-subtle', hslToHex(h, Math.max(0, s - 0.20), Math.max(0.04, l - 0.20)));
+          document.documentElement.style.setProperty('--brand-text', hslToHex(h, Math.max(0, s - 0.25), Math.min(0.95, l + 0.37)));
+          const gradientEnd = hslToHex((h + 40) % 360, s, Math.min(0.85, l + 0.10));
+          document.documentElement.style.setProperty('--brand-gradient-end', gradientEnd);
+          // Background tints — same S/L as theme.css defaults, brand hue substituted
+          document.documentElement.style.setProperty('--bg-page',       hslToHex(h, 0.33, 0.06));
+          document.documentElement.style.setProperty('--bg-surface',    hslToHex(h, 0.33, 0.09));
+          document.documentElement.style.setProperty('--bg-raised',     hslToHex(h, 0.38, 0.12));
+          document.documentElement.style.setProperty('--bg-hover',      hslToHex(h, 0.41, 0.15));
+          document.documentElement.style.setProperty('--bg-active',     hslToHex(h, 0.56, 0.11));
+          document.documentElement.style.setProperty('--bg-sidebar',    hslToHex(h, 0.30, 0.07));
+          // Border tints
+          document.documentElement.style.setProperty('--border',        hslToHex(h, 0.28, 0.14));
+          document.documentElement.style.setProperty('--border-strong', hslToHex(h, 0.31, 0.19));
+          document.documentElement.style.setProperty('--border-faint',  hslToHex(h, 0.38, 0.12));
+          // Nav vars — dark mode
+          document.documentElement.style.setProperty('--nav-active-border', hslToHex(h, s, Math.min(0.95, l + 0.10)));
+          document.documentElement.style.setProperty('--nav-active-bg',     hslToHex(h, 0.31, 0.15));
+          document.documentElement.style.setProperty('--nav-hover-bg',      hslToHex(h, 0.38, 0.12));
+          // Free resource pins: same formulas as --brand-subtle and --brand-text dark
+          document.documentElement.style.setProperty('--status-free-bg',   hslToHex(h, Math.max(0, s - 0.20), Math.max(0.04, l - 0.20)));
+          document.documentElement.style.setProperty('--status-free-text', hslToHex(h, Math.max(0, s - 0.25), Math.min(0.95, l + 0.37)));
+          // na-bg: same formula as --bg-raised
+          document.documentElement.style.setProperty('--status-na-bg',     hslToHex(h, 0.38, 0.12));
+        } else {
+          document.documentElement.style.setProperty('--brand', color);
+          document.documentElement.style.setProperty('--brand-hover', darkenHex(color, 0.08));
+          document.documentElement.style.setProperty('--brand-subtle', hslToHex(h, 0.3, 0.95));
+          document.documentElement.style.setProperty('--brand-text', darkenHex(color, 0.08));
+          const gradientEnd = hslToHex((h + 40) % 360, s, Math.max(0.15, l - 0.05));
+          document.documentElement.style.setProperty('--brand-gradient-end', gradientEnd);
+          // Nav vars — light mode
+          document.documentElement.style.setProperty('--nav-active-border', color);
+          document.documentElement.style.setProperty('--nav-active-bg',     hslToHex(h, 0.20, 0.92));
+          document.documentElement.style.setProperty('--nav-hover-bg',      hslToHex(h, 0.10, 0.95));
+          // Free resource pins: same formula as --brand-subtle and --brand-text
+          document.documentElement.style.setProperty('--status-free-bg',   hslToHex(h, 0.30, 0.95));
+          document.documentElement.style.setProperty('--status-free-text', darkenHex(color, 0.08));
+          // --status-na-bg light is nearly neutral (#f1f3f0) — no change needed in light mode
+          // Remove dark-mode-only overrides so :root CSS values take over
+          const DARK_ONLY_VARS = [
+            '--bg-page', '--bg-surface', '--bg-raised', '--bg-hover', '--bg-active', '--bg-sidebar',
+            '--border', '--border-strong', '--border-faint',
+            '--status-na-bg',
+          ] as const;
+          for (const v of DARK_ONLY_VARS) {
+            document.documentElement.style.removeProperty(v);
+          }
+        }
+      };
+
+      applyVars(brandColor);
+
+      const observer = new MutationObserver(() => applyVars(brandColor));
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class'],
+      });
+
+      return () => {
+        observer.disconnect();
+        for (const varName of BRAND_VARS) {
+          document.documentElement.style.removeProperty(varName);
+        }
+      };
     } else {
       for (const varName of BRAND_VARS) {
         document.documentElement.style.removeProperty(varName);
       }
     }
-
-    return () => {
-      for (const varName of BRAND_VARS) {
-        document.documentElement.style.removeProperty(varName);
-      }
-    };
   }, [brandColor]);
 }

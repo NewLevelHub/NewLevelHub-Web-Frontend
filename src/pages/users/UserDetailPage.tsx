@@ -396,7 +396,7 @@ export default function UserDetailPage() {
                 'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2',
                 user.is_active
                   ? 'bg-red-600 hover:bg-red-700 text-white focus-visible:ring-red-500'
-                  : 'bg-emerald-600 hover:bg-emerald-700 text-white focus-visible:ring-emerald-500',
+                  : 'bg-brand hover:bg-brand-hover text-white focus-visible:ring-[color:var(--brand)]',
                 statusMutation.isPending && 'opacity-60 cursor-not-allowed',
               )}
             >
