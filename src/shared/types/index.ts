@@ -793,6 +793,7 @@ export type NotificationType =
   | 'booking_confirmed'
   | 'booking_reminder'
   | 'booking_cancelled'
+  | 'booking_completed'
   | 'task_assigned'
   | 'task_moved'
   | 'task_comment'

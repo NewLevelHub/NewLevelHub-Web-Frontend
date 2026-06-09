@@ -6,6 +6,7 @@ const NOTIFICATION_LABELS: Record<NotificationType, string> = {
   booking_confirmed: 'Бронирование подтверждено',
   booking_reminder: 'Напоминание о бронировании',
   booking_cancelled: 'Бронирование отменено',
+  booking_completed: 'Бронирование завершено',
   task_assigned: 'Задача назначена',
   task_moved: 'Задача перемещена',
   task_comment: 'Комментарий к задаче',
@@ -24,6 +25,7 @@ const ALL_TYPES = Object.keys(NOTIFICATION_LABELS) as NotificationType[];
 
 const EMAIL_SUPPORTED_TYPES = new Set<NotificationType>([
   'booking_confirmed',
+  'booking_completed',
   'task_assigned',
   'task_deadline',
   'leave_review',

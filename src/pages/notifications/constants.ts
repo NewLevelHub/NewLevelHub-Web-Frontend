@@ -2,6 +2,7 @@ export const NOTIFICATION_TYPE_LABEL_KEYS: Record<string, string> = {
   booking_confirmed: 'common.notificationType.booking_confirmed',
   booking_reminder: 'common.notificationType.booking_reminder',
   booking_cancelled: 'common.notificationType.booking_cancelled',
+  booking_completed: 'common.notificationType.booking_completed',
   task_assigned: 'common.notificationType.task_assigned',
   task_moved: 'common.notificationType.task_moved',
   task_comment: 'common.notificationType.task_comment',

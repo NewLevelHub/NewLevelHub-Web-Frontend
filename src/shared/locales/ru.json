@@ -633,6 +633,7 @@
       "booking_confirmed": "Бронь подтверждена",
       "booking_reminder": "Напоминание о брони",
       "booking_cancelled": "Бронь отменена",
+      "booking_completed": "Бронирование завершено",
       "task_assigned": "Задача назначена",
       "task_moved": "Задача перемещена",
       "task_comment": "Комментарий к задаче",
