@@ -818,6 +818,7 @@ export interface NotificationPreferences {
   booking_confirmed: NotificationPreferenceEntry;
   booking_reminder: NotificationPreferenceEntry;
   booking_cancelled: NotificationPreferenceEntry;
+  booking_completed: NotificationPreferenceEntry;
   task_assigned: NotificationPreferenceEntry;
   task_moved: NotificationPreferenceEntry;
   task_comment: NotificationPreferenceEntry;
