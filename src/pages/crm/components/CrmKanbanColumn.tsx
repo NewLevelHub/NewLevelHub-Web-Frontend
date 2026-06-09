@@ -70,40 +70,39 @@ export function CrmKanbanColumn({
               </span>
             )}
           </div>
-          {column.wip_limit !== null ? (
-            <span
-              className={cn(
-                'ml-auto text-[10px] uppercase tracking-wider font-medium',
-                tasks.length >= column.wip_limit ? 'text-danger font-semibold' : 'text-muted',
-              )}
-              title={`WIP-лимит: ${column.wip_limit}`}
-            >
-              WIP {tasks.length}/{column.wip_limit}
-            </span>
-          ) : (
-            <div className="flex items-center gap-1 ml-auto shrink-0">
-              {!isDragOverlay && (
-                <ColumnHeaderMenu
-                  column={column}
-                  onEdit={() => setShowEdit(true)}
-                  onDelete={() => setShowDelete(true)}
-                />
-              )}
-              <button
-                {...dragHandleProps}
-                tabIndex={0}
+          <div className="flex items-center gap-1 ml-auto shrink-0">
+            {column.wip_limit !== null && (
+              <span
                 className={cn(
-                  'p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity',
-                  'text-secondary group-hover:text-muted',
-                  'cursor-grab active:cursor-grabbing',
-                  'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:opacity-100',
+                  'text-[10px] uppercase tracking-wider font-medium',
+                  tasks.length >= column.wip_limit ? 'text-danger font-semibold' : 'text-muted',
                 )}
-                aria-label={t('common.dragColumn')}
+                title={`WIP-лимит: ${column.wip_limit}`}
               >
-                <GripVertical size={14} />
-              </button>
-            </div>
-          )}
+                WIP {tasks.length}/{column.wip_limit}
+              </span>
+            )}
+            {!isDragOverlay && (
+              <ColumnHeaderMenu
+                column={column}
+                onEdit={() => setShowEdit(true)}
+                onDelete={() => setShowDelete(true)}
+              />
+            )}
+            <button
+              {...dragHandleProps}
+              tabIndex={0}
+              className={cn(
+                'p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity',
+                'text-secondary group-hover:text-muted',
+                'cursor-grab active:cursor-grabbing',
+                'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:opacity-100',
+              )}
+              aria-label={t('common.dragColumn')}
+            >
+              <GripVertical size={14} />
+            </button>
+          </div>
         </div>
 
         <SortableContext items={tasks.map((t) => `task-${t.id}`)} strategy={verticalListSortingStrategy}>
