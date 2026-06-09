@@ -803,6 +803,7 @@ export type NotificationType =
   | 'announcement'
   | 'invitation'
   | 'leave_review'
+  | 'new_employee'
   | 'system';
 
 export interface NotificationPreferenceEntry {
@@ -826,6 +827,7 @@ export interface NotificationPreferences {
   announcement: NotificationPreferenceEntry;
   invitation: NotificationPreferenceEntry;
   leave_review: NotificationPreferenceEntry;
+  new_employee: NotificationPreferenceEntry;
   system: NotificationPreferenceEntry;
 }
 
