@@ -1115,6 +1115,28 @@ export interface MyTasksGroupedResponse {
   groups: MyTaskGroup[];
 }
 
+// ── Dashboard pending-approval sub-types ─────────────────────────────────
+
+export interface PendingLeave {
+  id: number;
+  employee: { id: number; full_name: string; avatar: string | null };
+  leave_type: string;
+  start_date: string;
+  end_date: string;
+  created_at: string;
+}
+
+export interface PendingGuestPass {
+  id: number;
+  guest_name: string;
+  guest_email: string;
+  host: { id: number; full_name: string; avatar: string | null };
+  visit_date: string;
+  valid_from: string;
+  valid_until: string;
+  created_at: string;
+}
+
 // ── Dashboard API (GET /api/v1/dashboard/) ────────────────────────────────
 
 export interface DashboardUserInfo {
@@ -1221,7 +1243,7 @@ export interface CompanyAdminDashboardData {
   active_tasks: number;
   bookings_today: number;
   announcement_feed: DashboardAnnouncementItem[];
-  pending_approvals: { leaves: number; guest_passes: number };
+  pending_approvals?: { leaves: PendingLeave[]; guest_passes: PendingGuestPass[] };
   free_resources_now: number;
   team_bookings_today: TeamBookingItem[];
   my_tasks: DashboardTaskItem[];

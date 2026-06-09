@@ -21,12 +21,6 @@ function normalizeServiceFloors(
   return Array.isArray(payload) ? payload : payload.results;
 }
 
-function formatFloorOptionLabel(floor: ServiceFloorOption): string {
-  const floorNumber = floor.number ?? floor.floor_number ?? floor.id;
-  const floorName = floor.name?.trim();
-  return floorName ? `Этаж ${floorNumber} — ${floorName}` : `Этаж ${floorNumber}`;
-}
-
 export interface CleaningModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -36,6 +30,14 @@ export interface CleaningModalProps {
 export function CleaningModal({ isOpen, onClose, onSuccess }: CleaningModalProps) {
   const { t, i18n } = useTranslation();
   const dateLocale = dateLocaleTag(i18n.language);
+
+  function formatFloorOptionLabel(floor: ServiceFloorOption): string {
+    const floorNumber = floor.number ?? floor.floor_number ?? floor.id;
+    const floorName = floor.name?.trim();
+    return floorName
+      ? t('serviceRequests.cleaning.floorLabelWithName', { number: floorNumber, name: floorName })
+      : t('serviceRequests.cleaning.floorLabelNumber', { number: floorNumber });
+  }
   const queryClient = useQueryClient();
 
   const [description, setDescription] = useState('');
@@ -100,11 +102,11 @@ export function CleaningModal({ isOpen, onClose, onSuccess }: CleaningModalProps
       return;
     }
     if (!location.trim()) {
-      setMutationError('Укажите место.');
+      setMutationError(t('serviceRequests.cleaning.locationRequired'));
       return;
     }
     if (!description.trim()) {
-      setMutationError('Добавьте описание заявки.');
+      setMutationError(t('serviceRequests.cleaning.descriptionRequired'));
       return;
     }
 
@@ -129,33 +131,36 @@ export function CleaningModal({ isOpen, onClose, onSuccess }: CleaningModalProps
       }}
     >
       <div
-        className="w-full max-w-lg rounded-xl border border-default bg-raised p-5"
+        className="w-full max-w-lg rounded-2xl border border-default bg-surface shadow-xl overflow-hidden"
       >
-        <h2 className="text-lg font-semibold text-primary">{t('serviceRequests.cleaning.call')}</h2>
+        <div className="px-6 pt-5 pb-4 border-b border-[color:var(--border-faint)]">
+          <h2 className="text-base font-semibold text-primary tracking-[-0.015em]">
+            {t('serviceRequests.cleaning.call')}
+          </h2>
+        </div>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           {/* Floor */}
           <label className="block text-sm text-secondary">
-            Выбор этажа
+            {t('serviceRequests.cleaning.floorLabel')}
             <p className="mt-1 text-xs text-muted">
-              Справочник этажей здания; не путать с полем «этаж» в настройках компании. Пустой
-              список — в БД нет записей Floor (их создаёт супер-админ).
+              {t('serviceRequests.cleaning.floorHint')}
             </p>
             <select
               value={floorId}
               onChange={(e) => setFloorId(e.target.value)}
               disabled={isFloorsLoading}
               required
-              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+              className="mt-1 w-full h-9 rounded-[var(--radius-sm)] border border-default bg-surface px-3 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)] focus:border-transparent transition-colors"
             >
               {isFloorsLoading ? (
-                <option value="">Загрузка этажей...</option>
+                <option value="">{t('serviceRequests.cleaning.floorsLoading')}</option>
               ) : (
                 <>
-                  <option value="">Выберите этаж</option>
+                  <option value="">{t('serviceRequests.cleaning.floorPlaceholder')}</option>
                   {floors.length === 0 ? (
                     <option value="__no_floors" disabled>
-                      Этажи не настроены
+                      {t('serviceRequests.cleaning.noFloors')}
                     </option>
                   ) : (
                     floors.map((floor) => (
@@ -169,49 +174,51 @@ export function CleaningModal({ isOpen, onClose, onSuccess }: CleaningModalProps
             </select>
             {floorsError ? (
               <p className="mt-1 text-xs text-warning">
-                Не удалось загрузить этажи. Без этажа отправка невозможна.
+                {t('serviceRequests.cleaning.floorsError')}
               </p>
             ) : null}
           </label>
 
           {/* Location */}
           <label className="block text-sm text-secondary">
-            Место
+            {t('serviceRequests.cleaning.locationLabel')}
             <input
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               required
-              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-              placeholder="Переговорка A, туалет, кухня..."
+              className="mt-1 w-full h-9 rounded-[var(--radius-sm)] border border-default bg-surface px-3 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)] focus:border-transparent transition-colors"
+              placeholder={t('serviceRequests.cleaning.locationPlaceholder')}
             />
           </label>
 
           {/* Description */}
           <label className="block text-sm text-secondary">
-            Описание
+            {t('serviceRequests.cleaning.descriptionLabel')}
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               required
-              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted"
-              placeholder="Опишите проблему или запрос"
+              className="mt-1 w-full rounded-[var(--radius-sm)] border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)] focus:border-transparent transition-colors resize-none"
+              placeholder={t('serviceRequests.cleaning.descriptionPlaceholder')}
             />
           </label>
 
           {/* Photo */}
           <label className="block text-sm text-secondary">
-            Фото (необязательно)
+            {t('serviceRequests.cleaning.photoLabel')}
             <input
               type="file"
               accept="image/*"
               lang={dateLocale}
               onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
-              className="mt-1 block w-full cursor-pointer rounded-lg border border-default bg-surface px-3 py-2 text-sm text-secondary file:mr-3 file:rounded-md file:border-0 file:bg-hover file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-primary hover:file:bg-gray-600"
+              className="mt-1 block w-full h-9 cursor-pointer rounded-[var(--radius-sm)] border border-default bg-surface px-3 text-sm text-secondary focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)] focus:border-transparent transition-colors file:mr-3 file:rounded-md file:border-0 file:bg-hover file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-primary hover:file:bg-gray-600"
             />
             {photo ? (
-              <p className="mt-1 text-xs text-secondary">Выбрано: {photo.name}</p>
+              <p className="mt-1 text-xs text-secondary">
+                {t('serviceRequests.cleaning.photoSelected', { name: photo.name })}
+              </p>
             ) : null}
           </label>
 
@@ -224,17 +231,17 @@ export function CleaningModal({ isOpen, onClose, onSuccess }: CleaningModalProps
             </div>
           ) : null}
 
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={handleClose}
               disabled={cleaningMutation.isPending}
-              className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover"
+              className="h-8 px-4 text-sm font-medium text-secondary hover:bg-raised rounded-[var(--radius-sm)] transition-colors"
             >{t('common.cancel')}</button>
             <button
               type="submit"
               disabled={cleaningMutation.isPending}
-              className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] bg-[color:var(--brand)] text-white hover:opacity-90 disabled:opacity-50"
             >
               {cleaningMutation.isPending ? t('common.submittingPlain') : t('serviceRequests.cleaning.call')}
             </button>

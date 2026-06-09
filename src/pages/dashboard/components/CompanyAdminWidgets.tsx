@@ -1,12 +1,15 @@
+import { useState } from 'react';
 import { Link } from 'react-router';
-import { ExternalLink, Megaphone } from 'lucide-react';
+import { ExternalLink, Megaphone, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { CleaningModal } from '@/pages/service-requests/components/CleaningModal';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/shared/lib/cn';
 import i18n from '@/shared/lib/i18n';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
+import { LEAVE_TYPE_LABEL_KEYS } from '@/shared/config/constants';
 import type { CompanyAdminDashboardData } from '@/shared/types';
 import { MyTasksWidget } from '@/pages/dashboard/components/MyTasksWidget';
 import { useMyTasksFlat } from '@/pages/dashboard/hooks/useMyTasksFlat';
@@ -16,6 +19,7 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 export function CompanyAdminWidgets({ data }: { data: CompanyAdminDashboardData }) {
+  const [showCleaning, setShowCleaning] = useState(false);
   const { t } = useTranslation();
   const locale = dateLocaleTag(i18n.language);
 
@@ -84,6 +88,14 @@ export function CompanyAdminWidgets({ data }: { data: CompanyAdminDashboardData 
           >
             {t('dashboard.companyAdmin.submitRequest')}
           </Link>
+          <button
+            type="button"
+            onClick={() => setShowCleaning(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/30 px-4 py-2 text-sm font-medium text-white hover:bg-white/10 transition-colors"
+          >
+            <Sparkles size={15} />
+            {t('dashboard.callCleaning')}
+          </button>
         </div>
       </section>
 
@@ -249,6 +261,171 @@ export function CompanyAdminWidgets({ data }: { data: CompanyAdminDashboardData 
           </section>
         </div>
       </div>
+
+      {/* Pending Approvals */}
+      {data.pending_approvals && (() => {
+        const getInitials = (name: string) =>
+          name.split(' ').slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
+
+        const fmtDay = (iso: string) =>
+          new Date(iso).toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+
+        return (
+          <>
+            {/* Card 1 — Leaves */}
+            <section className="bg-[color:var(--bg-surface)] border border-[color:var(--border)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[color:var(--border)]">
+                <h2 className="text-[13px] font-semibold text-[color:var(--text-primary)] tracking-[-0.01em]">
+                  {t('dashboard.pendingLeaves')}
+                </h2>
+                <Link
+                  to="/leave"
+                  className="inline-flex items-center gap-1 text-xs text-brand hover:text-brand-hover transition-colors"
+                >
+                  {t('dashboard.companyAdmin.openAll')}
+                  <ExternalLink size={11} />
+                </Link>
+              </div>
+
+              <table className="min-w-full border-collapse text-[13px]">
+                <thead>
+                  <tr className="border-b border-[color:var(--border)]">
+                    <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                      {t('dashboard.employeeName')}
+                    </th>
+                    <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                      {t('dashboard.leaveType')}
+                    </th>
+                    <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                      {t('dashboard.period')}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.pending_approvals.leaves.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="px-3 py-10 text-[13px] text-[color:var(--text-muted)] text-center">
+                        {t('dashboard.noRequests')}
+                      </td>
+                    </tr>
+                  ) : (
+                    data.pending_approvals.leaves.map((leave) => (
+                      <tr key={leave.id} className="border-b border-[color:var(--border)] hover:bg-[color:var(--bg-hover)] transition-colors">
+                        <td className="px-3 py-2.5 align-middle">
+                          <div className="flex items-center gap-1.5">
+                            {leave.employee.avatar ? (
+                              <img
+                                src={leave.employee.avatar}
+                                alt={leave.employee.full_name}
+                                className="h-7 w-7 rounded-full object-cover shrink-0"
+                              />
+                            ) : (
+                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand text-[10px] font-bold text-white">
+                                {getInitials(leave.employee.full_name)}
+                              </span>
+                            )}
+                            <span className="text-[color:var(--text-primary)]">{leave.employee.full_name}</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2.5 align-middle text-[13px] text-[color:var(--text-muted)] whitespace-nowrap">
+                          {t(LEAVE_TYPE_LABEL_KEYS[leave.leave_type as keyof typeof LEAVE_TYPE_LABEL_KEYS] ?? leave.leave_type)}
+                        </td>
+                        <td className="px-3 py-2.5 align-middle font-mono text-[color:var(--text-primary)] whitespace-nowrap">
+                          {fmtDay(leave.start_date)} — {fmtDay(leave.end_date)}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </section>
+
+            {/* Card 2 — Guest Passes */}
+            <section className="bg-[color:var(--bg-surface)] border border-[color:var(--border)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[color:var(--border)]">
+                <h2 className="text-[13px] font-semibold text-[color:var(--text-primary)] tracking-[-0.01em]">
+                  {t('dashboard.pendingGuestPasses')}
+                </h2>
+                <Link
+                  to="/passes"
+                  className="inline-flex items-center gap-1 text-xs text-brand hover:text-brand-hover transition-colors"
+                >
+                  {t('dashboard.companyAdmin.openAll')}
+                  <ExternalLink size={11} />
+                </Link>
+              </div>
+
+              <table className="min-w-full border-collapse text-[13px]">
+                <thead>
+                  <tr className="border-b border-[color:var(--border)]">
+                    <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                      {t('dashboard.guestName')}
+                    </th>
+                    <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                      {t('dashboard.hostName')}
+                    </th>
+                    <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
+                      {t('dashboard.period')}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.pending_approvals.guest_passes.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="px-3 py-10 text-[13px] text-[color:var(--text-muted)] text-center">
+                        {t('dashboard.noRequests')}
+                      </td>
+                    </tr>
+                  ) : (
+                    data.pending_approvals.guest_passes.map((pass) => (
+                      <tr key={pass.id} className="border-b border-[color:var(--border)] hover:bg-[color:var(--bg-hover)] transition-colors">
+                        <td className="px-3 py-2.5 align-middle">
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              aria-hidden="true"
+                              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand text-[10px] font-bold text-white select-none"
+                            >
+                              {getInitials(pass.guest_name)}
+                            </span>
+                            <div>
+                              <div className="font-medium text-[color:var(--text-primary)]">{pass.guest_name}</div>
+                              <div className="text-[11px] text-[color:var(--text-muted)]">{pass.guest_email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2.5 align-middle">
+                          <div className="flex items-center gap-1.5">
+                            {pass.host.avatar ? (
+                              <img
+                                src={pass.host.avatar}
+                                alt={pass.host.full_name}
+                                className="h-7 w-7 rounded-full object-cover shrink-0"
+                              />
+                            ) : (
+                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand text-[10px] font-bold text-white select-none">
+                                {getInitials(pass.host.full_name)}
+                              </span>
+                            )}
+                            <span className="text-[color:var(--text-primary)]">{pass.host.full_name}</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2.5 align-middle font-mono text-[color:var(--text-primary)] whitespace-nowrap">
+                          {fmtDay(pass.valid_from)} — {fmtDay(pass.valid_until)}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </section>
+          </>
+        );
+      })()}
+
+      <CleaningModal
+        isOpen={showCleaning}
+        onClose={() => setShowCleaning(false)}
+      />
     </div>
   );
 }

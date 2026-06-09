@@ -85,7 +85,7 @@ export default function PassListPage() {
   }
 
   return (
-    <main className="mx-auto max-w-7xl space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Page header */}
       <div className="flex items-end justify-between mb-[18px]">
         <div>
@@ -319,6 +319,6 @@ export default function PassListPage() {
         {/* Right: QR panel — always rendered */}
         <PassQRPanel passId={selectedPassId} />
       </div>
-    </main>
+    </div>
   );
 }

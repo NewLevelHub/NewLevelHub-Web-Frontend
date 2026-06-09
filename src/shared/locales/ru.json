@@ -81,11 +81,25 @@
       "allAnnouncements": "Все →",
       "noAnnouncements": "Нет новых объявлений"
     },
+    "viewAll": "Открыть все",
+    "pendingApprovals": "Ожидают одобрения",
+    "pendingLeaves": "Заявки на отпуск",
+    "pendingGuestPasses": "Гостевые пропуска",
+    "employeeName": "Сотрудник",
+    "leaveType": "Тип",
+    "period": "Период",
+    "guestName": "Гость",
+    "hostName": "Пригласил",
+    "visitDate": "Дата визита",
+    "noRequests": "Нет заявок",
+    "submittedAt": "Подано",
+    "callCleaning": "Вызвать уборку",
     "employee": {
       "greeting": "Привет, {{name}}",
       "subtitle": "{{date}} · у тебя {{bookings}} бронирований и {{tasks}} задач сегодня",
       "inviteGuest": "Пригласить гостя",
       "bookResource": "Забронировать",
+      "createTask": "Создать задачу",
       "kpi": {
         "myBookings": "Мои брони сегодня",
         "myTasks": "Мои задачи на сегодня",
@@ -116,7 +130,9 @@
         "availableDesks": "Свободных столов",
         "availableRooms": "Свободных переговорных"
       },
-      "bcAnnouncements": "Объявления бизнес-центра"
+      "bcAnnouncements": "Объявления бизнес-центра",
+      "buildingMap": "Карта здания",
+      "buildingMapHint": "Посмотреть планировку и расположение зон"
     },
     "onboarding": {
       "uploadLogo": "Загрузить логотип компании",
@@ -575,7 +591,23 @@
       "allStatuses": "Все статусы"
     },
     "cleaning": {
-      "call": "Вызвать уборку"
+      "call": "Вызвать уборку",
+      "floorLabel": "Выбор этажа",
+      "floorHint": "Справочник этажей здания; не путать с полем «этаж» в настройках компании. Пустой список — в БД нет записей Floor (их создаёт супер-админ).",
+      "floorsLoading": "Загрузка этажей...",
+      "floorPlaceholder": "Выберите этаж",
+      "noFloors": "Этажи не настроены",
+      "floorLabelWithName": "Этаж {{number}} — {{name}}",
+      "floorLabelNumber": "Этаж {{number}}",
+      "floorsError": "Не удалось загрузить этажи. Без этажа отправка невозможна.",
+      "locationLabel": "Место",
+      "locationPlaceholder": "Переговорка A, туалет, кухня...",
+      "descriptionLabel": "Описание",
+      "descriptionPlaceholder": "Опишите проблему или запрос",
+      "photoLabel": "Фото (необязательно)",
+      "photoSelected": "Выбрано: {{name}}",
+      "locationRequired": "Укажите место.",
+      "descriptionRequired": "Добавьте описание заявки."
     },
     "title": "Сервисные заявки",
     "createRequest": "Создать заявку",
