@@ -667,6 +667,7 @@
       "booking_confirmed": "Booking confirmed",
       "booking_reminder": "Booking reminder",
       "booking_cancelled": "Booking cancelled",
+      "booking_completed": "Booking completed",
       "task_assigned": "Task assigned",
       "task_moved": "Task moved",
       "task_comment": "Task comment",

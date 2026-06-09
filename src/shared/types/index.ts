@@ -793,6 +793,7 @@ export type NotificationType =
   | 'booking_confirmed'
   | 'booking_reminder'
   | 'booking_cancelled'
+  | 'booking_completed'
   | 'task_assigned'
   | 'task_moved'
   | 'task_comment'
@@ -817,6 +818,7 @@ export interface NotificationPreferences {
   booking_confirmed: NotificationPreferenceEntry;
   booking_reminder: NotificationPreferenceEntry;
   booking_cancelled: NotificationPreferenceEntry;
+  booking_completed: NotificationPreferenceEntry;
   task_assigned: NotificationPreferenceEntry;
   task_moved: NotificationPreferenceEntry;
   task_comment: NotificationPreferenceEntry;
