@@ -240,6 +240,7 @@ export const API = {
     me: '/auth/me/',
     update: '/auth/me/update/',
     deleteAvatar: '/auth/me/avatar/',
+    activity: '/auth/me/activity/',
   },
   users: {
     list: '/auth/users/',

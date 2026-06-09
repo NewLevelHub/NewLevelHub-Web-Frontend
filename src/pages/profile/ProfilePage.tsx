@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import ProfileActivitySection from './ProfileActivitySection';
 import { useTranslation } from 'react-i18next';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -569,6 +570,7 @@ export default function ProfilePage() {
         )}
       </section>
 
+      <ProfileActivitySection />
       <ChangePasswordSection />
     </main>
   );
