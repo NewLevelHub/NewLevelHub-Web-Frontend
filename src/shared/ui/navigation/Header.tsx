@@ -110,17 +110,26 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
   }
 
   return (
-    <header className="relative z-[30] flex h-14 items-center justify-between gap-3 border-b border-default bg-surface px-3 sm:px-4 md:justify-end md:px-6">
-      <button
-        type="button"
-        onClick={onOpenMobileNav}
-        className="inline-flex items-center justify-center rounded-md p-2 text-secondary hover:bg-hover transition-colors md:hidden"
-        aria-label={t('common.openSidebar')}
-        aria-controls="app-sidebar"
-        aria-expanded={isMobileNavOpen}
-      >
-        <Menu size={18} />
-      </button>
+    <header className="relative z-[30] flex h-14 items-center justify-between gap-3 border-b border-default bg-surface px-3 sm:px-4 md:px-6">
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onOpenMobileNav}
+          className="inline-flex items-center justify-center rounded-md p-2 text-secondary hover:bg-hover transition-colors md:hidden"
+          aria-label={t('common.openSidebar')}
+          aria-controls="app-sidebar"
+          aria-expanded={isMobileNavOpen}
+        >
+          <Menu size={18} />
+        </button>
+        {user?.company?.logo && user.company.plan === 'premium' && (
+          <img
+            src={user.company.logo}
+            alt={t('header.companyLogoAlt')}
+            className="h-8 w-auto object-contain"
+          />
+        )}
+      </div>
 
       <div className="flex items-center gap-1 sm:gap-1.5">
         {/* Notifications */}

@@ -9,6 +9,7 @@ import { useIdleSession } from '@/shared/hooks/useIdleSession';
 import { useAuthStore } from '@/shared/store/auth';
 import { USER_ROLE_LABEL_KEYS, type UserRole } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
+import { useBrandTheme } from '@/shared/hooks/useBrandTheme';
 
 function useSidebarCollapsed() {
   const [collapsed, setCollapsed] = useState(() =>
@@ -79,6 +80,7 @@ function ImpersonationBanner() {
 }
 
 export function AppLayout() {
+  useBrandTheme();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { collapsed, toggle: toggleCollapsed } = useSidebarCollapsed();
   const {
