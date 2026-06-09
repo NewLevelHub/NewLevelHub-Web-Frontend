@@ -223,17 +223,29 @@ export function CalendarEventPopover({ event, anchorEl, onClose }: Props) {
             {t('calendar.openBooking')}
             <ArrowRight className="h-4 w-4" />
           </Link>
-        ) : (
-          <button
-            type="button"
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-brand bg-surface text-[13.5px] font-semibold text-brand-text hover:bg-brand-subtle"
+        ) : event.type === CALENDAR_EVENT_TYPES.TASK_DEADLINE ? (
+          <Link
+            to={
+              event.board_id != null && event.task_id != null
+                ? `/crm/boards/${event.board_id}?task=${event.task_id}`
+                : '/crm'
+            }
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-brand bg-surface text-[13.5px] font-semibold text-brand-text no-underline hover:bg-brand-subtle"
             onClick={onClose}
           >
-            {event.type === CALENDAR_EVENT_TYPES.TASK_DEADLINE && t('calendar.openTask')}
-            {event.type === CALENDAR_EVENT_TYPES.GUEST_VISIT && t('calendar.openPass')}
+            {t('calendar.openTask')}
             <ArrowRight className="h-4 w-4" />
-          </button>
-        )}
+          </Link>
+        ) : event.type === CALENDAR_EVENT_TYPES.GUEST_VISIT ? (
+          <Link
+            to={event.guest_pass_id != null ? `/passes/${event.guest_pass_id}` : '/passes'}
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-brand bg-surface text-[13.5px] font-semibold text-brand-text no-underline hover:bg-brand-subtle"
+            onClick={onClose}
+          >
+            {t('calendar.openPass')}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        ) : null}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, type MouseEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Clock, Shield, StickyNote } from 'lucide-react';
+import { Clock, MapPin, Shield, StickyNote, UserRound } from 'lucide-react';
 
 import { CALENDAR_EVENT_TYPES } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
@@ -13,13 +13,21 @@ import {
   CALENDAR_START_HOUR,
 } from '../calendarConstants';
 import {
+  CALENDAR_SINGLE_EVENT_MAX_HEIGHT_PX,
+  CALENDAR_SLOT_CHIP_GAP_PX,
+  CALENDAR_SLOT_CHIP_HEIGHT_PX,
+  CALENDAR_SLOT_PADDING_PX,
   calendarBodyHeightPx,
-  eventHeightPx,
+  computeDurationEventGeometry,
   eventKey,
-  eventTopPx,
+  eventOverlapsHour,
+  getPointEventsInHour,
+  hourSlotStackHeight,
   layoutLeaveEvents,
+  layoutPointEvents,
   layoutTimedEvents,
   type CalendarDayColumn,
+  type PositionedTimedEvent,
 } from '../calendarUtils';
 import type { CalendarNote } from '../useCalendarNotes';
 
@@ -33,14 +41,150 @@ type Props = {
   onNoteClick: (note: CalendarNote, anchor: HTMLElement) => void;
 };
 
-function formatCalendarEventTitle(event: CalendarEvent, t: (key: string) => string) {
-  if (event.type === CALENDAR_EVENT_TYPES.TASK_DEADLINE) {
-    return `${t('calendar.deadlinePrefix')}: ${event.title}`;
+const EVENT_ICON_CLASS = 'h-3.5 w-3.5 shrink-0';
+
+function SlotChip({
+  className,
+  onClick,
+  children,
+  ariaLabel,
+}: {
+  className: string;
+  onClick: (e: MouseEvent<HTMLButtonElement>) => void;
+  children: ReactNode;
+  ariaLabel: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      className={cn(
+        'pointer-events-auto flex w-full min-w-0 items-center gap-1.5 overflow-hidden rounded-lg border border-l-[3px] px-1.5 text-left text-[10.5px] leading-tight font-semibold',
+        className,
+      )}
+      style={{ height: CALENDAR_SLOT_CHIP_HEIGHT_PX, minHeight: CALENDAR_SLOT_CHIP_HEIGHT_PX }}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+}
+
+function EventTypeIcon({ type }: { type: CalendarEvent['type'] }) {
+  if (type === CALENDAR_EVENT_TYPES.TASK_DEADLINE) {
+    return <Clock className={EVENT_ICON_CLASS} strokeWidth={2} />;
   }
-  if (event.type === CALENDAR_EVENT_TYPES.GUEST_VISIT) {
-    return `${t('calendar.guestPrefix')}: ${event.title}`;
+  if (type === CALENDAR_EVENT_TYPES.GUEST_VISIT) {
+    return <UserRound className={EVENT_ICON_CLASS} strokeWidth={2} />;
   }
-  return event.title;
+  if (type === CALENDAR_EVENT_TYPES.BOOKING) {
+    return <MapPin className={EVENT_ICON_CLASS} strokeWidth={2} />;
+  }
+  return null;
+}
+
+function HourSlotStack({
+  slotTop,
+  pointEvents,
+  slotNote,
+  hasDurationInHour,
+  selectedEventKey,
+  onEventClick,
+  onNoteClick,
+  onAddNote,
+  t,
+}: {
+  slotTop: number;
+  pointEvents: PositionedTimedEvent[];
+  slotNote: CalendarNote | null;
+  hasDurationInHour: boolean;
+  selectedEventKey: string | null;
+  onEventClick: (event: CalendarEvent, anchor: HTMLElement) => void;
+  onNoteClick: (note: CalendarNote, anchor: HTMLElement) => void;
+  onAddNote: (anchor: HTMLElement) => void;
+  t: (key: string) => string;
+}) {
+  const hasChips = pointEvents.length > 0 || slotNote != null;
+  const isEmptySlot = !hasChips && !hasDurationInHour;
+
+  return (
+    <div
+      className="group/hour pointer-events-none absolute right-0 left-0 z-[1]"
+      style={{ top: slotTop, height: CALENDAR_HOUR_HEIGHT_PX }}
+    >
+      <div className="absolute right-0 left-0 top-0 border-t border-default" />
+
+      {hasChips && (
+        <div
+          className="absolute right-1.5 left-1.5 z-[4] flex flex-col"
+          style={{
+            top: CALENDAR_SLOT_PADDING_PX,
+            gap: CALENDAR_SLOT_CHIP_GAP_PX,
+          }}
+        >
+          {pointEvents.map((event) => {
+            const key = eventKey(event);
+
+            return (
+              <SlotChip
+                key={key}
+                className={cn(
+                  CALENDAR_EVENT_BLOCK_CLASS[event.type],
+                  selectedEventKey === key &&
+                    'shadow-[0_0_0_1px_var(--bg-surface),0_0_0_2px_currentColor]',
+                )}
+                ariaLabel={event.title}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEventClick(event, e.currentTarget);
+                }}
+              >
+                <EventTypeIcon type={event.type} />
+                <span className="truncate">{event.title}</span>
+              </SlotChip>
+            );
+          })}
+
+          {slotNote && (
+            <SlotChip
+              className="border-[#f0d78c] border-l-[#F59E0B] bg-[#fef9e8] text-[#a96710]"
+              ariaLabel={slotNote.text}
+              onClick={(e) => {
+                e.stopPropagation();
+                onNoteClick(slotNote, e.currentTarget);
+              }}
+            >
+              <StickyNote className={EVENT_ICON_CLASS} strokeWidth={2} />
+              <span className="truncate">{slotNote.text}</span>
+            </SlotChip>
+          )}
+        </div>
+      )}
+
+      {!slotNote && (
+        <button
+          type="button"
+          className="pointer-events-auto absolute right-1 bottom-1 z-[5] flex h-5 w-5 items-center justify-center rounded-md border border-[rgba(245,158,11,0.45)] bg-[rgba(254,249,232,0.95)] text-[#a96710] opacity-0 shadow-sm transition-opacity group-hover/hour:opacity-100 hover:bg-[#fef3e0]"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddNote(e.currentTarget);
+          }}
+          aria-label={t('calendar.addNote')}
+        >
+          <StickyNote className="h-3 w-3" strokeWidth={2} />
+        </button>
+      )}
+
+      {isEmptySlot && (
+        <button
+          type="button"
+          className="pointer-events-auto absolute inset-0 z-[1] cursor-pointer border-0 bg-transparent p-0 transition-colors hover:bg-[rgba(245,158,11,0.05)]"
+          onClick={(e) => onAddNote(e.currentTarget)}
+          aria-label={t('calendar.addNote')}
+        />
+      )}
+    </div>
+  );
 }
 
 export function CalendarTimeGrid({
@@ -61,7 +205,7 @@ export function CalendarTimeGrid({
     { length: CALENDAR_END_HOUR - CALENDAR_START_HOUR + 1 },
     (_, index) => CALENDAR_START_HOUR + index,
   );
-  const gutterWidth = days.length > 1 ? 'minmax(48px,64px)' : 'minmax(44px,64px)';
+  const gutterWidth = '64px';
   const gridColumns = `${gutterWidth} repeat(${days.length}, minmax(88px, 1fr))`;
 
   const leaveEvents = useMemo(
@@ -69,8 +213,13 @@ export function CalendarTimeGrid({
     [events, weekStartIso, weekEndIso, dayIsos],
   );
 
-  const timedEvents = useMemo(
+  const durationEvents = useMemo(
     () => layoutTimedEvents(events, dayIsos),
+    [events, dayIsos],
+  );
+
+  const pointEvents = useMemo(
+    () => layoutPointEvents(events, dayIsos),
     [events, dayIsos],
   );
 
@@ -121,60 +270,73 @@ export function CalendarTimeGrid({
           className="relative grid min-h-[42px] border-b border-default"
           style={{ gridTemplateColumns: gridColumns }}
         >
-          <div className="flex items-center justify-end border-r border-default px-1.5 text-right text-[9px] leading-tight font-semibold tracking-[0.03em] text-muted uppercase sm:px-2 sm:text-[10.5px]">
-            {t('calendar.allDay')}
+          <div className="flex items-center justify-end border-r border-default px-2.5 text-right text-[10.5px] leading-[1.2] font-semibold tracking-[0.03em] text-muted uppercase">
+            <span className="whitespace-pre-line">{t('calendar.allDay')}</span>
           </div>
           {days.map((day) => (
             <div key={day.iso} className="border-r border-default last:border-r-0" />
           ))}
           {leaveEvents.length > 0 && (
             <div
-              className="pointer-events-none absolute inset-y-0 left-[48px] grid content-start gap-1 py-1.5 sm:left-[64px]"
+              className="pointer-events-none absolute inset-y-0 left-[64px] grid content-start gap-1 py-1.5"
               style={{
                 right: 0,
                 gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`,
               }}
             >
-              {leaveEvents.map((event) => (
-                <button
-                  key={eventKey(event)}
-                  type="button"
-                  className={cn(
-                    'pointer-events-auto mx-1 flex items-center gap-1.5 overflow-hidden rounded-[9px] border px-2 py-1.5 text-left text-[11px] font-semibold text-ellipsis whitespace-nowrap sm:mx-1.5 sm:gap-1.5 sm:px-2.5 sm:text-xs',
-                    CALENDAR_EVENT_BLOCK_CLASS[CALENDAR_EVENT_TYPES.LEAVE],
-                    selectedEventKey === eventKey(event) &&
-                      'shadow-[0_0_0_2px_var(--bg-surface),0_0_0_4px_#8B5CF6]',
-                  )}
-                  style={{
-                    gridColumn: `${event.colStart + 1} / ${event.colEnd + 2}`,
-                  }}
-                  onClick={(e) => onEventClick(event, e.currentTarget)}
-                >
-                  <Shield className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" strokeWidth={2} />
-                  <span className="truncate">
-                    {event.title} · {event.user.full_name}
-                  </span>
-                </button>
-              ))}
+              {leaveEvents.map((event) => {
+                const key = `${eventKey(event)}-${event.dayIso}`;
+
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    className={cn(
+                      'pointer-events-auto mx-1 flex h-[22px] items-center gap-1.5 overflow-hidden rounded-lg border border-l-[3px] px-1.5 text-left text-[10.5px] font-semibold text-ellipsis whitespace-nowrap sm:mx-1.5',
+                      CALENDAR_EVENT_BLOCK_CLASS[CALENDAR_EVENT_TYPES.LEAVE],
+                      selectedEventKey === eventKey(event) &&
+                        'shadow-[0_0_0_2px_var(--bg-surface),0_0_0_4px_#8B5CF6]',
+                    )}
+                    style={{
+                      gridColumn: `${event.col + 1} / ${event.col + 2}`,
+                    }}
+                    onClick={(e) => onEventClick(event, e.currentTarget)}
+                  >
+                    <Shield className={EVENT_ICON_CLASS} strokeWidth={2} />
+                    <span className="truncate">
+                      {event.title} · {event.user.full_name}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
 
         <div className="grid" style={{ gridTemplateColumns: gridColumns }}>
           <div className="relative border-r border-default" style={{ height: bodyHeight }}>
-            {hours.map((hour) => (
-              <div
-                key={hour}
-                className="absolute right-1 text-[10px] font-medium text-muted sm:right-2 sm:text-[11px]"
-                style={{ top: (hour - CALENDAR_START_HOUR) * CALENDAR_HOUR_HEIGHT_PX, transform: 'translateY(-50%)' }}
-              >
-                {String(hour).padStart(2, '0')}:00
-              </div>
-            ))}
+            {hours.map((hour) => {
+              const top = (hour - CALENDAR_START_HOUR) * CALENDAR_HOUR_HEIGHT_PX;
+              const isFirstHour = hour === CALENDAR_START_HOUR;
+
+              return (
+                <div
+                  key={hour}
+                  className="absolute right-2 text-[11px] font-medium text-muted"
+                  style={{
+                    top,
+                    transform: isFirstHour ? undefined : 'translateY(-50%)',
+                  }}
+                >
+                  {String(hour).padStart(2, '0')}:00
+                </div>
+              );
+            })}
           </div>
 
           {days.map((day) => {
-            const dayTimed = timedEvents.filter((event) => event.dayIso === day.iso);
+            const dayDuration = durationEvents.filter((event) => event.dayIso === day.iso);
+            const dayPoints = pointEvents.filter((event) => event.dayIso === day.iso);
             const dayNotes = notesByDay.get(day.iso) ?? [];
 
             return (
@@ -187,81 +349,65 @@ export function CalendarTimeGrid({
                 style={{ height: bodyHeight }}
               >
                 {hours.slice(0, -1).map((hour) => {
-                  const slotNote = dayNotes.find((note) => note.hour === hour);
+                  const slotTop = (hour - CALENDAR_START_HOUR) * CALENDAR_HOUR_HEIGHT_PX;
+                  const slotNote = dayNotes.find((note) => note.hour === hour) ?? null;
+                  const hourPoints = getPointEventsInHour(dayPoints, hour);
+                  const hasDurationInHour = dayDuration.some((event) =>
+                    eventOverlapsHour(event, hour),
+                  );
 
                   return (
-                    <div key={hour}>
-                      <div
-                        className="absolute right-0 left-0 border-t border-default"
-                        style={{ top: (hour - CALENDAR_START_HOUR) * CALENDAR_HOUR_HEIGHT_PX }}
-                      />
-                      <button
-                        type="button"
-                        className="group/slot absolute right-0 left-0 z-[1] cursor-pointer border-0 bg-transparent p-0 transition-colors hover:bg-[rgba(245,158,11,0.08)]"
-                        style={{
-                          top: (hour - CALENDAR_START_HOUR) * CALENDAR_HOUR_HEIGHT_PX,
-                          height: CALENDAR_HOUR_HEIGHT_PX,
-                        }}
-                        onClick={(e) => onSlotClick(day.iso, hour, e.currentTarget)}
-                        aria-label={slotNote ? t('calendar.editNote') : t('calendar.addNote')}
-                      >
-                        <div className="absolute inset-[3px] hidden items-center justify-center gap-1 rounded-lg border-[1.5px] border-dashed border-[rgba(245,158,11,0.45)] bg-[rgba(254,249,232,0.75)] px-1 text-[10px] font-semibold text-[#a96710] group-hover/slot:flex sm:gap-1.5 sm:text-[11.5px]">
-                          <StickyNote className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" strokeWidth={2} />
-                          <span className="truncate">{slotNote ? t('calendar.editNote') : t('calendar.addNote')}</span>
-                        </div>
-                      </button>
-                    </div>
+                    <HourSlotStack
+                      key={hour}
+                      slotTop={slotTop}
+                      pointEvents={hourPoints}
+                      slotNote={slotNote}
+                      hasDurationInHour={hasDurationInHour}
+                      selectedEventKey={selectedEventKey}
+                      onEventClick={onEventClick}
+                      onNoteClick={onNoteClick}
+                      onAddNote={(anchor) => onSlotClick(day.iso, hour, anchor)}
+                      t={t}
+                    />
                   );
                 })}
+
                 <div
                   className="absolute right-0 left-0 border-t border-default"
                   style={{ top: bodyHeight }}
                 />
 
-                {dayNotes.map((note) => (
-                  <button
-                    key={note.id}
-                    type="button"
-                    className="absolute z-[2] flex cursor-pointer flex-col gap-0.5 overflow-hidden rounded-[9px] border border-[#f0d78c] border-l-[3px] border-l-[#F59E0B] bg-[#fef9e8] px-2 py-1.5 text-left text-[#a96710] transition-shadow hover:z-[4] hover:shadow-[var(--shadow-card)]"
-                    style={{
-                      top: (note.hour - CALENDAR_START_HOUR) * CALENDAR_HOUR_HEIGHT_PX + 2,
-                      height: CALENDAR_HOUR_HEIGHT_PX - 6,
-                      left: '6px',
-                      right: '6px',
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onNoteClick(note, e.currentTarget);
-                    }}
-                  >
-                    <span className="flex items-center gap-1 text-[10px] font-bold uppercase sm:text-[11px]">
-                      <StickyNote className="h-3 w-3 shrink-0" />
-                      {t('calendar.noteLabel')}
-                    </span>
-                    <span className="line-clamp-2 text-[11px] leading-tight font-medium sm:text-[12px]">
-                      {note.text}
-                    </span>
-                  </button>
-                ))}
-
-                {dayTimed.map((event) => {
-                  const top = eventTopPx(event.startHour);
-                  const height = eventHeightPx(event.startHour, event.endHour, event.type);
-                  const width = 100 / event.laneCount;
-                  const left = event.lane * width;
-                  const isDeadline = event.type === CALENDAR_EVENT_TYPES.TASK_DEADLINE;
+                {dayDuration.map((event) => {
+                  const startHourFloor = Math.floor(event.startHour);
+                  const slotNote = dayNotes.find((note) => note.hour === startHourFloor) ?? null;
+                  const pointCount = getPointEventsInHour(dayPoints, startHourFloor).length;
+                  const stackHeight = hourSlotStackHeight(pointCount, slotNote != null);
+                  const eventsInHour = dayDuration.filter((item) =>
+                    eventOverlapsHour(item, startHourFloor),
+                  );
+                  const pointsInHour = getPointEventsInHour(dayPoints, startHourFloor);
+                  const isSingleOccupant =
+                    eventsInHour.length === 1 &&
+                    pointsInHour.length === 0 &&
+                    slotNote == null &&
+                    eventKey(eventsInHour[0]!) === eventKey(event);
+                  const { top, height, left, width } = computeDurationEventGeometry(
+                    event,
+                    stackHeight,
+                    { capAsSingleOccupant: isSingleOccupant },
+                  );
                   const key = eventKey(event);
+                  const showSubtitle = height >= CALENDAR_SINGLE_EVENT_MAX_HEIGHT_PX - 4;
 
                   return (
                     <button
                       key={key}
                       type="button"
                       className={cn(
-                        'absolute z-[3] flex cursor-pointer overflow-hidden rounded-[9px] border border-l-[3px] px-1.5 py-1 text-left transition-shadow hover:z-[5] hover:shadow-[var(--shadow-pop)] sm:px-2 sm:py-1.5',
+                        'absolute z-[3] flex cursor-pointer items-start gap-1.5 overflow-hidden rounded-lg border border-l-[3px] px-1.5 py-1 text-left transition-shadow hover:z-[4] hover:shadow-[var(--shadow-pop)]',
                         CALENDAR_EVENT_BLOCK_CLASS[event.type],
-                        isDeadline ? 'flex-row items-center gap-1.5' : 'flex-col gap-px',
                         selectedEventKey === key &&
-                          'shadow-[0_0_0_2px_var(--bg-surface),0_0_0_4px_currentColor]',
+                          'shadow-[0_0_0_1px_var(--bg-surface),0_0_0_2px_currentColor]',
                       )}
                       style={{
                         top,
@@ -274,25 +420,17 @@ export function CalendarTimeGrid({
                         onEventClick(event, e.currentTarget);
                       }}
                     >
-                      {isDeadline ? (
-                        <>
-                          <Clock className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" strokeWidth={1.8} />
-                          <span className="truncate text-[11px] font-semibold sm:text-xs">
-                            {formatCalendarEventTitle(event, t)}
+                      <EventTypeIcon type={event.type} />
+                      <span className="min-w-0 flex flex-col gap-0.5">
+                        <span className="truncate text-[10.5px] leading-tight font-semibold">
+                          {event.title}
+                        </span>
+                        {showSubtitle && (
+                          <span className="truncate text-[9.5px] leading-tight font-medium opacity-85">
+                            {event.user.full_name}
                           </span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="truncate text-[11px] leading-tight font-bold sm:text-[12.5px]">
-                            {formatCalendarEventTitle(event, t)}
-                          </span>
-                          <span className="truncate text-[10px] font-medium opacity-85 sm:text-[11px]">
-                            {event.type === CALENDAR_EVENT_TYPES.GUEST_VISIT
-                              ? `${t('calendar.popover.invitedBy')}: ${event.user.full_name}`
-                              : event.user.full_name}
-                          </span>
-                        </>
-                      )}
+                        )}
+                      </span>
                     </button>
                   );
                 })}

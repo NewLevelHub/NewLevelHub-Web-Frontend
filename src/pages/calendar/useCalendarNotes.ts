@@ -26,7 +26,7 @@ let cachedRaw: string | null | undefined;
 let cachedSnapshot: CalendarNote[] = EMPTY_NOTES;
 
 function emitChange() {
-  for (const listener of listeners) listeners();
+  for (const listener of listeners) listener();
 }
 
 function subscribe(listener: () => void) {

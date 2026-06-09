@@ -14,6 +14,11 @@ export type CalendarDayColumn = {
   isToday: boolean;
 };
 
+export const CALENDAR_SLOT_CHIP_HEIGHT_PX = 22;
+export const CALENDAR_SLOT_CHIP_GAP_PX = 2;
+export const CALENDAR_SLOT_PADDING_PX = 3;
+export const CALENDAR_SINGLE_EVENT_MAX_HEIGHT_PX = 32;
+
 export type PositionedTimedEvent = CalendarEvent & {
   dayIso: string;
   startHour: number;
@@ -23,8 +28,8 @@ export type PositionedTimedEvent = CalendarEvent & {
 };
 
 export type PositionedLeaveEvent = CalendarEvent & {
-  colStart: number;
-  colEnd: number;
+  col: number;
+  dayIso: string;
 };
 
 export function toIsoDate(value: Date) {
@@ -116,6 +121,16 @@ export function isAllDayLeave(event: CalendarEvent) {
   return event.type === CALENDAR_EVENT_TYPES.LEAVE;
 }
 
+export function isPointCalendarEvent(type: CalendarEventType) {
+  return (
+    type === CALENDAR_EVENT_TYPES.TASK_DEADLINE || type === CALENDAR_EVENT_TYPES.GUEST_VISIT
+  );
+}
+
+export function isDurationCalendarEvent(event: CalendarEvent) {
+  return !isAllDayLeave(event) && !isPointCalendarEvent(event.type);
+}
+
 export function layoutLeaveEvents(
   events: CalendarEvent[],
   weekStartIso: string,
@@ -123,27 +138,31 @@ export function layoutLeaveEvents(
   dayIsos: string[],
 ): PositionedLeaveEvent[] {
   const dayIndex = new Map(dayIsos.map((iso, index) => [iso, index]));
+  const positioned: PositionedLeaveEvent[] = [];
 
-  return events
-    .filter(isAllDayLeave)
-    .map((event) => {
-      const rawStart = event.start.slice(0, 10);
-      const rawEnd = event.end.slice(0, 10);
-      const spanStart = rawStart < weekStartIso ? weekStartIso : rawStart;
-      const spanEnd = rawEnd > weekEndIso ? weekEndIso : rawEnd;
-      const colStart = dayIndex.get(spanStart);
-      const colEnd = dayIndex.get(spanEnd);
-      if (colStart == null || colEnd == null) return null;
-      return { ...event, colStart, colEnd };
-    })
-    .filter((event): event is PositionedLeaveEvent => event != null);
+  for (const event of events.filter(isAllDayLeave)) {
+    const rawStart = event.start.slice(0, 10);
+    const rawEnd = event.end.slice(0, 10);
+    let current = rawStart < weekStartIso ? weekStartIso : rawStart;
+    const spanEnd = rawEnd > weekEndIso ? weekEndIso : rawEnd;
+
+    while (current <= spanEnd) {
+      const col = dayIndex.get(current);
+      if (col != null) {
+        positioned.push({ ...event, col, dayIso: current });
+      }
+      current = addDaysIso(current, 1);
+    }
+  }
+
+  return positioned;
 }
 
 export function layoutTimedEvents(
   events: CalendarEvent[],
   dayIsos: string[],
 ): PositionedTimedEvent[] {
-  const timed = events.filter((event) => !isAllDayLeave(event));
+  const timed = events.filter((event) => isDurationCalendarEvent(event));
   const byDay = new Map<string, PositionedTimedEvent[]>();
 
   for (const event of timed) {
@@ -153,10 +172,7 @@ export function layoutTimedEvents(
     const startDate = new Date(event.start);
     const endDate = new Date(event.end);
     const startHour = toDecimalHour(startDate);
-    const isDeadline = event.type === CALENDAR_EVENT_TYPES.TASK_DEADLINE;
-    const endHour = isDeadline
-      ? startHour + 0.5
-      : Math.max(startHour + 0.5, toDecimalHour(endDate));
+    const endHour = Math.max(startHour + 0.5, toDecimalHour(endDate));
 
     const list = byDay.get(dayIso) ?? [];
     list.push({
@@ -196,6 +212,51 @@ export function layoutTimedEvents(
   return positioned;
 }
 
+export function layoutPointEvents(
+  events: CalendarEvent[],
+  dayIsos: string[],
+): PositionedTimedEvent[] {
+  const positioned: PositionedTimedEvent[] = [];
+
+  for (const event of events) {
+    if (!isPointCalendarEvent(event.type)) continue;
+
+    const dayIso = event.start.slice(0, 10);
+    if (!dayIsos.includes(dayIso)) continue;
+
+    const startHour = toDecimalHour(new Date(event.start));
+    positioned.push({
+      ...event,
+      dayIso,
+      startHour,
+      endHour: startHour + 0.5,
+      lane: 0,
+      laneCount: 1,
+    });
+  }
+
+  return positioned.sort((a, b) => a.startHour - b.startHour || a.title.localeCompare(b.title));
+}
+
+export function getPointEventsInHour(events: PositionedTimedEvent[], hour: number) {
+  return events.filter(
+    (event) => isPointCalendarEvent(event.type) && Math.floor(event.startHour) === hour,
+  );
+}
+
+export function getSlotStackHeight(itemCount: number) {
+  if (itemCount <= 0) return 0;
+  return (
+    CALENDAR_SLOT_PADDING_PX +
+    itemCount * CALENDAR_SLOT_CHIP_HEIGHT_PX +
+    (itemCount - 1) * CALENDAR_SLOT_CHIP_GAP_PX
+  );
+}
+
+export function hourSlotStackHeight(pointCount: number, hasNote: boolean) {
+  return getSlotStackHeight(pointCount + (hasNote ? 1 : 0));
+}
+
 export function formatHourLabel(hour: number) {
   const hh = Math.floor(hour);
   const mm = Math.round((hour - hh) * 60);
@@ -210,9 +271,26 @@ export function eventTopPx(startHour: number) {
   return (startHour - CALENDAR_START_HOUR) * CALENDAR_HOUR_HEIGHT_PX;
 }
 
-export function eventHeightPx(startHour: number, endHour: number, type: CalendarEventType) {
-  if (type === CALENDAR_EVENT_TYPES.TASK_DEADLINE) return 28;
-  return Math.max(34, (endHour - startHour) * CALENDAR_HOUR_HEIGHT_PX - 4);
+export function eventOverlapsHour(event: PositionedTimedEvent, hour: number) {
+  return event.startHour < hour + 1 && event.endHour > hour;
+}
+
+export function computeDurationEventGeometry(
+  event: PositionedTimedEvent,
+  stackHeight: number,
+  options?: { capAsSingleOccupant?: boolean },
+) {
+  const top = eventTopPx(event.startHour) + stackHeight;
+  const width = 100 / event.laneCount;
+  const left = event.lane * width;
+  const spanPx = (event.endHour - event.startHour) * CALENDAR_HOUR_HEIGHT_PX;
+  let height = Math.max(22, spanPx - stackHeight - CALENDAR_SLOT_PADDING_PX);
+
+  if (options?.capAsSingleOccupant && spanPx <= CALENDAR_HOUR_HEIGHT_PX + 1) {
+    height = Math.min(height, CALENDAR_SINGLE_EVENT_MAX_HEIGHT_PX);
+  }
+
+  return { top, height, left, width };
 }
 
 export { eventKey };

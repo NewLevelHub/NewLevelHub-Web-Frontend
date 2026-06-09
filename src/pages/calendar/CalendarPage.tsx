@@ -40,6 +40,7 @@ import { CalendarNotePopover } from './components/CalendarNotePopover';
 import { CalendarTimeGrid } from './components/CalendarTimeGrid';
 import { eventKey } from './calendarUtils';
 import { useCalendarNotes, type CalendarNote } from './useCalendarNotes';
+import { useCalendarToast } from './useCalendarToast';
 
 type CompanyOption = {
   id: number;
@@ -102,6 +103,8 @@ export default function CalendarPage() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
+  const canManageCalendarScope =
+    isSuperadmin || user?.role === USER_ROLES.COMPANY_ADMIN;
   const todayIso = useMemo(() => toIsoDate(new Date()), []);
 
   const [anchorDate, setAnchorDate] = useState(() => {
@@ -126,13 +129,16 @@ export default function CalendarPage() {
       ? String(user.company_id)
       : null;
 
+  const { showToast, CalendarToast } = useCalendarToast();
   const { notes: calendarNotes, getNote, saveNote, deleteNote } = useCalendarNotes(
     companyId,
     user?.id,
   );
 
   const period = useMemo(() => resolveRange(anchorDate, view), [anchorDate, view]);
-  const filtersActive = Boolean(selectedUserId || selectedEventType || myOnly);
+  const filtersActive = Boolean(
+    (canManageCalendarScope && (selectedUserId || myOnly)) || selectedEventType,
+  );
   const rangeNotes = useMemo(
     () => calendarNotes.filter((note) => note.date >= period.dateFrom && note.date <= period.dateTo),
     [calendarNotes, period.dateFrom, period.dateTo],
@@ -212,13 +218,19 @@ export default function CalendarPage() {
     return Array.isArray(membersData) ? membersData : membersData.results;
   }, [membersData]);
 
-  const eventsParams = useMemo(() => ({
-    date_from: period.dateFrom,
-    date_to: period.dateTo,
-    user_id: !myOnly && selectedUserId ? Number(selectedUserId) : undefined,
-    event_type: selectedEventType || undefined,
-    my: myOnly ? true : undefined,
-  }), [period, myOnly, selectedUserId, selectedEventType]);
+  const eventsParams = useMemo(
+    () => ({
+      date_from: period.dateFrom,
+      date_to: period.dateTo,
+      user_id:
+        canManageCalendarScope && !myOnly && selectedUserId
+          ? Number(selectedUserId)
+          : undefined,
+      event_type: selectedEventType || undefined,
+      my: canManageCalendarScope && myOnly ? true : undefined,
+    }),
+    [canManageCalendarScope, period, myOnly, selectedUserId, selectedEventType],
+  );
 
   const {
     data: events = [],
@@ -234,7 +246,13 @@ export default function CalendarPage() {
     staleTime: 15_000,
   });
 
-  const busyUserId = myOnly ? user?.id : selectedUserId ? Number(selectedUserId) : undefined;
+  const busyUserId = canManageCalendarScope
+    ? myOnly
+      ? user?.id
+      : selectedUserId
+        ? Number(selectedUserId)
+        : undefined
+    : user?.id;
 
   const {
     data: busySlots = [],
@@ -292,14 +310,24 @@ export default function CalendarPage() {
 
   const handleSaveNote = (text: string) => {
     if (noteSlotDate == null || noteSlotHour == null) return;
-    saveNote({ date: noteSlotDate, hour: noteSlotHour, text });
+
+    const wasExisting = activeNote != null;
+    const trimmed = text.trim();
+    const saved = saveNote({ date: noteSlotDate, hour: noteSlotHour, text });
     closeNoteEditor();
+
+    if (!trimmed && wasExisting) {
+      showToast('calendar.noteDeleted');
+    } else if (saved) {
+      showToast(wasExisting ? 'calendar.noteUpdated' : 'calendar.noteAdded');
+    }
   };
 
   const handleDeleteNote = () => {
     if (noteSlotDate == null || noteSlotHour == null) return;
     deleteNote(noteSlotDate, noteSlotHour);
     closeNoteEditor();
+    showToast('calendar.noteDeleted');
   };
 
   return (
@@ -391,25 +419,27 @@ export default function CalendarPage() {
             </label>
           )}
 
-          <label className="flex flex-col text-secondary">
-            <span className="mb-1.5 text-[12.5px] font-semibold">{t('team.roleEmployee')}</span>
-            <div className="relative">
-              <select
-                value={selectedUserId}
-                onChange={(event) => setSelectedUserId(event.target.value)}
-                disabled={companyId === null || myOnly}
-                className="min-w-[210px] appearance-none rounded-[10px] border border-[var(--border-strong)] bg-surface py-2.5 pr-9 pl-3.5 text-[13.5px] text-primary focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/15 disabled:opacity-50"
-              >
-                <option value="">{t('calendar.allEmployees')}</option>
-                {memberOptions.map((member) => (
-                  <option key={member.id} value={String(member.id)}>
-                    {member.full_name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-muted" />
-            </div>
-          </label>
+          {canManageCalendarScope && (
+            <label className="flex flex-col text-secondary">
+              <span className="mb-1.5 text-[12.5px] font-semibold">{t('team.roleEmployee')}</span>
+              <div className="relative">
+                <select
+                  value={selectedUserId}
+                  onChange={(event) => setSelectedUserId(event.target.value)}
+                  disabled={companyId === null || myOnly}
+                  className="min-w-[210px] appearance-none rounded-[10px] border border-[var(--border-strong)] bg-surface py-2.5 pr-9 pl-3.5 text-[13.5px] text-primary focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/15 disabled:opacity-50"
+                >
+                  <option value="">{t('calendar.allEmployees')}</option>
+                  {memberOptions.map((member) => (
+                    <option key={member.id} value={String(member.id)}>
+                      {member.full_name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-muted" />
+              </div>
+            </label>
+          )}
 
           <label className="flex flex-col text-secondary">
             <span className="mb-1.5 text-[12.5px] font-semibold">{t('calendar.eventType')}</span>
@@ -430,18 +460,20 @@ export default function CalendarPage() {
             </div>
           </label>
 
-          <label className="flex h-10 cursor-pointer items-center gap-2 text-[13.5px] font-medium text-secondary select-none">
-            <input
-              type="checkbox"
-              checked={myOnly}
-              onChange={(event) => setMyOnly(event.target.checked)}
-              className="peer sr-only"
-            />
-            <span className="flex h-[19px] w-[19px] items-center justify-center rounded-md border-[1.5px] border-[var(--border-strong)] bg-surface transition-colors peer-checked:border-brand peer-checked:bg-brand [&_svg]:opacity-0 peer-checked:[&_svg]:opacity-100">
-              <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
-            </span>
-            {t('common.onlyMine')}
-          </label>
+          {canManageCalendarScope && (
+            <label className="flex h-10 cursor-pointer items-center gap-2 text-[13.5px] font-medium text-secondary select-none">
+              <input
+                type="checkbox"
+                checked={myOnly}
+                onChange={(event) => setMyOnly(event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="flex h-[19px] w-[19px] items-center justify-center rounded-md border-[1.5px] border-[var(--border-strong)] bg-surface transition-colors peer-checked:border-brand peer-checked:bg-brand [&_svg]:opacity-0 peer-checked:[&_svg]:opacity-100">
+                <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
+              </span>
+              {t('common.onlyMine')}
+            </label>
+          )}
 
           <button
             type="button"
@@ -531,6 +563,7 @@ export default function CalendarPage() {
         onSave={handleSaveNote}
         onDelete={handleDeleteNote}
       />
+      {CalendarToast}
     </main>
   );
 }
