@@ -11,30 +11,30 @@ import { fmtDateTime, fmtDate } from '@/shared/lib/formatDate';
 import { cn } from '@/shared/lib/cn';
 import type { UserActivityResponse, BookingActivity, TaskActivity, PassActivity } from '@/shared/types';
 
-// ── Colour maps ───────────────────────────────────────────────────────
+// ── Chip colour maps — only semantic token classes ────────────────────
 
 const BOOKING_STATUS_COLORS: Record<string, string> = {
-  confirmed:  'bg-emerald-100 text-emerald-700',
-  pending:    'bg-sky-100 text-sky-700',
-  checked_in: 'bg-blue-100 text-blue-700',
-  completed:  'bg-gray-100 text-gray-500',
-  cancelled:  'bg-red-100 text-red-700',
-  no_show:    'bg-orange-100 text-orange-700',
+  confirmed:  'bg-success-subtle text-success-badge',
+  pending:    'bg-raised text-[color:var(--info)]',
+  checked_in: 'bg-raised text-[color:var(--info)]',
+  completed:  'bg-raised text-muted',
+  cancelled:  'bg-danger-subtle text-danger-badge',
+  no_show:    'bg-warning-subtle text-warning-badge',
 };
 
 const PASS_STATUS_COLORS: Record<string, string> = {
-  active:  'bg-emerald-100 text-emerald-700',
-  used:    'bg-gray-100 text-gray-500',
-  expired: 'bg-yellow-100 text-yellow-700',
-  revoked: 'bg-red-100 text-red-700',
+  active:  'bg-success-subtle text-success-badge',
+  used:    'bg-raised text-muted',
+  expired: 'bg-warning-subtle text-warning-badge',
+  revoked: 'bg-danger-subtle text-danger-badge',
 };
 
 const TASK_PRIORITY_COLORS: Record<string, string> = {
-  low:      'bg-sky-100 text-sky-700',
-  medium:   'bg-yellow-100 text-yellow-700',
-  high:     'bg-orange-100 text-orange-700',
-  urgent:   'bg-red-100 text-red-700',
-  critical: 'bg-red-100 text-red-700',
+  low:      'bg-raised text-[color:var(--info)]',
+  medium:   'bg-warning-subtle text-warning-badge',
+  high:     'bg-warning-subtle text-warning-badge',
+  urgent:   'bg-danger-subtle text-danger-badge',
+  critical: 'bg-danger-subtle text-danger-badge',
 };
 
 // ── Chip ──────────────────────────────────────────────────────────────
@@ -54,9 +54,8 @@ function RowSkeleton() {
     <div className="animate-pulse space-y-3 py-2">
       {[0, 1, 2].map((i) => (
         <div key={i} className="flex items-center gap-3">
-          <div className="h-3.5 w-3.5 shrink-0 rounded-full bg-gray-100" />
-          <div className="h-3.5 flex-1 rounded bg-gray-100" />
-          <div className="h-5 w-16 rounded-full bg-gray-100" />
+          <div className="h-3.5 flex-1 rounded bg-raised" />
+          <div className="h-5 w-16 rounded-full bg-raised" />
         </div>
       ))}
     </div>
@@ -87,33 +86,33 @@ function MiniCard({
   children,
 }: MiniCardProps) {
   return (
-    <div className="flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <div className="flex flex-col overflow-hidden rounded-2xl border border-default bg-surface shadow-sm">
       {/* Header */}
       <div className="flex items-center gap-2.5 px-4 py-3">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-500">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-subtle text-brand">
           {icon}
         </span>
-        <span className="text-sm font-semibold text-gray-800">{title}</span>
+        <span className="text-sm font-semibold text-primary">{title}</span>
       </div>
 
-      <div className="mx-4 h-px bg-gray-100" />
+      <div className="mx-4 h-px bg-[color:var(--border)]" />
 
       {/* Body */}
       <div className="flex-1 px-4">
         {isLoading ? (
           <RowSkeleton />
         ) : isEmpty ? (
-          <p className="py-6 text-center text-sm text-gray-400">{emptyLabel}</p>
+          <p className="py-6 text-center text-sm text-muted">{emptyLabel}</p>
         ) : (
-          <div className="divide-y divide-gray-50">{children}</div>
+          <div className="divide-y divide-[color:var(--border-faint)]">{children}</div>
         )}
       </div>
 
       {/* Footer CTA */}
-      <div className="mx-4 h-px bg-gray-100" />
+      <div className="mx-4 h-px bg-[color:var(--border)]" />
       <Link
         to={viewAllHref}
-        className="flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50 hover:text-indigo-800"
+        className="flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-brand transition-colors hover:bg-brand-subtle"
       >
         {viewAllLabel}
         <ArrowRight className="h-3.5 w-3.5" />
@@ -126,12 +125,12 @@ function MiniCard({
 
 function BookingRow({ item }: { item: BookingActivity }) {
   const { t } = useTranslation();
-  const colorClass = BOOKING_STATUS_COLORS[item.status] ?? 'bg-gray-100 text-gray-500';
+  const colorClass = BOOKING_STATUS_COLORS[item.status] ?? 'bg-raised text-muted';
   return (
     <div className="flex items-start gap-3 py-2.5">
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-gray-800">{item.resource_name}</p>
-        <p className="mt-0.5 text-xs text-gray-400">{fmtDateTime(item.start_time)}</p>
+        <p className="truncate text-sm font-medium text-primary">{item.resource_name}</p>
+        <p className="mt-0.5 text-xs text-muted">{fmtDateTime(item.start_time)}</p>
       </div>
       <Chip
         label={t(`dashboard.status.${item.status}`, { defaultValue: item.status })}
@@ -143,12 +142,12 @@ function BookingRow({ item }: { item: BookingActivity }) {
 
 function TaskRow({ item }: { item: TaskActivity }) {
   const { t } = useTranslation();
-  const colorClass = TASK_PRIORITY_COLORS[item.priority] ?? 'bg-gray-100 text-gray-500';
+  const colorClass = TASK_PRIORITY_COLORS[item.priority] ?? 'bg-raised text-muted';
   return (
     <div className="flex items-center gap-3 py-2.5">
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-gray-800">{item.title}</p>
-        <p className="mt-0.5 truncate text-xs text-gray-400">{item.board_name}</p>
+        <p className="truncate text-sm font-medium text-primary">{item.title}</p>
+        <p className="mt-0.5 truncate text-xs text-muted">{item.board_name}</p>
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1">
         <Chip
@@ -156,7 +155,7 @@ function TaskRow({ item }: { item: TaskActivity }) {
           colorClass={colorClass}
         />
         {item.deadline && (
-          <span className="text-xs text-gray-400">{fmtDate(item.deadline)}</span>
+          <span className="text-xs text-muted">{fmtDate(item.deadline)}</span>
         )}
       </div>
     </div>
@@ -165,12 +164,12 @@ function TaskRow({ item }: { item: TaskActivity }) {
 
 function PassRow({ item }: { item: PassActivity }) {
   const { t } = useTranslation();
-  const colorClass = PASS_STATUS_COLORS[item.status] ?? 'bg-gray-100 text-gray-500';
+  const colorClass = PASS_STATUS_COLORS[item.status] ?? 'bg-raised text-muted';
   return (
     <div className="flex items-start gap-3 py-2.5">
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-gray-800">{item.guest_name}</p>
-        <p className="mt-0.5 text-xs text-gray-400">{fmtDate(item.valid_until)}</p>
+        <p className="truncate text-sm font-medium text-primary">{item.guest_name}</p>
+        <p className="mt-0.5 text-xs text-muted">{fmtDate(item.valid_until)}</p>
       </div>
       <Chip
         label={t(`passes.status.${item.status}`, { defaultValue: item.status })}
@@ -203,7 +202,7 @@ export default function ProfileActivitySection() {
 
   return (
     <section aria-label={t('profile.activity.title')} className="mt-8">
-      <h2 className="mb-4 text-base font-semibold text-gray-900">
+      <h2 className="mb-4 text-base font-semibold text-primary">
         {t('profile.activity.title')}
       </h2>
 
