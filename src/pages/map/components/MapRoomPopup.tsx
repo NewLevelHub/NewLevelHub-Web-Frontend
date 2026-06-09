@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Sparkles } from 'lucide-react';
 
 import { cn } from '@/shared/lib/cn';
 import type { MapPoint } from '@/shared/types';
@@ -18,6 +19,7 @@ export interface MapRoomPopupProps {
   /** When provided, the popup renders with fixed positioning at these screen coordinates */
   screenLeft?: number;
   screenTop?: number;
+  onCleaning?: (pointLabel: string) => void;
 }
 
 function getStatusBadgeStyle(status: ReturnType<typeof normalizePointStatus>): {
@@ -53,7 +55,7 @@ function getStatusBadgeStyle(status: ReturnType<typeof normalizePointStatus>): {
   }
 }
 
-export const MapRoomPopup = memo<MapRoomPopupProps>(({ point, floorName, onBook, onDetails, onClose, screenLeft, screenTop }) => {
+export const MapRoomPopup = memo<MapRoomPopupProps>(({ point, floorName, onBook, onDetails, onClose, screenLeft, screenTop, onCleaning }) => {
   const { t } = useTranslation();
 
   const w = point.width ?? DEFAULT_W;
@@ -171,6 +173,17 @@ export const MapRoomPopup = memo<MapRoomPopupProps>(({ point, floorName, onBook,
         >
           {t('map.popup.details')}
         </button>
+
+        {onCleaning && (
+          <button
+            type="button"
+            onClick={() => { onCleaning(point.label); onClose(); }}
+            className="w-full inline-flex items-center justify-center gap-1.5 rounded-md border border-default px-3 py-1.5 text-sm font-medium text-secondary transition-colors hover:bg-hover"
+          >
+            <Sparkles size={14} />
+            {t('serviceRequests.cleaning.call')}
+          </button>
+        )}
       </div>
     </div>
   );
