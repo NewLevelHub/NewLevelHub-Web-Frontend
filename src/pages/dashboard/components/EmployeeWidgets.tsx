@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Link } from 'react-router';
-import { DoorOpen, ExternalLink, Megaphone } from 'lucide-react';
+import { DoorOpen, ExternalLink, Megaphone, Sparkles, SquarePen } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { CleaningModal } from '@/pages/service-requests/components/CleaningModal';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import type { EmployeeDashboardData } from '@/shared/types';
 import { MyTasksWidget } from '@/pages/dashboard/components/MyTasksWidget';
@@ -11,6 +13,7 @@ export function EmployeeWidgets({
 }: {
   data: EmployeeDashboardData;
 }) {
+  const [showCleaning, setShowCleaning] = useState(false);
   const { t, i18n } = useTranslation();
   const locale = dateLocaleTag(i18n.language);
   const fmtTime = (iso: string) =>
@@ -70,6 +73,21 @@ export function EmployeeWidgets({
           >
             {t('dashboard.employee.inviteGuest')}
           </Link>
+          <Link
+            to="/crm"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/30 px-4 py-2 text-sm font-medium text-white hover:bg-white/10 transition-colors"
+          >
+            <SquarePen size={15} />
+            {t('dashboard.employee.createTask')}
+          </Link>
+          <button
+            type="button"
+            onClick={() => setShowCleaning(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/30 px-4 py-2 text-sm font-medium text-white hover:bg-white/10 transition-colors"
+          >
+            <Sparkles size={15} />
+            {t('dashboard.callCleaning')}
+          </button>
         </div>
       </section>
 
@@ -236,6 +254,10 @@ export function EmployeeWidgets({
         </div>
       </div>
 
+      <CleaningModal
+        isOpen={showCleaning}
+        onClose={() => setShowCleaning(false)}
+      />
     </div>
   );
 }

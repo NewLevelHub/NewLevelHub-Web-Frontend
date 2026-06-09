@@ -1,12 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { fmtDate } from '@/shared/lib/formatDate';
 import { Star } from 'lucide-react';
-import { useLocation } from 'react-router';
-
-import { CleaningModal } from './components/CleaningModal';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -120,19 +117,6 @@ export default function ServiceRequestListPage() {
   const [typeFilter, setTypeFilter] = useState<ServiceRequestType | ''>('');
   const [statusFilter, setStatusFilter] = useState<ServiceRequestStatus | ''>('');
   const [mutationError, setMutationError] = useState<string | null>(null);
-
-  // Cleaning modal state
-  const [isCleaningModalOpen, setIsCleaningModalOpen] = useState(false);
-
-  const location = useLocation();
-
-  useEffect(() => {
-    if ((location.state as { openCleaning?: boolean } | null)?.openCleaning) {
-      setIsCleaningModalOpen(true);
-      // сбрасываем state чтобы при обновлении страницы модалка не открывалась снова
-      window.history.replaceState({}, '');
-    }
-  }, [location.state]);
 
   // Create modal state
   const [createModal, setCreateModal] = useState<CreateModalState | null>(null);
@@ -294,10 +278,6 @@ export default function ServiceRequestListPage() {
     // Don't clear location — user may have typed something already
   }
 
-  function openCleaningModal() {
-    setIsCleaningModalOpen(true);
-  }
-
   function closeCreateModal(force = false) {
     if (!force && createMutation.isPending) return;
     setCreateModal(null);
@@ -375,20 +355,13 @@ export default function ServiceRequestListPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-primary">{t('serviceRequests.title')}</h1>
         {isServiceManager ? null : (
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={openCleaningModal}
-              className="inline-flex items-center justify-center rounded-lg border border-sky-700 bg-sky-900/30 px-4 py-2 text-sm font-medium text-sky-300 hover:bg-sky-900/50"
-            >{t('serviceRequests.cleaning.call')}</button>
-            <button
-              type="button"
-              onClick={openGeneralModal}
-              className="inline-flex items-center justify-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
-            >
-              {t('serviceRequests.createRequest')}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={openGeneralModal}
+            className="inline-flex items-center justify-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
+          >
+            {t('serviceRequests.createRequest')}
+          </button>
         )}
       </div>
 
@@ -617,13 +590,6 @@ export default function ServiceRequestListPage() {
           </div>
         </div>
       )}
-
-      {/* Cleaning Modal */}
-      <CleaningModal
-        isOpen={isCleaningModalOpen}
-        onClose={() => setIsCleaningModalOpen(false)}
-        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['service-requests'] })}
-      />
 
       {/* Create General Modal */}
       {createModal ? (

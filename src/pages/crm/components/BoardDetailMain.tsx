@@ -12,6 +12,7 @@ import {
   Archive,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
+import { useAuth } from '@/shared/hooks/useAuth';
 import type { BoardDetailController } from '@/pages/crm/hooks/useBoardDetail';
 import { BoardFilterBar } from '@/pages/crm/components/BoardFilterBar';
 import { BoardTaskListView } from '@/pages/crm/components/BoardTaskListView';
@@ -30,6 +31,7 @@ export interface BoardDetailMainProps {
 export function BoardDetailMain({ ctx }: BoardDetailMainProps) {
   const { t } = useTranslation();
   const location = useLocation();
+  const { user } = useAuth();
   const backTo = (location.state as { backTo?: string; companyName?: string } | null)?.backTo ?? '/crm';
   const companyName = (location.state as { backTo?: string; companyName?: string } | null)?.companyName;
 
@@ -38,6 +40,8 @@ export function BoardDetailMain({ ctx }: BoardDetailMainProps) {
     board,
     filters,
     setFilters,
+    members,
+    boardLabels,
     localColumns,
     localTasksByColumn,
     activeColumn,
@@ -80,26 +84,44 @@ export function BoardDetailMain({ ctx }: BoardDetailMainProps) {
           <LayoutGrid size={20} className="text-blue-400" />
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-semibold text-primary">{board.name}</h1>
+          <h1 className="text-[22px] font-bold text-[color:var(--text-primary)]">{board.name}</h1>
           {companyName && (
             <div className="flex items-center gap-1 mt-0.5">
-              <Building2 size={12} className="text-muted shrink-0" />
-              <span className="text-xs text-muted">{companyName}</span>
+              <Building2 size={12} className="text-[color:var(--text-muted)] shrink-0" />
+              <span className="text-[13px] text-[color:var(--text-muted)]">{companyName}</span>
             </div>
           )}
-          {board.description && <p className="text-sm text-muted mt-0.5">{board.description}</p>}
+          {board.description && <p className="text-[13px] text-[color:var(--text-muted)] mt-0.5">{board.description}</p>}
         </div>
+        {members.length > 0 && (
+          <div className="flex items-center -space-x-2 shrink-0">
+            {members.slice(0, 5).map((m) => (
+              <div
+                key={m.id}
+                title={m.full_name}
+                className="w-7 h-7 rounded-full bg-raised border-2 border-[var(--bg-page)] flex items-center justify-center text-[10px] font-semibold text-secondary overflow-hidden ring-0 shrink-0"
+              >
+                {m.avatar
+                  ? <img src={m.avatar} alt={m.full_name} className="w-full h-full object-cover" />
+                  : m.full_name.split(' ').map((n) => n[0]).slice(0, 2).join('')
+                }
+              </div>
+            ))}
+            {members.length > 5 && (
+              <div className="w-7 h-7 rounded-full bg-raised border-2 border-[var(--bg-page)] flex items-center justify-center text-[10px] font-semibold text-muted">
+                +{members.length - 5}
+              </div>
+            )}
+          </div>
+        )}
         <button
           type="button"
           onClick={() => setArchivePanelOpen(true)}
-          className={cn(
-            'flex items-center gap-2 rounded-lg border border-default px-3 py-2 text-sm font-medium shrink-0',
-            'text-secondary hover:text-primary hover:border-gray-500 transition-colors',
-          )}
+          className="inline-flex items-center gap-2 h-[34px] px-3 text-[13px] font-medium border border-[color:var(--border)] text-[color:var(--text-secondary)] rounded-[var(--radius-sm)] hover:bg-[color:var(--bg-hover)] transition-colors shrink-0"
           aria-label={t('common.openArchive')}
         >
           <Archive size={15} />
-          Архив
+          {t('crm.archiveLabel')}
         </button>
       </div>
 
@@ -110,7 +132,7 @@ export function BoardDetailMain({ ctx }: BoardDetailMainProps) {
           aria-live="assertive"
         >
           <AlertCircle size={16} className="shrink-0" />
-          <span>Не удалось сохранить порядок колонок. Порядок восстановлен.</span>
+          <span>{t('common.reorderError')}</span>
         </div>
       )}
 
@@ -125,7 +147,15 @@ export function BoardDetailMain({ ctx }: BoardDetailMainProps) {
         </div>
       )}
 
-      <BoardFilterBar filters={filters} onChange={setFilters} />
+      <div className="bg-[color:var(--bg-surface)] border border-[color:var(--border)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)]">
+        <BoardFilterBar
+          filters={filters}
+          onChange={setFilters}
+          members={members}
+          currentUserId={user?.id}
+          labels={boardLabels}
+        />
+      </div>
 
       {filters.view === 'list' ? (
         <BoardTaskListView
@@ -139,7 +169,7 @@ export function BoardDetailMain({ ctx }: BoardDetailMainProps) {
           {localColumns.length === 0 && !showAddColumn ? (
             <div className="flex flex-col items-center justify-center py-24 gap-3">
               <Inbox size={32} className="text-muted" />
-              <p className="text-muted text-sm">В этой доске нет колонок</p>
+              <p className="text-muted text-sm">{t('common.noColumns')}</p>
               <button
                 type="button"
                 onClick={() => setShowAddColumn(true)}

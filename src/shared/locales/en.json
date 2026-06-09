@@ -77,11 +77,25 @@
       "allAnnouncements": "All",
       "noAnnouncements": "No new announcements"
     },
+    "viewAll": "Open all",
+    "pendingApprovals": "Pending Approvals",
+    "pendingLeaves": "Leave Requests",
+    "pendingGuestPasses": "Guest Passes",
+    "employeeName": "Employee",
+    "leaveType": "Type",
+    "period": "Period",
+    "guestName": "Guest",
+    "hostName": "Invited by",
+    "visitDate": "Visit Date",
+    "noRequests": "No requests",
+    "submittedAt": "Submitted",
+    "callCleaning": "Call Cleaning",
     "employee": {
       "greeting": "Hello, {{name}}",
       "subtitle": "{{date}} · you have {{bookings}} bookings and {{tasks}} tasks today",
       "inviteGuest": "Invite guest",
       "bookResource": "Book resource",
+      "createTask": "Create Task",
       "kpi": {
         "myBookings": "My bookings today",
         "myTasks": "My tasks for today",
@@ -112,7 +126,9 @@
         "availableDesks": "Available desks",
         "availableRooms": "Available rooms"
       },
-      "bcAnnouncements": "Business center announcements"
+      "bcAnnouncements": "Business center announcements",
+      "buildingMap": "Building Map",
+      "buildingMapHint": "View floor plan and zone layout"
     },
     "onboarding": {
       "uploadLogo": "Upload company logo",
@@ -421,6 +437,8 @@
     "impersonate": "Impersonate",
     "addMember": "Add member",
     "addColumn": "Add column",
+    "noColumns": "This board has no columns",
+    "reorderError": "Failed to save column order. Order has been restored.",
     "createFolder": "Create folder",
     "createBoard": "Create board",
     "createTask": "Create task",
@@ -468,7 +486,11 @@
     "kanbanBoard": "Kanban board: {{name}}",
     "kanbanView": "Kanban view",
     "listView": "List view",
+    "kanban": "Kanban",
+    "list": "List",
     "dragColumn": "Drag column",
+    "addTask": "Add task",
+    "noTasks": "No tasks",
     "wipLimitReached": "Column WIP limit reached. Free up space to add a task.",
     "wipCannotRestore": "Cannot restore: column WIP limit exceeded. Free up space.",
     "searchTasks": "Search tasks",
@@ -571,7 +593,23 @@
       "allStatuses": "All statuses"
     },
     "cleaning": {
-      "call": "Request cleaning"
+      "call": "Request cleaning",
+      "floorLabel": "Floor selection",
+      "floorHint": "Building floor directory; do not confuse with the \"floor\" field in company settings. Empty list means no Floor records exist in the DB (created by superadmin).",
+      "floorsLoading": "Loading floors...",
+      "floorPlaceholder": "Select a floor",
+      "noFloors": "No floors configured",
+      "floorLabelWithName": "Floor {{number}} — {{name}}",
+      "floorLabelNumber": "Floor {{number}}",
+      "floorsError": "Failed to load floors. Cannot submit without a floor.",
+      "locationLabel": "Location",
+      "locationPlaceholder": "Meeting room A, restroom, kitchen...",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Describe the issue or request",
+      "photoLabel": "Photo (optional)",
+      "photoSelected": "Selected: {{name}}",
+      "locationRequired": "Please specify a location.",
+      "descriptionRequired": "Please add a description."
     },
     "title": "Service requests",
     "createRequest": "Create request",
@@ -1296,6 +1334,17 @@
     "deleteFloorConfirm": "Floor \"{{name}}\" will be permanently deleted along with all map points and associated catalog resources."
   },
   "crm": {
+    "filter": {
+      "assignee": "Assignee",
+      "allAssignees": "All",
+      "onlyMine": "Only mine",
+      "allLabels": "All labels",
+      "labelsSelected": "Labels: {{count}}",
+      "noLabels": "No labels",
+      "allPriorities": "All priorities",
+      "allDeadlines": "All deadlines",
+      "thisWeek": "This week"
+    },
     "priority": {
       "low": "Low",
       "medium": "Medium",
@@ -1318,7 +1367,19 @@
     "loadErrorBoards": "Failed to load boards. Please reload the page.",
     "taskNotFound": "Task not found or was archived.",
     "taskIdLabel": "Task #{{id}}",
-    "openBoardAria": "Open board {{name}}"
+    "openBoardAria": "Open board {{name}}",
+    "taskLabel": "Task",
+    "titleLabel": "Title",
+    "detailsLabel": "Details",
+    "actionsLabel": "Actions",
+    "priorityLabel": "Priority",
+    "deadlineLabel": "Deadline",
+    "assigneeLabel": "Assignee",
+    "createdLabel": "Created",
+    "failedToLoad": "Failed to load task. It may have been archived or deleted.",
+    "failedToSave": "Failed to save changes.",
+    "failedToArchive": "Failed to archive task.",
+    "failedToUnarchive": "Failed to unarchive task."
   },
   "auth": {
     "login": {

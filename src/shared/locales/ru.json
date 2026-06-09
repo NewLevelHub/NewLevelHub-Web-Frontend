@@ -81,11 +81,25 @@
       "allAnnouncements": "Все →",
       "noAnnouncements": "Нет новых объявлений"
     },
+    "viewAll": "Открыть все",
+    "pendingApprovals": "Ожидают одобрения",
+    "pendingLeaves": "Заявки на отпуск",
+    "pendingGuestPasses": "Гостевые пропуска",
+    "employeeName": "Сотрудник",
+    "leaveType": "Тип",
+    "period": "Период",
+    "guestName": "Гость",
+    "hostName": "Пригласил",
+    "visitDate": "Дата визита",
+    "noRequests": "Нет заявок",
+    "submittedAt": "Подано",
+    "callCleaning": "Вызвать уборку",
     "employee": {
       "greeting": "Привет, {{name}}",
       "subtitle": "{{date}} · у тебя {{bookings}} бронирований и {{tasks}} задач сегодня",
       "inviteGuest": "Пригласить гостя",
       "bookResource": "Забронировать",
+      "createTask": "Создать задачу",
       "kpi": {
         "myBookings": "Мои брони сегодня",
         "myTasks": "Мои задачи на сегодня",
@@ -116,7 +130,9 @@
         "availableDesks": "Свободных столов",
         "availableRooms": "Свободных переговорных"
       },
-      "bcAnnouncements": "Объявления бизнес-центра"
+      "bcAnnouncements": "Объявления бизнес-центра",
+      "buildingMap": "Карта здания",
+      "buildingMapHint": "Посмотреть планировку и расположение зон"
     },
     "onboarding": {
       "uploadLogo": "Загрузить логотип компании",
@@ -425,6 +441,8 @@
     "impersonate": "Войти от имени",
     "addMember": "Добавить участника",
     "addColumn": "Добавить колонку",
+    "noColumns": "В этой доске нет колонок",
+    "reorderError": "Не удалось сохранить порядок колонок. Порядок восстановлен.",
     "createFolder": "Создать папку",
     "createBoard": "Создать доску",
     "createTask": "Создать задачу",
@@ -472,7 +490,11 @@
     "kanbanBoard": "Канбан-доска: {{name}}",
     "kanbanView": "Вид канбан",
     "listView": "Вид список",
+    "kanban": "Канбан",
+    "list": "Список",
     "dragColumn": "Перетащить колонку",
+    "addTask": "Добавить задачу",
+    "noTasks": "Нет задач",
     "wipLimitReached": "Достигнут WIP-лимит колонки. Освободите место, чтобы добавить задачу.",
     "wipCannotRestore": "Нельзя восстановить: превышен WIP-лимит этой колонки. Освободите место.",
     "searchTasks": "Поиск задач",
@@ -575,7 +597,23 @@
       "allStatuses": "Все статусы"
     },
     "cleaning": {
-      "call": "Вызвать уборку"
+      "call": "Вызвать уборку",
+      "floorLabel": "Выбор этажа",
+      "floorHint": "Справочник этажей здания; не путать с полем «этаж» в настройках компании. Пустой список — в БД нет записей Floor (их создаёт супер-админ).",
+      "floorsLoading": "Загрузка этажей...",
+      "floorPlaceholder": "Выберите этаж",
+      "noFloors": "Этажи не настроены",
+      "floorLabelWithName": "Этаж {{number}} — {{name}}",
+      "floorLabelNumber": "Этаж {{number}}",
+      "floorsError": "Не удалось загрузить этажи. Без этажа отправка невозможна.",
+      "locationLabel": "Место",
+      "locationPlaceholder": "Переговорка A, туалет, кухня...",
+      "descriptionLabel": "Описание",
+      "descriptionPlaceholder": "Опишите проблему или запрос",
+      "photoLabel": "Фото (необязательно)",
+      "photoSelected": "Выбрано: {{name}}",
+      "locationRequired": "Укажите место.",
+      "descriptionRequired": "Добавьте описание заявки."
     },
     "title": "Сервисные заявки",
     "createRequest": "Создать заявку",
@@ -1291,6 +1329,17 @@
     "deleteFloorConfirm": "Этаж «{{name}}» будет безвозвратно удалён вместе со всеми точками на карте и связанными ресурсами каталога."
   },
   "crm": {
+    "filter": {
+      "assignee": "Исполнитель",
+      "allAssignees": "Все",
+      "onlyMine": "Только мои",
+      "allLabels": "Все лейблы",
+      "labelsSelected": "Лейблы: {{count}}",
+      "noLabels": "Нет лейблов",
+      "allPriorities": "Все приоритеты",
+      "allDeadlines": "Все дедлайны",
+      "thisWeek": "На этой неделе"
+    },
     "priority": {
       "low": "Низкий",
       "medium": "Средний",
@@ -1313,7 +1362,19 @@
     "loadErrorBoards": "Не удалось загрузить доски. Попробуйте обновить страницу.",
     "taskNotFound": "Задача не найдена или была архивирована.",
     "taskIdLabel": "Задача #{{id}}",
-    "openBoardAria": "Открыть доску {{name}}"
+    "openBoardAria": "Открыть доску {{name}}",
+    "taskLabel": "Задача",
+    "titleLabel": "Название",
+    "detailsLabel": "Детали",
+    "actionsLabel": "Действия",
+    "priorityLabel": "Приоритет",
+    "deadlineLabel": "Дедлайн",
+    "assigneeLabel": "Исполнитель",
+    "createdLabel": "Создана",
+    "failedToLoad": "Не удалось загрузить задачу. Возможно, она архивирована или была удалена.",
+    "failedToSave": "Не удалось сохранить изменения.",
+    "failedToArchive": "Не удалось архивировать задачу.",
+    "failedToUnarchive": "Не удалось разархивировать задачу."
   },
   "auth": {
     "login": {

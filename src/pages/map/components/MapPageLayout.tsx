@@ -5,6 +5,8 @@ import { Loader2, Minus, Pencil, Plus, ToggleLeft, ToggleRight, Trash2 } from 'l
 
 import { cn } from '@/shared/lib/cn';
 import { fmtTime } from '@/shared/lib/formatDate';
+import { useAuth } from '@/shared/hooks/useAuth';
+import { USER_ROLES } from '@/shared/config/constants';
 import type { UseMapLogicReturn } from '@/pages/map/hooks/useMapLogic';
 import {
   LEGEND_ITEM_COLORS,
@@ -27,6 +29,7 @@ import { MapEditFloorModal } from '@/pages/map/components/MapEditFloorModal';
 import { MapRoomPopup } from '@/pages/map/components/MapRoomPopup';
 import { BookingModal } from '@/shared/ui/BookingModal';
 import { ResourceDetailModal } from '@/shared/ui/ResourceDetailModal';
+import { CleaningModal } from '@/pages/service-requests/components/CleaningModal';
 
 export type MapPageLayoutProps = UseMapLogicReturn;
 
@@ -144,6 +147,13 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
   } = logic;
 
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const isServiceManager = user?.role === USER_ROLES.SERVICE_MANAGER;
+
+  const [cleaningModalOpen, setCleaningModalOpen] = useState(false);
+  const [cleaningFloorId, setCleaningFloorId] = useState<string>('');
+  const [cleaningLocation, setCleaningLocation] = useState<string>('');
+  const [cleaningKey, setCleaningKey] = useState(0);
 
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -609,6 +619,12 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
                       onClose={handleCloseRoomPopup}
                       screenLeft={left}
                       screenTop={top}
+                      onCleaning={!isServiceManager ? (pointLabel: string) => {
+                        setCleaningFloorId(selectedFloorId !== null ? String(selectedFloorId) : '');
+                        setCleaningLocation(pointLabel);
+                        setCleaningKey((k) => k + 1);
+                        setCleaningModalOpen(true);
+                      } : undefined}
                     />,
                     document.body,
                   );
@@ -693,6 +709,14 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
           onClose={handleCloseBookingModal}
         />
       )}
+
+      <CleaningModal
+        key={cleaningKey}
+        isOpen={cleaningModalOpen}
+        onClose={() => setCleaningModalOpen(false)}
+        initialFloorId={cleaningFloorId}
+        initialLocation={cleaningLocation}
+      />
     </div>
   );
 });
