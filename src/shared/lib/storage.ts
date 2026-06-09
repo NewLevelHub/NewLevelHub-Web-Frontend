@@ -2,6 +2,7 @@
  * Access JWT — только в памяти (не localStorage).
  * Refresh — httpOnly cookie с бэкенда; JS к нему не обращается.
  */
+import { syncSessionCreatedAtFromToken } from '@/shared/lib/sessionManager';
 const LEGACY_ACCESS_KEY = 'nlh_access_token';
 const LEGACY_REFRESH_KEY = 'nlh_refresh_token';
 const IMPERSONATION_TOKEN_KEY = 'nlh_impersonation_access';
@@ -23,10 +24,12 @@ export const tokenStorage = {
   getAccessToken: () => accessToken,
   setAccessToken: (token: string) => {
     accessToken = token;
+    syncSessionCreatedAtFromToken(token);
   },
   /** Сохраняет только access; refresh приходит в Set-Cookie с сервера. */
   setAccessFromAuthResponse: (access: string) => {
     accessToken = access;
+    syncSessionCreatedAtFromToken(access);
   },
   clear: () => {
     accessToken = null;

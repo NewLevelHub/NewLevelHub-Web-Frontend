@@ -86,6 +86,8 @@ jobs:
           build-args: |
             VITE_IDLE_SESSION_TIMEOUT_MINUTES=${{ vars.VITE_IDLE_SESSION_TIMEOUT_MINUTES || 30 }}
             VITE_IDLE_SESSION_WARNING_MINUTES=${{ vars.VITE_IDLE_SESSION_WARNING_MINUTES || 2 }}
+            VITE_ABSOLUTE_SESSION_TIMEOUT_MINUTES=${{ vars.VITE_ABSOLUTE_SESSION_TIMEOUT_MINUTES || 480 }}
+            VITE_ABSOLUTE_SESSION_WARNING_MINUTES=${{ vars.VITE_ABSOLUTE_SESSION_WARNING_MINUTES || 2 }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

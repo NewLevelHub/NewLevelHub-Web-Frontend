@@ -5,8 +5,11 @@ import { queryClient } from '@/shared/lib/queryClient';
 import { tokenStorage } from '@/shared/lib/storage';
 import {
   handleSessionExpired,
+  isLocalAbsoluteSessionExpired,
+  isSessionAbsoluteTimeoutError,
   isSessionExpired,
   isSessionIdleTimeoutError,
+  isSessionTimeoutError,
 } from '@/shared/lib/sessionManager';
 import i18n from '@/shared/lib/i18n';
 
@@ -44,8 +47,8 @@ function processQueue(error: unknown, token: string | null) {
   failedQueue = [];
 }
 
-function rejectSessionExpired(error: unknown) {
-  handleSessionExpired({ noticeKey: 'session.expired' });
+function rejectSessionExpired(error: unknown, noticeKey = 'session.expired') {
+  handleSessionExpired({ noticeKey });
   return Promise.reject(error);
 }
 
@@ -59,6 +62,10 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
     const reqUrl = String(originalRequest?.url ?? '');
 
+    if (isSessionAbsoluteTimeoutError(error)) {
+      return rejectSessionExpired(error, 'session.absoluteExpired');
+    }
+
     if (isSessionIdleTimeoutError(error)) {
       return rejectSessionExpired(error);
     }
@@ -68,8 +75,11 @@ apiClient.interceptors.response.use(
     }
 
     if (reqUrl.includes('/auth/token/refresh/')) {
-      if (isSessionIdleTimeoutError(error)) {
-        return rejectSessionExpired(error);
+      if (isSessionTimeoutError(error)) {
+        const noticeKey = isSessionAbsoluteTimeoutError(error)
+          ? 'session.absoluteExpired'
+          : 'session.expired';
+        return rejectSessionExpired(error, noticeKey);
       }
       handleSessionExpired({ noticeKey: 'session.expired' });
       return Promise.reject(error);
@@ -77,6 +87,10 @@ apiClient.interceptors.response.use(
 
     if (error.response?.status !== 401 || originalRequest._retry) {
       return Promise.reject(error);
+    }
+
+    if (isLocalAbsoluteSessionExpired(env.ABSOLUTE_SESSION_TIMEOUT_MINUTES)) {
+      return rejectSessionExpired(error, 'session.absoluteExpired');
     }
 
     if (isRefreshing) {
@@ -112,6 +126,9 @@ apiClient.interceptors.response.use(
       return apiClient(originalRequest);
     } catch (refreshError) {
       processQueue(refreshError, null);
+      if (isSessionAbsoluteTimeoutError(refreshError)) {
+        return rejectSessionExpired(refreshError, 'session.absoluteExpired');
+      }
       if (isSessionIdleTimeoutError(refreshError)) {
         return rejectSessionExpired(refreshError);
       }

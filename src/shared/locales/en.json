@@ -903,10 +903,15 @@
   },
   "session": {
     "expired": "Your session has ended due to inactivity. Please sign in again.",
+    "absoluteExpired": "Your session has reached its maximum lifetime. Please sign in again to continue.",
     "warningTitle": "Session ending soon",
     "warningDescription": "Your session will end in about {{minutes}} minute(s) due to inactivity.",
+    "absoluteWarningTitle": "Session ending soon",
+    "absoluteWarningDescription": "Your current session will expire soon. You will need to sign in again to continue. Activity in the app does not extend this limit — only signing in again does.",
     "extend": "Stay signed in",
-    "exit": "Sign out"
+    "exit": "Sign out",
+    "absoluteDismiss": "Got it",
+    "absoluteExit": "Sign out now"
   },
   "booking": {
     "create": {

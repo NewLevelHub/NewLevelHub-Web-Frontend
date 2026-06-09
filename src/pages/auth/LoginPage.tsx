@@ -28,7 +28,8 @@ export default function LoginPage() {
     };
   });
   const notice = loginNotice.key ? t(loginNotice.key) : loginNotice.text;
-  const isSessionNotice = loginNotice.key === 'session.expired';
+  const isSessionNotice =
+    loginNotice.key === 'session.expired' || loginNotice.key === 'session.absoluteExpired';
 
   useEffect(() => {
     clearSessionExpiredState();
