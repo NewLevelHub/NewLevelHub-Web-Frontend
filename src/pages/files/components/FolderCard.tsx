@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Clock, Folder, Lock, MoreVertical, Pencil, Shield, Trash2 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import type { StorageFolder } from '@/shared/types';
-import { relativeDate } from '../utils/fileBrowserUtils';
+import { relativeDate } from '@/pages/files/utils/fileBrowserUtils';
 
 interface FolderCardProps {
   folder: StorageFolder;

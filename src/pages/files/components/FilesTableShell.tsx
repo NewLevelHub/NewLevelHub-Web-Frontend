@@ -2,8 +2,8 @@ import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, ChevronDown, ChevronUp, Layers, Minus, Search, X } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
-import { BREAKDOWN_ITEMS } from '../utils/fileBrowserUtils';
-import type { CategoryFilter } from '../types';
+import { BREAKDOWN_ITEMS } from '@/pages/files/utils/fileBrowserUtils';
+import type { CategoryFilter } from '@/pages/files/types';
 
 type SortField = 'name' | 'file_size' | 'created_at' | 'type';
 

@@ -1,12 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
 import { Folder, X } from 'lucide-react';
-import { apiClient } from '@/shared/api/client';
-import { API } from '@/shared/api/endpoints';
 import { cn } from '@/shared/lib/cn';
-import type { PaginatedResponse, StorageFile, StorageFolder } from '@/shared/types';
-import type { StorageScope } from '../types';
+import type { StorageFile, StorageFolder } from '@/shared/types';
+import type { StorageScope } from '@/pages/files/types';
+import { useFolderPicker } from '@/pages/files/hooks/useFolderPicker';
 
 function buildFolderPath(folder: StorageFolder, byId: Map<number, StorageFolder>): string {
   const parts: string[] = [folder.name];
@@ -42,13 +40,7 @@ export function FolderPickerModal({ file, scope, onConfirm, onClose, isPending }
   const { t } = useTranslation();
   const [selected, setSelected] = useState<number | null | undefined>(undefined);
 
-  const foldersQuery = useQuery({
-    queryKey: ['storage', 'folders', scope, 'all'],
-    queryFn: () =>
-      apiClient
-        .get<PaginatedResponse<StorageFolder>>(API.storage.folders, { params: { scope, page_size: 200 } })
-        .then((r) => r.data.results),
-  });
+  const foldersQuery = useFolderPicker(scope);
 
   const folders = foldersQuery.data ?? [];
 

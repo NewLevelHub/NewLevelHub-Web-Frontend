@@ -17,10 +17,10 @@ import type {
   StorageFileShare,
   StorageUsage,
 } from '@/shared/types';
-import type { CategoryFilter, FileBrowserConfirmAction, RenameTarget, StorageScope } from '../types';
-import { buildGaugePaths, getFileCategoryFromContentType, getFileExt, MAX_UPLOAD_BYTES } from '../utils/fileBrowserUtils';
-import { useFileShare } from './useFileShare';
-import { useFolderPermissions } from './useFolderPermissions';
+import type { CategoryFilter, FileBrowserConfirmAction, RenameTarget, StorageScope } from '@/pages/files/types';
+import { buildGaugePaths, getFileCategoryFromContentType, getFileExt, MAX_UPLOAD_BYTES } from '@/pages/files/utils/fileBrowserUtils';
+import { useFileShare } from '@/pages/files/hooks/useFileShare';
+import { useFolderPermissions } from '@/pages/files/hooks/useFolderPermissions';
 
 const CATEGORY_TO_BACKEND: Record<Exclude<CategoryFilter, 'all'>, string> = {
   docs:  'document',

@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
-import type { StorageScope } from '../types';
+import type { StorageScope } from '@/pages/files/types';
 
 interface ScopeCard {
   id: StorageScope;

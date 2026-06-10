@@ -6,7 +6,7 @@ import { API } from '@/shared/api/endpoints';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { USER_ROLES } from '@/shared/config/constants';
 import type { PaginatedResponse, TrashItem } from '@/shared/types';
-import type { StorageScope } from '../../types';
+import type { StorageScope } from '@/pages/files/types';
 
 export function useTrash() {
   const { t } = useTranslation();

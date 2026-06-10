@@ -2,10 +2,10 @@ import { useTranslation } from 'react-i18next';
 import { Lock, Trash2, Users } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
-import { useTrash } from './hooks/useTrash';
-import { TrashEmptyState } from './components/TrashEmptyState';
-import { TrashItemRow } from './components/TrashItemRow';
-import { TrashSkeleton } from './components/TrashSkeleton';
+import { useTrash } from '@/pages/files/trash/hooks/useTrash';
+import { TrashEmptyState } from '@/pages/files/trash/components/TrashEmptyState';
+import { TrashItemRow } from '@/pages/files/trash/components/TrashItemRow';
+import { TrashSkeleton } from '@/pages/files/trash/components/TrashSkeleton';
 
 const SCOPE_TABS = [
   { id: 'personal' as const, labelKey: 'trash.scopePersonal', Icon: Lock },

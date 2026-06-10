@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { Check, Download, FolderInput, MoreVertical, Pencil, Search, Trash2, Users, X } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import type { CompanyDirectoryMember, StorageFile, StorageFileShare } from '@/shared/types';
-import type { StorageScope } from '../types';
-import { EXT_BADGE_STYLES, formatFileSize, getFileExt, getOwnerInitials, relativeDate } from '../utils/fileBrowserUtils';
+import type { StorageScope } from '@/pages/files/types';
+import { EXT_BADGE_STYLES, formatFileSize, getFileExt, getOwnerInitials, relativeDate } from '@/pages/files/utils/fileBrowserUtils';
 
 // ── Tiny sub-components (used only here, too small to extract) ──
 

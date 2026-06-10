@@ -3,14 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { PromptModal } from '@/shared/ui/PromptModal';
 import { ChevronRight, Download, Folder, Plus, X } from 'lucide-react';
-import { useFileBrowser } from './hooks/useFileBrowser';
-import { FolderCard } from './components/FolderCard';
-import { FolderPermissionPanel } from './components/FolderPermissionPanel';
-import { FolderPickerModal } from './components/FolderPickerModal';
-import { StorageScopeCards } from './components/StorageScopeCards';
-import { FileRow } from './components/FileRow';
-import { FilesTableShell } from './components/FilesTableShell';
-import { StoragePanel } from './components/StoragePanel';
+import { cn } from '@/shared/lib/cn';
+import { useFileBrowser } from '@/pages/files/hooks/useFileBrowser';
+import { FolderCard } from '@/pages/files/components/FolderCard';
+import { FolderPermissionPanel } from '@/pages/files/components/FolderPermissionPanel';
+import { FolderPickerModal } from '@/pages/files/components/FolderPickerModal';
+import { StorageScopeCards } from '@/pages/files/components/StorageScopeCards';
+import { FileRow } from '@/pages/files/components/FileRow';
+import { FilesTableShell } from '@/pages/files/components/FilesTableShell';
+import { StoragePanel } from '@/pages/files/components/StoragePanel';
 
 export default function FileBrowserPage() {
   const { t } = useTranslation();
@@ -180,7 +181,7 @@ export default function FileBrowserPage() {
 
           {/* Upload feedback */}
           {(fb.uploadSuccess ?? fb.uploadError) && (
-            <div className={`flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm ${fb.uploadSuccess ? 'bg-success-subtle text-success-badge' : 'bg-danger-subtle text-danger-badge'}`}>
+            <div className={cn('flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm', fb.uploadSuccess ? 'bg-success-subtle text-success-badge' : 'bg-danger-subtle text-danger-badge')}>
               <span>{fb.uploadSuccess ?? fb.uploadError}</span>
               <button
                 type="button"

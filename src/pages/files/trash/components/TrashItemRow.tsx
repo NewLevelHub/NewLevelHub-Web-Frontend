@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Folder, RotateCcw, Trash2 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import type { TrashItem } from '@/shared/types';
-import { EXT_BADGE_STYLES, formatFileSize, getFileExt, relativeDate } from '../../utils/fileBrowserUtils';
-import { daysUntilPurge } from '../utils/trashUtils';
+import { EXT_BADGE_STYLES, formatFileSize, getFileExt, relativeDate } from '@/pages/files/utils/fileBrowserUtils';
+import { daysUntilPurge } from '@/pages/files/trash/utils/trashUtils';
 
 interface Props {
   item: TrashItem;
