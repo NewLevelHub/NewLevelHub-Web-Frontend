@@ -12,9 +12,8 @@ interface StoragePanelProps {
   arcAll: string;
   gaugePct: number;
   bytesCats: Record<string, number>;
-  bytesTotal: number;
-  trashBytes: number;
-  trashCount: number;
+  trashPersonalBytes: number;
+  trashCompanyBytes: number;
   scope: StorageScope;
   personalBytes: number;
   companyBytes: number;
@@ -29,8 +28,8 @@ export function StoragePanel({
   arcAll,
   gaugePct,
   bytesCats,
-  bytesTotal,
-  trashBytes,
+  trashPersonalBytes,
+  trashCompanyBytes,
   scope,
   personalBytes,
   companyBytes,
@@ -68,14 +67,17 @@ export function StoragePanel({
         ? '#f97316'
         : 'var(--brand-text)';
 
-  const allBytesTotal = bytesTotal + trashBytes;
+  const totalTrashBytes = trashPersonalBytes + trashCompanyBytes;
 
-  // For trash and cross rows use actual API totals as denominator — they are not tied to the visible file list
-  const apiTotal = usedBytes + trashBytes;
-  const trashPct = apiTotal > 0 ? Math.min((trashBytes / apiTotal) * 100, 100) : 0;
+  // Use limitBytes as the common denominator for all bars so they're all on the same scale.
+  // If no limit is set (limitBytes === 0), fall back to total known usage.
+  const ref = limitBytes > 0 ? limitBytes : Math.max(usedBytes + totalTrashBytes, 1);
+
+  const trashPersonalPct = Math.min((trashPersonalBytes / ref) * 100, 100);
+  const trashCompanyPct  = Math.min((trashCompanyBytes  / ref) * 100, 100);
 
   const crossBytes = scope === 'personal' ? companyBytes : personalBytes;
-  const crossPct   = apiTotal > 0 ? Math.min((crossBytes / apiTotal) * 100, 100) : 0;
+  const crossPct   = Math.min((crossBytes / ref) * 100, 100);
   const crossLabel = scope === 'personal' ? t('files.bdCompany') : t('files.bdMyFiles');
   const CrossIcon  = scope === 'personal' ? Users : User;
   // Color scheme per scope direction (concrete Tailwind classes — CSS-var gradients don't work in v4)
@@ -140,7 +142,7 @@ export function StoragePanel({
         <div className="space-y-2.5">
           {BREAKDOWN_ITEMS.map((b) => {
             const bytes = bytesCats[b.key] ?? 0;
-            const pct = allBytesTotal > 0 ? (bytes / allBytesTotal) * 100 : 0;
+            const pct = Math.min((bytes / ref) * 100, 100);
             return (
               <div key={b.key} className="flex items-center gap-2.5">
                 <span className={cn('w-7 h-7 rounded-[7px] flex items-center justify-center shrink-0', b.colorClass)}>
@@ -162,7 +164,7 @@ export function StoragePanel({
             );
           })}
 
-          {/* Trash row */}
+          {/* Trash rows — personal and company */}
           <div className="h-px bg-[var(--border-faint)]" />
           <div className="flex items-center gap-2.5">
             <span className="w-7 h-7 rounded-[7px] flex items-center justify-center shrink-0 bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
@@ -170,17 +172,36 @@ export function StoragePanel({
             </span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-[5px]">
-                <span className="text-[13px] font-medium text-primary">{t('files.bdTrash')}</span>
-                <span className="font-mono text-[11px] text-muted">{formatFileSize(trashBytes)}</span>
+                <span className="text-[13px] font-medium text-primary">{t('files.bdTrashPersonal')}</span>
+                <span className="font-mono text-[11px] text-muted">{formatFileSize(trashPersonalBytes)}</span>
               </div>
               <div className="h-[4px] bg-raised rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-slate-400 to-slate-500"
-                  style={{ width: `${trashPct}%` }}
+                  style={{ width: `${trashPersonalPct}%` }}
                 />
               </div>
             </div>
           </div>
+          {!isGuest && (
+            <div className="flex items-center gap-2.5">
+              <span className="w-7 h-7 rounded-[7px] flex items-center justify-center shrink-0 bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                <Trash2 size={15} />
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-[5px]">
+                  <span className="text-[13px] font-medium text-primary">{t('files.bdTrashCompany')}</span>
+                  <span className="font-mono text-[11px] text-muted">{formatFileSize(trashCompanyBytes)}</span>
+                </div>
+                <div className="h-[4px] bg-raised rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-slate-400 to-slate-500"
+                    style={{ width: `${trashCompanyPct}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Cross-storage row: company bytes when on personal, personal bytes when on company */}
           {!isGuest && (

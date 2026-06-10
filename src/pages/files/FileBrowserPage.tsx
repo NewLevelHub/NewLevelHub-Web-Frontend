@@ -322,9 +322,8 @@ export default function FileBrowserPage() {
           arcAll={fb.arcAll}
           gaugePct={fb.gaugePct}
           bytesCats={fb.bytesCats}
-          bytesTotal={fb.bytesTotal}
-          trashBytes={fb.trashBytes}
-          trashCount={fb.trashCount}
+          trashPersonalBytes={fb.trashPersonalBytes}
+          trashCompanyBytes={fb.trashCompanyBytes}
           scope={fb.scope}
           personalBytes={fb.personalBytes}
           companyBytes={fb.companyBytes}

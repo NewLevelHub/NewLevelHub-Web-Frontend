@@ -721,6 +721,7 @@ export interface StorageFolder {
   is_deleted?: boolean;
   deleted_at?: string | null;
   is_restricted?: boolean;
+  user_permission?: FolderPermissionLevel | null;
 }
 
 export type FolderPermissionLevel = 'view' | 'upload' | 'full';
@@ -762,16 +763,28 @@ export interface StorageFolderDetail extends StorageFolder {
   files: StorageFile[];
 }
 
+export interface StorageUsageBreakdown {
+  document: number;
+  image: number;
+  archive: number;
+  media: number;
+  other: number;
+}
+
 export interface StorageUsage {
   personal: {
     used_bytes: number;
     file_count: number;
     limit_bytes: number | null;
+    trash_bytes: number;
+    breakdown: StorageUsageBreakdown;
   };
   company: {
     used_bytes: number;
     limit_bytes: number;
     file_count: number;
+    trash_bytes: number;
+    breakdown: StorageUsageBreakdown;
   };
 }
 

@@ -16,10 +16,9 @@ import type {
   StorageFolderDetail,
   StorageFileShare,
   StorageUsage,
-  TrashItem,
 } from '@/shared/types';
 import type { CategoryFilter, FileBrowserConfirmAction, RenameTarget, StorageScope } from '../types';
-import { buildGaugePaths, categorizeBytes, getFileCategoryFromContentType, getFileExt, MAX_UPLOAD_BYTES } from '../utils/fileBrowserUtils';
+import { buildGaugePaths, getFileCategoryFromContentType, getFileExt, MAX_UPLOAD_BYTES } from '../utils/fileBrowserUtils';
 import { useFileShare } from './useFileShare';
 import { useFolderPermissions } from './useFolderPermissions';
 
@@ -163,14 +162,6 @@ export function useFileBrowser() {
     },
   });
 
-  const trashAllQuery = useQuery({
-    queryKey: ['storage', 'trash', 'all'],
-    queryFn: () =>
-      apiClient
-        .get<PaginatedResponse<TrashItem>>(API.storage.trash)
-        .then((r) => r.data),
-  });
-
   const sharedWithMeQuery = useQuery({
     queryKey: ['storage', 'shares', 'shared-with-me'],
     queryFn: async () => {
@@ -179,17 +170,6 @@ export function useFileBrowser() {
       });
       return data;
     },
-  });
-
-  const allScopeFilesQuery = useQuery({
-    queryKey: ['storage', 'all-files', scope],
-    queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<StorageFile>>(API.storage.files, {
-        params: { scope, page_size: 1000, ordering: '-created_at' },
-      });
-      return data;
-    },
-    enabled: currentFolder === null,
   });
 
   // ── Mutations ──
@@ -286,6 +266,7 @@ export function useFileBrowser() {
           (prev) => prev ? { ...prev, count: prev.count - 1, results: prev.results.filter((f) => f.id !== fileId) } : prev,
         );
       }
+      // Refetch usage so trash_bytes and breakdown update; used_bytes stays the same (file is in trash).
       queryClient.invalidateQueries({ queryKey: ['storage', 'usage'] });
     },
   });
@@ -353,6 +334,7 @@ export function useFileBrowser() {
         );
       }
       setSelectedFileIds(new Set());
+      // Refetch usage so trash_bytes and breakdown update; used_bytes stays the same (files are in trash).
       queryClient.invalidateQueries({ queryKey: ['storage', 'usage'] });
     },
   });
@@ -444,19 +426,24 @@ export function useFileBrowser() {
   const gaugePct = limitBytes > 0 ? Math.max(0, Math.min(1, usedBytes / limitBytes)) : 0;
   const { arcUsed, arcAll } = buildGaugePaths(gaugePct);
 
-  const breakdownFiles = useMemo<StorageFile[]>(() => {
-    if (currentFolder !== null) return folderDetailQuery.data?.files ?? [];
-    return allScopeFilesQuery.data?.results ?? [];
-  }, [currentFolder, folderDetailQuery.data?.files, allScopeFilesQuery.data?.results]);
+  // Trash bytes come directly from the usage API — accurate regardless of page size.
+  const trashPersonalBytes = usageData?.personal?.trash_bytes ?? 0;
+  const trashCompanyBytes  = usageData?.company?.trash_bytes  ?? 0;
 
-  const bytesCats = useMemo(() => categorizeBytes(breakdownFiles), [breakdownFiles]);
-  const bytesTotal = Object.values(bytesCats).reduce((a, b) => a + b, 0);
-
-  const trashBytes = useMemo(
-    () => (trashAllQuery.data?.results ?? []).reduce((sum, item) => sum + (item.file_size ?? 0), 0),
-    [trashAllQuery.data],
-  );
-  const trashCount = trashAllQuery.data?.count ?? 0;
+  // Breakdown bytes come from the usage API. Backend keys → frontend keys used by BREAKDOWN_ITEMS.
+  const BACKEND_KEY_MAP: Record<string, string> = {
+    document: 'docs', image: 'img', archive: 'arch', media: 'media', other: 'other',
+  };
+  const scopeBreakdown = scope === 'personal'
+    ? usageData?.personal?.breakdown
+    : usageData?.company?.breakdown;
+  const bytesCats = useMemo(() => {
+    if (!scopeBreakdown) return { docs: 0, img: 0, media: 0, arch: 0, other: 0 };
+    return Object.fromEntries(
+      Object.entries(scopeBreakdown).map(([k, v]) => [BACKEND_KEY_MAP[k] ?? k, v]),
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scopeBreakdown]);
 
   const personalBytes = usageData?.personal?.used_bytes ?? 0;
   const companyBytes  = usageData?.company?.used_bytes  ?? 0;
@@ -636,9 +623,8 @@ export function useFileBrowser() {
     arcUsed,
     arcAll,
     bytesCats,
-    bytesTotal,
-    trashBytes,
-    trashCount,
+    trashPersonalBytes,
+    trashCompanyBytes,
     personalBytes,
     companyBytes,
     // pending states

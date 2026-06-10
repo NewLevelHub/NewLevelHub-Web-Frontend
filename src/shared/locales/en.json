@@ -1972,6 +1972,8 @@
     "bdArch": "Archives",
     "bdOther": "Other",
     "bdTrash": "Trash",
+    "bdTrashPersonal": "Personal Trash",
+    "bdTrashCompany": "Company Trash",
     "bdCompany": "Company",
     "bdMyFiles": "My files",
     "tableColType": "TYPE",
@@ -1999,7 +2001,8 @@
     "moveHere": "Move here",
     "rootFolder": "Root (no folder)",
     "selectFolder": "Select a destination folder",
-    "alreadyInFolder": "File is already in this folder"
+    "alreadyInFolder": "File is already in this folder",
+    "viewOnlyAccess": "View only — no upload access"
   },
   "analytics": {
     "title": "Analytics",

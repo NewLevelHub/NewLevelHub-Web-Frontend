@@ -118,26 +118,31 @@ export function FolderPickerModal({ file, scope, onConfirm, onClose, isPending }
               {sortedFolders.length === 0 && !foldersQuery.isLoading ? null : (
                 sortedFolders.map((folder) => {
                   const isCurrent = folder.id === file.folder;
+                  const isViewOnly = folder.user_permission === 'view';
+                  const isDisabled = (isCurrent && selected === undefined) || isViewOnly;
                   const isSelected = selected === folder.id;
                   const path = buildFolderPath(folder, folderById);
                   return (
                     <button
                       key={folder.id}
                       type="button"
-                      onClick={() => setSelected(folder.id)}
+                      onClick={() => !isDisabled && setSelected(folder.id)}
                       className={cn(
                         'flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2.5 text-[13px] transition-colors text-left',
                         isSelected
                           ? 'bg-brand-subtle text-brand font-medium'
                           : 'text-secondary hover:bg-hover',
-                        isCurrent && selected === undefined && 'opacity-50 cursor-default',
+                        isDisabled && 'opacity-50 cursor-default',
                       )}
-                      disabled={isCurrent && selected === undefined}
+                      disabled={isDisabled}
                     >
                       <Folder size={14} className="shrink-0" />
                       <span className="truncate">{path}</span>
-                      {isCurrent && (
+                      {isCurrent && !isViewOnly && (
                         <span className="ml-auto shrink-0 text-[11px] text-muted">{t('files.alreadyInFolder')}</span>
+                      )}
+                      {isViewOnly && (
+                        <span className="ml-auto shrink-0 text-[11px] text-muted">{t('files.viewOnlyAccess')}</span>
                       )}
                     </button>
                   );

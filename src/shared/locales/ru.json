@@ -1967,6 +1967,8 @@
     "bdArch": "Архивы",
     "bdOther": "Прочее",
     "bdTrash": "Корзина",
+    "bdTrashPersonal": "Личная корзина",
+    "bdTrashCompany": "Общая корзина",
     "bdCompany": "Компания",
     "bdMyFiles": "Мои файлы",
     "tableColType": "ТИП",
@@ -1994,7 +1996,8 @@
     "moveHere": "Переместить сюда",
     "rootFolder": "Корень (без папки)",
     "selectFolder": "Выберите папку назначения",
-    "alreadyInFolder": "Файл уже находится в этой папке"
+    "alreadyInFolder": "Файл уже находится в этой папке",
+    "viewOnlyAccess": "Только просмотр — нет доступа для загрузки"
   },
   "analytics": {
     "title": "Аналитика",
