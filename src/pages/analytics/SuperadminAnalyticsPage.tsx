@@ -1,5 +1,6 @@
 import { Fragment, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowUpDown,
@@ -15,6 +16,7 @@ import {
   ClipboardList,
   Clock,
   Download,
+  FileDown,
   Inbox,
   Layers,
   UserCheck,
@@ -746,6 +748,7 @@ function SortHeader({
 }
 
 export default function SuperadminAnalyticsPage() {
+  const { t } = useTranslation();
   const { user, isLoading: authLoading } = useAuth();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
 
@@ -756,6 +759,8 @@ export default function SuperadminAnalyticsPage() {
   const [resourceType, setResourceType] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [exportPdfError, setExportPdfError] = useState<string | null>(null);
 
   const { data: companiesData } = useQuery({
     queryKey: [...companiesCacheRoot(user?.id), 'analytics-superadmin', 'company-options'],
@@ -846,6 +851,33 @@ export default function SuperadminAnalyticsPage() {
     }
   }
 
+  async function handleExportPdf() {
+    if (!queryEnabled) return;
+    try {
+      setIsExportingPdf(true);
+      setExportPdfError(null);
+      const params = { ...requestParams, format: 'pdf' as const };
+      const response = await apiClient.get<Blob>(API.analytics.superadminExport, {
+        params,
+        responseType: 'blob',
+        headers: {
+          Accept: 'application/pdf',
+        },
+      });
+      const fallback = `analytics-superadmin-${period}.pdf`;
+      const rawCd =
+        response.headers['content-disposition'] ??
+        (response.headers as { get?: (n: string) => string | undefined }).get?.('content-disposition');
+      const filename = filenameFromContentDisposition(rawCd, fallback);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      triggerCsvFileDownload(blob, filename);
+    } catch (e) {
+      setExportPdfError(getApiError(e).message);
+    } finally {
+      setIsExportingPdf(false);
+    }
+  }
+
   if (authLoading) {
     return (
       <main className="max-w-7xl mx-auto px-4 py-8">
@@ -902,12 +934,32 @@ export default function SuperadminAnalyticsPage() {
             <Download size={16} aria-hidden />
             {isExporting ? 'Выгрузка…' : 'Скачать CSV'}
           </button>
+          <button
+            type="button"
+            onClick={() => void handleExportPdf()}
+            disabled={!queryEnabled || isExportingPdf}
+            className={cn(
+              'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium border transition-colors',
+              !queryEnabled || isExportingPdf
+                ? 'border-default bg-surface text-muted cursor-not-allowed'
+                : 'border-[color:var(--brand)] bg-brand-subtle text-brand hover:opacity-90',
+            )}
+          >
+            <FileDown size={16} aria-hidden />
+            {isExportingPdf ? t('analytics.exportingPdf') : t('analytics.exportPdf')}
+          </button>
         </div>
       </header>
 
       {exportError && (
         <div className="rounded-xl border border-rose-800 bg-rose-950/40 px-4 py-3 text-sm text-rose-100" role="alert">
           {exportError}
+        </div>
+      )}
+
+      {exportPdfError && (
+        <div className="rounded-xl border border-rose-800 bg-rose-950/40 px-4 py-3 text-sm text-rose-100" role="alert">
+          {exportPdfError}
         </div>
       )}
 
