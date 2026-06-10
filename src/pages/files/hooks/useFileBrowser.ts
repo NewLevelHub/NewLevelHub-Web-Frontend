@@ -16,9 +16,17 @@ import type {
   StorageFileShare,
   StorageUsage,
 } from '@/shared/types';
-import type { FileBrowserConfirmAction, RenameTarget, StorageScope } from '../types';
-import { buildGaugePaths, categorizeBytes, MAX_UPLOAD_BYTES } from '../utils/fileBrowserUtils';
+import type { CategoryFilter, FileBrowserConfirmAction, RenameTarget, StorageScope } from '../types';
+import { buildGaugePaths, categorizeBytes, getFileCategoryFromContentType, getFileExt, MAX_UPLOAD_BYTES } from '../utils/fileBrowserUtils';
 import { useFileShare } from './useFileShare';
+
+const CATEGORY_TO_BACKEND: Record<Exclude<CategoryFilter, 'all'>, string> = {
+  docs:  'document',
+  img:   'image',
+  arch:  'archive',
+  media: 'media',
+  other: 'other',
+};
 
 export function useFileBrowser() {
   const { t, i18n } = useTranslation();
@@ -38,6 +46,13 @@ export function useFileBrowser() {
   const [confirmAction, setConfirmAction] = useState<FileBrowserConfirmAction | null>(null);
   const [renameTarget, setRenameTarget] = useState<RenameTarget | null>(null);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+
+  // ── Sort & category filter ──
+  const [sortField, setSortField] = useState<'name' | 'file_size' | 'created_at' | 'type'>('created_at');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const ordering = sortField === 'type' ? '-created_at' : (sortDir === 'asc' ? sortField : `-${sortField}`);
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
+  const fileCategoryParam = categoryFilter !== 'all' ? CATEGORY_TO_BACKEND[categoryFilter] : undefined;
 
   // ── Upload feedback ──
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -104,10 +119,10 @@ export function useFileBrowser() {
   });
 
   const searchedFilesQuery = useQuery({
-    queryKey: ['storage', 'files-search', normalizedSearchTerm, scope],
+    queryKey: ['storage', 'files-search', normalizedSearchTerm, scope, sortField, sortDir, categoryFilter],
     queryFn: async () => {
       const { data } = await apiClient.get<PaginatedResponse<StorageFile>>(API.storage.files, {
-        params: { search: normalizedSearchTerm, scope, ordering: 'name', page_size: 100 },
+        params: { search: normalizedSearchTerm, scope, ordering, page_size: 100, ...(fileCategoryParam ? { file_category: fileCategoryParam } : {}) },
       });
       return data;
     },
@@ -115,16 +130,17 @@ export function useFileBrowser() {
   });
 
   const rootFilesQuery = useQuery({
-    queryKey: ['storage', 'files-root', scope],
+    queryKey: ['storage', 'files-root', scope, sortField, sortDir, categoryFilter],
     queryFn: async () => {
+      const catParam = fileCategoryParam ? { file_category: fileCategoryParam } : {};
       try {
         const { data } = await apiClient.get<PaginatedResponse<StorageFile>>(API.storage.files, {
-          params: { folder_id: 'null', scope, page_size: 100, ordering: '-created_at' },
+          params: { folder_id: 'null', scope, page_size: 100, ordering, ...catParam },
         });
         return data;
       } catch {
         const { data } = await apiClient.get<PaginatedResponse<StorageFile>>(API.storage.files, {
-          params: { scope, page_size: 100, ordering: '-created_at' },
+          params: { scope, page_size: 100, ordering, ...catParam },
         });
         return { ...data, results: (data.results ?? []).filter((f) => f.folder === null) };
       }
@@ -262,16 +278,45 @@ export function useFileBrowser() {
     return rootFoldersQuery.data?.results ?? [];
   }, [currentFolder, folderDetailQuery.data?.folders, rootFoldersQuery.data?.results]);
 
-  const files = useMemo<StorageFile[]>(() => {
+  const sortedFiles = useMemo<StorageFile[]>(() => {
     let result: StorageFile[];
     if (isSearching) result = searchedFilesQuery.data?.results ?? [];
     else if (!currentFolder) result = rootFilesQuery.data?.results ?? [];
     else result = folderDetailQuery.data?.files ?? [];
+
+    const needsClientSort = currentFolder !== null || sortField === 'type';
+    if (needsClientSort) {
+      const getSortVal = (f: StorageFile): string | number => {
+        if (sortField === 'file_size') return f.file_size ?? 0;
+        if (sortField === 'name') return f.name;
+        if (sortField === 'type') return getFileExt(f.name);
+        return f.created_at;
+      };
+      result = [...result].sort((a, b) => {
+        const av = getSortVal(a);
+        const bv = getSortVal(b);
+        const cmp = typeof av === 'number' && typeof bv === 'number'
+          ? av - bv
+          : String(av).localeCompare(String(bv), undefined, { numeric: true, sensitivity: 'base' });
+        return sortDir === 'asc' ? cmp : -cmp;
+      });
+    }
+
     if (scope === 'personal' && user?.id !== undefined) {
       result = result.filter((f) => f.owner === user.id);
     }
     return result;
-  }, [currentFolder, folderDetailQuery.data?.files, isSearching, rootFilesQuery.data?.results, searchedFilesQuery.data?.results, scope, user?.id]);
+  }, [currentFolder, folderDetailQuery.data?.files, isSearching, rootFilesQuery.data?.results, searchedFilesQuery.data?.results, scope, user?.id, sortField, sortDir]);
+
+  const files = useMemo<StorageFile[]>(() => {
+    if (categoryFilter === 'all') return sortedFiles;
+    // Folder detail: server doesn't filter embedded files — apply client-side
+    if (currentFolder !== null && !isSearching) {
+      return sortedFiles.filter((f) => getFileCategoryFromContentType(f.content_type) === categoryFilter);
+    }
+    // Root and search: server already applied file_category param
+    return sortedFiles;
+  }, [sortedFiles, categoryFilter, currentFolder, isSearching]);
 
   const sharedWithMe = sharedWithMeQuery.data?.results ?? [];
 
@@ -284,8 +329,8 @@ export function useFileBrowser() {
   const canManageFolder = (folder: StorageFolder) => scope === 'personal' || folder.owner === user?.id || isAdmin;
 
   const totalFilesCount = currentFolder === null && !isSearching
-    ? (rootFilesQuery.data?.count ?? files.length)
-    : files.length;
+    ? (rootFilesQuery.data?.count ?? sortedFiles.length)
+    : sortedFiles.length;
 
   // ── Storage panel numbers ──
   const usageData = storageUsageQuery.data;
@@ -322,6 +367,16 @@ export function useFileBrowser() {
       limit: usageData?.company?.limit_bytes ?? 0,
     }] : []),
   ], [t, isGuest, usageData]);
+
+  // ── Sort handler ──
+  const handleSortChange = (field: 'name' | 'file_size' | 'created_at' | 'type') => {
+    if (field === sortField) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDir('desc');
+    }
+  };
 
   // ── Navigation ──
   const openFolder = (folder: StorageFolder) => setTrail((prev) => [...prev, folder]);
@@ -479,6 +534,12 @@ export function useFileBrowser() {
     // rename targets for modals
     renameFolderMutation,
     renameFileMutation,
+    // sort & category filter
+    sortField,
+    sortDir,
+    handleSortChange,
+    categoryFilter,
+    setCategoryFilter,
     // sharing
     shareState,
   };

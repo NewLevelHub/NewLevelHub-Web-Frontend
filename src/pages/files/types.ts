@@ -10,3 +10,6 @@ export type FileBrowserConfirmAction =
 export type RenameTarget =
   | { kind: 'folder'; folder: StorageFolder }
   | { kind: 'file'; file: StorageFile };
+
+export type CategoryFilter = 'all' | 'docs' | 'img' | 'media' | 'arch' | 'other';
+

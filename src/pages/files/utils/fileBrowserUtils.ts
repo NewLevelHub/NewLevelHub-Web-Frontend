@@ -57,6 +57,19 @@ export const EXT_BADGE_STYLES: Record<string, string> = {
   csv:     'from-emerald-500 to-emerald-700',
 };
 
+const ARCHIVE_CONTENT_TYPES = [
+  'application/zip', 'application/x-rar-compressed', 'application/x-rar',
+  'application/x-7z-compressed', 'application/gzip', 'application/x-tar', 'application/x-bzip2',
+];
+
+export function getFileCategoryFromContentType(contentType: string): 'docs' | 'img' | 'media' | 'arch' | 'other' {
+  if (contentType.startsWith('image/')) return 'img';
+  if (contentType.startsWith('video/') || contentType.startsWith('audio/')) return 'media';
+  if (ARCHIVE_CONTENT_TYPES.includes(contentType)) return 'arch';
+  if (contentType.startsWith('application/') || contentType.startsWith('text/')) return 'docs';
+  return 'other';
+}
+
 export function categorizeBytes(files: StorageFile[]): Record<string, number> {
   const cats: Record<string, number> = { docs: 0, img: 0, media: 0, arch: 0, other: 0 };
   for (const f of files) {

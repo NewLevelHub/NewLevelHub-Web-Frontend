@@ -189,6 +189,11 @@ export default function FileBrowserPage() {
             onSearchChange={fb.setSearchTerm}
             onClearSearch={() => { fb.setShowSearch(false); fb.setSearchTerm(''); }}
             onToggleSelectAll={fb.toggleSelectAll}
+            sortField={fb.sortField}
+            sortDir={fb.sortDir}
+            onSortChange={fb.handleSortChange}
+            categoryFilter={fb.categoryFilter}
+            onCategoryFilterChange={fb.setCategoryFilter}
           >
             {fb.files.length === 0 ? (
               <tr>

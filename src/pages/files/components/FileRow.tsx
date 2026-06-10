@@ -1,4 +1,5 @@
-import { Fragment, memo } from 'react';
+import { Fragment, memo, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Check, Download, MoreVertical, Pencil, Search, Trash2, Users, X } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
@@ -84,6 +85,15 @@ export const FileRow = memo(function FileRow({
   onRevokeShareConfirm,
 }: FileRowProps) {
   const { t } = useTranslation();
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const [menuStyle, setMenuStyle] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
+
+  useEffect(() => {
+    if (isMenuOpen && menuBtnRef.current) {
+      const rect = menuBtnRef.current.getBoundingClientRect();
+      setMenuStyle({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    }
+  }, [isMenuOpen]);
 
   return (
     <Fragment>
@@ -113,11 +123,11 @@ export const FileRow = memo(function FileRow({
             {isSelected && <Check size={10} strokeWidth={3} className="text-white" />}
           </button>
         </td>
+        <td className="px-3 py-2.5 min-w-0">
+          <span className="font-medium text-primary truncate block">{file.name}</span>
+        </td>
         <td className="px-3 py-2.5">
-          <div className="flex items-center gap-2 min-w-0">
-            <FileTypeBadge name={file.name} />
-            <span className="font-medium text-primary truncate">{file.name}</span>
-          </div>
+          <FileTypeBadge name={file.name} />
         </td>
         <td className="px-3 py-2.5 font-mono text-[12px] text-muted whitespace-nowrap">
           {formatFileSize(file.file_size ?? file.size ?? 0)}
@@ -125,8 +135,9 @@ export const FileRow = memo(function FileRow({
         <td className="px-3 py-2.5 text-muted whitespace-nowrap">
           {relativeDate(file.created_at, lang)}
         </td>
-        <td className="px-3 py-2.5 relative">
+        <td className="px-3 py-2.5">
           <button
+            ref={menuBtnRef}
             type="button"
             onClick={() => onMenuToggle(isMenuOpen ? null : file.id)}
             className="flex items-center justify-center w-7 h-7 rounded-[6px] border border-default bg-surface text-secondary hover:bg-hover hover:text-primary transition-colors"
@@ -134,8 +145,11 @@ export const FileRow = memo(function FileRow({
             <MoreVertical size={14} />
           </button>
 
-          {isMenuOpen && (
-            <div className="absolute right-0 top-9 z-30 w-52 bg-surface border border-default rounded-xl shadow-[var(--shadow-pop)] py-1">
+          {isMenuOpen && createPortal(
+            <div
+              style={{ top: menuStyle.top, right: menuStyle.right }}
+              className="fixed z-50 w-52 bg-surface border border-default rounded-xl shadow-[var(--shadow-pop)] py-1"
+            >
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onDownload(file.id, file.name); onMenuToggle(null); }}
@@ -170,7 +184,8 @@ export const FileRow = memo(function FileRow({
                   <Trash2 size={13} /> {t('common.delete')}
                 </button>
               )}
-            </div>
+            </div>,
+            document.body
           )}
         </td>
       </tr>
@@ -178,7 +193,7 @@ export const FileRow = memo(function FileRow({
       {/* ── Inline share panel ── */}
       {isShareOpen && (
         <tr className="border-b border-[var(--border-faint)] last:border-0">
-          <td colSpan={5} className="px-4 py-3 bg-raised">
+          <td colSpan={6} className="px-4 py-3 bg-raised">
             <div className="flex flex-col gap-2.5">
               {/* Header */}
               <div className="flex items-center justify-between">
