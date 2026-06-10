@@ -709,6 +709,74 @@ function ResourceUsageSection({
   );
 }
 
+const DOW_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
+const DOW_DISPLAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+
+function PeakHoursHeatmap({ rows }: { rows: SuperadminAnalyticsResponse['peak_hours'] }) {
+  const { t } = useTranslation();
+
+  const cellMap = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of rows) {
+      m.set(`${r.day_of_week}-${r.hour}`, r.booking_count);
+    }
+    return m;
+  }, [rows]);
+
+  const maxCount = useMemo(
+    () => Math.max(...rows.map((r) => r.booking_count), 1),
+    [rows],
+  );
+
+  if (rows.length === 0) {
+    return <p className="text-xs text-muted">{t('analytics.noData')}</p>;
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <div
+        className="grid min-w-[480px]"
+        style={{ gridTemplateColumns: '1.75rem repeat(24, minmax(0, 1fr))' }}
+      >
+        {/* Hour axis labels — top row */}
+        <div className="w-7 shrink-0" aria-hidden />
+        {HOURS.map((h) => (
+          <div key={h} className="text-center text-[10px] text-muted mb-1">
+            {h === 0 || h === 6 || h === 12 || h === 18 ? String(h) : ''}
+          </div>
+        ))}
+
+        {/* Day rows */}
+        {DOW_DISPLAY_ORDER.map((dow) => {
+          const dowKey = DOW_KEYS[dow];
+          const dayLabel = t(`analytics.dow.${dowKey}`);
+          return (
+            <Fragment key={dow}>
+              <div className="w-7 shrink-0 text-[10px] text-muted text-right pr-1.5 flex items-center justify-end">
+                {dayLabel}
+              </div>
+              {HOURS.map((hour) => {
+                const count = cellMap.get(`${dow}-${hour}`) ?? 0;
+                const intensity = count > 0 ? Math.max(0.12, count / maxCount) : 0;
+                return (
+                  <div
+                    key={hour}
+                    className={cn('w-full h-5 rounded-[2px]', count === 0 && 'bg-[var(--bg-hover)]')}
+                    style={count > 0 ? { backgroundColor: `rgba(59,130,246,${intensity})` } : undefined}
+                    title={`${dayLabel} ${hour}:00 — ${count} бр.`}
+                    aria-label={`${dayLabel} ${hour}:00 — ${count} бр.`}
+                  />
+                );
+              })}
+            </Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function SortHeader({
   label,
   sortKey,
@@ -1180,6 +1248,14 @@ export default function SuperadminAnalyticsPage() {
               )}
             </div>
           </div>
+        </section>
+      )}
+
+      {data && (
+        <section className="rounded-xl border border-default bg-surface p-5">
+          <h2 className="text-sm font-semibold text-primary mb-1">{t('analytics.peakHours')}</h2>
+          <p className="text-xs text-muted mb-4">{t('analytics.peakHoursDesc')}</p>
+          <PeakHoursHeatmap rows={data.peak_hours ?? []} />
         </section>
       )}
 

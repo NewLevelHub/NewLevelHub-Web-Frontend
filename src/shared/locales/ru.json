@@ -2013,7 +2013,16 @@
     "resourceUtilizationDesc": "Количество броней каждого типа за день",
     "noBookingsPeriod": "Нет бронирований за выбранный период",
     "peakHours": "Пиковые часы",
-    "peakHoursDesc": "(бронирований по дню и часу)",
+    "peakHoursDesc": "Бронирований по дню недели и часу",
+    "dow": {
+      "mon": "Пн",
+      "tue": "Вт",
+      "wed": "Ср",
+      "thu": "Чт",
+      "fri": "Пт",
+      "sat": "Сб",
+      "sun": "Вс"
+    },
     "newRegistrations": "Новые регистрации",
     "newRegistrationsDesc": "Пользователей зарегистрировано по неделям",
     "noRegistrationsPeriod": "Нет регистраций за выбранный период",
