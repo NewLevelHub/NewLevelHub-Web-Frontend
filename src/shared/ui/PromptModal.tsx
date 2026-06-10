@@ -125,7 +125,7 @@ export function PromptModal({
                   {description}
                 </p>
               ) : null}
-              <label htmlFor="prompt-modal-input" className="mt-4 block text-sm font-medium text-gray-700">
+              <label htmlFor="prompt-modal-input" className="mt-4 block text-sm font-medium text-secondary">
                 {label}
               </label>
               <input
@@ -138,7 +138,7 @@ export function PromptModal({
                 disabled={isLoading}
                 className={cn(
                   'mt-1 w-full rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary',
-                  'placeholder:text-placeholder focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20',
+                  'placeholder:text-placeholder focus:border-[var(--brand)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/20',
                   'disabled:opacity-50 disabled:text-muted',
                 )}
                 autoComplete="off"
@@ -149,7 +149,7 @@ export function PromptModal({
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="shrink-0 rounded-lg p-1 text-secondary transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:pointer-events-none disabled:opacity-50"
+              className="shrink-0 rounded-lg p-1 text-secondary transition-colors hover:bg-hover hover:text-primary disabled:pointer-events-none disabled:opacity-50"
               aria-label={t('modal.close')}
             >
               <X className="h-4 w-4" aria-hidden="true" />
@@ -161,14 +161,14 @@ export function PromptModal({
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="rounded-lg border border-default bg-surface px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-raised disabled:pointer-events-none disabled:opacity-50"
+              className="rounded-lg border border-default bg-surface px-4 py-2 text-sm font-medium text-secondary transition-colors hover:bg-hover disabled:pointer-events-none disabled:opacity-50"
             >
               {resolvedCancelLabel}
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-indigo-700 disabled:pointer-events-none disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg bg-[var(--brand)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--brand-hover)] disabled:pointer-events-none disabled:opacity-50"
             >
               {isLoading && (
                 <span

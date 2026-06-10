@@ -1,6 +1,7 @@
-import { memo } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Clock, Folder, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Clock, Folder, Lock, MoreVertical, Pencil, Shield, Trash2 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import type { StorageFolder } from '@/shared/types';
 import { relativeDate } from '../utils/fileBrowserUtils';
@@ -9,24 +10,37 @@ interface FolderCardProps {
   folder: StorageFolder;
   isMenuOpen: boolean;
   canManage: boolean;
+  isAdmin: boolean;
   lang: string;
   onOpen: (folder: StorageFolder) => void;
   onMenuToggle: (id: number | null) => void;
   onRename: (folder: StorageFolder) => void;
   onDelete: (folder: StorageFolder) => void;
+  onManageAccess: (folder: StorageFolder) => void;
 }
 
 export const FolderCard = memo(function FolderCard({
   folder,
   isMenuOpen,
   canManage,
+  isAdmin,
   lang,
   onOpen,
   onMenuToggle,
   onRename,
   onDelete,
+  onManageAccess,
 }: FolderCardProps) {
   const { t } = useTranslation();
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const [menuStyle, setMenuStyle] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
+
+  useEffect(() => {
+    if (isMenuOpen && menuBtnRef.current) {
+      const rect = menuBtnRef.current.getBoundingClientRect();
+      setMenuStyle({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    }
+  }, [isMenuOpen]);
 
   return (
     <div
@@ -34,7 +48,7 @@ export const FolderCard = memo(function FolderCard({
       className={cn(
         'bg-surface border border-default rounded-xl p-3 flex flex-col gap-1.5 cursor-pointer transition-all duration-150',
         isMenuOpen
-          ? 'relative z-20 -translate-y-px shadow-[0_6px_18px_rgba(0,0,0,0.06)]'
+          ? '-translate-y-px shadow-[0_6px_18px_rgba(0,0,0,0.06)]'
           : 'hover:-translate-y-px hover:shadow-[0_6px_18px_rgba(0,0,0,0.06)]',
       )}
     >
@@ -52,11 +66,17 @@ export const FolderCard = memo(function FolderCard({
               {folder.files_count}
             </span>
           )}
+          {folder.is_restricted && (
+            <span className="absolute -bottom-1.5 -right-1.5 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-[var(--brand)] text-white">
+              <Lock size={8} />
+            </span>
+          )}
         </div>
 
         {canManage && (
-          <div className="relative z-20">
+          <div>
             <button
+              ref={menuBtnRef}
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
@@ -67,8 +87,11 @@ export const FolderCard = memo(function FolderCard({
               <MoreVertical size={13} />
             </button>
 
-            {isMenuOpen && (
-              <div className="absolute right-0 top-7 z-30 w-52 bg-surface border border-default rounded-xl shadow-[var(--shadow-pop)] py-1">
+            {isMenuOpen && createPortal(
+              <div
+                style={{ top: menuStyle.top, right: menuStyle.right }}
+                className="fixed z-50 w-52 bg-surface border border-default rounded-xl shadow-[var(--shadow-pop)] py-1"
+              >
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onRename(folder); onMenuToggle(null); }}
@@ -76,6 +99,15 @@ export const FolderCard = memo(function FolderCard({
                 >
                   <Pencil size={13} /> {t('files.rename')}
                 </button>
+                {isAdmin && folder.scope === 'company' && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onManageAccess(folder); onMenuToggle(null); }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-secondary hover:bg-hover whitespace-nowrap"
+                  >
+                    <Shield size={13} /> {t('files.manageAccess')}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onDelete(folder); onMenuToggle(null); }}
@@ -83,7 +115,8 @@ export const FolderCard = memo(function FolderCard({
                 >
                   <Trash2 size={13} /> {t('common.delete')}
                 </button>
-              </div>
+              </div>,
+              document.body,
             )}
           </div>
         )}
@@ -95,6 +128,11 @@ export const FolderCard = memo(function FolderCard({
       <div className="flex items-center gap-1 text-[11px] text-muted">
         <Clock size={10} />
         <span className="truncate">{relativeDate(folder.updated_at, lang)}</span>
+        {folder.is_restricted && (
+          <span className="ml-auto text-[10px] font-medium text-[var(--brand)] bg-brand-subtle px-1.5 py-0.5 rounded-[3px] leading-none">
+            {t('files.folderRestricted')}
+          </span>
+        )}
       </div>
     </div>
   );

@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next';
-import { HardDrive } from 'lucide-react';
+import { HardDrive, Trash2, Users, User } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { BREAKDOWN_ITEMS, formatFileSize } from '../utils/fileBrowserUtils';
+import type { StorageScope } from '../types';
 
 interface StoragePanelProps {
   usedBytes: number;
@@ -12,6 +13,12 @@ interface StoragePanelProps {
   gaugePct: number;
   bytesCats: Record<string, number>;
   bytesTotal: number;
+  trashBytes: number;
+  trashCount: number;
+  scope: StorageScope;
+  personalBytes: number;
+  companyBytes: number;
+  isGuest?: boolean;
 }
 
 export function StoragePanel({
@@ -23,8 +30,59 @@ export function StoragePanel({
   gaugePct,
   bytesCats,
   bytesTotal,
+  trashBytes,
+  scope,
+  personalBytes,
+  companyBytes,
+  isGuest,
 }: StoragePanelProps) {
   const { t } = useTranslation();
+
+  const isFull    = gaugePct >= 1;
+  const isDanger  = gaugePct >= 0.85 && gaugePct < 1;
+  const isWarning = gaugePct >= 0.7  && gaugePct < 0.85;
+
+  // full ≥100% → crimson, danger 85-99% → red, warning 70-84% → orange, ok → green
+  const arcStroke = isFull
+    ? '#b91c1c'
+    : isDanger
+      ? '#ef4444'
+      : isWarning
+        ? '#f97316'
+        : 'var(--brand)';
+
+
+  const iconBoxClass = isFull
+    ? 'bg-red-200 dark:bg-red-900'
+    : isDanger
+      ? 'bg-red-100 dark:bg-red-950'
+      : isWarning
+        ? 'bg-orange-100 dark:bg-orange-950'
+        : 'bg-brand-subtle';
+
+  const iconColor = isFull
+    ? '#b91c1c'
+    : isDanger
+      ? '#ef4444'
+      : isWarning
+        ? '#f97316'
+        : 'var(--brand-text)';
+
+  const allBytesTotal = bytesTotal + trashBytes;
+
+  // For trash and cross rows use actual API totals as denominator — they are not tied to the visible file list
+  const apiTotal = usedBytes + trashBytes;
+  const trashPct = apiTotal > 0 ? Math.min((trashBytes / apiTotal) * 100, 100) : 0;
+
+  const crossBytes = scope === 'personal' ? companyBytes : personalBytes;
+  const crossPct   = apiTotal > 0 ? Math.min((crossBytes / apiTotal) * 100, 100) : 0;
+  const crossLabel = scope === 'personal' ? t('files.bdCompany') : t('files.bdMyFiles');
+  const CrossIcon  = scope === 'personal' ? Users : User;
+  // Color scheme per scope direction (concrete Tailwind classes — CSS-var gradients don't work in v4)
+  const crossIconBoxClass = scope === 'personal'
+    ? 'bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400'
+    : 'bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400';
+  const crossBarClass = scope === 'personal' ? 'from-violet-400 to-violet-500' : 'from-blue-400 to-blue-500';
 
   return (
     <aside className="sticky top-4">
@@ -49,10 +107,9 @@ export function StoragePanel({
                 <path
                   d={arcUsed}
                   fill="none"
-                  stroke="var(--brand)"
+                  stroke={arcStroke}
                   strokeWidth="16"
                   strokeLinecap="round"
-                  style={{ filter: 'drop-shadow(0 3px 10px color-mix(in srgb, var(--brand) 50%, transparent))' }}
                 />
               )}
             </svg>
@@ -60,8 +117,8 @@ export function StoragePanel({
               className="absolute"
               style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
             >
-              <div className="w-10 h-10 rounded-[11px] bg-brand-subtle grid place-items-center border-2 border-surface shadow-sm">
-                <HardDrive size={18} style={{ color: 'var(--brand-text)' }} />
+              <div className={cn('w-10 h-10 rounded-[11px] grid place-items-center border-2 border-surface shadow-sm', iconBoxClass)}>
+                <HardDrive size={18} style={{ color: iconColor }} />
               </div>
             </div>
           </div>
@@ -83,7 +140,7 @@ export function StoragePanel({
         <div className="space-y-2.5">
           {BREAKDOWN_ITEMS.map((b) => {
             const bytes = bytesCats[b.key] ?? 0;
-            const pct = bytesTotal > 0 ? (bytes / bytesTotal) * 100 : 0;
+            const pct = allBytesTotal > 0 ? (bytes / allBytesTotal) * 100 : 0;
             return (
               <div key={b.key} className="flex items-center gap-2.5">
                 <span className={cn('w-7 h-7 rounded-[7px] flex items-center justify-center shrink-0', b.colorClass)}>
@@ -104,6 +161,50 @@ export function StoragePanel({
               </div>
             );
           })}
+
+          {/* Trash row */}
+          <div className="h-px bg-[var(--border-faint)]" />
+          <div className="flex items-center gap-2.5">
+            <span className="w-7 h-7 rounded-[7px] flex items-center justify-center shrink-0 bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+              <Trash2 size={15} />
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-[5px]">
+                <span className="text-[13px] font-medium text-primary">{t('files.bdTrash')}</span>
+                <span className="font-mono text-[11px] text-muted">{formatFileSize(trashBytes)}</span>
+              </div>
+              <div className="h-[4px] bg-raised rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-slate-400 to-slate-500"
+                  style={{ width: `${trashPct}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Cross-storage row: company bytes when on personal, personal bytes when on company */}
+          {!isGuest && (
+            <>
+              <div className="h-px bg-[var(--border-faint)]" />
+              <div className="flex items-center gap-2.5">
+                <span className={cn('w-7 h-7 rounded-[7px] flex items-center justify-center shrink-0', crossIconBoxClass)}>
+                  <CrossIcon size={15} />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-[5px]">
+                    <span className="text-[13px] font-medium text-primary">{crossLabel}</span>
+                    <span className="font-mono text-[11px] text-muted">{formatFileSize(crossBytes)}</span>
+                  </div>
+                  <div className="h-[4px] bg-raised rounded-full overflow-hidden">
+                    <div
+                      className={cn('h-full rounded-full bg-gradient-to-r', crossBarClass)}
+                      style={{ width: `${crossPct}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
       </div>

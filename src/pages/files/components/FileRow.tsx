@@ -1,7 +1,7 @@
 import { Fragment, memo, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Check, Download, MoreVertical, Pencil, Search, Trash2, Users, X } from 'lucide-react';
+import { Check, Download, FolderInput, MoreVertical, Pencil, Search, Trash2, Users, X } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import type { CompanyDirectoryMember, StorageFile, StorageFileShare } from '@/shared/types';
 import type { StorageScope } from '../types';
@@ -49,6 +49,7 @@ interface FileRowProps {
   onMenuToggle: (id: number | null) => void;
   onDownload: (id: number, name: string) => void;
   onRename: (file: StorageFile) => void;
+  onMove: (file: StorageFile) => void;
   onDelete: (file: StorageFile) => void;
   onToggleShare: (id: number) => void;
   onCloseShare: () => void;
@@ -77,6 +78,7 @@ export const FileRow = memo(function FileRow({
   onMenuToggle,
   onDownload,
   onRename,
+  onMove,
   onDelete,
   onToggleShare,
   onCloseShare,
@@ -164,6 +166,15 @@ export const FileRow = memo(function FileRow({
                   className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-secondary hover:bg-hover whitespace-nowrap"
                 >
                   <Pencil size={13} /> {t('files.rename')}
+                </button>
+              )}
+              {canManage && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onMove(file); onMenuToggle(null); }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-secondary hover:bg-hover whitespace-nowrap"
+                >
+                  <FolderInput size={13} /> {t('files.move')}
                 </button>
               )}
               {!isGuest && scope === 'personal' && (

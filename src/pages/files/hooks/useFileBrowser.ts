@@ -9,16 +9,19 @@ import { getApiError } from '@/shared/lib/getApiError';
 import { downloadFromApiEndpoint } from '@/shared/lib/resolveDownloadUrl';
 import { USER_ROLES } from '@/shared/config/constants';
 import type {
+  FolderPermission,
   PaginatedResponse,
   StorageFile,
   StorageFolder,
   StorageFolderDetail,
   StorageFileShare,
   StorageUsage,
+  TrashItem,
 } from '@/shared/types';
 import type { CategoryFilter, FileBrowserConfirmAction, RenameTarget, StorageScope } from '../types';
 import { buildGaugePaths, categorizeBytes, getFileCategoryFromContentType, getFileExt, MAX_UPLOAD_BYTES } from '../utils/fileBrowserUtils';
 import { useFileShare } from './useFileShare';
+import { useFolderPermissions } from './useFolderPermissions';
 
 const CATEGORY_TO_BACKEND: Record<Exclude<CategoryFilter, 'all'>, string> = {
   docs:  'document',
@@ -46,6 +49,7 @@ export function useFileBrowser() {
   const [confirmAction, setConfirmAction] = useState<FileBrowserConfirmAction | null>(null);
   const [renameTarget, setRenameTarget] = useState<RenameTarget | null>(null);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [moveTarget, setMoveTarget] = useState<StorageFile | null>(null);
 
   // ── Sort & category filter ──
   const [sortField, setSortField] = useState<'name' | 'file_size' | 'created_at' | 'type'>('created_at');
@@ -94,6 +98,9 @@ export function useFileBrowser() {
     onNeedRefresh: refreshStorageData,
     onRequestRevokeConfirm: (shareId) => setConfirmAction({ type: 'revoke-share', shareId }),
   });
+
+  // ── Folder permissions sub-hook ──
+  const folderPermState = useFolderPermissions({ onNeedRefresh: refreshStorageData });
 
   // ── Queries ──
   const rootFoldersQuery = useQuery({
@@ -154,6 +161,14 @@ export function useFileBrowser() {
       const { data } = await apiClient.get<StorageUsage>(API.storage.usage);
       return data;
     },
+  });
+
+  const trashAllQuery = useQuery({
+    queryKey: ['storage', 'trash', 'all'],
+    queryFn: () =>
+      apiClient
+        .get<PaginatedResponse<TrashItem>>(API.storage.trash)
+        .then((r) => r.data),
   });
 
   const sharedWithMeQuery = useQuery({
@@ -253,7 +268,26 @@ export function useFileBrowser() {
     mutationFn: async (fileId: number) => {
       await apiClient.delete(API.storage.file(String(fileId)));
     },
-    onSuccess: () => { refreshStorageData(); },
+    onSuccess: (_, fileId) => {
+      if (currentFolder) {
+        queryClient.setQueryData<StorageFolderDetail>(
+          ['storage', 'folder', currentFolder.id],
+          (prev) => prev ? { ...prev, files: prev.files.filter((f) => f.id !== fileId) } : prev,
+        );
+      } else {
+        queryClient.setQueryData<PaginatedResponse<StorageFile>>(
+          ['storage', 'files-root', scope, sortField, sortDir, categoryFilter],
+          (prev) => prev ? { ...prev, count: prev.count - 1, results: prev.results.filter((f) => f.id !== fileId) } : prev,
+        );
+      }
+      if (isSearching) {
+        queryClient.setQueryData<PaginatedResponse<StorageFile>>(
+          ['storage', 'files-search', normalizedSearchTerm, scope, sortField, sortDir, categoryFilter],
+          (prev) => prev ? { ...prev, count: prev.count - 1, results: prev.results.filter((f) => f.id !== fileId) } : prev,
+        );
+      }
+      queryClient.invalidateQueries({ queryKey: ['storage', 'usage'] });
+    },
   });
 
   const downloadFileMutation = useMutation({
@@ -262,13 +296,64 @@ export function useFileBrowser() {
     },
   });
 
+  const moveFileMutation = useMutation({
+    mutationFn: ({ fileId, folderId }: { fileId: number; folderId: number | null }) =>
+      apiClient.post(API.storage.fileMove(String(fileId)), { folder_id: folderId }).then((r) => r.data),
+
+    onMutate: async ({ fileId }) => {
+      const rootKey = ['storage', 'files-root', scope, sortField, sortDir, categoryFilter] as const;
+      const folderKey = currentFolder ? (['storage', 'folder', currentFolder.id] as const) : null;
+
+      await queryClient.cancelQueries({ queryKey: rootKey });
+      if (folderKey) await queryClient.cancelQueries({ queryKey: folderKey });
+
+      const prevRoot = queryClient.getQueryData(rootKey);
+      const prevFolder = folderKey ? queryClient.getQueryData(folderKey) : undefined;
+
+      if (folderKey) {
+        queryClient.setQueryData<StorageFolderDetail>(folderKey, (old) =>
+          old ? { ...old, files: old.files.filter((f) => f.id !== fileId) } : old,
+        );
+      } else {
+        queryClient.setQueryData<PaginatedResponse<StorageFile>>(rootKey, (old) =>
+          old ? { ...old, count: old.count - 1, results: old.results.filter((f) => f.id !== fileId) } : old,
+        );
+      }
+
+      return { prevRoot, prevFolder, rootKey, folderKey };
+    },
+
+    onError: (_err, _vars, ctx) => {
+      if (!ctx) return;
+      if (ctx.prevRoot !== undefined) queryClient.setQueryData(ctx.rootKey, ctx.prevRoot);
+      if (ctx.folderKey && ctx.prevFolder !== undefined) queryClient.setQueryData(ctx.folderKey, ctx.prevFolder);
+    },
+
+    onSuccess: () => {
+      setMoveTarget(null);
+      refreshStorageData();
+    },
+  });
+
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: number[]) => {
       await apiClient.post(API.storage.filesBulkDelete, { ids });
     },
-    onSuccess: () => {
+    onSuccess: (_, ids) => {
+      const idSet = new Set(ids);
+      if (currentFolder) {
+        queryClient.setQueryData<StorageFolderDetail>(
+          ['storage', 'folder', currentFolder.id],
+          (prev) => prev ? { ...prev, files: prev.files.filter((f) => !idSet.has(f.id)) } : prev,
+        );
+      } else {
+        queryClient.setQueryData<PaginatedResponse<StorageFile>>(
+          ['storage', 'files-root', scope, sortField, sortDir, categoryFilter],
+          (prev) => prev ? { ...prev, count: prev.count - ids.length, results: prev.results.filter((f) => !idSet.has(f.id)) } : prev,
+        );
+      }
       setSelectedFileIds(new Set());
-      refreshStorageData();
+      queryClient.invalidateQueries({ queryKey: ['storage', 'usage'] });
     },
   });
 
@@ -325,7 +410,26 @@ export function useFileBrowser() {
   const isGuest = user?.role === USER_ROLES.GUEST;
   const isAdmin = user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN;
 
-  const canManageFile = (file: StorageFile) => scope === 'personal' || file.owner === user?.id || isAdmin;
+  // Fetch permissions for the currently open company folder (for non-admins only)
+  const currentFolderPermsQuery = useQuery({
+    queryKey: ['storage', 'folder-permissions', currentFolder?.id],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PaginatedResponse<FolderPermission> | FolderPermission[]>(
+        API.storage.folderPermissions(String(currentFolder?.id)),
+      );
+      return Array.isArray(data) ? data : (data.results ?? []);
+    },
+    enabled: currentFolder !== null && scope === 'company' && !isAdmin,
+  });
+
+  const hasFullFolderAccess = useMemo(() => {
+    if (!currentFolder || scope !== 'company' || isAdmin) return false;
+    const perms = currentFolderPermsQuery.data ?? [];
+    return perms.some((p) => p.user === user?.id && p.permission === 'full');
+  }, [currentFolder, scope, isAdmin, currentFolderPermsQuery.data, user?.id]);
+
+  const canManageFile = (file: StorageFile) =>
+    scope === 'personal' || file.owner === user?.id || isAdmin || hasFullFolderAccess;
   const canManageFolder = (folder: StorageFolder) => scope === 'personal' || folder.owner === user?.id || isAdmin;
 
   const totalFilesCount = currentFolder === null && !isSearching
@@ -347,6 +451,15 @@ export function useFileBrowser() {
 
   const bytesCats = useMemo(() => categorizeBytes(breakdownFiles), [breakdownFiles]);
   const bytesTotal = Object.values(bytesCats).reduce((a, b) => a + b, 0);
+
+  const trashBytes = useMemo(
+    () => (trashAllQuery.data?.results ?? []).reduce((sum, item) => sum + (item.file_size ?? 0), 0),
+    [trashAllQuery.data],
+  );
+  const trashCount = trashAllQuery.data?.count ?? 0;
+
+  const personalBytes = usageData?.personal?.used_bytes ?? 0;
+  const companyBytes  = usageData?.company?.used_bytes  ?? 0;
 
   // ── Source cards ──
   const sourceCards = useMemo(() => [
@@ -452,6 +565,13 @@ export function useFileBrowser() {
     downloadFileMutation.mutate({ id, name });
   };
 
+  const handleMoveFile = (file: StorageFile) => setMoveTarget(file);
+  const handleCancelMove = () => setMoveTarget(null);
+  const handleConfirmMove = (folderId: number | null) => {
+    if (!moveTarget) return;
+    moveFileMutation.mutate({ fileId: moveTarget.id, folderId });
+  };
+
   return {
     // i18n
     lang: i18n.language,
@@ -517,6 +637,10 @@ export function useFileBrowser() {
     arcAll,
     bytesCats,
     bytesTotal,
+    trashBytes,
+    trashCount,
+    personalBytes,
+    companyBytes,
     // pending states
     isDeletePending: deleteFolderMutation.isPending || deleteFileMutation.isPending || shareState.revokeShareMutation.isPending,
     isRenamePending: renameFolderMutation.isPending || renameFileMutation.isPending,
@@ -528,6 +652,12 @@ export function useFileBrowser() {
     handleCreateFolder,
     handleBulkDelete,
     handleDownload,
+    // move
+    moveTarget,
+    handleMoveFile,
+    handleCancelMove,
+    handleConfirmMove,
+    isMovePending: moveFileMutation.isPending,
     // shared-with-me query state
     sharedWithMeLoading: sharedWithMeQuery.isLoading,
     sharedWithMeError: sharedWithMeQuery.isError,
@@ -542,6 +672,8 @@ export function useFileBrowser() {
     setCategoryFilter,
     // sharing
     shareState,
+    // folder permissions
+    folderPermState,
   };
 }
 

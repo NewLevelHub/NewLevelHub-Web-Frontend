@@ -209,6 +209,13 @@ export const API = {
     share: (id: string) => `/storage/shares/${id}/`,
     fileShares: (id: string) => `/storage/files/${id}/shares/`,
     usage: '/storage/usage/',
+    trash: '/storage/trash/',
+    fileRestore: (id: string) => `/storage/files/${id}/restore/`,
+    folderRestore: (id: string) => `/storage/folders/${id}/restore/`,
+    filePermDelete: (id: string) => `/storage/files/${id}/permanent/`,
+    folderPermDelete: (id: string) => `/storage/folders/${id}/permanent/`,
+    folderPermissions: (folderId: string) => `/storage/folders/${folderId}/permissions/`,
+    folderPermission: (permId: string) => `/storage/folder-permissions/${permId}/`,
   },
   files: {
     list: '/files/',

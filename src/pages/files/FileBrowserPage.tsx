@@ -1,9 +1,12 @@
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { PromptModal } from '@/shared/ui/PromptModal';
 import { ChevronRight, Download, Folder, Plus, X } from 'lucide-react';
 import { useFileBrowser } from './hooks/useFileBrowser';
 import { FolderCard } from './components/FolderCard';
+import { FolderPermissionPanel } from './components/FolderPermissionPanel';
+import { FolderPickerModal } from './components/FolderPickerModal';
 import { StorageScopeCards } from './components/StorageScopeCards';
 import { FileRow } from './components/FileRow';
 import { FilesTableShell } from './components/FilesTableShell';
@@ -12,7 +15,14 @@ import { StoragePanel } from './components/StoragePanel';
 export default function FileBrowserPage() {
   const { t } = useTranslation();
   const fb = useFileBrowser();
-  const { shareState } = fb;
+  const { shareState, folderPermState } = fb;
+
+  useEffect(() => {
+    if (fb.openMenuId === null) return;
+    const close = () => fb.setOpenMenuId(null);
+    window.addEventListener('scroll', close, { passive: true, capture: true });
+    return () => window.removeEventListener('scroll', close, { capture: true });
+  }, [fb.openMenuId, fb.setOpenMenuId]);
 
   return (
     <div className="space-y-5">
@@ -116,21 +126,55 @@ export default function FileBrowserPage() {
             ) : fb.folders.length === 0 ? (
               <p className="text-sm text-muted">{t('files.noFolders')}</p>
             ) : (
-              <div className="grid grid-cols-4 gap-2.5">
-                {fb.folders.map((folder) => (
-                  <FolderCard
-                    key={folder.id}
-                    folder={folder}
-                    isMenuOpen={fb.openMenuId?.kind === 'folder' && fb.openMenuId.id === folder.id}
-                    canManage={fb.canManageFolder(folder)}
-                    lang={fb.lang}
-                    onOpen={fb.openFolder}
-                    onMenuToggle={(id) => fb.setOpenMenuId(id !== null ? { kind: 'folder', id } : null)}
-                    onRename={(f) => { fb.setRenameTarget({ kind: 'folder', folder: f }); }}
-                    onDelete={(f) => { fb.setConfirmAction({ type: 'delete-folder', folder: f }); }}
+              <>
+                <div className="grid grid-cols-4 gap-2.5">
+                  {fb.folders.map((folder) => (
+                    <FolderCard
+                      key={folder.id}
+                      folder={folder}
+                      isMenuOpen={fb.openMenuId?.kind === 'folder' && fb.openMenuId.id === folder.id}
+                      canManage={fb.canManageFolder(folder)}
+                      isAdmin={fb.isAdmin}
+                      lang={fb.lang}
+                      onOpen={fb.openFolder}
+                      onMenuToggle={(id) => fb.setOpenMenuId(id !== null ? { kind: 'folder', id } : null)}
+                      onRename={(f) => { fb.setRenameTarget({ kind: 'folder', folder: f }); }}
+                      onDelete={(f) => { fb.setConfirmAction({ type: 'delete-folder', folder: f }); }}
+                      onManageAccess={(f) => folderPermState.openPanel(
+                        folderPermState.openPermFolderId === f.id ? null : f.id
+                      )}
+                    />
+                  ))}
+                </div>
+
+                {folderPermState.openPermFolderId !== null &&
+                  fb.folders.find((f) => f.id === folderPermState.openPermFolderId) && (
+                  <FolderPermissionPanel
+                    folder={fb.folders.find((f) => f.id === folderPermState.openPermFolderId)!}
+                    permissions={folderPermState.folderPermissions}
+                    isLoading={folderPermState.isLoadingPermissions}
+                    permError={folderPermState.permError}
+                    permSearch={folderPermState.permSearch}
+                    filteredPermMembers={folderPermState.filteredPermMembers}
+                    isAddPending={folderPermState.addPermissionMutation.isPending}
+                    isUpdatePending={folderPermState.updatePermissionMutation.isPending}
+                    isRemovePending={folderPermState.removePermissionMutation.isPending}
+                    onClose={() => folderPermState.openPanel(null)}
+                    onAdd={(userId, permission) =>
+                      folderPermState.addPermissionMutation.mutate({
+                        folderId: folderPermState.openPermFolderId!,
+                        userId,
+                        permission,
+                      })
+                    }
+                    onUpdate={(permId, permission) =>
+                      folderPermState.updatePermissionMutation.mutate({ permId, permission })
+                    }
+                    onRemove={(permId) => folderPermState.removePermissionMutation.mutate(permId)}
+                    onSearchChange={folderPermState.setPermSearch}
                   />
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
 
@@ -228,6 +272,7 @@ export default function FileBrowserPage() {
                   onMenuToggle={(id) => fb.setOpenMenuId(id !== null ? { kind: 'file', id } : null)}
                   onDownload={fb.handleDownload}
                   onRename={(f) => fb.setRenameTarget({ kind: 'file', file: f })}
+                  onMove={fb.handleMoveFile}
                   onDelete={(f) => fb.setConfirmAction({ type: 'delete-file', file: f })}
                   onToggleShare={(id) => shareState.openShare(shareState.inlineShareFileId === id ? null : id)}
                   onCloseShare={() => { shareState.openShare(null); shareState.setShareError(null); shareState.setShareSearch(''); }}
@@ -278,6 +323,12 @@ export default function FileBrowserPage() {
           gaugePct={fb.gaugePct}
           bytesCats={fb.bytesCats}
           bytesTotal={fb.bytesTotal}
+          trashBytes={fb.trashBytes}
+          trashCount={fb.trashCount}
+          scope={fb.scope}
+          personalBytes={fb.personalBytes}
+          companyBytes={fb.companyBytes}
+          isGuest={fb.isGuest}
         />
       </div>
 
@@ -337,6 +388,16 @@ export default function FileBrowserPage() {
         variant="danger"
         isLoading={fb.isBulkDeletePending}
       />
+
+      {fb.moveTarget && (
+        <FolderPickerModal
+          file={fb.moveTarget}
+          scope={fb.scope}
+          onConfirm={fb.handleConfirmMove}
+          onClose={fb.handleCancelMove}
+          isPending={fb.isMovePending}
+        />
+      )}
     </div>
   );
 }
