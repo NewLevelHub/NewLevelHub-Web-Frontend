@@ -1387,7 +1387,10 @@
     "failedToLoad": "Failed to load task. It may have been archived or deleted.",
     "failedToSave": "Failed to save changes.",
     "failedToArchive": "Failed to archive task.",
-    "failedToUnarchive": "Failed to unarchive task."
+    "failedToUnarchive": "Failed to unarchive task.",
+    "board": {
+      "template": "Template"
+    }
   },
   "auth": {
     "login": {
