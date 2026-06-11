@@ -1398,7 +1398,12 @@
     "failedToLoad": "Не удалось загрузить задачу. Возможно, она архивирована или была удалена.",
     "failedToSave": "Не удалось сохранить изменения.",
     "failedToArchive": "Не удалось архивировать задачу.",
-    "failedToUnarchive": "Не удалось разархивировать задачу."
+    "failedToUnarchive": "Не удалось разархивировать задачу.",
+    "attachFromStorage": "Из хранилища",
+    "storagePickerTitle": "Выберите файл из хранилища",
+    "storagePickerAttach": "Прикрепить",
+    "attachmentFileTypeNotSupported": "Этот тип файла нельзя прикрепить к задаче.",
+    "attachmentFileTooLarge": "Файл больше 50 МБ и не может быть прикреплён."
   },
   "auth": {
     "login": {
