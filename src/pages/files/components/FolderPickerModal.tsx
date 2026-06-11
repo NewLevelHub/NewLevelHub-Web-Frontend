@@ -18,6 +18,15 @@ function buildFolderPath(folder: StorageFolder, byId: Map<number, StorageFolder>
   return parts.join(' / ');
 }
 
+function isEffectivelyViewOnly(folder: StorageFolder, byId: Map<number, StorageFolder>): boolean {
+  let current: StorageFolder | undefined = folder;
+  while (current) {
+    if (current.user_permission === 'view') return true;
+    current = current.parent !== null ? byId.get(current.parent) : undefined;
+  }
+  return false;
+}
+
 interface FolderPickerModalProps {
   file: StorageFile;
   scope: StorageScope;
@@ -110,7 +119,7 @@ export function FolderPickerModal({ file, scope, onConfirm, onClose, isPending }
               {sortedFolders.length === 0 && !foldersQuery.isLoading ? null : (
                 sortedFolders.map((folder) => {
                   const isCurrent = folder.id === file.folder;
-                  const isViewOnly = folder.user_permission === 'view';
+                  const isViewOnly = isEffectivelyViewOnly(folder, folderById);
                   const isDisabled = (isCurrent && selected === undefined) || isViewOnly;
                   const isSelected = selected === folder.id;
                   const path = buildFolderPath(folder, folderById);

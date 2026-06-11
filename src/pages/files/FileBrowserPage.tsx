@@ -38,7 +38,7 @@ export default function FileBrowserPage() {
           {t('files.title')}
         </h1>
         <div className="flex items-center gap-2">
-          {!fb.isGuest && (
+          {!fb.isGuest && !fb.isCurrentLocationViewOnly && (
             <button
               type="button"
               onClick={() => fb.setShowNewFolderModal(true)}

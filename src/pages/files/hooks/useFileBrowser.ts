@@ -410,6 +410,13 @@ export function useFileBrowser() {
     return perms.some((p) => p.user === user?.id && p.permission === 'full');
   }, [currentFolder, scope, isAdmin, currentFolderPermsQuery.data, user?.id]);
 
+  // True when any folder in the current navigation path has view-only access —
+  // applies to the current folder and all its ancestors via the trail.
+  const isCurrentLocationViewOnly = useMemo(
+    () => scope === 'company' && !isAdmin && trail.some((f) => f.user_permission === 'view'),
+    [scope, isAdmin, trail],
+  );
+
   const canManageFile = (file: StorageFile) =>
     scope === 'personal' || file.owner === user?.id || isAdmin || hasFullFolderAccess;
   const canManageFolder = (folder: StorageFolder) => scope === 'personal' || folder.owner === user?.id || isAdmin;
@@ -614,6 +621,7 @@ export function useFileBrowser() {
     totalFilesCount,
     canManageFile,
     canManageFolder,
+    isCurrentLocationViewOnly,
     sourceCards,
     // storage panel
     usedBytes,
