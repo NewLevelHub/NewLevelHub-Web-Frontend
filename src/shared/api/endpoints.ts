@@ -45,6 +45,8 @@ export const API = {
       `/companies/${companyId}/members/${userId}/deactivate/`,
     memberActivate: (companyId: string, userId: string) =>
       `/companies/${companyId}/members/${userId}/activate/`,
+    memberChangeRole: (companyId: string, userId: string) =>
+      `/companies/${companyId}/members/${userId}/role/`,
     memberRemove: (companyId: string, userId: string, reassignTo?: string) =>
       `/companies/${companyId}/members/${userId}/${reassignTo ? `?reassign_to=${reassignTo}` : ''}`,
     onboardingStatus: (companyId: string) => `/companies/${companyId}/onboarding-status/`,

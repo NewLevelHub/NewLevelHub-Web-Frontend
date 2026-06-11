@@ -1510,7 +1510,9 @@
     "dateJoined": "Дата вступления",
     "tasksSuffix": " Переназначено задач: {{count}}.",
     "directoryProfileLoadError": "Не удалось загрузить профиль.",
-    "rowActions": "Действия"
+    "rowActions": "Действия",
+    "changeRole": "Роль",
+    "changeRoleFor": "Изменить роль: {{name}}"
   },
   "passes": {
     "showing": "Показано {{start}}—{{end}} из {{total}}",

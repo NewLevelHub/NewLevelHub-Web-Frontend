@@ -1515,7 +1515,9 @@
     "dateJoined": "Join date",
     "tasksSuffix": " Tasks reassigned: {{count}}.",
     "directoryProfileLoadError": "Failed to load profile.",
-    "rowActions": "Actions"
+    "rowActions": "Actions",
+    "changeRole": "Role",
+    "changeRoleFor": "Change role: {{name}}"
   },
   "passes": {
     "showing": "Showing {{start}}—{{end}} of {{total}}",
