@@ -689,6 +689,9 @@ export interface CalendarEvent {
     id: number;
     full_name: string;
   };
+  task_id?: number;
+  board_id?: number;
+  guest_pass_id?: number;
 }
 
 export interface CalendarBusySlot {
