@@ -184,6 +184,15 @@ export interface CompanyMember {
   last_login: string | null;
 }
 
+/** GET /bookings/members/ — participant picker autocomplete. */
+export interface ParticipantPickerUser {
+  id: number;
+  email: string;
+  full_name: string;
+  avatar: string | null;
+  position: string | null;
+}
+
 export interface MemberActivity {
   last_login: string | null;
   active_tasks_count: number;
