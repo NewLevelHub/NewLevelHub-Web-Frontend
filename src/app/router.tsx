@@ -28,6 +28,7 @@ import CompanyDetailPage from '@/pages/companies/CompanyDetailPage';
 import CompanySettingsPage from '@/pages/company/CompanySettingsPage';
 import CompanyMembersPage from '@/pages/company/CompanyMembersPage';
 import CompanyOnboardingTemplatesPage from '@/pages/company/CompanyOnboardingTemplatesPage';
+import TeamOnboardingPage from '@/pages/company/TeamOnboardingPage';
 
 // Team
 import TeamDirectoryPage from '@/pages/team/TeamDirectoryPage';
@@ -296,6 +297,7 @@ export const router = createBrowserRouter([
             children: [
               { path: '/company/settings/members', element: <CompanyMembersPage /> },
               { path: '/company/settings/onboarding', element: <CompanyOnboardingTemplatesPage /> },
+              { path: '/company/settings/onboarding/team', element: <TeamOnboardingPage /> },
             ],
           },
 
