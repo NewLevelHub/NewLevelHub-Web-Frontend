@@ -1055,7 +1055,13 @@
       "actions": "Actions",
       "rowActions": "Actions for booking #{{id}}",
       "selectAll": "Select all",
-      "selectRow": "Select booking #{{id}}",
+      "selectRow": "Select row",
+      "selectedCount": "Selected: {{count}}",
+      "bulkCancelBtn": "Cancel {{count}}",
+      "clearSelection": "Clear selection",
+      "bulkCancelTitle": "Cancel {{count}} bookings",
+      "bulkCancelDesc": "Provide a reason. Already-cancelled or started bookings will be skipped.",
+      "bulkCancelResult": "Cancelled: {{cancelled}}, skipped: {{skipped}}",
       "noResults": "No bookings match the current filters.",
       "noActions": "No actions available",
       "adminCancel": "Admin cancel",
@@ -1065,7 +1071,14 @@
       "cancelReasonRequired": "Please specify a cancellation reason.",
       "confirmCancel": "Confirm cancellation",
       "editTitle": "Edit booking #{{id}}",
-      "participantsOnlyMeeting": "Participant management is only available for meeting room bookings."
+      "participantsOnlyMeeting": "Participant management is only available for meeting room bookings.",
+      "selectedCountShort": "{{count}} selected",
+      "clearSelectionShort": "Clear",
+      "bulkCancelWithCount": "Cancel selected ({{count}})",
+      "bulkCancelWarning": "Already-cancelled and started bookings will be skipped automatically.",
+      "cancelReasonRequired2": "Cancellation reason *",
+      "bulkCancelledCount": "Cancelled: {{count}}",
+      "bulkSkippedCount": "Skipped: {{count}}"
     }
   },
   "resources": {

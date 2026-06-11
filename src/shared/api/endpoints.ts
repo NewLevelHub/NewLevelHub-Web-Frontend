@@ -91,6 +91,7 @@ export const API = {
       addParticipants: (id: string) => `/bookings/reservations/${id}/participants/`,
       removeParticipant: (id: string, userId: string) =>
         `/bookings/reservations/${id}/participants/${userId}/`,
+      bulkCancel: '/bookings/reservations/bulk-cancel/',
     },
     recurring: {
       list: '/bookings/recurring/',
