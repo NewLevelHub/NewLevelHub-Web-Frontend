@@ -312,7 +312,7 @@ export default function ResourceListPage() {
                         {t(RESOURCE_TYPE_LABEL_KEYS[r.type]) ?? r.type}
                       </td>
                       <td className="px-3 py-2.5 align-middle text-[color:var(--text-muted)]">
-                        {r.floor}
+                        {r.floor_number}
                       </td>
                       <td className="px-3 py-2.5 align-middle text-[color:var(--text-muted)]">
                         {r.zone || '—'}

@@ -112,7 +112,7 @@ export default function CompanyResourcesPage() {
                     </td>
                     <td className={resTdStrong}>{r.name}</td>
                     <td className={resTd}>{t(RESOURCE_TYPE_LABEL_KEYS[r.type as ResourceType]) ?? r.type}</td>
-                    <td className={resTdMuted}>{r.floor}</td>
+                    <td className={resTdMuted}>{r.floor_number}</td>
                     <td className={resTdMuted}>{r.zone || '—'}</td>
                     <td className={resTdMuted}>{r.capacity}</td>
                     <td className="px-4 py-2">

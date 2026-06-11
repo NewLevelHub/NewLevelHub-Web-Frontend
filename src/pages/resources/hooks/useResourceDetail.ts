@@ -182,7 +182,7 @@ export function useResourceDetail() {
     if (!data) return;
     setType(data.type);
     setName(data.name);
-    setFloor(data.floor_id ?? data.floor_number ?? data.floor ?? 1);
+    setFloor(data.floor_number ?? data.floor_id ?? 1);
     setZone(data.zone);
     setDescription(data.description);
     setCapacity(data.capacity);

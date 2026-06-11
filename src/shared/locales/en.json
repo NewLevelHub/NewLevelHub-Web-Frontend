@@ -813,7 +813,9 @@
     "back": "Back to bookings (admin)",
     "photoPrev": "Previous photo",
     "photoNext": "Next photo",
-    "photoGoTo": "Go to photo {{n}}"
+    "photoGoTo": "Go to photo {{n}}",
+    "showOnMap": "Show on map",
+    "notOnMap": "Not added to the map"
   },
   "profile": {
     "title": "Profile",

@@ -325,7 +325,7 @@ function ResourceUsageSection({
     if (!floorFilter) return all;
     const n = Number(floorFilter);
     if (!Number.isInteger(n)) return all;
-    return all.filter((r) => r.floor === n);
+    return all.filter((r) => r.floor_number === n);
   }, [resources, floorFilter]);
 
   const params = useMemo(() => {
@@ -460,7 +460,7 @@ function ResourceUsageSection({
               if (next && resourceFilter) {
                 const n = Number(next);
                 const current = (resources ?? []).find((r) => String(r.id) === resourceFilter);
-                if (current && current.floor !== n) setResourceFilter('');
+                if (current && current.floor_number !== n) setResourceFilter('');
               }
             }}
             className="bg-transparent text-primary outline-none cursor-pointer"

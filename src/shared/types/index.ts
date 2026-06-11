@@ -292,10 +292,9 @@ export interface BookingResourceListItem {
   id: number;
   type: ResourceType;
   name: string;
-  floor?: number;
-  floor_id?: number | null;
-  floor_number?: number | null;
-  floor_name?: string | null;
+  floor_id: number | null;
+  floor_number: number | null;
+  floor_name: string | null;
   zone: string;
   photo: string | null;
   photo_url: string | null;
@@ -340,10 +339,9 @@ export interface BookingResourceDetail {
   id: number;
   type: ResourceType;
   name: string;
-  floor?: number;
-  floor_id?: number | null;
-  floor_number?: number | null;
-  floor_name?: string | null;
+  floor_id: number | null;
+  floor_number: number | null;
+  floor_name: string | null;
   zone: string;
   description: string;
   photo: string | null;
@@ -382,7 +380,6 @@ export interface Resource {
   id: number;
   name: string;
   type: ResourceType;
-  floor?: number;
   floor_id?: number | null;
   floor_number?: number | null;
   floor_name?: string | null;
