@@ -9,7 +9,6 @@ import { getApiError } from '@/shared/lib/getApiError';
 import { downloadFromApiEndpoint } from '@/shared/lib/resolveDownloadUrl';
 import { USER_ROLES } from '@/shared/config/constants';
 import type {
-  FolderPermission,
   PaginatedResponse,
   StorageFile,
   StorageFolder,
@@ -392,23 +391,10 @@ export function useFileBrowser() {
   const isGuest = user?.role === USER_ROLES.GUEST;
   const isAdmin = user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN;
 
-  // Fetch permissions for the currently open company folder (for non-admins only)
-  const currentFolderPermsQuery = useQuery({
-    queryKey: ['storage', 'folder-permissions', currentFolder?.id],
-    queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<FolderPermission> | FolderPermission[]>(
-        API.storage.folderPermissions(String(currentFolder?.id)),
-      );
-      return Array.isArray(data) ? data : (data.results ?? []);
-    },
-    enabled: currentFolder !== null && scope === 'company' && !isAdmin,
-  });
-
-  const hasFullFolderAccess = useMemo(() => {
-    if (!currentFolder || scope !== 'company' || isAdmin) return false;
-    const perms = currentFolderPermsQuery.data ?? [];
-    return perms.some((p) => p.user === user?.id && p.permission === 'full');
-  }, [currentFolder, scope, isAdmin, currentFolderPermsQuery.data, user?.id]);
+  // Derived from the user_permission annotation already present on the folder object.
+  // The /permissions/ endpoint is admin-only — employees must not call it.
+  const hasFullFolderAccess =
+    !isAdmin && scope === 'company' && currentFolder?.user_permission === 'full';
 
   // True when any folder in the current navigation path has view-only access —
   // applies to the current folder and all its ancestors via the trail.
