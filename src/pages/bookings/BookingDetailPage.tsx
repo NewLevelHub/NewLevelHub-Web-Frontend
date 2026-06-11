@@ -12,6 +12,7 @@ import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import type { Booking, BookingResourceDetail, CompanyMember, PaginatedResponse } from '@/shared/types';
+import { BookingQRPanel, shouldShowBookingQrPanel } from '@/pages/bookings/components/BookingQRPanel';
 
 
 const STATUS_BADGE_CLASS: Record<string, string> = {
@@ -243,6 +244,8 @@ export default function BookingDetailPage() {
 
   const selectedParticipantUserId = Number(selectedUserId);
 
+  const showQrPanel = shouldShowBookingQrPanel(data);
+
   return (
     <div className="space-y-6">
       {isOwner ? (
@@ -251,6 +254,8 @@ export default function BookingDetailPage() {
         </Link>
       ) : null}
 
+      <div className={cn('grid gap-6', showQrPanel && 'lg:grid-cols-[1fr_320px] lg:items-start')}>
+      <div className="space-y-6">
       <section className="rounded-2xl border border-default bg-surface p-6 shadow-sm space-y-3">
         <h1 className="text-xl font-bold text-primary">{data.resource_name}</h1>
         <p className="text-sm text-muted">
@@ -433,6 +438,12 @@ export default function BookingDetailPage() {
           )}
         </section>
       ) : null}
+      </div>
+
+      {showQrPanel ? (
+        <BookingQRPanel booking={data} className="lg:sticky lg:top-4" />
+      ) : null}
+      </div>
     </div>
   );
 }

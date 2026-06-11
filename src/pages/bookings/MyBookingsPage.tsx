@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, MoreHorizontal, Plus, Repeat } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MoreHorizontal, Plus, QrCode, Repeat } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -22,6 +22,7 @@ import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import type { Booking, BookingResourceDetail, CompanyMember, PaginatedResponse } from '@/shared/types';
+import { shouldShowBookingQrPanel } from '@/pages/bookings/components/BookingQRPanel';
 
 type MyBookingsStatusFilter = 'upcoming' | 'past' | 'cancelled';
 
@@ -504,6 +505,7 @@ export default function MyBookingsPage() {
                     now <= end &&
                     !b.checked_in_at;
                   const isActionsOpen = openActionsId === b.id;
+                  const showQrLink = shouldShowBookingQrPanel(b);
 
                   return (
                     <tr
@@ -563,6 +565,17 @@ export default function MyBookingsPage() {
                               className="absolute right-0 top-8 z-10 w-40 rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] shadow-[var(--shadow-card)] py-1"
                               role="menu"
                             >
+                              {showQrLink && (
+                                <Link
+                                  to={`/bookings/${b.id}`}
+                                  role="menuitem"
+                                  onClick={() => setOpenActionsId(null)}
+                                  className="flex w-full items-center gap-1.5 px-3 py-1.5 text-left text-[13px] text-[color:var(--text-primary)] hover:bg-[color:var(--bg-hover)] transition-colors"
+                                >
+                                  <QrCode className="h-3.5 w-3.5" />
+                                  {t('booking.myBookings.showQr')}
+                                </Link>
+                              )}
                               {canCheckIn && (
                                 <button
                                   type="button"
@@ -603,7 +616,7 @@ export default function MyBookingsPage() {
                                   {t('common.cancel')}
                                 </button>
                               )}
-                              {!canCheckIn && !canCancel && (
+                              {!canCheckIn && !canCancel && !showQrLink && (
                                 <span className="block px-3 py-1.5 text-[12px] text-[color:var(--text-muted)]">
                                   {t('booking.manage.noActions')}
                                 </span>

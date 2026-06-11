@@ -947,6 +947,27 @@
       "addBtn": "Добавить",
       "participantsAdminOnly": "Управление участниками доступно только администраторам компании."
     },
+    "qrPanel": {
+      "title": "QR доступа в капсулу",
+      "imageAlt": "QR-код доступа по бронированию",
+      "download": "Скачать",
+      "downloading": "Скачивание…",
+      "countdownActive": "Бронь активна — покажите QR на ресепшн",
+      "countdownExpired": "Бронь завершена — QR больше не действует",
+      "countdownPending": "Начнётся через {{hours}} ч {{minutes}} мин"
+    },
+    "validate": {
+      "successTitle": "Бронирование действительно",
+      "failureTitle": "QR бронирования недействителен",
+      "zoneLabel": "Зона",
+      "reason": {
+        "expired": "Время брони истекло",
+        "cancelled": "Бронирование отменено",
+        "completed": "Бронирование завершено",
+        "no_show": "Отмечено как неявка",
+        "not_found": "QR-код не найден"
+      }
+    },
     "recurring": {
       "title": "Рекуррентные бронирования",
       "createSection": "Создать серию",
@@ -1041,6 +1062,7 @@
       "noBookings": "Пока нет бронирований.",
       "checkedIn": "Чек-ин: {{time}}",
       "checkIn": "Чек-ин",
+      "showQr": "QR доступа",
       "saveTime": "Сохранить время",
       "backToAdmin": "Назад в бронирования (админ)",
       "totalCount": "{{count}} бронирований"
@@ -1624,6 +1646,9 @@
     "passInvalidSimple": "Пропуск невалиден",
     "invitedBy": "Пригласил",
     "reasonLabel": "Причина",
+    "validateModeLabel": "Тип проверки",
+    "validateTabGuest": "Гостевой пропуск",
+    "validateTabBooking": "Бронь капсулы",
     "validatePageTitle": "Проверка QR-пропуска",
     "validatePageSubtitle": "Введите QR-код вручную или отсканируйте его камерой.",
     "uuidLabel": "QR-код (UUID)",

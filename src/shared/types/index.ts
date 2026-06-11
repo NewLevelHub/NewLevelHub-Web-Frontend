@@ -433,6 +433,9 @@ export interface Booking {
   cancelled_by: number | null;
   cancel_reason: string;
   checked_in_at: string | null;
+  qr_code?: string | null;
+  qr_image?: string | null;
+  capsule_zone?: string;
   participants: { id: number; email: string; full_name: string }[];
   recurring_booking_id?: number | null;
   created_at: string;
@@ -565,6 +568,31 @@ export interface PassValidationNotYetActive {
 }
 
 export type PassValidationResponse = PassValidationSuccess | PassValidationFailure | PassValidationNotYetActive;
+
+export interface BookingValidationSuccess {
+  valid: true;
+  user_name: string;
+  resource_name: string;
+  capsule_zone: string;
+  start_time: string;
+  end_time: string;
+}
+
+export interface BookingValidationFailure {
+  valid: false;
+  reason: 'expired' | 'cancelled' | 'completed' | 'no_show' | 'not_found';
+}
+
+export interface BookingValidationNotYetActive {
+  valid: false;
+  reason: 'not_yet_active';
+  available_from: string;
+}
+
+export type BookingValidationResponse =
+  | BookingValidationSuccess
+  | BookingValidationFailure
+  | BookingValidationNotYetActive;
 
 export interface AccessLogEntry {
   id: number;

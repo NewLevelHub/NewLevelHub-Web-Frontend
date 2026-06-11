@@ -7,7 +7,11 @@ import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useUser } from '@/shared/hooks/useAuth';
 import { cn } from '@/shared/lib/cn';
-import type { PassValidationResponse } from '@/shared/types';
+import type { BookingValidationResponse, PassValidationResponse } from '@/shared/types';
+import {
+  CAPSULE_ZONE_LABEL_KEYS,
+  type CapsuleZone,
+} from '@/shared/config/constants';
 import { getApiError } from '@/shared/lib/getApiError';
 import { fmtDate, fmtDateTime } from '@/shared/lib/formatDate';
 
@@ -26,6 +30,19 @@ const REASON_SUBTITLE_KEYS: Record<import('@/shared/types').PassValidationFailur
   already_used: 'passes.reasonHint.already_used',
   not_found: 'passes.reasonHint.not_found',
 };
+
+const BOOKING_REASON_LABEL_KEYS: Record<
+  Exclude<import('@/shared/types').BookingValidationFailure['reason'], never>,
+  string
+> = {
+  expired: 'booking.validate.reason.expired',
+  cancelled: 'booking.validate.reason.cancelled',
+  completed: 'booking.validate.reason.completed',
+  no_show: 'booking.validate.reason.no_show',
+  not_found: 'booking.validate.reason.not_found',
+};
+
+type ValidateMode = 'pass' | 'booking';
 
 function formatDateTime(iso: string): string {
   return fmtDateTime(iso, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -47,8 +64,10 @@ export default function PassValidatePage() {
   const isCameraOnly =
     user?.role === USER_ROLES.RECEPTION || user?.role === USER_ROLES.SUPERADMIN;
 
+  const [validateMode, setValidateMode] = useState<ValidateMode>('pass');
   const [qrCode, setQrCode] = useState('');
-  const [result, setResult] = useState<PassValidationResponse | null>(null);
+  const [passResult, setPassResult] = useState<PassValidationResponse | null>(null);
+  const [bookingResult, setBookingResult] = useState<BookingValidationResponse | null>(null);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -69,25 +88,37 @@ export default function PassValidatePage() {
     setIsCameraActive(false);
   }, []);
 
-  const submitValidation = useCallback(async (code: string) => {
+  const submitValidation = useCallback(async (code: string, mode: ValidateMode = validateMode) => {
     setIsSubmitting(true);
     setError('');
     try {
-      const response = await apiClient.post<PassValidationResponse>(API.passes.validate, { qr_code: code });
-      setResult(response.data);
+      if (mode === 'booking') {
+        const response = await apiClient.post<BookingValidationResponse>(
+          API.bookings.reservations.validateQr,
+          { qr_code: code },
+        );
+        setBookingResult(response.data);
+        setPassResult(null);
+      } else {
+        const response = await apiClient.post<PassValidationResponse>(API.passes.validate, { qr_code: code });
+        setPassResult(response.data);
+        setBookingResult(null);
+      }
     } catch (validationError) {
-      setResult(null);
+      setPassResult(null);
+      setBookingResult(null);
       setError(getApiError(validationError).message);
     } finally {
       setIsSubmitting(false);
     }
-  }, []);
+  }, [validateMode]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const normalizedCode = qrCode.trim();
     if (!UUID_RE.test(normalizedCode)) {
-      setResult(null);
+      setPassResult(null);
+      setBookingResult(null);
       setError(t('passes.invalidUuid'));
       return;
     }
@@ -101,7 +132,8 @@ export default function PassValidatePage() {
     }
     setCameraError('');
     setError('');
-    setResult(null);
+    setPassResult(null);
+    setBookingResult(null);
     stopCamera();
     setIsCameraActive(true);
   }, [stopCamera]);
@@ -138,7 +170,7 @@ export default function PassValidatePage() {
             controlsRef.current = null;
             setIsCameraActive(false);
             setQrCode(text);
-            void submitValidation(text);
+            void submitValidation(text, validateMode);
           });
           if (cancelled) { controls.stop(); return; }
           controlsRef.current = controls;
@@ -159,23 +191,144 @@ export default function PassValidatePage() {
       controlsRef.current = null;
       BrowserQRCodeReader.cleanVideoSource(video);
     };
-  }, [isCameraActive, submitValidation]);
+  }, [isCameraActive, submitValidation, validateMode]);
 
   useEffect(() => () => stopCamera(), [stopCamera]);
 
   const handleScanAgain = () => {
-    setResult(null);
+    setPassResult(null);
+    setBookingResult(null);
     setQrCode('');
     startCamera();
   };
+
+  const handleModeChange = (mode: ValidateMode) => {
+    setValidateMode(mode);
+    setPassResult(null);
+    setBookingResult(null);
+    setQrCode('');
+    setError('');
+  };
+
+  function ModeTabs({ className }: { className?: string }) {
+    return (
+      <div className={cn('flex gap-2', className)} role="tablist" aria-label={t('passes.validateModeLabel')}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={validateMode === 'pass'}
+          onClick={() => handleModeChange('pass')}
+          className={cn(
+            'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+            validateMode === 'pass'
+              ? 'bg-brand text-white'
+              : 'border border-default text-secondary hover:bg-hover',
+          )}
+        >
+          {t('passes.validateTabGuest')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={validateMode === 'booking'}
+          onClick={() => handleModeChange('booking')}
+          className={cn(
+            'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+            validateMode === 'booking'
+              ? 'bg-brand text-white'
+              : 'border border-default text-secondary hover:bg-hover',
+          )}
+        >
+          {t('passes.validateTabBooking')}
+        </button>
+      </div>
+    );
+  }
+
+  function BookingSuccessPanel({ result }: { result: Extract<BookingValidationResponse, { valid: true }> }) {
+    const zoneKey = result.capsule_zone
+      ? CAPSULE_ZONE_LABEL_KEYS[result.capsule_zone as CapsuleZone]
+      : null;
+
+    return (
+      <div className="rounded-2xl bg-green-700 p-6 flex flex-col gap-5 text-white">
+        <div className="flex flex-col items-center gap-3 pt-1">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20">
+            <Check className="h-8 w-8" strokeWidth={2.5} />
+          </div>
+          <p className="text-xl font-bold">{t('booking.validate.successTitle')}</p>
+        </div>
+
+        <div className="rounded-xl bg-white/10 divide-y divide-white/15 text-sm">
+          <div className="flex justify-between gap-4 px-4 py-2.5">
+            <span className="uppercase text-[11px] tracking-wide text-white/55 shrink-0">{t('dashboard.table.user')}</span>
+            <span className="font-medium text-right">{result.user_name}</span>
+          </div>
+          <div className="flex justify-between gap-4 px-4 py-2.5">
+            <span className="uppercase text-[11px] tracking-wide text-white/55 shrink-0">{t('dashboard.table.resource')}</span>
+            <span className="font-medium text-right">{result.resource_name}</span>
+          </div>
+          {zoneKey ? (
+            <div className="flex justify-between gap-4 px-4 py-2.5">
+              <span className="uppercase text-[11px] tracking-wide text-white/55 shrink-0">{t('booking.validate.zoneLabel')}</span>
+              <span className="font-medium text-right">{t(zoneKey)}</span>
+            </div>
+          ) : null}
+          <div className="flex justify-between gap-4 px-4 py-2.5">
+            <span className="uppercase text-[11px] tracking-wide text-white/55 shrink-0">{t('passes.columnPeriod')}</span>
+            <span className="font-medium text-right">{formatPeriod(result.start_time, result.end_time)}</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleScanAgain}
+          className="mt-auto rounded-xl bg-white px-4 py-3 text-sm font-semibold text-green-800 hover:bg-green-50 transition-colors"
+        >
+          {t('passes.checkNext')}
+        </button>
+      </div>
+    );
+  }
+
+  function BookingFailurePanel({ result }: { result: Extract<BookingValidationResponse, { valid: false }> }) {
+    return (
+      <div className="rounded-2xl bg-red-800 p-6 flex flex-col gap-5 text-white">
+        <div className="flex flex-col items-center gap-3 pt-1">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20">
+            <X className="h-8 w-8" strokeWidth={2.5} />
+          </div>
+          <div className="text-center">
+            <p className="text-xl font-bold">{t('booking.validate.failureTitle')}</p>
+            <p className="mt-1 text-sm text-white/65">
+              {result.reason === 'not_yet_active'
+                ? t('passes.availableFrom', { date: formatDateTime(result.available_from) })
+                : t(BOOKING_REASON_LABEL_KEYS[result.reason])}
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleScanAgain}
+          className="mt-auto rounded-xl bg-white px-4 py-3 text-sm font-semibold text-red-800 hover:bg-red-50 transition-colors"
+        >
+          {t('passes.checkNext')}
+        </button>
+      </div>
+    );
+  }
 
   // ── Camera-only layout (reception / superadmin) ──────────────────────────
   if (isCameraOnly) {
     return (
       <main className="mx-auto max-w-5xl space-y-4 sm:space-y-5 p-3 sm:p-4 md:p-6">
-        <div>
-          <h1 className="text-2xl font-bold text-primary">{t('passes.qrPageTitle')}</h1>
-          <p className="mt-1 text-sm text-secondary">{t('passes.qrPageSubtitle')}</p>
+        <div className="space-y-3">
+          <div>
+            <h1 className="text-2xl font-bold text-primary">{t('passes.qrPageTitle')}</h1>
+            <p className="mt-1 text-sm text-secondary">{t('passes.qrPageSubtitle')}</p>
+          </div>
+          <ModeTabs />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
@@ -245,8 +398,14 @@ export default function PassValidatePage() {
           </div>
 
           {/* Result panel */}
-          {result ? (
-            result.valid ? (
+          {validateMode === 'booking' && bookingResult ? (
+            bookingResult.valid ? (
+              <BookingSuccessPanel result={bookingResult} />
+            ) : (
+              <BookingFailurePanel result={bookingResult} />
+            )
+          ) : validateMode === 'pass' && passResult ? (
+            passResult.valid ? (
               <div className="rounded-2xl bg-green-700 p-6 flex flex-col gap-5 text-white">
                 <div className="flex flex-col items-center gap-3 pt-1">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20">
@@ -258,21 +417,21 @@ export default function PassValidatePage() {
                 <div className="rounded-xl bg-white/10 divide-y divide-white/15 text-sm">
                   <div className="flex justify-between gap-4 px-4 py-2.5">
                     <span className="uppercase text-[11px] tracking-wide text-white/55 shrink-0">{t('team.roleGuest')}</span>
-                    <span className="font-medium text-right">{result.guest_name}</span>
+                    <span className="font-medium text-right">{passResult.guest_name}</span>
                   </div>
-                  {result.purpose ? (
+                  {passResult.purpose ? (
                     <div className="flex justify-between gap-4 px-4 py-2.5">
                       <span className="uppercase text-[11px] tracking-wide text-white/55 shrink-0">{t('passes.purpose')}</span>
-                      <span className="font-medium text-right">{result.purpose}</span>
+                      <span className="font-medium text-right">{passResult.purpose}</span>
                     </div>
                   ) : null}
                   <div className="flex justify-between gap-4 px-4 py-2.5">
                     <span className="uppercase text-[11px] tracking-wide text-white/55 shrink-0">{t('passes.invitedBy')}</span>
-                    <span className="font-medium text-right">{result.invited_by}</span>
+                    <span className="font-medium text-right">{passResult.invited_by}</span>
                   </div>
                   <div className="flex justify-between gap-4 px-4 py-2.5">
                     <span className="uppercase text-[11px] tracking-wide text-white/55 shrink-0">{t('passes.columnPeriod')}</span>
-                    <span className="font-medium text-right">{formatPeriod(result.valid_from, result.valid_until)}</span>
+                    <span className="font-medium text-right">{formatPeriod(passResult.valid_from, passResult.valid_until)}</span>
                   </div>
                 </div>
 
@@ -293,9 +452,9 @@ export default function PassValidatePage() {
                   <div className="text-center">
                     <p className="text-xl font-bold">{t('passes.passInvalid')}</p>
                     <p className="mt-1 text-sm text-white/65">
-                      {result.reason === 'not_yet_active'
-                        ? t('passes.availableFrom', { date: formatDateTime(result.available_from) })
-                        : t(REASON_SUBTITLE_KEYS[result.reason])}
+                      {passResult.reason === 'not_yet_active'
+                        ? t('passes.availableFrom', { date: formatDateTime(passResult.available_from) })
+                        : t(REASON_SUBTITLE_KEYS[passResult.reason])}
                     </p>
                   </div>
                 </div>
@@ -304,7 +463,7 @@ export default function PassValidatePage() {
                   <div className="flex justify-between gap-4 px-4 py-2.5">
                     <span className="uppercase text-[11px] tracking-wide text-white/55 shrink-0">{t('passes.reasonLabel')}</span>
                     <span className="font-medium text-right">
-                      {result.reason === 'not_yet_active' ? t('passes.notYetActive') : t(REASON_LABEL_KEYS[result.reason])}
+                      {passResult.reason === 'not_yet_active' ? t('passes.notYetActive') : t(REASON_LABEL_KEYS[passResult.reason])}
                     </span>
                   </div>
                 </div>
@@ -336,9 +495,12 @@ export default function PassValidatePage() {
   // ── Standard layout (other roles) ────────────────────────────────────────
   return (
     <main className="mx-auto max-w-3xl space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
-      <div>
-        <h1 className="text-2xl font-bold text-primary">{t('passes.validatePageTitle')}</h1>
-        <p className="mt-1 text-sm text-secondary">{t('passes.validatePageSubtitle')}</p>
+      <div className="space-y-3">
+        <div>
+          <h1 className="text-2xl font-bold text-primary">{t('passes.validatePageTitle')}</h1>
+          <p className="mt-1 text-sm text-secondary">{t('passes.validatePageSubtitle')}</p>
+        </div>
+        <ModeTabs />
       </div>
 
       <section className="rounded-xl border border-default bg-raised p-4 sm:p-5">
@@ -397,26 +559,55 @@ export default function PassValidatePage() {
         </section>
       ) : null}
 
-      {result ? (
+      {validateMode === 'booking' && bookingResult ? (
         <section className="rounded-xl border border-default bg-raised p-4 sm:p-5">
-          {result.valid ? (
+          {bookingResult.valid ? (
             <div className="space-y-2 text-sm text-secondary">
-              <p className="font-semibold text-success">{t('passes.passValidSimple')}</p>
-              <p><span className="text-secondary">{t('team.roleGuest')}:</span> {result.guest_name}</p>
-              <p><span className="text-secondary">{t('passes.purpose')}:</span> {result.purpose || '—'}</p>
-              <p><span className="text-secondary">{t('passes.invitedBy')}:</span> {result.invited_by}</p>
+              <p className="font-semibold text-success">{t('booking.validate.successTitle')}</p>
+              <p><span className="text-secondary">{t('dashboard.table.user')}:</span> {bookingResult.user_name}</p>
+              <p><span className="text-secondary">{t('dashboard.table.resource')}:</span> {bookingResult.resource_name}</p>
+              {bookingResult.capsule_zone ? (
+                <p>
+                  <span className="text-secondary">{t('booking.validate.zoneLabel')}:</span>{' '}
+                  {t(CAPSULE_ZONE_LABEL_KEYS[bookingResult.capsule_zone as CapsuleZone])}
+                </p>
+              ) : null}
               <p>
                 <span className="text-secondary">{t('passes.columnPeriod')}:</span>{' '}
-                {fmtDate(result.valid_from)} — {fmtDate(result.valid_until)}
+                {fmtDate(bookingResult.start_time)} — {fmtDate(bookingResult.end_time)}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2 text-sm">
+              <p className="font-semibold text-rose-300">{t('booking.validate.failureTitle')}</p>
+              <p className="text-secondary">
+                {bookingResult.reason === 'not_yet_active'
+                  ? t('passes.notYetActiveDetail', { date: formatDateTime(bookingResult.available_from) })
+                  : t(BOOKING_REASON_LABEL_KEYS[bookingResult.reason])}
+              </p>
+            </div>
+          )}
+        </section>
+      ) : validateMode === 'pass' && passResult ? (
+        <section className="rounded-xl border border-default bg-raised p-4 sm:p-5">
+          {passResult.valid ? (
+            <div className="space-y-2 text-sm text-secondary">
+              <p className="font-semibold text-success">{t('passes.passValidSimple')}</p>
+              <p><span className="text-secondary">{t('team.roleGuest')}:</span> {passResult.guest_name}</p>
+              <p><span className="text-secondary">{t('passes.purpose')}:</span> {passResult.purpose || '—'}</p>
+              <p><span className="text-secondary">{t('passes.invitedBy')}:</span> {passResult.invited_by}</p>
+              <p>
+                <span className="text-secondary">{t('passes.columnPeriod')}:</span>{' '}
+                {fmtDate(passResult.valid_from)} — {fmtDate(passResult.valid_until)}
               </p>
             </div>
           ) : (
             <div className="space-y-2 text-sm">
               <p className="font-semibold text-rose-300">{t('passes.passInvalidSimple')}</p>
               <p className="text-secondary">
-                {result.reason === 'not_yet_active'
-                  ? t('passes.notYetActiveDetail', { date: formatDateTime(result.available_from) })
-                  : t(REASON_LABEL_KEYS[result.reason])}
+                {passResult.reason === 'not_yet_active'
+                  ? t('passes.notYetActiveDetail', { date: formatDateTime(passResult.available_from) })
+                  : t(REASON_LABEL_KEYS[passResult.reason])}
               </p>
             </div>
           )}
