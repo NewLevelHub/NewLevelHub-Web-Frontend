@@ -14,6 +14,8 @@ import {
 } from '@/shared/lib/sessionManager';
 
 const CHECK_INTERVAL_MS = 15_000;
+/** Min interval between backend pings so idle clock stays in sync with UI activity. */
+const BACKEND_IDLE_SYNC_DEBOUNCE_MS = 30_000;
 
 export function useIdleSession() {
   const { t } = useTranslation();
@@ -24,11 +26,21 @@ export function useIdleSession() {
   const [isExtending, setIsExtending] = useState(false);
 
   const lastUserActivityRef = useRef(Date.now());
+  const lastBackendSyncRef = useRef(0);
 
   const timeoutMs = getIdleTimeoutMs(env.IDLE_SESSION_TIMEOUT_MINUTES);
   const warningMs = getIdleTimeoutMs(
     Math.min(env.IDLE_SESSION_WARNING_MINUTES, env.IDLE_SESSION_TIMEOUT_MINUTES - 1),
   );
+
+  const syncIdleWithBackend = useCallback(() => {
+    const now = Date.now();
+    if (now - lastBackendSyncRef.current < BACKEND_IDLE_SYNC_DEBOUNCE_MS) return;
+    lastBackendSyncRef.current = now;
+    void apiClient.get(API.auth.me).catch(() => {
+      /* Interceptor handles session expiry. */
+    });
+  }, []);
 
   const touchUserActivity = useCallback(() => {
     if (isSessionExpired()) return;
@@ -36,12 +48,14 @@ export function useIdleSession() {
     lastUserActivityRef.current = now;
     markUserActivity();
     setShowWarning(false);
-  }, []);
+    syncIdleWithBackend();
+  }, [syncIdleWithBackend]);
 
   const extendSession = useCallback(async () => {
     setIsExtending(true);
     try {
       await apiClient.get(API.auth.me);
+      lastBackendSyncRef.current = Date.now();
       touchUserActivity();
       setShowWarning(false);
     } catch {
