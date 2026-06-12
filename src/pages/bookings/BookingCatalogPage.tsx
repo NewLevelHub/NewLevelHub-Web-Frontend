@@ -438,7 +438,7 @@ export default function BookingCatalogPage() {
             className={cn(
               'rounded-full border px-3 py-1 text-sm font-medium transition-colors',
               showOnlyFree
-                ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500'
+                ? 'border-[color:var(--brand)] bg-brand-subtle text-brand'
                 : 'border-default text-secondary hover:bg-hover hover:text-primary',
             )}
           >

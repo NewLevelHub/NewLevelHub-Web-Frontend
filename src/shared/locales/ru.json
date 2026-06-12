@@ -701,7 +701,8 @@
   "header": {
     "markAllRead": "Прочитать все",
     "noNotifications": "Нет уведомлений",
-    "viewAllNotifications": "Смотреть все уведомления"
+    "viewAllNotifications": "Смотреть все уведомления",
+    "companyLogoAlt": "Логотип компании"
   },
   "sidebar": {
     "themeLight": "Светлая",
