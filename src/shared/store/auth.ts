@@ -8,8 +8,11 @@ import { queryClient } from '@/shared/lib/queryClient';
 import { tokenStorage } from '@/shared/lib/storage';
 import {
   clearSessionExpiredState,
+  isLocalAbsoluteSessionExpired,
+  isSessionAbsoluteTimeoutError,
   isSessionExpired,
   markSessionActive,
+  handleSessionExpired,
 } from '@/shared/lib/sessionManager';
 import type { User } from '@/shared/types';
 
@@ -190,12 +193,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       if (!tokenStorage.getAccessToken() && shouldTryRefreshFromCookie()) {
-        const { data } = await axios.post<{ access: string }>(
-          `${env.API_BASE_URL}${API.auth.refreshToken}`,
-          {},
-          { withCredentials: true },
-        );
-        tokenStorage.setAccessToken(data.access);
+        if (isLocalAbsoluteSessionExpired(env.ABSOLUTE_SESSION_TIMEOUT_MINUTES)) {
+          handleSessionExpired({ noticeKey: 'session.absoluteExpired' });
+          set({ isLoading: false });
+          return;
+        }
+        try {
+          const { data } = await axios.post<{ access: string }>(
+            `${env.API_BASE_URL}${API.auth.refreshToken}`,
+            {},
+            { withCredentials: true },
+          );
+          tokenStorage.setAccessToken(data.access);
+        } catch (err) {
+          if (isSessionAbsoluteTimeoutError(err)) {
+            handleSessionExpired({ noticeKey: 'session.absoluteExpired' });
+            set({ isLoading: false });
+            return;
+          }
+          throw err;
+        }
       }
       if (!tokenStorage.getAccessToken()) {
         set({ isLoading: false });

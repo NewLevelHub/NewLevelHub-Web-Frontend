@@ -701,7 +701,8 @@
   "header": {
     "markAllRead": "Прочитать все",
     "noNotifications": "Нет уведомлений",
-    "viewAllNotifications": "Смотреть все уведомления"
+    "viewAllNotifications": "Смотреть все уведомления",
+    "companyLogoAlt": "Логотип компании"
   },
   "sidebar": {
     "themeLight": "Светлая",
@@ -899,10 +900,15 @@
   },
   "session": {
     "expired": "Сессия завершена из-за отсутствия активности. Пожалуйста, войдите снова.",
+    "absoluteExpired": "Максимальное время сессии истекло. Для продолжения работы необходимо войти в систему повторно.",
     "warningTitle": "Сессия скоро будет завершена",
     "warningDescription": "Сессия будет завершена через {{minutes}} мин. из-за отсутствия активности.",
+    "absoluteWarningTitle": "Сессия скоро завершится",
+    "absoluteWarningDescription": "Срок текущей сессии скоро истечет. Для продолжения работы потребуется повторный вход. Действия в системе не продлевают это время — только новый вход.",
     "extend": "Продлить сессию",
-    "exit": "Выйти"
+    "exit": "Выйти",
+    "absoluteDismiss": "Понятно",
+    "absoluteExit": "Выйти сейчас"
   },
   "booking": {
     "create": {
@@ -1998,6 +2004,14 @@
     "selectFolder": "Выберите папку назначения",
     "alreadyInFolder": "Файл уже находится в этой папке",
     "viewOnlyAccess": "Только просмотр — нет доступа для загрузки"
+    "previewOpen": "Предпросмотр",
+    "previewTitle": "Предпросмотр: {{name}}",
+    "previewLoading": "Загрузка предпросмотра...",
+    "previewError": "Не удалось загрузить предпросмотр",
+    "previewNotSupported": "Предпросмотр недоступен",
+    "previewDownloadInstead": "Этот формат нельзя отобразить в браузере. Скачайте файл, чтобы открыть его.",
+    "previewOpenNewTab": "Открыть в новой вкладке",
+    "previewPdfLabel": "PDF-документ: {{name}}"
   },
   "analytics": {
     "title": "Аналитика",
@@ -2049,7 +2063,16 @@
     "resourceUtilizationDesc": "Количество броней каждого типа за день",
     "noBookingsPeriod": "Нет бронирований за выбранный период",
     "peakHours": "Пиковые часы",
-    "peakHoursDesc": "(бронирований по дню и часу)",
+    "peakHoursDesc": "Бронирований по дню недели и часу",
+    "dow": {
+      "mon": "Пн",
+      "tue": "Вт",
+      "wed": "Ср",
+      "thu": "Чт",
+      "fri": "Пт",
+      "sat": "Сб",
+      "sun": "Вс"
+    },
     "newRegistrations": "Новые регистрации",
     "newRegistrationsDesc": "Пользователей зарегистрировано по неделям",
     "noRegistrationsPeriod": "Нет регистраций за выбранный период",
@@ -2065,7 +2088,9 @@
     "parkings": "Парковки",
     "capsules": "Капсулы",
     "newUsers": "Новых пользователей",
-    "requests": "Заявок"
+    "requests": "Заявок",
+    "exportPdf": "Скачать PDF",
+    "exportingPdf": "Формирование PDF…"
   },
   "onboarding": {
     "title": "Онбординг",
@@ -2143,7 +2168,47 @@
     "busySlotsTitle": "Слоты занятости на день",
     "loadingBusy": "Загрузка занятости...",
     "freeAllDay": "Свободно на весь день.",
-    "employee": "Сотрудник: {{name}}"
+    "employee": "Сотрудник: {{name}}",
+    "viewToggle": "Вид календаря",
+    "allDay": "Весь\nдень",
+    "bookSlot": "Забронировать",
+    "noteLabel": "Заметка",
+    "addNote": "Добавить заметку",
+    "editNote": "Редактировать заметку",
+    "notePlaceholder": "Введите текст заметки…",
+    "saveNote": "Сохранить",
+    "deleteNote": "Удалить",
+    "noteAdded": "Заметка добавлена",
+    "noteUpdated": "Заметка сохранена",
+    "noteDeleted": "Заметка удалена",
+    "noEventsFiltered": "По выбранным фильтрам событий нет",
+    "noEventsFilteredHint": "Измените или сбросьте фильтры, чтобы увидеть расписание команды.",
+    "noEventsHint": "На этой неделе у команды нет запланированных событий.",
+    "deadlinePrefix": "Дедлайн",
+    "guestPrefix": "Гость",
+    "daysCount_one": "{{count}} день",
+    "daysCount_few": "{{count}} дня",
+    "daysCount_many": "{{count}} дней",
+    "daysCount_other": "{{count}} дней",
+    "moreEvents_one": "ещё {{count}} событие",
+    "moreEvents_few": "ещё {{count}} события",
+    "moreEvents_many": "ещё {{count}} событий",
+    "moreEvents_other": "ещё {{count}} событий",
+    "readOnlyApproved": "Одобрено · только просмотр",
+    "openBooking": "Открыть бронирование",
+    "openTask": "Открыть задачу",
+    "openPass": "Открыть пропуск",
+    "popover": {
+      "resource": "Ресурс",
+      "dateTime": "Дата и время",
+      "task": "Задача",
+      "deadline": "Дедлайн",
+      "assignee": "Исполнитель",
+      "guest": "Гость",
+      "invitedBy": "Пригласил",
+      "type": "Тип",
+      "period": "Период"
+    }
   },
   "users": {
     "backToList": "Назад к списку пользователей",

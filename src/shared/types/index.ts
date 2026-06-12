@@ -27,7 +27,7 @@ export interface User {
   company_id: number | null;
   company_name: string | null;
   /** Nested company object returned by /api/v1/auth/me/ */
-  company: { id: number; name: string; onboarding_completed?: boolean } | null;
+  company: { id: number; name: string; onboarding_completed?: boolean; logo?: string | null; plan?: string | null } | null;
   avatar: string | null;
   /** Синхронно с бэкендом `is_email_verified` */
   is_email_verified: boolean;
@@ -689,6 +689,9 @@ export interface CalendarEvent {
     id: number;
     full_name: string;
   };
+  task_id?: number;
+  board_id?: number;
+  guest_pass_id?: number;
 }
 
 export interface CalendarBusySlot {

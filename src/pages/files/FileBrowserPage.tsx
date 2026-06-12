@@ -333,6 +333,19 @@ export default function FileBrowserPage() {
       </div>
 
       {/* Modals */}
+      {/* ── File preview panel ── */}
+      {previewFile !== null && (
+        <FilePreviewPanel
+          file={previewFile}
+          onClose={() => setPreviewFile(null)}
+          onDownload={(f) => {
+            downloadFileMutation.mutate({ id: f.id, name: f.name });
+            setPreviewFile(null);
+          }}
+        />
+      )}
+
+      {/* ── Modals ── */}
       <ConfirmModal
         isOpen={fb.confirmAction !== null}
         onClose={() => !fb.isDeletePending && fb.setConfirmAction(null)}

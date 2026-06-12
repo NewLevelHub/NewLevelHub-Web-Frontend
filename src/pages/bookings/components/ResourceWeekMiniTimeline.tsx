@@ -130,7 +130,7 @@ function SlotDetailPanel({ isoDay, slots, onClose }: SlotDetailPanelProps) {
 
   return (
     <div className="mt-1 rounded-lg border border-default bg-gray-850 shadow-lg text-xs overflow-hidden"
-         style={{ background: 'rgb(17 24 39)' }}>
+         style={{ background: 'var(--bg-surface)' }}>
       <div className="flex items-center justify-between px-3 py-2 border-b border-default">
         <span className="font-medium text-secondary">{t('booking.timeline.occupancy', { date: dateStr })}</span>
         <button
