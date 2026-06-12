@@ -4,6 +4,7 @@
     "subtitle": "{{date}} · {{count}} people in the BC right now, load {{load}}%",
     "createAnnouncement": "Create announcement",
     "addResource": "Add resource",
+    "createCompany": "Create Company",
     "kpi": {
       "activeBookings": "Active bookings",
       "spaceLoad": "Space utilization",

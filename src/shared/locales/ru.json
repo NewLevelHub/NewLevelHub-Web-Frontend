@@ -4,6 +4,7 @@
     "subtitle": "{{date}} · в БЦ сейчас {{count}} человек, загрузка {{load}}%",
     "createAnnouncement": "Создать объявление",
     "addResource": "Добавить ресурс",
+    "createCompany": "Создать компанию",
     "kpi": {
       "activeBookings": "Активные брони",
       "spaceLoad": "Загрузка пространств",

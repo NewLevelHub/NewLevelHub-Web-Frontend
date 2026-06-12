@@ -98,6 +98,12 @@ export function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
           >
             {t('dashboard.addResource')}
           </Link>
+          <Link
+            to="/superadmin/companies/new"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/30 px-4 py-2 text-sm font-medium text-white hover:bg-white/10 transition-colors"
+          >
+            {t('dashboard.createCompany')}
+          </Link>
         </div>
       </section>
 
