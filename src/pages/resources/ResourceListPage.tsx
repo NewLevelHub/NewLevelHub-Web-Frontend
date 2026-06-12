@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   Minus,
   Plus,
+  Power,
   PowerOff,
   Search,
   Trash2,
@@ -62,6 +63,11 @@ function ResourceStatusBadge({ resource }: { resource: BookingResourceListItem }
     </span>
   );
 }
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type ResourceRowAction = 'activate' | 'deactivate' | 'delete';
+interface ResourceRowModal { action: ResourceRowAction; resource: BookingResourceListItem; }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -167,6 +173,39 @@ export default function ResourceListPage() {
       queryClient.invalidateQueries({ queryKey: ['booking-resources'] });
     },
   });
+
+  // ── Single-row mutations ────────────────────────────────────────────────────
+
+  const [rowModal, setRowModal] = useState<ResourceRowModal | null>(null);
+
+  const activateSingleMutation = useMutation({
+    mutationFn: (id: number) => apiClient.post(API.bookings.resources.activate(String(id))),
+    onSuccess: () => {
+      setRowModal(null);
+      queryClient.invalidateQueries({ queryKey: ['booking-resources'] });
+    },
+  });
+
+  const deactivateSingleMutation = useMutation({
+    mutationFn: (id: number) => apiClient.post(API.bookings.resources.deactivate(String(id))),
+    onSuccess: () => {
+      setRowModal(null);
+      queryClient.invalidateQueries({ queryKey: ['booking-resources'] });
+    },
+  });
+
+  const deleteSingleMutation = useMutation({
+    mutationFn: (id: number) => apiClient.delete(API.bookings.resources.detail(String(id))),
+    onSuccess: () => {
+      setRowModal(null);
+      queryClient.invalidateQueries({ queryKey: ['booking-resources'] });
+    },
+  });
+
+  const isSinglePending =
+    activateSingleMutation.isPending ||
+    deactivateSingleMutation.isPending ||
+    deleteSingleMutation.isPending;
 
   return (
     <div className="space-y-4">
@@ -440,7 +479,7 @@ export default function ResourceListPage() {
                     <tr
                       key={r.id}
                       className={cn(
-                        'border-b border-[color:var(--border)] transition-colors',
+                        'group border-b border-[color:var(--border)] transition-colors',
                         isSelected
                           ? 'bg-[color-mix(in_srgb,var(--brand)_7%,transparent)]'
                           : 'hover:bg-[color:var(--bg-hover)]',
@@ -504,7 +543,42 @@ export default function ResourceListPage() {
                       <td className="px-3 py-2.5 align-middle">
                         <ResourceStatusBadge resource={r} />
                       </td>
-                      <td className="w-10 px-3 py-2.5 align-middle" />
+                      <td className="px-3 py-2.5 align-middle">
+                        {isSuperadmin && (
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {r.is_active ? (
+                              <button
+                                type="button"
+                                onClick={() => setRowModal({ action: 'deactivate', resource: r })}
+                                title={t('common.deactivate')}
+                                className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:text-[color:var(--status-busy-text)] hover:bg-[color:var(--status-busy-bg)] transition-colors"
+                              >
+                                <PowerOff className="h-3.5 w-3.5" aria-hidden="true" />
+                                <span className="sr-only">{t('common.deactivate')}</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setRowModal({ action: 'activate', resource: r })}
+                                title={t('common.activate')}
+                                className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:text-[color:var(--status-free-text)] hover:bg-[color:var(--status-free-bg)] transition-colors"
+                              >
+                                <Power className="h-3.5 w-3.5" aria-hidden="true" />
+                                <span className="sr-only">{t('common.activate')}</span>
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setRowModal({ action: 'delete', resource: r })}
+                              title={t('common.delete')}
+                              className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:text-[color:var(--danger)] hover:bg-[color:var(--status-busy-bg)] transition-colors"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                              <span className="sr-only">{t('common.delete')}</span>
+                            </button>
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
@@ -513,6 +587,26 @@ export default function ResourceListPage() {
           </div>
         )}
       </div>
+
+      {/* Single-row action confirm dialog */}
+      {rowModal && (
+        <ConfirmModal
+          isOpen={true}
+          onClose={() => !isSinglePending && setRowModal(null)}
+          onConfirm={() => {
+            if (!rowModal) return;
+            const id = rowModal.resource.id;
+            if (rowModal.action === 'activate') activateSingleMutation.mutate(id);
+            else if (rowModal.action === 'deactivate') deactivateSingleMutation.mutate(id);
+            else deleteSingleMutation.mutate(id);
+          }}
+          title={t(`resources.row.${rowModal.action}Title`)}
+          description={t(`resources.row.${rowModal.action}Desc`, { name: rowModal.resource.name })}
+          confirmLabel={t(`common.${rowModal.action}`)}
+          variant={rowModal.action === 'delete' ? 'danger' : 'warning'}
+          isLoading={isSinglePending}
+        />
+      )}
 
       {/* Bulk activate confirm dialog */}
       <ConfirmModal

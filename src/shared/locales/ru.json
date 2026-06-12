@@ -1259,6 +1259,14 @@
       "confirmDeactivateBody": "Деактивировать {{count}} ресурс(ов)?",
       "confirmDeleteTitle": "Удалить ресурсы",
       "confirmDeleteBody": "Это удалит {{count}} ресурс(ов) безвозвратно."
+    },
+    "row": {
+      "activateTitle": "Активировать ресурс",
+      "activateDesc": "Активировать \"{{name}}\"?",
+      "deactivateTitle": "Деактивировать ресурс",
+      "deactivateDesc": "Деактивировать \"{{name}}\"?",
+      "deleteTitle": "Удалить ресурс",
+      "deleteDesc": "Это удалит \"{{name}}\" безвозвратно."
     }
   },
   "map": {
@@ -1893,7 +1901,20 @@
     "templateDeleted": "Шаблон удалён.",
     "templateDefaultUpdated": "Шаблон по умолчанию обновлён.",
     "templateNameRequired": "Введите название шаблона.",
-    "templateStepRequired": "Добавьте хотя бы один шаг."
+    "templateStepRequired": "Добавьте хотя бы один шаг.",
+    "bulk": {
+      "selectedCount": "Выбрано: {{count}}",
+      "deselectAll": "Снять выделение",
+      "activate": "Активировать выбранные",
+      "deactivate": "Деактивировать выбранные",
+      "delete": "Удалить выбранные",
+      "confirmActivateTitle": "Активировать компании",
+      "confirmActivateBody": "Активировать {{count}} компани(й)?",
+      "confirmDeactivateTitle": "Деактивировать компании",
+      "confirmDeactivateBody": "Деактивировать {{count}} компани(й)?",
+      "confirmDeleteTitle": "Удалить компании",
+      "confirmDeleteBody": "Это удалит {{count}} компани(й) безвозвратно."
+    }
   },
   "building": {
     "mapManage": "Управление картой",

@@ -21,6 +21,9 @@ export const API = {
     deactivate: (id: string) => `/companies/${id}/deactivate/`,
     activate: (id: string) => `/companies/${id}/activate/`,
     delete: (id: string) => `/companies/${id}/?confirm=true`,
+    bulkActivate: '/companies/bulk-activate/',
+    bulkDeactivate: '/companies/bulk-deactivate/',
+    bulkDelete: '/companies/bulk-delete/',
     members: (id: string) => `/companies/${id}/members/`,
     invitations: (id: string) => `/companies/${id}/invitations/`,
     invitationRevoke: (companyId: string, invitationId: string) =>

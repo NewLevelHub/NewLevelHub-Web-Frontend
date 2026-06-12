@@ -1264,6 +1264,14 @@
       "confirmDeactivateBody": "Deactivate {{count}} resource(s)?",
       "confirmDeleteTitle": "Delete resources",
       "confirmDeleteBody": "This will permanently delete {{count}} resource(s)."
+    },
+    "row": {
+      "activateTitle": "Activate resource",
+      "activateDesc": "Activate \"{{name}}\"?",
+      "deactivateTitle": "Deactivate resource",
+      "deactivateDesc": "Deactivate \"{{name}}\"?",
+      "deleteTitle": "Delete resource",
+      "deleteDesc": "This will permanently delete \"{{name}}\"."
     }
   },
   "map": {
@@ -1898,7 +1906,20 @@
     "templateDeleted": "Template deleted.",
     "templateDefaultUpdated": "Default template updated.",
     "templateNameRequired": "Enter template name.",
-    "templateStepRequired": "Add at least one step."
+    "templateStepRequired": "Add at least one step.",
+    "bulk": {
+      "selectedCount": "{{count}} selected",
+      "deselectAll": "Deselect all",
+      "activate": "Activate selected",
+      "deactivate": "Deactivate selected",
+      "delete": "Delete selected",
+      "confirmActivateTitle": "Activate companies",
+      "confirmActivateBody": "Activate {{count}} company(ies)?",
+      "confirmDeactivateTitle": "Deactivate companies",
+      "confirmDeactivateBody": "Deactivate {{count}} company(ies)?",
+      "confirmDeleteTitle": "Delete companies",
+      "confirmDeleteBody": "This will permanently delete {{count}} company(ies)."
+    }
   },
   "building": {
     "mapManage": "Manage map",
