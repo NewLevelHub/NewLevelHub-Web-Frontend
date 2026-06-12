@@ -63,7 +63,7 @@ export function SuperadminWidgets({ data }: { data: SuperadminDashboardData }) {
       {/* Hero */}
       <section
         className="relative overflow-hidden rounded-2xl px-4 py-6 sm:px-6 sm:py-8"
-        style={{ background: 'linear-gradient(135deg, var(--brand) 0%, #7c3aed 100%)' }}
+        style={{ background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-gradient-end) 100%)' }}
       >
         {/* Decorative circle */}
         <div
