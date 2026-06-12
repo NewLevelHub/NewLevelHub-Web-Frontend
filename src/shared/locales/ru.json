@@ -1997,7 +1997,15 @@
     "rootFolder": "Корень (без папки)",
     "selectFolder": "Выберите папку назначения",
     "alreadyInFolder": "Файл уже находится в этой папке",
-    "viewOnlyAccess": "Только просмотр — нет доступа для загрузки"
+    "viewOnlyAccess": "Только просмотр — нет доступа для загрузки",
+    "previewOpen": "Предпросмотр",
+    "previewTitle": "Предпросмотр: {{name}}",
+    "previewLoading": "Загрузка предпросмотра...",
+    "previewError": "Не удалось загрузить предпросмотр",
+    "previewNotSupported": "Предпросмотр недоступен",
+    "previewDownloadInstead": "Этот тип файла не может быть отображён в браузере. Скачайте файл, чтобы открыть его.",
+    "previewOpenNewTab": "Открыть в новой вкладке",
+    "previewPdfLabel": "PDF-документ: {{name}}"
   },
   "analytics": {
     "title": "Аналитика",

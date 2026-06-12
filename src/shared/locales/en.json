@@ -2002,7 +2002,15 @@
     "rootFolder": "Root (no folder)",
     "selectFolder": "Select a destination folder",
     "alreadyInFolder": "File is already in this folder",
-    "viewOnlyAccess": "View only — no upload access"
+    "viewOnlyAccess": "View only — no upload access",
+    "previewOpen": "Preview",
+    "previewTitle": "Preview: {{name}}",
+    "previewLoading": "Loading preview...",
+    "previewError": "Failed to load preview",
+    "previewNotSupported": "Preview not available",
+    "previewDownloadInstead": "This file type cannot be displayed in the browser. Download the file to open it.",
+    "previewOpenNewTab": "Open in new tab",
+    "previewPdfLabel": "PDF document: {{name}}"
   },
   "analytics": {
     "title": "Analytics",
