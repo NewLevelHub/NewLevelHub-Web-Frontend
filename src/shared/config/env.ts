@@ -18,6 +18,16 @@ export const env = {
     import.meta.env.VITE_IDLE_SESSION_WARNING_MINUTES,
     2,
   ),
+  /** Absolute session lifetime in minutes — must match backend ABSOLUTE_SESSION_TIMEOUT_MINUTES. */
+  ABSOLUTE_SESSION_TIMEOUT_MINUTES: parsePositiveInt(
+    import.meta.env.VITE_ABSOLUTE_SESSION_TIMEOUT_MINUTES,
+    480,
+  ),
+  /** Show warning modal this many minutes before absolute session timeout. */
+  ABSOLUTE_SESSION_WARNING_MINUTES: parsePositiveInt(
+    import.meta.env.VITE_ABSOLUTE_SESSION_WARNING_MINUTES,
+    2,
+  ),
   IS_DEV: import.meta.env.DEV,
   IS_PROD: import.meta.env.PROD,
 } as const;

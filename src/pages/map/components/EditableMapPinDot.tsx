@@ -57,7 +57,7 @@ export const EditableMapPinDot = memo<EditableMapPinDotProps>(
         >
           <span
             className="block w-full truncate text-[11px] font-semibold leading-tight"
-            style={{ color: isMoving ? '#b45309' : styles.nameText }}
+            style={{ color: isMoving ? 'var(--warning)' : styles.nameText }}
           >
             {point.label}
           </span>

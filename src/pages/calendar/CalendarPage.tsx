@@ -1,21 +1,16 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarDays, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Loader2, RotateCcw } from 'lucide-react';
 
-import i18n from '@/shared/lib/i18n';
+import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { fmtDate, fmtDateTime as fmtDT, fmtDayMonth, fmtMonthYear } from '@/shared/lib/formatDate';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import {
-  CALENDAR_EVENT_TYPES,
   CALENDAR_EVENT_TYPE_LABEL_KEYS,
   CALENDAR_VIEWS,
-  LEAVE_TYPE_LABEL_KEYS,
-  LEAVE_TYPES,
   USER_ROLES,
-  type CalendarEventType,
-  type LeaveType,
   type CalendarView,
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
@@ -30,34 +25,27 @@ import type {
   PaginatedResponse,
 } from '@/shared/types';
 
+import {
+  buildMonthGrid,
+  buildWeekColumns,
+  endOfMonth,
+  startOfMonth,
+  startOfWeek,
+  toIsoDate,
+} from './calendarUtils';
+import { CalendarEventPopover } from './components/CalendarEventPopover';
+import { CalendarLegend } from './components/CalendarLegend';
+import { CalendarMonthView } from './components/CalendarMonthView';
+import { CalendarNotePopover } from './components/CalendarNotePopover';
+import { CalendarTimeGrid } from './components/CalendarTimeGrid';
+import { eventKey } from './calendarUtils';
+import { useCalendarNotes, type CalendarNote } from './useCalendarNotes';
+import { useCalendarToast } from './useCalendarToast';
+
 type CompanyOption = {
   id: number;
   name: string;
 };
-
-function toIsoDate(value: Date) {
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, '0');
-  const day = String(value.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function startOfWeek(date: Date) {
-  const copy = new Date(date);
-  const day = copy.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  copy.setDate(copy.getDate() + diff);
-  copy.setHours(0, 0, 0, 0);
-  return copy;
-}
-
-function startOfMonth(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-function endOfMonth(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 0);
-}
 
 function resolveRange(anchorDate: Date, view: CalendarView) {
   if (view === CALENDAR_VIEWS.DAY) {
@@ -96,7 +84,7 @@ function formatPeriodLabel(anchorDate: Date, view: CalendarView) {
     const weekStart = startOfWeek(anchorDate);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
-    return `${fmtDayMonth(weekStart)} - ${fmtDate(weekEnd, { day: '2-digit', month: 'short', year: 'numeric' })}`;
+    return `${fmtDayMonth(weekStart)} – ${fmtDate(weekEnd, { day: '2-digit', month: 'short', year: 'numeric' })}`;
   }
   return fmtMonthYear(anchorDate);
 }
@@ -105,33 +93,19 @@ function formatDateTime(value: string) {
   return fmtDT(value);
 }
 
-const EVENT_BADGE_CLASS: Record<CalendarEventType, string> = {
-  [CALENDAR_EVENT_TYPES.BOOKING]: 'bg-blue-900/40 text-blue-300 border-blue-700',
-  [CALENDAR_EVENT_TYPES.TASK_DEADLINE]: 'bg-warning-subtle text-warning border-amber-700',
-  [CALENDAR_EVENT_TYPES.LEAVE]: 'bg-success-subtle text-success border-emerald-700',
-  [CALENDAR_EVENT_TYPES.GUEST_VISIT]: 'bg-violet-900/40 text-violet-300 border-violet-700',
+const VIEW_LABEL_KEYS: Record<CalendarView, string> = {
+  [CALENDAR_VIEWS.DAY]: 'calendar.viewDay',
+  [CALENDAR_VIEWS.WEEK]: 'calendar.viewWeek',
+  [CALENDAR_VIEWS.MONTH]: 'calendar.viewMonth',
 };
 
-function formatCalendarTitle(event: CalendarEvent) {
-  if (event.type !== CALENDAR_EVENT_TYPES.LEAVE) {
-    return event.title;
-  }
-
-  const [namePart, leaveTypeRaw] = event.title.split(' — ');
-  if (!leaveTypeRaw) return event.title;
-
-  const leaveType = leaveTypeRaw.trim().toLowerCase() as LeaveType;
-  const labelKey = LEAVE_TYPE_LABEL_KEYS[leaveType];
-  const translated = labelKey ? i18n.t(labelKey) : undefined;
-  if (!translated) return event.title;
-
-  return `${namePart} — ${translated}`;
-}
-
 export default function CalendarPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
+  const canManageCalendarScope =
+    isSuperadmin || user?.role === USER_ROLES.COMPANY_ADMIN;
+  const todayIso = useMemo(() => toIsoDate(new Date()), []);
 
   const [anchorDate, setAnchorDate] = useState(() => {
     const now = new Date();
@@ -143,6 +117,11 @@ export default function CalendarPage() {
   const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedEventType, setSelectedEventType] = useState('');
   const [myOnly, setMyOnly] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [popoverAnchor, setPopoverAnchor] = useState<HTMLElement | null>(null);
+  const [noteSlotDate, setNoteSlotDate] = useState<string | null>(null);
+  const [noteSlotHour, setNoteSlotHour] = useState<number | null>(null);
+  const [noteAnchor, setNoteAnchor] = useState<HTMLElement | null>(null);
 
   const companyId = isSuperadmin
     ? selectedCompanyId || null
@@ -150,7 +129,64 @@ export default function CalendarPage() {
       ? String(user.company_id)
       : null;
 
+  const { showToast, CalendarToast } = useCalendarToast();
+  const { notes: calendarNotes, getNote, saveNote, deleteNote } = useCalendarNotes(
+    companyId,
+    user?.id,
+  );
+
   const period = useMemo(() => resolveRange(anchorDate, view), [anchorDate, view]);
+  const filtersActive = Boolean(
+    (canManageCalendarScope && (selectedUserId || myOnly)) || selectedEventType,
+  );
+  const rangeNotes = useMemo(
+    () => calendarNotes.filter((note) => note.date >= period.dateFrom && note.date <= period.dateTo),
+    [calendarNotes, period.dateFrom, period.dateTo],
+  );
+  const activeNote =
+    noteSlotDate != null && noteSlotHour != null
+      ? getNote(noteSlotDate, noteSlotHour)
+      : null;
+
+  const dowFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(dateLocaleTag(i18n.language), {
+        weekday: 'short',
+      }),
+    [i18n.language],
+  );
+
+  const weekdayLabels = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, index) => {
+        const monday = new Date(2024, 5, 3 + index);
+        return dowFormatter.format(monday);
+      }),
+    [dowFormatter],
+  );
+
+  const gridDays = useMemo(() => {
+    if (view === CALENDAR_VIEWS.DAY) {
+      const iso = toIsoDate(anchorDate);
+      return [
+        {
+          iso,
+          dowLabel: dowFormatter.format(anchorDate),
+          dayNum: anchorDate.getDate(),
+          isToday: iso === todayIso,
+        },
+      ];
+    }
+    if (view === CALENDAR_VIEWS.WEEK) {
+      return buildWeekColumns(anchorDate, todayIso, dowFormatter);
+    }
+    return [];
+  }, [anchorDate, dowFormatter, todayIso, view]);
+
+  const monthCells = useMemo(
+    () => (view === CALENDAR_VIEWS.MONTH ? buildMonthGrid(anchorDate, todayIso) : []),
+    [anchorDate, todayIso, view],
+  );
 
   const { data: companiesData } = useQuery<PaginatedResponse<Company>>({
     queryKey: [...companiesCacheRoot(user?.id), 'calendar', 'companies'],
@@ -182,13 +218,19 @@ export default function CalendarPage() {
     return Array.isArray(membersData) ? membersData : membersData.results;
   }, [membersData]);
 
-  const eventsParams = useMemo(() => ({
-    date_from: period.dateFrom,
-    date_to: period.dateTo,
-    user_id: !myOnly && selectedUserId ? Number(selectedUserId) : undefined,
-    event_type: selectedEventType || undefined,
-    my: myOnly ? true : undefined,
-  }), [period, myOnly, selectedUserId, selectedEventType]);
+  const eventsParams = useMemo(
+    () => ({
+      date_from: period.dateFrom,
+      date_to: period.dateTo,
+      user_id:
+        canManageCalendarScope && !myOnly && selectedUserId
+          ? Number(selectedUserId)
+          : undefined,
+      event_type: selectedEventType || undefined,
+      my: canManageCalendarScope && myOnly ? true : undefined,
+    }),
+    [canManageCalendarScope, period, myOnly, selectedUserId, selectedEventType],
+  );
 
   const {
     data: events = [],
@@ -204,7 +246,13 @@ export default function CalendarPage() {
     staleTime: 15_000,
   });
 
-  const busyUserId = myOnly ? user?.id : selectedUserId ? Number(selectedUserId) : undefined;
+  const busyUserId = canManageCalendarScope
+    ? myOnly
+      ? user?.id
+      : selectedUserId
+        ? Number(selectedUserId)
+        : undefined
+    : user?.id;
 
   const {
     data: busySlots = [],
@@ -222,74 +270,116 @@ export default function CalendarPage() {
     staleTime: 15_000,
   });
 
-  const groupedEvents = useMemo(() => {
-    const groups = new Map<string, CalendarEvent[]>();
-    for (const event of events) {
-      const startKey = event.start.slice(0, 10);
-      const endKey = event.end.slice(0, 10);
-      let key = startKey;
-      if (key < period.dateFrom) key = period.dateFrom;
-      if (endKey < key) key = endKey;
-      if (key > period.dateTo) key = period.dateTo;
-      const list = groups.get(key) ?? [];
-      list.push(event);
-      groups.set(key, list);
-    }
-    return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, [events, period.dateFrom, period.dateTo]);
-
   const resetFilters = () => {
     setSelectedUserId('');
     setSelectedEventType('');
     setMyOnly(false);
   };
 
+  const closeNoteEditor = () => {
+    setNoteSlotDate(null);
+    setNoteSlotHour(null);
+    setNoteAnchor(null);
+  };
+
+  const handleEventClick = (event: CalendarEvent, anchor: HTMLElement) => {
+    closeNoteEditor();
+    setSelectedEvent(event);
+    setPopoverAnchor(anchor);
+  };
+
+  const closePopover = () => {
+    setSelectedEvent(null);
+    setPopoverAnchor(null);
+  };
+
+  const openNoteEditor = (date: string, hour: number, anchor: HTMLElement) => {
+    closePopover();
+    setNoteSlotDate(date);
+    setNoteSlotHour(hour);
+    setNoteAnchor(anchor);
+  };
+
+  const handleSlotClick = (date: string, hour: number, anchor: HTMLElement) => {
+    openNoteEditor(date, hour, anchor);
+  };
+
+  const handleNoteClick = (note: CalendarNote, anchor: HTMLElement) => {
+    openNoteEditor(note.date, note.hour, anchor);
+  };
+
+  const handleSaveNote = (text: string) => {
+    if (noteSlotDate == null || noteSlotHour == null) return;
+
+    const wasExisting = activeNote != null;
+    const trimmed = text.trim();
+    const saved = saveNote({ date: noteSlotDate, hour: noteSlotHour, text });
+    closeNoteEditor();
+
+    if (!trimmed && wasExisting) {
+      showToast('calendar.noteDeleted');
+    } else if (saved) {
+      showToast(wasExisting ? 'calendar.noteUpdated' : 'calendar.noteAdded');
+    }
+  };
+
+  const handleDeleteNote = () => {
+    if (noteSlotDate == null || noteSlotHour == null) return;
+    deleteNote(noteSlotDate, noteSlotHour);
+    closeNoteEditor();
+    showToast('calendar.noteDeleted');
+  };
+
   return (
-    <main className="mx-auto max-w-7xl space-y-6 px-3 py-4 sm:px-4 sm:py-6 md:py-8">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <main className="mx-auto max-w-[1560px] space-y-5 px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-7">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-primary">Календарь компании</h1>
-          <p className="mt-1 text-sm text-secondary">
-            Единый календарь по бронированиям, дедлайнам CRM, отпускам и гостевым визитам.
-          </p>
+          <h1 className="text-2xl font-bold tracking-[-0.02em] text-primary sm:text-[28px]">{t('calendar.pageTitle')}</h1>
+          <p className="mt-1 max-w-xl text-[13.5px] text-pretty text-muted">{t('calendar.pageSubtitle')}</p>
         </div>
-        <div className="inline-flex rounded-lg border border-default bg-raised p-1">
+        <div
+          className="inline-flex w-full shrink-0 rounded-[11px] bg-[#f1f0ec] p-1 sm:w-auto dark:bg-raised"
+          role="group"
+          aria-label={t('calendar.viewToggle')}
+        >
           {Object.values(CALENDAR_VIEWS).map((mode) => (
             <button
               key={mode}
               type="button"
               onClick={() => setView(mode)}
               className={cn(
-                'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                view === mode ? 'bg-brand text-white' : 'text-secondary hover:bg-hover',
+                'flex-1 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors sm:flex-none sm:px-[18px]',
+                view === mode
+                  ? 'bg-brand text-white shadow-[0_1px_2px_rgba(12,140,99,0.35)]'
+                  : 'text-muted hover:text-primary',
               )}
             >
-              {mode === CALENDAR_VIEWS.DAY ? 'День' : mode === CALENDAR_VIEWS.WEEK ? 'Неделя' : 'Месяц'}
+              {t(VIEW_LABEL_KEYS[mode])}
             </button>
           ))}
         </div>
       </div>
 
-      <section className="rounded-xl border border-default bg-raised p-4">
-        <div className="mb-4 flex flex-wrap items-center gap-2">
+      <section className="rounded-[14px] border border-default bg-surface p-4 shadow-[var(--shadow-card)] sm:px-[18px] sm:py-4">
+        <div className="mb-4 flex flex-wrap items-center gap-2.5">
           <button
             type="button"
             onClick={() => setAnchorDate((prev) => shiftAnchor(prev, view, -1))}
-            className="rounded-lg border border-default bg-surface p-2 text-secondary hover:bg-hover"
-            aria-label="Предыдущий период"
+            className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-[var(--border-strong)] bg-surface text-secondary hover:bg-raised"
+            aria-label={t('calendar.prevPeriod')}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-[17px] w-[17px]" />
           </button>
-          <div className="min-w-[230px] rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary">
+          <div className="flex h-9 min-w-0 flex-1 items-center rounded-[10px] border border-[var(--border-strong)] bg-surface px-4 text-[13px] font-semibold text-primary sm:min-w-[230px] sm:flex-none sm:text-[13.5px]">
             {formatPeriodLabel(anchorDate, view)}
           </div>
           <button
             type="button"
             onClick={() => setAnchorDate((prev) => shiftAnchor(prev, view, 1))}
-            className="rounded-lg border border-default bg-surface p-2 text-secondary hover:bg-hover"
-            aria-label="Следующий период"
+            className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-[var(--border-strong)] bg-surface text-secondary hover:bg-raised"
+            aria-label={t('calendar.nextPeriod')}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-[17px] w-[17px]" />
           </button>
           <button
             type="button"
@@ -298,152 +388,192 @@ export default function CalendarPage() {
               today.setHours(0, 0, 0, 0);
               setAnchorDate(today);
             }}
-            className="rounded-lg border border-default bg-surface px-3 py-2 text-sm text-secondary hover:bg-hover"
-          >{t('common.today')}</button>
+            className="h-9 rounded-[10px] border border-[var(--border-strong)] bg-surface px-4 text-[13px] font-semibold text-secondary hover:bg-raised"
+          >
+            {t('common.today')}
+          </button>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+        <div className="flex flex-wrap items-end gap-4">
           {isSuperadmin && (
-            <label className="text-sm text-secondary">{t('common.company')}<select
-                value={selectedCompanyId}
-                onChange={(event) => {
-                  setSelectedCompanyId(event.target.value);
-                  setSelectedUserId('');
-                }}
-                className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-              >
-                <option value="">{t('common.selectCompany')}</option>
-                {companyOptions.map((option) => (
-                  <option key={option.id} value={String(option.id)}>
-                    {option.name}
-                  </option>
-                ))}
-              </select>
+            <label className="flex flex-col text-secondary">
+              <span className="mb-1.5 text-[12.5px] font-semibold">{t('common.company')}</span>
+              <div className="relative">
+                <select
+                  value={selectedCompanyId}
+                  onChange={(event) => {
+                    setSelectedCompanyId(event.target.value);
+                    setSelectedUserId('');
+                  }}
+                  className="min-w-[210px] appearance-none rounded-[10px] border border-[var(--border-strong)] bg-surface py-2.5 pr-9 pl-3.5 text-[13.5px] text-primary focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/15"
+                >
+                  <option value="">{t('common.selectCompany')}</option>
+                  {companyOptions.map((option) => (
+                    <option key={option.id} value={String(option.id)}>
+                      {option.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-muted" />
+              </div>
             </label>
           )}
 
-          <label className="text-sm text-secondary">{t('team.roleEmployee')}<select
-              value={selectedUserId}
-              onChange={(event) => setSelectedUserId(event.target.value)}
-              disabled={companyId === null || myOnly}
-              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary disabled:opacity-50"
-            >
-              <option value="">Все сотрудники</option>
-              {memberOptions.map((member) => (
-                <option key={member.id} value={String(member.id)}>
-                  {member.full_name}
-                </option>
-              ))}
-            </select>
+          {canManageCalendarScope && (
+            <label className="flex flex-col text-secondary">
+              <span className="mb-1.5 text-[12.5px] font-semibold">{t('team.roleEmployee')}</span>
+              <div className="relative">
+                <select
+                  value={selectedUserId}
+                  onChange={(event) => setSelectedUserId(event.target.value)}
+                  disabled={companyId === null || myOnly}
+                  className="min-w-[210px] appearance-none rounded-[10px] border border-[var(--border-strong)] bg-surface py-2.5 pr-9 pl-3.5 text-[13.5px] text-primary focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/15 disabled:opacity-50"
+                >
+                  <option value="">{t('calendar.allEmployees')}</option>
+                  {memberOptions.map((member) => (
+                    <option key={member.id} value={String(member.id)}>
+                      {member.full_name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-muted" />
+              </div>
+            </label>
+          )}
+
+          <label className="flex flex-col text-secondary">
+            <span className="mb-1.5 text-[12.5px] font-semibold">{t('calendar.eventType')}</span>
+            <div className="relative">
+              <select
+                value={selectedEventType}
+                onChange={(event) => setSelectedEventType(event.target.value)}
+                className="min-w-[210px] appearance-none rounded-[10px] border border-[var(--border-strong)] bg-surface py-2.5 pr-9 pl-3.5 text-[13.5px] text-primary focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/15"
+              >
+                <option value="">{t('common.allTypes')}</option>
+                {Object.entries(CALENDAR_EVENT_TYPE_LABEL_KEYS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {t(label)}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-muted" />
+            </div>
           </label>
 
-          <label className="text-sm text-secondary">
-            Тип события
-            <select
-              value={selectedEventType}
-              onChange={(event) => setSelectedEventType(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-            >
-              <option value="">{t('common.allTypes')}</option>
-              {Object.entries(CALENDAR_EVENT_TYPE_LABEL_KEYS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="mt-6 inline-flex items-center gap-2 text-sm text-secondary">
-            <input
-              type="checkbox"
-              checked={myOnly}
-              onChange={(event) => setMyOnly(event.target.checked)}
-              className="h-4 w-4 rounded border-default bg-surface text-brand focus:ring-blue-500/20"
-            />{t('common.onlyMine')}</label>
+          {canManageCalendarScope && (
+            <label className="flex h-10 cursor-pointer items-center gap-2 text-[13.5px] font-medium text-secondary select-none">
+              <input
+                type="checkbox"
+                checked={myOnly}
+                onChange={(event) => setMyOnly(event.target.checked)}
+                className="sr-only"
+              />
+              <span
+                className={cn(
+                  'flex h-[19px] w-[19px] items-center justify-center rounded-md border-[1.5px] transition-colors',
+                  myOnly
+                    ? 'border-[var(--brand)] bg-[var(--brand)]'
+                    : 'border-[var(--border-strong)] bg-surface',
+                )}
+              >
+                <Check
+                  className={cn('h-3.5 w-3.5 text-white transition-opacity', myOnly ? 'opacity-100' : 'opacity-0')}
+                  strokeWidth={3}
+                />
+              </span>
+              {t('common.onlyMine')}
+            </label>
+          )}
 
           <button
             type="button"
             onClick={resetFilters}
-            className="mt-6 rounded-lg border border-default bg-surface px-3 py-2 text-sm text-secondary hover:bg-hover"
-          >{t('common.resetFilters')}</button>
+            className="ml-auto flex h-10 items-center gap-1.5 text-[13px] font-medium text-muted hover:text-primary"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            {t('common.resetFilters')}
+          </button>
         </div>
       </section>
 
       {companyId === null && (
-        <div className="rounded-xl border border-default bg-raised p-8 text-center text-sm text-secondary">
-          Выберите компанию для отображения календаря.
+        <div className="rounded-[14px] border border-default bg-surface p-8 text-center text-sm text-secondary shadow-[var(--shadow-card)]">
+          {t('calendar.selectCompany')}
         </div>
       )}
 
       {companyId !== null && (
-        <section className={cn('space-y-4', isEventsFetching && 'opacity-75')}>
-          {isEventsLoading ? (
-            <div className="flex items-center gap-2 rounded-xl border border-default bg-raised p-6 text-sm text-secondary">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Загрузка событий календаря...
-            </div>
-          ) : isEventsError ? (
-            <div className="rounded-xl border border-red-200 dark:border-red-800 bg-danger-subtle p-6 text-sm text-danger">
-              {getApiError(eventsError).message}
-            </div>
-          ) : events.length === 0 ? (
-            <div className="rounded-xl border border-default bg-raised p-8 text-center text-sm text-secondary">
-              <CalendarDays className="mx-auto mb-2 h-6 w-6 text-muted" />
-              Событий за выбранный период не найдено.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {groupedEvents.map(([day, items]) => (
-                <div key={day} className="rounded-xl border border-default bg-raised">
-                  <div className="border-b border-default px-4 py-3 text-sm font-semibold text-secondary">
-                    {fmtDate(day, { day: '2-digit', month: 'long', year: 'numeric' })}
-                  </div>
-                  <ul className="divide-y divide-[color:var(--border)]/70">
-                    {items.map((event) => (
-                      <li key={`${event.type}-${event.start}-${event.user.id}-${event.title}`} className="px-4 py-3">
-                        <div className="mb-1 flex flex-wrap items-center gap-2">
-                          <span className={cn('rounded-full border px-2 py-0.5 text-xs font-medium', EVENT_BADGE_CLASS[event.type])}>
-                            {t(CALENDAR_EVENT_TYPE_LABEL_KEYS[event.type])}
-                          </span>
-                          <span className="text-sm font-medium text-primary">{formatCalendarTitle(event)}</span>
-                        </div>
-                        <p className="text-xs text-secondary">
-                          {formatDateTime(event.start)} - {formatDateTime(event.end)}
-                        </p>
-                        <p className="text-xs text-secondary">Сотрудник: {event.user.full_name}</p>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+        <div className={cn('space-y-0', isEventsFetching && 'opacity-75')}>
+          <CalendarLegend />
+
+          <section className="overflow-hidden rounded-[14px] border border-default bg-surface shadow-[var(--shadow-card)]">
+            {isEventsLoading ? (
+              <div className="flex items-center gap-2 px-5 py-8 text-sm text-secondary">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {t('calendar.loadingEvents')}
+              </div>
+            ) : isEventsError ? (
+              <div className="m-4 rounded-xl border border-red-200 bg-danger-subtle p-6 text-sm text-danger dark:border-red-800">
+                {getApiError(eventsError).message}
+              </div>
+            ) : view === CALENDAR_VIEWS.MONTH ? (
+              <CalendarMonthView
+                cells={monthCells}
+                events={events}
+                weekdayLabels={weekdayLabels}
+                filtersActive={filtersActive}
+                onEventClick={handleEventClick}
+              />
+            ) : (
+              <CalendarTimeGrid
+                days={gridDays}
+                events={events}
+                notes={rangeNotes}
+                selectedEventKey={selectedEvent ? eventKey(selectedEvent) : null}
+                onEventClick={handleEventClick}
+                onSlotClick={handleSlotClick}
+                onNoteClick={handleNoteClick}
+              />
+            )}
+          </section>
+        </div>
       )}
 
       {companyId !== null && view === CALENDAR_VIEWS.DAY && busyUserId != null && (
-        <section className="rounded-xl border border-default bg-raised">
+        <section className="overflow-hidden rounded-[14px] border border-default bg-surface shadow-[var(--shadow-card)]">
           <div className="border-b border-default px-4 py-3 text-sm font-semibold text-secondary">
-            Слоты занятости на день
+            {t('calendar.busySlotsTitle')}
           </div>
           {isBusyLoading ? (
             <div className="flex items-center gap-2 px-4 py-4 text-sm text-secondary">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Загрузка занятости...
+              {t('calendar.loadingBusy')}
             </div>
           ) : busySlots.length === 0 ? (
-            <div className="px-4 py-4 text-sm text-secondary">Свободно на весь день.</div>
+            <div className="px-4 py-4 text-sm text-secondary">{t('calendar.freeAllDay')}</div>
           ) : (
             <ul className="divide-y divide-[color:var(--border)]/70">
               {busySlots.map((slot, index) => (
                 <li key={`${slot.start}-${slot.end}-${index}`} className="px-4 py-3 text-sm text-secondary">
-                  {formatDateTime(slot.start)} - {formatDateTime(slot.end)}
+                  {formatDateTime(slot.start)} – {formatDateTime(slot.end)}
                 </li>
               ))}
             </ul>
           )}
         </section>
       )}
+
+      <CalendarEventPopover event={selectedEvent} anchorEl={popoverAnchor} onClose={closePopover} />
+      <CalendarNotePopover
+        date={noteSlotDate}
+        hour={noteSlotHour}
+        note={activeNote}
+        anchorEl={noteAnchor}
+        onClose={closeNoteEditor}
+        onSave={handleSaveNote}
+        onDelete={handleDeleteNote}
+      />
+      {CalendarToast}
     </main>
   );
 }

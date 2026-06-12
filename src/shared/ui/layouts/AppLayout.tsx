@@ -6,9 +6,11 @@ import { Sidebar } from '@/shared/ui/navigation/Sidebar';
 import { Header } from '@/shared/ui/navigation/Header';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { useIdleSession } from '@/shared/hooks/useIdleSession';
+import { useAbsoluteSession } from '@/shared/hooks/useAbsoluteSession';
 import { useAuthStore } from '@/shared/store/auth';
 import { USER_ROLE_LABEL_KEYS, type UserRole } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
+import { useBrandTheme } from '@/shared/hooks/useBrandTheme';
 
 function useSidebarCollapsed() {
   const [collapsed, setCollapsed] = useState(() =>
@@ -79,29 +81,49 @@ function ImpersonationBanner() {
 }
 
 export function AppLayout() {
+  useBrandTheme();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { collapsed, toggle: toggleCollapsed } = useSidebarCollapsed();
   const {
-    showWarning,
+    showWarning: showIdleWarning,
     isExtending,
     extendSession,
-    exitSession,
-    warningTitle,
-    warningDescription,
+    exitSession: exitIdleSession,
+    warningTitle: idleWarningTitle,
+    warningDescription: idleWarningDescription,
     extendLabel,
-    exitLabel,
+    exitLabel: idleExitLabel,
   } = useIdleSession();
+  const {
+    showWarning: showAbsoluteWarning,
+    dismissWarning,
+    exitSession: exitAbsoluteSession,
+    warningTitle: absoluteWarningTitle,
+    warningDescription: absoluteWarningDescription,
+    dismissLabel,
+    exitLabel: absoluteExitLabel,
+  } = useAbsoluteSession();
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-page text-primary">
       <ConfirmModal
-        isOpen={showWarning}
-        onClose={exitSession}
+        isOpen={showAbsoluteWarning}
+        onClose={exitAbsoluteSession}
+        onConfirm={dismissWarning}
+        title={absoluteWarningTitle}
+        description={absoluteWarningDescription}
+        confirmLabel={dismissLabel}
+        cancelLabel={absoluteExitLabel}
+        variant="warning"
+      />
+      <ConfirmModal
+        isOpen={showIdleWarning && !showAbsoluteWarning}
+        onClose={exitIdleSession}
         onConfirm={extendSession}
-        title={warningTitle}
-        description={warningDescription}
+        title={idleWarningTitle}
+        description={idleWarningDescription}
         confirmLabel={extendLabel}
-        cancelLabel={exitLabel}
+        cancelLabel={idleExitLabel}
         variant="warning"
         isLoading={isExtending}
       />
