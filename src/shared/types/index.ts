@@ -469,6 +469,14 @@ export interface RecurringBookingCreateResponse extends RecurringBooking {
   skipped_dates: string[];
 }
 
+export interface CancellationAuditEntry {
+  id: number;
+  booking_id: number;
+  cancelled_by: { id: number; full_name: string } | null;
+  cancel_reason: string;
+  cancelled_at: string;
+}
+
 export interface Board {
   id: number;
   name: string;

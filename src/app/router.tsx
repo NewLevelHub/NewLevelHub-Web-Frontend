@@ -51,6 +51,7 @@ import BookingDetailPage from '@/pages/bookings/BookingDetailPage';
 import MyBookingsPage from '@/pages/bookings/MyBookingsPage';
 import ManageBookingsPage from '@/pages/bookings/ManageBookingsPage';
 import RecurringBookingsPage from '@/pages/bookings/RecurringBookingsPage';
+import CancellationAuditPage from '@/pages/bookings/CancellationAuditPage';
 
 // Resources (superadmin)
 import ResourceListPage from '@/pages/resources/ResourceListPage';
@@ -322,6 +323,7 @@ export const router = createBrowserRouter([
             element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN]} />,
             children: [
               { path: `${STAFF_UI_PREFIX}/bookings`, element: <ManageBookingsPage /> },
+              { path: `${STAFF_UI_PREFIX}/bookings/cancellation-audit`, element: <CancellationAuditPage /> },
               { path: `${STAFF_UI_PREFIX}/bookings/:id`, element: <BookingDetailPage /> },
             ],
           },

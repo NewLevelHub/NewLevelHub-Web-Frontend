@@ -374,6 +374,7 @@
     "pagination": "Pagination",
     "previousPage": "Previous page",
     "nextPage": "Next page",
+    "pageOf": "Page {{page}} of {{total}}",
     "selectCompany": "Select company",
     "selectEmployee": "Select employee",
     "active": "Active",
@@ -760,7 +761,28 @@
       "leave": "Leave",
       "team": "Team",
       "serviceRequest": "Service Request",
-      "buildingStaff": "Building Staff"
+      "buildingStaff": "Building Staff",
+      "cancellationAudit": "Cancellation History"
+    }
+  },
+  "bookingCancellationAudit": {
+    "title": "Booking Cancellation History",
+    "description": "History of booking cancellations with reason and responsible user.",
+    "loading": "Loading log...",
+    "empty": "No cancellation records",
+    "deletedUser": "User deleted",
+    "totalRecords": "Total records: {{count}}",
+    "col": {
+      "cancelledAt": "Cancelled At",
+      "bookingId": "Booking ID",
+      "cancelledBy": "Cancelled By",
+      "reason": "Reason"
+    },
+    "filter": {
+      "bookingId": "Booking ID",
+      "cancelledBy": "Cancelled by",
+      "dateFrom": "Date from",
+      "dateTo": "Date to"
     }
   },
   "catalog": {
