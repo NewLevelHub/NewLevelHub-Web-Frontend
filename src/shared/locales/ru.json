@@ -1975,7 +1975,15 @@
     "deleteSelected": "Удалить выбранные",
     "deselectAll": "Снять выделение",
     "folderBreakdown": "Содержимое папки",
-    "allStorageBreakdown": "Всё хранилище"
+    "allStorageBreakdown": "Всё хранилище",
+    "previewOpen": "Предпросмотр",
+    "previewTitle": "Предпросмотр: {{name}}",
+    "previewLoading": "Загрузка предпросмотра...",
+    "previewError": "Не удалось загрузить предпросмотр",
+    "previewNotSupported": "Предпросмотр недоступен",
+    "previewDownloadInstead": "Этот формат нельзя отобразить в браузере. Скачайте файл, чтобы открыть его.",
+    "previewOpenNewTab": "Открыть в новой вкладке",
+    "previewPdfLabel": "PDF-документ: {{name}}"
   },
   "analytics": {
     "title": "Аналитика",
@@ -2027,7 +2035,16 @@
     "resourceUtilizationDesc": "Количество броней каждого типа за день",
     "noBookingsPeriod": "Нет бронирований за выбранный период",
     "peakHours": "Пиковые часы",
-    "peakHoursDesc": "(бронирований по дню и часу)",
+    "peakHoursDesc": "Бронирований по дню недели и часу",
+    "dow": {
+      "mon": "Пн",
+      "tue": "Вт",
+      "wed": "Ср",
+      "thu": "Чт",
+      "fri": "Пт",
+      "sat": "Сб",
+      "sun": "Вс"
+    },
     "newRegistrations": "Новые регистрации",
     "newRegistrationsDesc": "Пользователей зарегистрировано по неделям",
     "noRegistrationsPeriod": "Нет регистраций за выбранный период",
@@ -2043,7 +2060,9 @@
     "parkings": "Парковки",
     "capsules": "Капсулы",
     "newUsers": "Новых пользователей",
-    "requests": "Заявок"
+    "requests": "Заявок",
+    "exportPdf": "Скачать PDF",
+    "exportingPdf": "Формирование PDF…"
   },
   "onboarding": {
     "title": "Онбординг",

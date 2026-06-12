@@ -10,6 +10,7 @@ import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import { downloadFromApiEndpoint } from '@/shared/lib/resolveDownloadUrl';
 import { USER_ROLES } from '@/shared/config/constants';
+import { FilePreviewPanel, isPreviewable } from '@/pages/files/components/FilePreviewPanel';
 import {
   Archive,
   Check,
@@ -108,14 +109,43 @@ const EXT_BADGE_STYLES: Record<string, string> = {
   csv:  'from-emerald-500 to-emerald-700',
 };
 
-function FileTypeBadge({ name }: { name: string }) {
-  const ext = getFileExt(name);
+const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'tiff', 'heic', 'svg']);
+
+function isImageFile(file: StorageFile): boolean {
+  if (file.content_type?.startsWith('image/')) return true;
+  if (file.mime_type?.startsWith('image/')) return true;
+  return IMAGE_EXTENSIONS.has(getFileExt(file.name));
+}
+
+function FileTypeBadge({ file }: { file: StorageFile }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const ext = getFileExt(file.name);
   const grad = EXT_BADGE_STYLES[ext];
+
+  const containerClass = cn(
+    'inline-grid shrink-0 place-items-center rounded-[5px]',
+    'w-[38px] h-[28px]',
+  );
+
+  if (isImageFile(file) && file.file && !imgFailed) {
+    return (
+      <span className={cn(containerClass, 'overflow-hidden')}>
+        <img
+          src={file.file}
+          alt=""
+          loading="lazy"
+          className="w-full h-full object-cover"
+          onError={() => setImgFailed(true)}
+        />
+      </span>
+    );
+  }
+
   return (
     <span
       className={cn(
-        'inline-grid shrink-0 place-items-center rounded-[5px] font-mono text-[9.5px] font-bold tracking-wide',
-        'w-[38px] h-[28px]',
+        containerClass,
+        'font-mono text-[9.5px] font-bold tracking-wide',
         grad ? `bg-gradient-to-b ${grad} text-white` : 'bg-raised text-secondary',
       )}
     >
@@ -175,6 +205,7 @@ export default function FileBrowserPage() {
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [selectedFileIds, setSelectedFileIds] = useState<Set<number>>(new Set());
   const [openMenuId, setOpenMenuId] = useState<{ kind: 'file' | 'folder'; id: number } | null>(null);
+  const [previewFile, setPreviewFile] = useState<StorageFile | null>(null);
 
   // ── Sharing state ──
   const [inlineShareFileId, setInlineShareFileId] = useState<number | null>(null);
@@ -983,10 +1014,23 @@ export default function FileBrowserPage() {
                               </button>
                             </td>
                             <td className="px-3 py-2.5">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <FileTypeBadge name={file.name} />
-                                <span className="font-medium text-primary truncate">{file.name}</span>
-                              </div>
+                              <button
+                                type="button"
+                                className="flex items-center gap-2 min-w-0 w-full text-left group/name"
+                                onClick={() => {
+                                  if (isPreviewable(file)) {
+                                    setPreviewFile(file);
+                                  } else {
+                                    downloadFileMutation.mutate({ id: file.id, name: file.name });
+                                  }
+                                }}
+                                title={isPreviewable(file) ? t('files.previewOpen') : t('files.download')}
+                              >
+                                <FileTypeBadge file={file} />
+                                <span className="font-medium text-primary truncate group-hover/name:underline">
+                                  {file.name}
+                                </span>
+                              </button>
                             </td>
                             <td className="px-3 py-2.5 font-mono text-[12px] text-muted whitespace-nowrap">
                               {formatFileSize(file.file_size ?? file.size ?? 0)}
@@ -1010,6 +1054,19 @@ export default function FileBrowserPage() {
                               </button>
                               {openMenuId?.kind === 'file' && openMenuId.id === file.id && (
                                 <div className="absolute right-0 top-9 z-30 w-52 bg-surface border border-default rounded-xl shadow-[var(--shadow-pop)] py-1">
+                                  {isPreviewable(file) && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setPreviewFile(file);
+                                        setOpenMenuId(null);
+                                      }}
+                                      className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-secondary hover:bg-hover whitespace-nowrap"
+                                    >
+                                      <FileText size={13} /> {t('files.previewOpen')}
+                                    </button>
+                                  )}
                                   <button
                                     type="button"
                                     onClick={(e) => {
@@ -1293,6 +1350,18 @@ export default function FileBrowserPage() {
           </div>
         </aside>
       </div>
+
+      {/* ── File preview panel ── */}
+      {previewFile !== null && (
+        <FilePreviewPanel
+          file={previewFile}
+          onClose={() => setPreviewFile(null)}
+          onDownload={(f) => {
+            downloadFileMutation.mutate({ id: f.id, name: f.name });
+            setPreviewFile(null);
+          }}
+        />
+      )}
 
       {/* ── Modals ── */}
       <ConfirmModal

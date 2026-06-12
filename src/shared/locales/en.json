@@ -1980,7 +1980,15 @@
     "deleteSelected": "Delete selected",
     "deselectAll": "Deselect all",
     "folderBreakdown": "Folder contents",
-    "allStorageBreakdown": "All storage"
+    "allStorageBreakdown": "All storage",
+    "previewOpen": "Preview",
+    "previewTitle": "Preview: {{name}}",
+    "previewLoading": "Loading preview...",
+    "previewError": "Failed to load preview",
+    "previewNotSupported": "Preview not available",
+    "previewDownloadInstead": "This file type cannot be displayed in the browser. Download the file to open it.",
+    "previewOpenNewTab": "Open in new tab",
+    "previewPdfLabel": "PDF document: {{name}}"
   },
   "analytics": {
     "title": "Analytics",
@@ -2031,8 +2039,17 @@
     "resourceUtilization": "Resource utilization (by day)",
     "resourceUtilizationDesc": "Number of bookings per resource type per day",
     "noBookingsPeriod": "No bookings for the selected period",
-    "peakHours": "Peak hours",
-    "peakHoursDesc": "(bookings by day and hour)",
+    "peakHours": "Peak Hours",
+    "peakHoursDesc": "Bookings by day of week and hour",
+    "dow": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    },
     "newRegistrations": "New registrations",
     "newRegistrationsDesc": "Users registered by week",
     "noRegistrationsPeriod": "No registrations for the selected period",
@@ -2048,7 +2065,9 @@
     "parkings": "Parking spots",
     "capsules": "Capsules",
     "newUsers": "New users",
-    "requests": "Requests"
+    "requests": "Requests",
+    "exportPdf": "Download PDF",
+    "exportingPdf": "Generating PDF…"
   },
   "onboarding": {
     "title": "Onboarding",
