@@ -1251,6 +1251,19 @@
       "availabilitySection": "Resource availability",
       "endLabel": "End",
       "availabilityDaysLabel": "Availability days"
+    },
+    "bulk": {
+      "selectedCount": "{{count}} selected",
+      "deselectAll": "Deselect all",
+      "activate": "Activate selected",
+      "deactivate": "Deactivate selected",
+      "delete": "Delete selected",
+      "confirmActivateTitle": "Activate resources",
+      "confirmActivateBody": "Activate {{count}} resource(s)?",
+      "confirmDeactivateTitle": "Deactivate resources",
+      "confirmDeactivateBody": "Deactivate {{count}} resource(s)?",
+      "confirmDeleteTitle": "Delete resources",
+      "confirmDeleteBody": "This will permanently delete {{count}} resource(s)."
     }
   },
   "map": {

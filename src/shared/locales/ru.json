@@ -1246,6 +1246,19 @@
       "availabilitySection": "Доступность ресурса",
       "endLabel": "Конец",
       "availabilityDaysLabel": "Дни доступности"
+    },
+    "bulk": {
+      "selectedCount": "Выбрано: {{count}}",
+      "deselectAll": "Снять выделение",
+      "activate": "Активировать выбранные",
+      "deactivate": "Деактивировать выбранные",
+      "delete": "Удалить выбранные",
+      "confirmActivateTitle": "Активировать ресурсы",
+      "confirmActivateBody": "Активировать {{count}} ресурс(ов)?",
+      "confirmDeactivateTitle": "Деактивировать ресурсы",
+      "confirmDeactivateBody": "Деактивировать {{count}} ресурс(ов)?",
+      "confirmDeleteTitle": "Удалить ресурсы",
+      "confirmDeleteBody": "Это удалит {{count}} ресурс(ов) безвозвратно."
     }
   },
   "map": {

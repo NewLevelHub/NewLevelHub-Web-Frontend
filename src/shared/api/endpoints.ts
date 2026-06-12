@@ -77,6 +77,9 @@ export const API = {
       uploadPhoto: (id: string) => `/bookings/resources/${id}/photos/`,
       deletePhoto: (id: string, photoId: string) => `/bookings/resources/${id}/photos/${photoId}/`,
       bulkCreate: '/bookings/resources/bulk-create/',
+      bulkActivate: '/bookings/resources/bulk-activate/',
+      bulkDeactivate: '/bookings/resources/bulk-deactivate/',
+      bulkDelete: '/bookings/resources/bulk-delete/',
     },
     reservations: {
       list: '/bookings/reservations/',
