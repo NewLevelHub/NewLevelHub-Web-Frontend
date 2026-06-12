@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { PromptModal } from '@/shared/ui/PromptModal';
@@ -12,11 +12,14 @@ import { StorageScopeCards } from '@/pages/files/components/StorageScopeCards';
 import { FileRow } from '@/pages/files/components/FileRow';
 import { FilesTableShell } from '@/pages/files/components/FilesTableShell';
 import { StoragePanel } from '@/pages/files/components/StoragePanel';
+import { FilePreviewPanel } from '@/pages/files/components/FilePreviewPanel';
+import type { StorageFile } from '@/shared/types';
 
 export default function FileBrowserPage() {
   const { t } = useTranslation();
   const fb = useFileBrowser();
   const { shareState, folderPermState } = fb;
+  const [previewFile, setPreviewFile] = useState<StorageFile | null>(null);
 
   useEffect(() => {
     if (fb.openMenuId === null) return;
@@ -339,7 +342,7 @@ export default function FileBrowserPage() {
           file={previewFile}
           onClose={() => setPreviewFile(null)}
           onDownload={(f) => {
-            downloadFileMutation.mutate({ id: f.id, name: f.name });
+            fb.handleDownload(f.id, f.name);
             setPreviewFile(null);
           }}
         />
