@@ -671,6 +671,7 @@
       "booking_confirmed": "Бронь подтверждена",
       "booking_reminder": "Напоминание о брони",
       "booking_cancelled": "Бронь отменена",
+      "booking_completed": "Бронирование завершено",
       "task_assigned": "Задача назначена",
       "task_moved": "Задача перемещена",
       "task_comment": "Комментарий к задаче",
@@ -854,7 +855,26 @@
     "personalData": "Личные данные",
     "cannotChange": "(нельзя изменить)",
     "saving": "Сохраняем...",
-    "loadError": "Не удалось загрузить профиль. Попробуйте перезагрузить страницу."
+    "loadError": "Не удалось загрузить профиль. Попробуйте перезагрузить страницу.",
+    "activity": {
+      "title": "История активности",
+      "bookings": "Последние бронирования",
+      "tasks": "Последние задачи",
+      "passes": "Последние пропуска",
+      "viewAll": "Посмотреть все",
+      "noBookings": "Бронирований пока нет",
+      "noTasks": "Задач пока нет",
+      "noPasses": "Пропусков пока нет"
+    },
+    "changePasswordTitle": "Сменить пароль",
+    "currentPassword": "Текущий пароль",
+    "newPassword": "Новый пароль",
+    "confirmPassword": "Подтвердите новый пароль",
+    "changePasswordBtn": "Сменить пароль",
+    "changingPassword": "Сохраняем…",
+    "changePasswordSuccess": "Пароль успешно изменён.",
+    "changePasswordError": "Не удалось сменить пароль. Попробуйте снова.",
+    "passwordsMismatch": "Пароли не совпадают."
   },
   "layout": {
     "openSidebar": "Открыть боковое меню",
@@ -879,10 +899,15 @@
   },
   "session": {
     "expired": "Сессия завершена из-за отсутствия активности. Пожалуйста, войдите снова.",
+    "absoluteExpired": "Максимальное время сессии истекло. Для продолжения работы необходимо войти в систему повторно.",
     "warningTitle": "Сессия скоро будет завершена",
     "warningDescription": "Сессия будет завершена через {{minutes}} мин. из-за отсутствия активности.",
+    "absoluteWarningTitle": "Сессия скоро завершится",
+    "absoluteWarningDescription": "Срок текущей сессии скоро истечет. Для продолжения работы потребуется повторный вход. Действия в системе не продлевают это время — только новый вход.",
     "extend": "Продлить сессию",
-    "exit": "Выйти"
+    "exit": "Выйти",
+    "absoluteDismiss": "Понятно",
+    "absoluteExit": "Выйти сейчас"
   },
   "booking": {
     "create": {
@@ -1541,6 +1566,12 @@
       "already_used": "Пропуск уже был использован ранее",
       "not_found": "Пропуск не найден в системе"
     },
+    "status": {
+      "active": "Активный",
+      "used": "Использован",
+      "expired": "Истёк",
+      "revoked": "Отозван"
+    },
     "statusActive": "Активный",
     "statusExpired": "Истёк",
     "statusRevoked": "Отозван",
@@ -1945,7 +1976,15 @@
     "deleteSelected": "Удалить выбранные",
     "deselectAll": "Снять выделение",
     "folderBreakdown": "Содержимое папки",
-    "allStorageBreakdown": "Всё хранилище"
+    "allStorageBreakdown": "Всё хранилище",
+    "previewOpen": "Предпросмотр",
+    "previewTitle": "Предпросмотр: {{name}}",
+    "previewLoading": "Загрузка предпросмотра...",
+    "previewError": "Не удалось загрузить предпросмотр",
+    "previewNotSupported": "Предпросмотр недоступен",
+    "previewDownloadInstead": "Этот формат нельзя отобразить в браузере. Скачайте файл, чтобы открыть его.",
+    "previewOpenNewTab": "Открыть в новой вкладке",
+    "previewPdfLabel": "PDF-документ: {{name}}"
   },
   "analytics": {
     "title": "Аналитика",
@@ -1997,7 +2036,16 @@
     "resourceUtilizationDesc": "Количество броней каждого типа за день",
     "noBookingsPeriod": "Нет бронирований за выбранный период",
     "peakHours": "Пиковые часы",
-    "peakHoursDesc": "(бронирований по дню и часу)",
+    "peakHoursDesc": "Бронирований по дню недели и часу",
+    "dow": {
+      "mon": "Пн",
+      "tue": "Вт",
+      "wed": "Ср",
+      "thu": "Чт",
+      "fri": "Пт",
+      "sat": "Сб",
+      "sun": "Вс"
+    },
     "newRegistrations": "Новые регистрации",
     "newRegistrationsDesc": "Пользователей зарегистрировано по неделям",
     "noRegistrationsPeriod": "Нет регистраций за выбранный период",
@@ -2013,7 +2061,9 @@
     "parkings": "Парковки",
     "capsules": "Капсулы",
     "newUsers": "Новых пользователей",
-    "requests": "Заявок"
+    "requests": "Заявок",
+    "exportPdf": "Скачать PDF",
+    "exportingPdf": "Формирование PDF…"
   },
   "onboarding": {
     "title": "Онбординг",
@@ -2091,7 +2141,47 @@
     "busySlotsTitle": "Слоты занятости на день",
     "loadingBusy": "Загрузка занятости...",
     "freeAllDay": "Свободно на весь день.",
-    "employee": "Сотрудник: {{name}}"
+    "employee": "Сотрудник: {{name}}",
+    "viewToggle": "Вид календаря",
+    "allDay": "Весь\nдень",
+    "bookSlot": "Забронировать",
+    "noteLabel": "Заметка",
+    "addNote": "Добавить заметку",
+    "editNote": "Редактировать заметку",
+    "notePlaceholder": "Введите текст заметки…",
+    "saveNote": "Сохранить",
+    "deleteNote": "Удалить",
+    "noteAdded": "Заметка добавлена",
+    "noteUpdated": "Заметка сохранена",
+    "noteDeleted": "Заметка удалена",
+    "noEventsFiltered": "По выбранным фильтрам событий нет",
+    "noEventsFilteredHint": "Измените или сбросьте фильтры, чтобы увидеть расписание команды.",
+    "noEventsHint": "На этой неделе у команды нет запланированных событий.",
+    "deadlinePrefix": "Дедлайн",
+    "guestPrefix": "Гость",
+    "daysCount_one": "{{count}} день",
+    "daysCount_few": "{{count}} дня",
+    "daysCount_many": "{{count}} дней",
+    "daysCount_other": "{{count}} дней",
+    "moreEvents_one": "ещё {{count}} событие",
+    "moreEvents_few": "ещё {{count}} события",
+    "moreEvents_many": "ещё {{count}} событий",
+    "moreEvents_other": "ещё {{count}} событий",
+    "readOnlyApproved": "Одобрено · только просмотр",
+    "openBooking": "Открыть бронирование",
+    "openTask": "Открыть задачу",
+    "openPass": "Открыть пропуск",
+    "popover": {
+      "resource": "Ресурс",
+      "dateTime": "Дата и время",
+      "task": "Задача",
+      "deadline": "Дедлайн",
+      "assignee": "Исполнитель",
+      "guest": "Гость",
+      "invitedBy": "Пригласил",
+      "type": "Тип",
+      "period": "Период"
+    }
   },
   "users": {
     "backToList": "Назад к списку пользователей",

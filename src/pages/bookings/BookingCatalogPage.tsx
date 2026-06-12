@@ -28,6 +28,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import {
   BOOKING_RESOURCE_CATALOG_STATUS,
+  COMPANY_TIERS,
   RESOURCE_TYPES,
   RESOURCE_TYPE_LABEL_KEYS,
   RESOURCE_EQUIPMENT_KEYS,
@@ -162,8 +163,11 @@ export default function BookingCatalogPage() {
 
   const freeCount = useMemo(() => results.filter((r) => r.status === BOOKING_RESOURCE_CATALOG_STATUS.FREE).length, [results]);
 
+  const PLANS_WITH_ASSIGNED_RESOURCES = new Set<string>([COMPANY_TIERS.STANDARD, COMPANY_TIERS.PREMIUM]);
+
   const myCompanyId =
-    user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.EMPLOYEE
+    (user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.EMPLOYEE) &&
+    PLANS_WITH_ASSIGNED_RESOURCES.has(user?.company?.plan ?? '')
       ? (user?.company_id ?? null)
       : null;
 

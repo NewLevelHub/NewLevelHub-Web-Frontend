@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import ProfileActivitySection from './ProfileActivitySection';
 import { useTranslation } from 'react-i18next';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -11,6 +12,7 @@ import { mapApiUser } from '@/shared/lib/mapUser';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import { useAuth } from '@/shared/hooks/useAuth';
 import type { User as UserType } from '@/shared/types';
+import { ChangePasswordSection } from './ChangePasswordSection';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -567,6 +569,9 @@ export default function ProfilePage() {
           </dl>
         )}
       </section>
+
+      <ProfileActivitySection />
+      <ChangePasswordSection />
     </main>
   );
 }

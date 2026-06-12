@@ -8,7 +8,7 @@ export const API = {
     refreshToken: '/auth/token/refresh/',
     forgotPassword: '/auth/password/reset/',
     resetPassword: '/auth/password/reset/confirm/',
-    changePassword: '/auth/password/change/',
+    changePassword: '/auth/me/password/',
     verifyEmail: '/auth/email/verify/',
     resendVerification: '/auth/email/resend/',
     roles: '/auth/roles/',
@@ -240,6 +240,7 @@ export const API = {
     me: '/auth/me/',
     update: '/auth/me/update/',
     deleteAvatar: '/auth/me/avatar/',
+    activity: '/auth/me/activity/',
   },
   users: {
     list: '/auth/users/',

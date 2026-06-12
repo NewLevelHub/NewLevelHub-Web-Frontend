@@ -667,6 +667,7 @@
       "booking_confirmed": "Booking confirmed",
       "booking_reminder": "Booking reminder",
       "booking_cancelled": "Booking cancelled",
+      "booking_completed": "Booking completed",
       "task_assigned": "Task assigned",
       "task_moved": "Task moved",
       "task_comment": "Task comment",
@@ -859,7 +860,26 @@
     "personalData": "Personal data",
     "cannotChange": "(cannot be changed)",
     "saving": "Saving...",
-    "loadError": "Failed to load profile. Please reload the page."
+    "loadError": "Failed to load profile. Please reload the page.",
+    "activity": {
+      "title": "Activity History",
+      "bookings": "Recent Bookings",
+      "tasks": "Recent Tasks",
+      "passes": "Recent Passes",
+      "viewAll": "View all",
+      "noBookings": "No bookings yet",
+      "noTasks": "No tasks yet",
+      "noPasses": "No passes yet"
+    },
+    "changePasswordTitle": "Change Password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "changePasswordBtn": "Change password",
+    "changingPassword": "Saving…",
+    "changePasswordSuccess": "Password changed successfully.",
+    "changePasswordError": "Could not change password. Try again.",
+    "passwordsMismatch": "Passwords do not match."
   },
   "layout": {
     "openSidebar": "Open sidebar menu",
@@ -884,10 +904,15 @@
   },
   "session": {
     "expired": "Your session has ended due to inactivity. Please sign in again.",
+    "absoluteExpired": "Your session has reached its maximum lifetime. Please sign in again to continue.",
     "warningTitle": "Session ending soon",
     "warningDescription": "Your session will end in about {{minutes}} minute(s) due to inactivity.",
+    "absoluteWarningTitle": "Session ending soon",
+    "absoluteWarningDescription": "Your current session will expire soon. You will need to sign in again to continue. Activity in the app does not extend this limit — only signing in again does.",
     "extend": "Stay signed in",
-    "exit": "Sign out"
+    "exit": "Sign out",
+    "absoluteDismiss": "Got it",
+    "absoluteExit": "Sign out now"
   },
   "booking": {
     "create": {
@@ -1546,6 +1571,12 @@
       "already_used": "Pass was already used",
       "not_found": "Pass not found in the system"
     },
+    "status": {
+      "active": "Active",
+      "used": "Used",
+      "expired": "Expired",
+      "revoked": "Revoked"
+    },
     "statusActive": "Active",
     "statusExpired": "Expired",
     "statusRevoked": "Revoked",
@@ -1950,7 +1981,15 @@
     "deleteSelected": "Delete selected",
     "deselectAll": "Deselect all",
     "folderBreakdown": "Folder contents",
-    "allStorageBreakdown": "All storage"
+    "allStorageBreakdown": "All storage",
+    "previewOpen": "Preview",
+    "previewTitle": "Preview: {{name}}",
+    "previewLoading": "Loading preview...",
+    "previewError": "Failed to load preview",
+    "previewNotSupported": "Preview not available",
+    "previewDownloadInstead": "This file type cannot be displayed in the browser. Download the file to open it.",
+    "previewOpenNewTab": "Open in new tab",
+    "previewPdfLabel": "PDF document: {{name}}"
   },
   "analytics": {
     "title": "Analytics",
@@ -2001,8 +2040,17 @@
     "resourceUtilization": "Resource utilization (by day)",
     "resourceUtilizationDesc": "Number of bookings per resource type per day",
     "noBookingsPeriod": "No bookings for the selected period",
-    "peakHours": "Peak hours",
-    "peakHoursDesc": "(bookings by day and hour)",
+    "peakHours": "Peak Hours",
+    "peakHoursDesc": "Bookings by day of week and hour",
+    "dow": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    },
     "newRegistrations": "New registrations",
     "newRegistrationsDesc": "Users registered by week",
     "noRegistrationsPeriod": "No registrations for the selected period",
@@ -2018,7 +2066,9 @@
     "parkings": "Parking spots",
     "capsules": "Capsules",
     "newUsers": "New users",
-    "requests": "Requests"
+    "requests": "Requests",
+    "exportPdf": "Download PDF",
+    "exportingPdf": "Generating PDF…"
   },
   "onboarding": {
     "title": "Onboarding",
@@ -2096,7 +2146,43 @@
     "busySlotsTitle": "Busy slots for the day",
     "loadingBusy": "Loading availability...",
     "freeAllDay": "Free all day.",
-    "employee": "Employee: {{name}}"
+    "employee": "Employee: {{name}}",
+    "viewToggle": "Calendar view",
+    "allDay": "All\nday",
+    "bookSlot": "Book",
+    "noteLabel": "Note",
+    "addNote": "Add note",
+    "editNote": "Edit note",
+    "notePlaceholder": "Enter note text…",
+    "saveNote": "Save",
+    "deleteNote": "Delete",
+    "noteAdded": "Note added",
+    "noteUpdated": "Note saved",
+    "noteDeleted": "Note deleted",
+    "noEventsFiltered": "No events match the selected filters",
+    "noEventsFilteredHint": "Change or reset filters to see the team schedule.",
+    "noEventsHint": "No scheduled events for this period.",
+    "deadlinePrefix": "Deadline",
+    "guestPrefix": "Guest",
+    "daysCount_one": "{{count}} day",
+    "daysCount_other": "{{count}} days",
+    "moreEvents_one": "{{count}} more event",
+    "moreEvents_other": "{{count}} more events",
+    "readOnlyApproved": "Approved · view only",
+    "openBooking": "Open booking",
+    "openTask": "Open task",
+    "openPass": "Open pass",
+    "popover": {
+      "resource": "Resource",
+      "dateTime": "Date and time",
+      "task": "Task",
+      "deadline": "Deadline",
+      "assignee": "Assignee",
+      "guest": "Guest",
+      "invitedBy": "Invited by",
+      "type": "Type",
+      "period": "Period"
+    }
   },
   "users": {
     "backToList": "Back to user list",

@@ -689,6 +689,9 @@ export interface CalendarEvent {
     id: number;
     full_name: string;
   };
+  task_id?: number;
+  board_id?: number;
+  guest_pass_id?: number;
 }
 
 export interface CalendarBusySlot {
@@ -793,6 +796,7 @@ export type NotificationType =
   | 'booking_confirmed'
   | 'booking_reminder'
   | 'booking_cancelled'
+  | 'booking_completed'
   | 'task_assigned'
   | 'task_moved'
   | 'task_comment'
@@ -817,6 +821,7 @@ export interface NotificationPreferences {
   booking_confirmed: NotificationPreferenceEntry;
   booking_reminder: NotificationPreferenceEntry;
   booking_cancelled: NotificationPreferenceEntry;
+  booking_completed: NotificationPreferenceEntry;
   task_assigned: NotificationPreferenceEntry;
   task_moved: NotificationPreferenceEntry;
   task_comment: NotificationPreferenceEntry;
@@ -1275,3 +1280,36 @@ export type DashboardData =
   | CompanyAdminDashboardData
   | EmployeeDashboardData
   | GuestDashboardData;
+
+// ── Profile activity ──────────────────────────────────────────────────
+
+export interface BookingActivity {
+  id: number;
+  resource_name: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+}
+
+export interface TaskActivity {
+  id: number;
+  title: string;
+  priority: string;
+  deadline: string | null;
+  board_name: string;
+  board_id: number;
+}
+
+export interface PassActivity {
+  id: number;
+  guest_name: string;
+  status: string;
+  valid_from: string;
+  valid_until: string;
+}
+
+export interface UserActivityResponse {
+  bookings: BookingActivity[];
+  tasks: TaskActivity[];
+  passes: PassActivity[];
+}
