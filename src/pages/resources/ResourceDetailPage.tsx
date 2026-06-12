@@ -468,7 +468,7 @@ export default function ResourceDetailPage() {
               <button
                 type="button"
                 onClick={() => { setErrorMsg(null); setActivateModal(true); }}
-                className="h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                className="h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] border border-[color:var(--brand)] bg-brand-subtle text-brand hover:opacity-90 transition-colors"
               >
                 {t('common.activate')}
               </button>

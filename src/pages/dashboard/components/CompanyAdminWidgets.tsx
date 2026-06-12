@@ -51,7 +51,7 @@ export function CompanyAdminWidgets({ data }: { data: CompanyAdminDashboardData 
       {/* Hero */}
       <section
         className="relative overflow-hidden rounded-2xl px-4 py-6 sm:px-6 sm:py-8"
-        style={{ background: 'linear-gradient(135deg, var(--brand) 0%, #7c3aed 100%)' }}
+        style={{ background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-gradient-end) 100%)' }}
       >
         <div
           className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full opacity-10"

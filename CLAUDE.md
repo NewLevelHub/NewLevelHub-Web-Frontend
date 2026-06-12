@@ -215,6 +215,138 @@ Pages that are not yet implemented render `<PageStub />`. When implementing a re
 
 ---
 
+## CSS Custom Properties & Theming
+
+Весь дизайн-токен системы живёт в `src/styles/theme.css` как CSS custom properties. **Никогда не используй хардкодные цвета** — ни hex (`#059669`), ни Tailwind-классы с фиксированными оттенками (`bg-emerald-600`, `text-gray-900`) для интерактивных и брендовых элементов.
+
+### Доступные CSS переменные
+
+**Фоны и поверхности:**
+```
+--bg-page        # фон всей страницы
+--bg-surface     # карточки, модалки, дропдауны
+--bg-raised      # приподнятые секции внутри surface
+--bg-hover       # фон при hover
+--bg-active      # фон активного/выбранного элемента
+--bg-sidebar     # фон сайдбара
+```
+
+**Бордеры:**
+```
+--border         # стандартный бордер
+--border-strong  # акцентный бордер
+--border-faint   # едва заметный бордер
+```
+
+**Текст:**
+```
+--text-primary      # основной текст
+--text-secondary    # вторичный текст
+--text-muted        # приглушённый текст
+--text-subtle       # очень тихий текст
+--text-placeholder  # плейсхолдеры
+--text-on-brand     # текст поверх brand-фона
+```
+
+**Бренд (меняются при смене brand color компании):**
+```
+--brand              # основной цвет бренда
+--brand-hover        # бренд при hover
+--brand-subtle       # очень светлый тинт бренда (для bg)
+--brand-text         # текст цвета бренда
+--brand-gradient-end # второй стоп в hero-градиенте
+```
+
+**Навигация (меняются при смене brand color):**
+```
+--nav-active-bg      # фон активного пункта меню
+--nav-active-text    # текст активного пункта
+--nav-active-border  # левый акцент активного пункта
+--nav-text           # текст неактивных пунктов
+--nav-hover-bg       # фон при hover
+```
+
+**Статусы (семантические — не трогать для бренда):**
+```
+--status-free-bg / --status-free-text      # свободный ресурс
+--status-busy-bg / --status-busy-text      # занятый ресурс
+--status-soon-bg / --status-soon-text      # скоро свободен
+--status-na-bg   / --status-na-text        # нет статуса
+```
+
+**Сигнальные (семантические):**
+```
+--success / --success-bg / --success-text
+--warning / --warning-bg / --warning-text
+--danger  / --danger-bg  / --danger-text
+--info
+```
+
+### Tailwind-утилиты для CSS vars
+
+В `theme.css` определены utility-классы для brand и surface токенов:
+
+```
+bg-brand          bg-brand-subtle    bg-brand-hover
+text-brand        hover:text-brand   hover:bg-brand-hover
+bg-page           bg-surface         bg-raised
+bg-hover          text-primary       text-secondary
+text-muted        border-default     bg-success-subtle
+bg-warning-subtle bg-danger-subtle
+```
+
+### Правила использования
+
+**ЗАПРЕЩЕНО:**
+```tsx
+// ❌ хардкодный hex
+style={{ background: '#111827' }}
+style={{ color: '#b45309' }}
+
+// ❌ Tailwind с фиксированным оттенком для брендовых/surface элементов
+className="bg-emerald-600 hover:bg-emerald-700"
+className="bg-gray-900 text-gray-100"
+
+// ❌ в recharts/inline styles
+contentStyle={{ background: '#111827', color: '#f9fafb' }}
+```
+
+**ПРАВИЛЬНО:**
+```tsx
+// ✅ CSS var в inline style
+style={{ background: 'var(--bg-surface)' }}
+style={{ color: 'var(--warning)' }}
+
+// ✅ Tailwind utility из theme.css
+className="bg-brand hover:bg-brand-hover text-white"
+className="bg-surface text-primary border border-default"
+
+// ✅ в recharts/inline styles
+contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-strong)', color: 'var(--text-primary)' }}
+```
+
+### Исключения — когда можно оставить хардкод
+
+Следующие цвета **семантически фиксированы** и не должны меняться вместе с брендом:
+- Статусы доступности ресурсов: `bg-emerald-*` (FREE), `bg-rose-*` (OCCUPIED), `bg-amber-*` (SOON)
+- Оценки/рейтинги: `text-amber-400` (звёзды)
+- Цвета типов файлов в файловом менеджере
+- Аватары с цветовым кодом пользователей
+- Цвета серий данных в графиках (bars, lines)
+- Декоративные `rgba(0,0,0,0.N)` оверлеи поверх изображений
+
+### Система бренд-темизации
+
+`src/shared/hooks/useBrandTheme.ts` — вызывается один раз в `AppLayout`. Он:
+- Читает `company.brand_primary_color` из API (`/companies/{id}/settings/`)
+- Устанавливает все `--brand*`, `--nav-*`, `--bg-*`, `--border*`, `--status-free-*` через `document.documentElement.style.setProperty`
+- Пересчитывает переменные при смене темы (light/dark) через `MutationObserver`
+- Очищает все переменные при логауте/анмаунте
+
+Не вызывай этот хук нигде кроме `AppLayout`. Не дублируй его логику в компонентах.
+
+---
+
 ## Frontend Development
 
 Перед редактированием любого компонента:

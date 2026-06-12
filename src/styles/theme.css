@@ -36,6 +36,7 @@
   --brand-hover:    #047857;
   --brand-subtle:   #ecfdf5;
   --brand-text:     #047857;
+  --brand-gradient-end: #7c3aed;
 
   /* Status */
   --success:        #059669;
@@ -109,6 +110,7 @@
   --brand-hover:    #34d399;
   --brand-subtle:   #062a1d;
   --brand-text:     #6ee7b7;
+  --brand-gradient-end: #34d399;
 
   /* Status */
   --success:        #34d399;

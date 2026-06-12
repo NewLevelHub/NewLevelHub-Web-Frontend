@@ -27,7 +27,7 @@ export interface User {
   company_id: number | null;
   company_name: string | null;
   /** Nested company object returned by /api/v1/auth/me/ */
-  company: { id: number; name: string; onboarding_completed?: boolean } | null;
+  company: { id: number; name: string; onboarding_completed?: boolean; logo?: string | null; plan?: string | null } | null;
   avatar: string | null;
   /** Синхронно с бэкендом `is_email_verified` */
   is_email_verified: boolean;
@@ -729,6 +729,24 @@ export interface StorageFolder {
   files_count: number;
   created_at: string;
   updated_at: string;
+  is_deleted?: boolean;
+  deleted_at?: string | null;
+  is_restricted?: boolean;
+  user_permission?: FolderPermissionLevel | null;
+}
+
+export type FolderPermissionLevel = 'view' | 'upload' | 'full';
+
+export interface FolderPermission {
+  id: number;
+  folder: number;
+  user: number | null;
+  user_name: string | null;
+  role: string | null;
+  permission: FolderPermissionLevel;
+  granted_by: number | null;
+  granted_by_name: string | null;
+  created_at: string;
 }
 
 export interface StorageFile {
@@ -747,6 +765,8 @@ export interface StorageFile {
   company: number | null;
   created_at: string;
   updated_at: string;
+  is_deleted?: boolean;
+  deleted_at?: string | null;
 }
 
 export interface StorageFolderDetail extends StorageFolder {
@@ -754,16 +774,28 @@ export interface StorageFolderDetail extends StorageFolder {
   files: StorageFile[];
 }
 
+export interface StorageUsageBreakdown {
+  document: number;
+  image: number;
+  archive: number;
+  media: number;
+  other: number;
+}
+
 export interface StorageUsage {
   personal: {
     used_bytes: number;
     file_count: number;
     limit_bytes: number | null;
+    trash_bytes: number;
+    breakdown: StorageUsageBreakdown;
   };
   company: {
     used_bytes: number;
     limit_bytes: number;
     file_count: number;
+    trash_bytes: number;
+    breakdown: StorageUsageBreakdown;
   };
 }
 
@@ -784,6 +816,18 @@ export interface StorageFileShare {
   permission: StorageSharePermission;
   comment: string;
   created_at: string;
+}
+
+export interface TrashItem {
+  id: number;
+  name: string;
+  item_type: 'file' | 'folder';
+  deleted_at: string;
+  scope: 'personal' | 'company';
+  file_size?: number;
+  content_type?: string;
+  files_count?: number;
+  children_count?: number;
 }
 
 export interface Notification {
