@@ -82,6 +82,7 @@ import LeaveRequestEditPage from '@/pages/leave/LeaveRequestEditPage';
 
 // Files
 import FileBrowserPage from '@/pages/files/FileBrowserPage';
+import TrashPage from '@/pages/files/trash/TrashPage';
 
 // Notifications
 import NotificationListPage from '@/pages/notifications/NotificationListPage';
@@ -239,6 +240,7 @@ export const router = createBrowserRouter([
               { path: '/service-requests/new', element: <ServiceRequestCreatePage /> },
               { path: '/files', element: <FileBrowserPage /> },
               { path: '/storage', element: <FileBrowserPage /> },
+              { path: '/storage/trash', element: <TrashPage /> },
             ],
           },
 

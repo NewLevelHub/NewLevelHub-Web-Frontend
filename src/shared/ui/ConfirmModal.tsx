@@ -104,12 +104,12 @@ export function ConfirmModal({
           <div
             className={cn(
               'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
-              isDanger ? 'bg-red-100' : 'bg-amber-100',
+              isDanger ? 'bg-[var(--danger-bg)]' : 'bg-amber-100',
             )}
           >
             {isDanger ? (
               <AlertCircle
-                className="h-5 w-5 text-red-600"
+                className="h-5 w-5 text-[var(--danger)]"
                 aria-hidden="true"
               />
             ) : (
@@ -139,7 +139,7 @@ export function ConfirmModal({
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="shrink-0 rounded-lg p-1 text-secondary transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:pointer-events-none disabled:opacity-50"
+            className="shrink-0 rounded-lg p-1 text-secondary transition-colors hover:bg-hover hover:text-primary disabled:pointer-events-none disabled:opacity-50"
             aria-label={t('modal.close')}
           >
             <X className="h-4 w-4" aria-hidden="true" />
@@ -152,7 +152,7 @@ export function ConfirmModal({
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="rounded-lg border border-default bg-surface px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-raised disabled:pointer-events-none disabled:opacity-50"
+            className="rounded-lg border border-default bg-surface px-4 py-2 text-sm font-medium text-secondary transition-colors hover:bg-hover disabled:pointer-events-none disabled:opacity-50"
           >
             {resolvedCancelLabel}
           </button>
@@ -165,7 +165,7 @@ export function ConfirmModal({
             className={cn(
               'inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50',
               isDanger
-                ? 'bg-red-600 hover:bg-red-700'
+                ? 'bg-[var(--danger)] hover:opacity-90'
                 : 'bg-amber-500 hover:bg-amber-600',
             )}
           >
