@@ -86,6 +86,7 @@ const companyAdminNav: NavSection[] = [
       { labelKey: 'sidebar.navItem.settings',            path: '/company/settings',                 icon: Settings },
       { labelKey: 'sidebar.navItem.invites',             path: '/company/settings/members',         icon: MailPlus },
       { labelKey: 'sidebar.navItem.onboardingTemplates', path: '/company/settings/onboarding',      icon: ListTodo },
+      { labelKey: 'sidebar.navItem.teamOnboarding',      path: '/company/settings/onboarding/team', icon: Users },
     ],
   },
   {

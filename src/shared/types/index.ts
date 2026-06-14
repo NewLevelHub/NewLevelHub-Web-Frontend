@@ -1025,6 +1025,9 @@ export interface OnboardingStep {
   id: number;
   title: string;
   is_completed: boolean;
+  is_system?: boolean;
+  completed_at?: string | null;
+  url?: string | null;
 }
 
 export interface OnboardingStatus {
@@ -1036,6 +1039,16 @@ export interface OnboardingTemplateStepInput {
   title: string;
   description: string;
   order: number;
+  url?: string | null;
+}
+
+export interface OnboardingTemplateStep {
+  id: number;
+  title: string;
+  description: string;
+  url?: string | null;
+  order: number;
+  is_system: boolean;
 }
 
 export interface OnboardingTemplate {
@@ -1043,8 +1056,38 @@ export interface OnboardingTemplate {
   name: string;
   is_active: boolean;
   is_default: boolean;
-  steps: Array<OnboardingTemplateStepInput & { id: number }>;
+  steps: OnboardingTemplateStep[];
   created_at: string;
+}
+
+export interface TeamMemberProgress {
+  user: number;
+  first_name: string;
+  last_name: string;
+  avatar: string | null;
+  role: string;
+  completed_steps: number;
+  total_steps: number;
+}
+
+export interface TeamMemberProgressStep {
+  id: number;
+  title: string;
+  is_system: boolean;
+  is_completed: boolean;
+  completed_at: string | null;
+}
+
+export interface TeamMemberProgressDetail {
+  user: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    avatar: string | null;
+  };
+  completed_steps: number;
+  total_steps: number;
+  steps: TeamMemberProgressStep[];
 }
 
 export interface CrmAttachmentUploader {

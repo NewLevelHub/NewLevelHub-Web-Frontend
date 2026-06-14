@@ -193,9 +193,12 @@ export const API = {
     progress: '/hr/onboarding/progress/',
     completeStep: (stepId: number) => `/hr/onboarding/progress/steps/${stepId}/complete/`,
     teamProgress: '/hr/onboarding/progress/team/',
+    teamProgressDetail: (userId: number) => `/hr/onboarding/progress/team/${userId}/`,
     templates: '/hr/onboarding/templates/',
     template: (templateId: number) => `/hr/onboarding/templates/${templateId}/`,
     templateSetDefault: (templateId: number) => `/hr/onboarding/templates/${templateId}/set-default/`,
+    templateSteps: (templateId: number) => `/hr/onboarding/templates/${templateId}/steps/`,
+    templateStep: (templateId: number, stepId: number) => `/hr/onboarding/templates/${templateId}/steps/${stepId}/`,
   },
   storage: {
     folders: '/storage/folders/',
