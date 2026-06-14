@@ -1,42 +1,25 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router';
 import { Link } from 'react-router';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Save, ListChecks, Pencil, Trash2, Star, Settings2, Users, AlertCircle, CheckCircle2, ClipboardList } from 'lucide-react';
-import { apiClient } from '@/shared/api/client';
-import { API } from '@/shared/api/endpoints';
-import { USER_ROLES } from '@/shared/config/constants';
-import { useAuth } from '@/shared/hooks/useAuth';
+import {
+  Plus,
+  Save,
+  ListChecks,
+  Pencil,
+  Trash2,
+  Star,
+  Settings2,
+  Users,
+  AlertCircle,
+  CheckCircle2,
+  ClipboardList,
+  Lock,
+  X,
+  Check,
+} from 'lucide-react';
+
 import { cn } from '@/shared/lib/cn';
-import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
-import { getApiError } from '@/shared/lib/getApiError';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
-import type { Company, OnboardingTemplate, OnboardingTemplateStepInput, PaginatedResponse } from '@/shared/types';
-
-interface TemplatesApiResponse {
-  results?: OnboardingTemplate[];
-}
-
-interface TemplateFormState {
-  name: string;
-  steps: OnboardingTemplateStepInput[];
-}
-
-function getInitialState(): TemplateFormState {
-  return {
-    name: '',
-    steps: [{ title: '', description: '', order: 1 }],
-  };
-}
-
-function normalizeSteps(steps: OnboardingTemplateStepInput[]): OnboardingTemplateStepInput[] {
-  return steps.map((step, index) => ({
-    title: step.title.trim(),
-    description: step.description.trim(),
-    order: index + 1,
-  }));
-}
+import { useOnboardingTemplates } from '@/pages/company/hooks/useOnboardingTemplates';
 
 const inputClass =
   'mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand';
@@ -44,162 +27,48 @@ const labelClass = 'block text-sm font-medium text-secondary';
 
 export default function CompanyOnboardingTemplatesPage() {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const [searchParams] = useSearchParams();
-  const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
-  const initialCompanyId = searchParams.get('company') ?? '';
-  const [selectedCompanyId, setSelectedCompanyId] = useState(initialCompanyId);
-  const companyId = isSuperadmin
-    ? selectedCompanyId || null
-    : user?.company_id != null
-      ? String(user.company_id)
-      : null;
-
-  const [form, setForm] = useState<TemplateFormState>(getInitialState);
-  const [editingTemplateId, setEditingTemplateId] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [templatePendingDelete, setTemplatePendingDelete] = useState<{
-    id: number;
-    name: string;
-  } | null>(null);
-
-  const { data: companiesData } = useQuery({
-    queryKey: [...companiesCacheRoot(user?.id), 'list'],
-    enabled: isSuperadmin,
-    queryFn: () =>
-      apiClient.get<PaginatedResponse<Company>>(API.companies.list).then((r) => r.data),
-  });
-
-  const templatesUrl =
-    isSuperadmin && companyId
-      ? `${API.onboarding.templates}?company_id=${companyId}`
-      : API.onboarding.templates;
-
-  const templatesQuery = useQuery({
-    queryKey: ['onboarding-templates', companyId],
-    enabled: !isSuperadmin || Boolean(companyId),
-    queryFn: async () => {
-      const response = await apiClient.get<OnboardingTemplate[] | TemplatesApiResponse>(templatesUrl);
-      if (Array.isArray(response.data)) {
-        return response.data;
-      }
-      return response.data.results ?? [];
-    },
-  });
-
-  const templates = templatesQuery.data ?? [];
-
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const payload = {
-        name: form.name.trim(),
-        steps: normalizeSteps(form.steps).filter((step) => step.title.length > 0),
-      };
-      if (!payload.name) {
-        throw new Error(t('companies.templateNameRequired'));
-      }
-      if (payload.steps.length === 0) {
-        throw new Error(t('companies.templateStepRequired'));
-      }
-
-      if (editingTemplateId) {
-        await apiClient.patch(API.onboarding.template(editingTemplateId), payload);
-        return t('companies.templateUpdated');
-      }
-
-      await apiClient.post(templatesUrl, payload);
-      return t('companies.templateCreated');
-    },
-    onSuccess: async (message) => {
-      setError(null);
-      setSuccess(message);
-      setEditingTemplateId(null);
-      setForm(getInitialState());
-      await queryClient.invalidateQueries({ queryKey: ['onboarding-templates'] });
-    },
-    onError: (mutationError: unknown) => {
-      setSuccess(null);
-      setError(getApiError(mutationError).message);
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (templateId: number) => {
-      await apiClient.delete(API.onboarding.template(templateId));
-      return t('companies.templateDeleted');
-    },
-    onSuccess: async (message, templateId) => {
-      setError(null);
-      setSuccess(message);
-      if (editingTemplateId === templateId) {
-        setEditingTemplateId(null);
-        setForm(getInitialState());
-      }
-      await queryClient.invalidateQueries({ queryKey: ['onboarding-templates'] });
-    },
-    onError: (mutationError: unknown) => {
-      setSuccess(null);
-      setError(getApiError(mutationError).message);
-    },
-  });
-
-  const setDefaultMutation = useMutation({
-    mutationFn: (templateId: number) =>
-      apiClient.post<OnboardingTemplate>(API.onboarding.templateSetDefault(templateId)).then((r) => r.data),
-    onSuccess: async () => {
-      setError(null);
-      setSuccess(t('companies.templateDefaultUpdated'));
-      await queryClient.invalidateQueries({ queryKey: ['onboarding-templates'] });
-    },
-    onError: (mutationError: unknown) => {
-      setSuccess(null);
-      setError(getApiError(mutationError).message);
-    },
-  });
-
-  const startEditing = (template: OnboardingTemplate) => {
-    setEditingTemplateId(template.id);
-    setError(null);
-    setSuccess(null);
-    setForm({
-      name: template.name,
-      steps: template.steps
-        .slice()
-        .sort((a, b) => a.order - b.order)
-        .map((step, index) => ({
-          title: step.title,
-          description: step.description,
-          order: index + 1,
-        })),
-    });
-  };
-
-  const addStep = () => {
-    setForm((prev) => ({
-      ...prev,
-      steps: [...prev.steps, { title: '', description: '', order: prev.steps.length + 1 }],
-    }));
-  };
-
-  const removeStep = (indexToRemove: number) => {
-    setForm((prev) => ({
-      ...prev,
-      steps: prev.steps
-        .filter((_, index) => index !== indexToRemove)
-        .map((step, index) => ({ ...step, order: index + 1 })),
-    }));
-  };
-
-  const updateStep = (indexToUpdate: number, patch: Partial<OnboardingTemplateStepInput>) => {
-    setForm((prev) => ({
-      ...prev,
-      steps: prev.steps.map((step, index) =>
-        index === indexToUpdate ? { ...step, ...patch } : step,
-      ),
-    }));
-  };
+  const {
+    isSuperadmin,
+    companyId,
+    selectedCompanyId,
+    form,
+    editingTemplateId,
+    editingTemplateName,
+    editingStepId,
+    editingStepState,
+    error,
+    success,
+    templatePendingDelete,
+    stepPendingDelete,
+    companiesData,
+    templates,
+    editedSteps,
+    templatesQuery,
+    templateStepsQuery,
+    deleteMutation,
+    deleteStepMutation,
+    createTemplateMutation,
+    saveTemplateNameMutation,
+    addStepMutation,
+    saveStepMutation,
+    setDefaultMutation,
+    setSelectedCompanyId,
+    setForm,
+    setEditingTemplateName,
+    setEditingStepState,
+    setTemplatePendingDelete,
+    setStepPendingDelete,
+    startEditingTemplate,
+    cancelEditingTemplate,
+    startEditingStep,
+    handleCreateTemplate,
+    handleSaveTemplateName,
+    handleAddStep,
+    handleSaveStep,
+    handleDeleteTemplate,
+    handleSetDefault,
+    handleDeleteStep,
+  } = useOnboardingTemplates();
 
   const companySelector = isSuperadmin ? (
     <section className="rounded-xl border border-default bg-surface p-4">
@@ -255,6 +124,13 @@ export default function CompanyOnboardingTemplatesPage() {
           <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
           {t('companies.onboardingTemplatesLink')}
         </span>
+        <Link
+          to={`/company/settings/onboarding/team${companyId ? `?company=${companyId}` : ''}`}
+          className="inline-flex items-center gap-1.5 rounded-full border border-default px-4 py-1.5 text-sm text-secondary hover:bg-hover"
+        >
+          <Users className="h-3.5 w-3.5" aria-hidden="true" />
+          {t('companies.teamOnboardingTab')}
+        </Link>
       </nav>
 
       {/* Superadmin company selector */}
@@ -284,116 +160,236 @@ export default function CompanyOnboardingTemplatesPage() {
         <section className="rounded-xl border border-default bg-surface p-6">
           <p className="text-sm text-secondary">{t('companies.selectCompanyForTemplates')}</p>
         </section>
-      ) : (
-        <>
-          {/* Template form */}
-          <section className="rounded-xl border border-default bg-surface p-6">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-base font-semibold text-primary">
-                {editingTemplateId ? t('companies.editTemplate') : t('common.newTemplate')}
-              </h2>
-              {editingTemplateId && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingTemplateId(null);
-                    setForm(getInitialState());
-                    setError(null);
-                    setSuccess(null);
-                  }}
-                  className="rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:bg-hover"
-                >
-                  {t('common.reset')}
-                </button>
-              )}
+      ) : editingTemplateId !== null ? (
+        /* ── Edit mode: template name + step management via nested endpoint ── */
+        <section className="rounded-xl border border-default bg-surface p-6 space-y-6">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-base font-semibold text-primary">{t('companies.editTemplate')}</h2>
+            <button
+              type="button"
+              onClick={cancelEditingTemplate}
+              className="rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:bg-hover"
+            >
+              {t('common.cancel')}
+            </button>
+          </div>
+
+          {/* Template name */}
+          <div>
+            <label className={labelClass} htmlFor="edit-template-name">
+              {t('companies.templateName')}
+            </label>
+            <div className="mt-1 flex gap-2">
+              <input
+                id="edit-template-name"
+                type="text"
+                value={editingTemplateName}
+                onChange={(e) => setEditingTemplateName(e.target.value)}
+                className="flex-1 rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                placeholder={t('companies.templateNamePlaceholder')}
+              />
+              <button
+                type="button"
+                onClick={handleSaveTemplateName}
+                disabled={saveTemplateNameMutation.isPending}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+              >
+                <Save className="h-4 w-4" aria-hidden="true" />
+                {saveTemplateNameMutation.isPending ? t('common.savingPlain') : t('common.save')}
+              </button>
+            </div>
+          </div>
+
+          {/* Steps */}
+          <div>
+            <h3 className="mb-3 text-sm font-medium text-secondary">{t('companies.stepsTitle')}</h3>
+
+            {templateStepsQuery.isLoading && (
+              <p className="text-sm text-muted">{t('companies.stepsLoading')}</p>
+            )}
+
+            <div className="space-y-2">
+              {editedSteps
+                .slice()
+                .sort((a, b) => a.order - b.order)
+                .map((step) => {
+                  const isEditing = editingStepId === step.id;
+
+                  if (step.is_system) {
+                    return (
+                      <div
+                        key={step.id}
+                        className="flex items-start gap-3 rounded-lg border border-default bg-raised/50 px-4 py-3 opacity-70"
+                        aria-label={t('companies.systemStepAria', { title: step.title })}
+                      >
+                        <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden="true" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-secondary">{step.title}</p>
+                          {step.description && (
+                            <p className="mt-0.5 text-xs text-muted">{step.description}</p>
+                          )}
+                          {step.url && (
+                            <p className="mt-0.5 text-xs text-muted truncate">
+                              {t('companies.stepLinkUrl')}: {step.url}
+                            </p>
+                          )}
+                        </div>
+                        <span className="shrink-0 rounded-full bg-muted/20 px-2 py-0.5 text-xs text-muted">
+                          {t('companies.systemStep')}
+                        </span>
+                      </div>
+                    );
+                  }
+
+                  if (isEditing) {
+                    return (
+                      <div
+                        key={step.id}
+                        className="rounded-lg border border-brand/30 bg-surface p-4 space-y-3"
+                      >
+                        <input
+                          type="text"
+                          value={editingStepState.title}
+                          onChange={(e) =>
+                            setEditingStepState((prev) => ({ ...prev, title: e.target.value }))
+                          }
+                          className="w-full rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                          placeholder={t('companies.stepTitle')}
+                        />
+                        <textarea
+                          value={editingStepState.description}
+                          onChange={(e) =>
+                            setEditingStepState((prev) => ({
+                              ...prev,
+                              description: e.target.value,
+                            }))
+                          }
+                          rows={2}
+                          className="w-full rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                          placeholder={t('companies.stepDescription')}
+                        />
+                        <input
+                          type="url"
+                          value={editingStepState.url}
+                          onChange={(e) =>
+                            setEditingStepState((prev) => ({ ...prev, url: e.target.value }))
+                          }
+                          className="w-full rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                          placeholder={t('companies.stepLinkUrlPlaceholder')}
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleSaveStep(step.id)}
+                            disabled={saveStepMutation.isPending}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
+                          >
+                            <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                            {t('common.save')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingStepState({ title: '', description: '', url: '' })}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:bg-hover"
+                          >
+                            <X className="h-3.5 w-3.5" aria-hidden="true" />
+                            {t('common.cancel')}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={step.id}
+                      className="flex items-start gap-3 rounded-lg border border-default bg-surface px-4 py-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-primary">{step.title}</p>
+                        {step.description && (
+                          <p className="mt-0.5 text-xs text-secondary">{step.description}</p>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => startEditingStep(step)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-default px-2.5 py-1.5 text-xs text-secondary hover:bg-hover"
+                          aria-label={t('companies.editStepAria', { title: step.title })}
+                        >
+                          <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                          {t('companies.editTemplateBtn')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setStepPendingDelete({ id: step.id, title: step.title })
+                          }
+                          className="inline-flex items-center gap-1 rounded-lg border border-default bg-danger-subtle px-2.5 py-1.5 text-xs text-danger hover:opacity-80"
+                          aria-label={t('companies.deleteStepAria', { title: step.title })}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                          {t('common.delete')}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className={labelClass} htmlFor="template-name">
+            <button
+              type="button"
+              onClick={handleAddStep}
+              disabled={addStepMutation.isPending}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover disabled:opacity-50"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              {t('companies.addStep')}
+            </button>
+          </div>
+        </section>
+      ) : (
+        <>
+          {/* Create template form */}
+          <section className="rounded-xl border border-default bg-surface p-6">
+            <div className="mb-5">
+              <h2 className="text-base font-semibold text-primary">
+                {t('companies.createTemplateTitle')}
+              </h2>
+              <p className="mt-1 text-sm text-secondary">{t('companies.createTemplateHint')}</p>
+            </div>
+
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="sr-only" htmlFor="template-name">
                   {t('companies.templateName')}
                 </label>
                 <input
                   id="template-name"
                   type="text"
                   value={form.name}
-                  onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, name: event.target.value }))
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleCreateTemplate();
+                  }}
                   className={inputClass}
                   placeholder={t('companies.templateNamePlaceholder')}
                 />
               </div>
-
-              <div className="space-y-3">
-                {form.steps.map((step, index) => (
-                  <div
-                    key={index}
-                    className="rounded-lg border border-default bg-raised p-4"
-                  >
-                    <div className="mb-3 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-brand text-xs font-semibold text-white shrink-0">
-                          {index + 1}
-                        </span>
-                        <span className="text-xs font-medium text-muted">
-                          {t('companies.stepLabel', { number: index + 1 })}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeStep(index)}
-                        disabled={form.steps.length === 1}
-                        className="rounded-lg border border-default bg-danger-subtle px-3 py-1.5 text-xs text-danger disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {t('companies.removeStep')}
-                      </button>
-                    </div>
-                    <div className="grid gap-3">
-                      <input
-                        type="text"
-                        value={step.title}
-                        onChange={(event) => updateStep(index, { title: event.target.value })}
-                        className="rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-                        placeholder={t('companies.stepTitle')}
-                      />
-                      <textarea
-                        value={step.description}
-                        onChange={(event) => updateStep(index, { description: event.target.value })}
-                        rows={3}
-                        className="rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-                        placeholder={t('companies.stepDescription')}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={addStep}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover"
-                >
-                  <Plus className="h-4 w-4" aria-hidden="true" />
-                  {t('companies.addStep')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setError(null);
-                    setSuccess(null);
-                    saveMutation.mutate();
-                  }}
-                  disabled={saveMutation.isPending}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-                >
-                  <Save className="h-4 w-4" aria-hidden="true" />
-                  {saveMutation.isPending
-                    ? t('common.savingPlain')
-                    : editingTemplateId
-                      ? t('common.save')
-                      : t('common.create')}
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleCreateTemplate}
+                disabled={createTemplateMutation.isPending}
+                className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                {createTemplateMutation.isPending
+                  ? t('common.savingPlain')
+                  : t('companies.createTemplateBtn')}
+              </button>
             </div>
           </section>
 
@@ -455,11 +451,7 @@ export default function CompanyOnboardingTemplatesPage() {
                         <button
                           type="button"
                           disabled={setDefaultMutation.isPending}
-                          onClick={() => {
-                            setError(null);
-                            setSuccess(null);
-                            setDefaultMutation.mutate(template.id);
-                          }}
+                          onClick={() => handleSetDefault(template.id)}
                           className="inline-flex items-center gap-1.5 rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:border-brand/50 hover:bg-brand-subtle hover:text-brand disabled:opacity-50"
                           aria-label={t('companies.setDefaultAria', { name: template.name })}
                         >
@@ -469,7 +461,7 @@ export default function CompanyOnboardingTemplatesPage() {
                       )}
                       <button
                         type="button"
-                        onClick={() => startEditing(template)}
+                        onClick={() => startEditingTemplate(template)}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:bg-hover"
                       >
                         <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
@@ -477,7 +469,7 @@ export default function CompanyOnboardingTemplatesPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={deleteMutation.isPending}
+                        disabled={deleteMutation.isPending || templates.length <= 1}
                         onClick={() =>
                           setTemplatePendingDelete({ id: template.id, name: template.name })
                         }
@@ -495,15 +487,13 @@ export default function CompanyOnboardingTemplatesPage() {
         </>
       )}
 
+      {/* Delete template modal */}
       <ConfirmModal
         isOpen={templatePendingDelete !== null}
         onClose={() => !deleteMutation.isPending && setTemplatePendingDelete(null)}
         onConfirm={() => {
           if (!templatePendingDelete) return;
-          const { id } = templatePendingDelete;
-          setError(null);
-          setSuccess(null);
-          deleteMutation.mutate(id, { onSettled: () => setTemplatePendingDelete(null) });
+          handleDeleteTemplate(templatePendingDelete.id);
         }}
         title={t('companies.deleteTemplateModal')}
         description={
@@ -514,6 +504,22 @@ export default function CompanyOnboardingTemplatesPage() {
         variant="danger"
         confirmLabel={t('common.delete')}
         isLoading={deleteMutation.isPending}
+      />
+
+      {/* Delete step modal */}
+      <ConfirmModal
+        isOpen={stepPendingDelete !== null}
+        onClose={() => !deleteStepMutation.isPending && setStepPendingDelete(null)}
+        onConfirm={handleDeleteStep}
+        title={t('companies.deleteStepModal')}
+        description={
+          stepPendingDelete
+            ? t('companies.deleteStepDesc', { title: stepPendingDelete.title })
+            : ''
+        }
+        variant="danger"
+        confirmLabel={t('common.delete')}
+        isLoading={deleteStepMutation.isPending}
       />
     </div>
   );

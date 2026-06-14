@@ -292,10 +292,9 @@ export interface BookingResourceListItem {
   id: number;
   type: ResourceType;
   name: string;
-  floor?: number;
-  floor_id?: number | null;
-  floor_number?: number | null;
-  floor_name?: string | null;
+  floor_id: number | null;
+  floor_number: number | null;
+  floor_name: string | null;
   zone: string;
   photo: string | null;
   photo_url: string | null;
@@ -340,10 +339,9 @@ export interface BookingResourceDetail {
   id: number;
   type: ResourceType;
   name: string;
-  floor?: number;
-  floor_id?: number | null;
-  floor_number?: number | null;
-  floor_name?: string | null;
+  floor_id: number | null;
+  floor_number: number | null;
+  floor_name: string | null;
   zone: string;
   description: string;
   photo: string | null;
@@ -382,7 +380,6 @@ export interface Resource {
   id: number;
   name: string;
   type: ResourceType;
-  floor?: number;
   floor_id?: number | null;
   floor_number?: number | null;
   floor_name?: string | null;
@@ -467,6 +464,14 @@ export interface RecurringBookingCreatePayload {
 
 export interface RecurringBookingCreateResponse extends RecurringBooking {
   skipped_dates: string[];
+}
+
+export interface CancellationAuditEntry {
+  id: number;
+  booking_id: number;
+  cancelled_by: { id: number; full_name: string } | null;
+  cancel_reason: string;
+  cancelled_at: string;
 }
 
 export interface Board {
@@ -1025,6 +1030,9 @@ export interface OnboardingStep {
   id: number;
   title: string;
   is_completed: boolean;
+  is_system?: boolean;
+  completed_at?: string | null;
+  url?: string | null;
 }
 
 export interface OnboardingStatus {
@@ -1036,6 +1044,16 @@ export interface OnboardingTemplateStepInput {
   title: string;
   description: string;
   order: number;
+  url?: string | null;
+}
+
+export interface OnboardingTemplateStep {
+  id: number;
+  title: string;
+  description: string;
+  url?: string | null;
+  order: number;
+  is_system: boolean;
 }
 
 export interface OnboardingTemplate {
@@ -1043,8 +1061,38 @@ export interface OnboardingTemplate {
   name: string;
   is_active: boolean;
   is_default: boolean;
-  steps: Array<OnboardingTemplateStepInput & { id: number }>;
+  steps: OnboardingTemplateStep[];
   created_at: string;
+}
+
+export interface TeamMemberProgress {
+  user: number;
+  first_name: string;
+  last_name: string;
+  avatar: string | null;
+  role: string;
+  completed_steps: number;
+  total_steps: number;
+}
+
+export interface TeamMemberProgressStep {
+  id: number;
+  title: string;
+  is_system: boolean;
+  is_completed: boolean;
+  completed_at: string | null;
+}
+
+export interface TeamMemberProgressDetail {
+  user: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    avatar: string | null;
+  };
+  completed_steps: number;
+  total_steps: number;
+  steps: TeamMemberProgressStep[];
 }
 
 export interface CrmAttachmentUploader {

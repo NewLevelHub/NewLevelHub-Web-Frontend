@@ -308,6 +308,8 @@ interface MemberRowProps {
   isImpersonating: boolean;
   onBlock: (member: CompanyMember) => void;
   onImpersonate: (member: CompanyMember) => void;
+  currentUserId: number | null;
+  onChangeRole: (member: CompanyMember, role: string) => void;
 }
 
 const MemberRow = memo<MemberRowProps>(({
@@ -324,6 +326,8 @@ const MemberRow = memo<MemberRowProps>(({
   isImpersonating,
   onBlock,
   onImpersonate,
+  currentUserId,
+  onChangeRole,
 }) => {
   const { t } = useTranslation();
   const handleKeyDown = useCallback(
@@ -391,31 +395,52 @@ const MemberRow = memo<MemberRowProps>(({
             <div className="space-y-3">
               <ActivityPanel companyId={companyId} memberId={member.id} />
               {canManageMembers && (
-                <div className="flex flex-wrap gap-2">
-                  {member.is_active ? (
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex flex-wrap gap-2">
+                    {member.is_active ? (
+                      <button
+                        type="button"
+                        disabled={isUpdating}
+                        onClick={() => onDeactivate(member)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-amber-700 bg-warning-subtle px-3 py-1.5 text-xs font-medium text-warning hover:bg-warning-subtle disabled:opacity-60"
+                      >
+                        <UserX className="h-3.5 w-3.5" aria-hidden="true" />{t('common.deactivate')}</button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={isUpdating}
+                        onClick={() => onActivate(member)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-700 bg-success-subtle px-3 py-1.5 text-xs font-medium text-success hover:bg-success-subtle disabled:opacity-60"
+                      >
+                        <UserCheck className="h-3.5 w-3.5" aria-hidden="true" />{t('common.activate')}</button>
+                    )}
                     <button
                       type="button"
                       disabled={isUpdating}
-                      onClick={() => onDeactivate(member)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-amber-700 bg-warning-subtle px-3 py-1.5 text-xs font-medium text-warning hover:bg-warning-subtle disabled:opacity-60"
+                      onClick={() => onRemove(member)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger-subtle disabled:opacity-60"
                     >
-                      <UserX className="h-3.5 w-3.5" aria-hidden="true" />{t('common.deactivate')}</button>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={isUpdating}
-                      onClick={() => onActivate(member)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-700 bg-success-subtle px-3 py-1.5 text-xs font-medium text-success hover:bg-success-subtle disabled:opacity-60"
-                    >
-                      <UserCheck className="h-3.5 w-3.5" aria-hidden="true" />{t('common.activate')}</button>
+                      <UserMinus className="h-3.5 w-3.5" aria-hidden="true" />{t('common.removeFromCompany')}</button>
+                  </div>
+                  {member.role !== USER_ROLES.GUEST && member.role !== USER_ROLES.SUPERADMIN && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-secondary">{t('team.changeRole')}:</span>
+                      <select
+                        value={member.role === USER_ROLES.COMPANY_ADMIN ? 'company_admin' : 'employee'}
+                        disabled={isUpdating || member.id === currentUserId}
+                        onChange={(e) => onChangeRole(member, e.target.value)}
+                        className={cn(
+                          'rounded-lg border border-default bg-raised px-2 py-1 text-xs text-primary',
+                          'focus:outline-none focus:ring-1 focus:ring-[color:var(--brand)]',
+                          'disabled:cursor-not-allowed disabled:opacity-50',
+                        )}
+                        aria-label={t('team.changeRoleFor', { name: member.full_name })}
+                      >
+                        <option value="employee">{t('team.roleEmployee')}</option>
+                        <option value="company_admin">{t('team.roleAdmin')}</option>
+                      </select>
+                    </div>
                   )}
-                  <button
-                    type="button"
-                    disabled={isUpdating}
-                    onClick={() => onRemove(member)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger-subtle disabled:opacity-60"
-                  >
-                    <UserMinus className="h-3.5 w-3.5" aria-hidden="true" />{t('common.removeFromCompany')}</button>
                 </div>
               )}
               {isSuperadmin && member.role !== USER_ROLES.SUPERADMIN && (
@@ -1152,6 +1177,35 @@ export default function TeamManagePage() {
     },
   });
 
+  const changeRoleMutation = useMutation({
+    mutationFn: ({ memberId, role }: { memberId: number; role: string }) =>
+      apiClient
+        .patch<{ detail: string }>(
+          API.companies.memberChangeRole(companyId!, String(memberId)),
+          { role },
+        )
+        .then((r) => r.data),
+    onSuccess: (_, { memberId, role }) => {
+      setActionError(null);
+      queryClient.setQueriesData<PaginatedResponse<CompanyMember>>(
+        { queryKey: ['teamMembers'] },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            results: old.results.map((m) =>
+              m.id === memberId ? { ...m, role } : m,
+            ),
+          };
+        },
+      );
+    },
+    onError: (error: unknown) => {
+      setActionSuccess(null);
+      setActionError(getApiError(error).message);
+    },
+  });
+
   const isMemberActionPending =
     deactivateMemberMutation.isPending ||
     activateMemberMutation.isPending ||
@@ -1201,6 +1255,14 @@ export default function TeamManagePage() {
   const handleImpersonate = useCallback((member: CompanyMember) => {
     setImpersonateTarget(member);
   }, []);
+
+  const handleChangeRole = useCallback(
+    (member: CompanyMember, newRole: string) => {
+      if (!companyId) return;
+      changeRoleMutation.mutate({ memberId: member.id, role: newRole });
+    },
+    [companyId, changeRoleMutation],
+  );
 
   const totalPages = data ? Math.ceil(data.count / PAGE_SIZE) : 0;
 
@@ -1467,7 +1529,7 @@ export default function TeamManagePage() {
                     isExpanded={expandedId === member.id}
                     onToggle={handleToggleExpand}
                     canManageMembers={canManageMembers}
-                    isUpdating={isMemberActionPending}
+                    isUpdating={isMemberActionPending || changeRoleMutation.isPending}
                     onDeactivate={handleDeactivate}
                     onActivate={handleActivate}
                     onRemove={handleRemove}
@@ -1475,6 +1537,8 @@ export default function TeamManagePage() {
                     isImpersonating={isImpersonating}
                     onBlock={handleBlock}
                     onImpersonate={handleImpersonate}
+                    currentUserId={user?.id ?? null}
+                    onChangeRole={handleChangeRole}
                   />
                 ))}
               </tbody>
