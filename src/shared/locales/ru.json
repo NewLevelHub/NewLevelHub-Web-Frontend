@@ -1959,7 +1959,7 @@
       "confirmDeactivateBody": "Деактивировать {{count}} компани(й)?",
       "confirmDeleteTitle": "Удалить компании",
       "confirmDeleteBody": "Это удалит {{count}} компани(й) безвозвратно."
-    }
+    },
     "createTemplateTitle": "Создать новый шаблон онбординга",
     "createTemplateHint": "После создания вы сможете добавить собственные шаги к шаблону.",
     "createTemplateBtn": "Создать",

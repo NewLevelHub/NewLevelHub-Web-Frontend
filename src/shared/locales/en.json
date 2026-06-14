@@ -1964,7 +1964,7 @@
       "confirmDeactivateBody": "Deactivate {{count}} company(ies)?",
       "confirmDeleteTitle": "Delete companies",
       "confirmDeleteBody": "This will permanently delete {{count}} company(ies)."
-    }
+    },
     "createTemplateTitle": "Create new onboarding template",
     "createTemplateHint": "After creating, you can add custom steps to the template.",
     "createTemplateBtn": "Create",
