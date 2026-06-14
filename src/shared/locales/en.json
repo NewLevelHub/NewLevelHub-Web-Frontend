@@ -985,6 +985,27 @@
       "addBtn": "Add",
       "participantsAdminOnly": "Participant management is available to company administrators only."
     },
+    "qrPanel": {
+      "title": "Capsule access QR",
+      "imageAlt": "Booking access QR code",
+      "download": "Download",
+      "downloading": "Downloading…",
+      "countdownActive": "Booking is active — show this QR at reception",
+      "countdownExpired": "Booking has ended — QR is no longer valid",
+      "countdownPending": "Starts in {{hours}}h {{minutes}}m"
+    },
+    "validate": {
+      "successTitle": "Booking is valid",
+      "failureTitle": "Booking QR is invalid",
+      "zoneLabel": "Zone",
+      "reason": {
+        "expired": "Booking has ended",
+        "cancelled": "Booking was cancelled",
+        "completed": "Booking is completed",
+        "no_show": "Marked as no-show",
+        "not_found": "QR code not found"
+      }
+    },
     "recurring": {
       "title": "Recurring Bookings",
       "createSection": "Create series",
@@ -1079,6 +1100,7 @@
       "noBookings": "No bookings yet.",
       "checkedIn": "Checked in: {{time}}",
       "checkIn": "Check in",
+      "showQr": "Access QR",
       "saveTime": "Save time",
       "backToAdmin": "Back to bookings (admin)",
       "totalCount": "{{count}} bookings"
@@ -1706,6 +1728,9 @@
     "passInvalidSimple": "Pass invalid",
     "invitedBy": "Invited by",
     "reasonLabel": "Reason",
+    "validateModeLabel": "Validation type",
+    "validateTabGuest": "Guest pass",
+    "validateTabBooking": "Capsule booking",
     "validatePageTitle": "Validate QR pass",
     "validatePageSubtitle": "Enter the QR code manually or scan it with the camera.",
     "uuidLabel": "QR code (UUID)",

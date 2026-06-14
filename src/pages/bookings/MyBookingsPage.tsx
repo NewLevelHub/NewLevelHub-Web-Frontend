@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, MoreHorizontal, Plus, Repeat } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MoreHorizontal, Plus, QrCode, Repeat } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -22,6 +23,7 @@ import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import type { Booking, BookingResourceDetail, CompanyMember, PaginatedResponse } from '@/shared/types';
+import { shouldShowBookingQrPanel } from '@/pages/bookings/components/BookingQRPanel';
 
 type MyBookingsStatusFilter = 'upcoming' | 'past' | 'cancelled';
 
@@ -108,6 +110,19 @@ export default function MyBookingsPage() {
   const [editSuccess, setEditSuccess] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [openActionsId, setOpenActionsId] = useState<number | null>(null);
+  const [dropdownCoords, setDropdownCoords] = useState<{ top: number; right: number } | null>(null);
+  const actionButtonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+
+  useEffect(() => {
+    if (openActionsId === null) return;
+    const close = () => { setOpenActionsId(null); setDropdownCoords(null); };
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    return () => {
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+    };
+  }, [openActionsId]);
 
   const canManageParticipants =
     user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN;
@@ -297,6 +312,7 @@ export default function MyBookingsPage() {
     setEditError(null);
     setEditSuccess(null);
     setOpenActionsId(null);
+    setDropdownCoords(null);
   };
 
   const closeEditModal = () => {
@@ -491,18 +507,6 @@ export default function MyBookingsPage() {
                 {rows.map((b) => {
                   const start = new Date(b.start_time);
                   const end = new Date(b.end_time);
-                  const now = new Date();
-                  const canCancel =
-                    statusTab === 'upcoming' &&
-                    b.status === BOOKING_STATUSES.CONFIRMED;
-                  const canCheckIn =
-                    statusTab === 'upcoming' &&
-                    b.status === BOOKING_STATUSES.CONFIRMED &&
-                    user !== null &&
-                    b.user === user.id &&
-                    now >= start &&
-                    now <= end &&
-                    !b.checked_in_at;
                   const isActionsOpen = openActionsId === b.id;
 
                   return (
@@ -549,68 +553,33 @@ export default function MyBookingsPage() {
                         <StatusBadge status={b.status} />
                       </td>
                       <td className="w-8 px-3 py-2.5 align-middle">
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={() => setOpenActionsId(isActionsOpen ? null : b.id)}
-                            className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors"
-                            aria-label={t('booking.manage.rowActions', { id: b.id })}
-                          >
-                            <MoreHorizontal className="w-4 h-4" />
-                          </button>
-                          {isActionsOpen && (
-                            <div
-                              className="absolute right-0 top-8 z-10 w-40 rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] shadow-[var(--shadow-card)] py-1"
-                              role="menu"
-                            >
-                              {canCheckIn && (
-                                <button
-                                  type="button"
-                                  role="menuitem"
-                                  disabled={checkInMutation.isPending}
-                                  onClick={() => {
-                                    setListError(null);
-                                    setOpenActionsId(null);
-                                    checkInMutation.mutate({ bookingId: b.id });
-                                  }}
-                                  className="w-full px-3 py-1.5 text-left text-[13px] text-[color:var(--status-free-text)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-50"
-                                >
-                                  {checkInMutation.isPending ? '…' : t('booking.myBookings.checkIn')}
-                                </button>
-                              )}
-                              {canCancel && (
-                                <button
-                                  type="button"
-                                  role="menuitem"
-                                  onClick={() => { openEditModal(b); }}
-                                  className="w-full px-3 py-1.5 text-left text-[13px] text-[color:var(--text-primary)] hover:bg-[color:var(--bg-hover)] transition-colors"
-                                >
-                                  {t('common.edit')}
-                                </button>
-                              )}
-                              {canCancel && (
-                                <button
-                                  type="button"
-                                  role="menuitem"
-                                  disabled={cancelMutation.isPending}
-                                  onClick={() => {
-                                    setListError(null);
-                                    setOpenActionsId(null);
-                                    cancelMutation.mutate({ bookingId: b.id });
-                                  }}
-                                  className="w-full px-3 py-1.5 text-left text-[13px] text-[color:var(--status-busy-text)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-50"
-                                >
-                                  {t('common.cancel')}
-                                </button>
-                              )}
-                              {!canCheckIn && !canCancel && (
-                                <span className="block px-3 py-1.5 text-[12px] text-[color:var(--text-muted)]">
-                                  {t('booking.manage.noActions')}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
+                        <button
+                          ref={(el) => {
+                            if (el) actionButtonRefs.current.set(b.id, el);
+                            else actionButtonRefs.current.delete(b.id);
+                          }}
+                          type="button"
+                          onClick={() => {
+                            if (isActionsOpen) {
+                              setOpenActionsId(null);
+                              setDropdownCoords(null);
+                            } else {
+                              const btn = actionButtonRefs.current.get(b.id);
+                              if (btn) {
+                                const rect = btn.getBoundingClientRect();
+                                setDropdownCoords({
+                                  top: rect.bottom + 4,
+                                  right: window.innerWidth - rect.right,
+                                });
+                              }
+                              setOpenActionsId(b.id);
+                            }
+                          }}
+                          className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors"
+                          aria-label={t('booking.manage.rowActions', { id: b.id })}
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
                       </td>
                     </tr>
                   );
@@ -779,14 +748,104 @@ export default function MyBookingsPage() {
         </div>
       )}
 
-      {/* Click outside to close actions dropdown */}
-      {openActionsId !== null && (
-        <div
-          className="fixed inset-0 z-[5]"
-          onClick={() => setOpenActionsId(null)}
-          aria-hidden="true"
-        />
-      )}
+      {openActionsId !== null && dropdownCoords && (() => {
+        const booking = rows.find((b) => b.id === openActionsId);
+        if (!booking) return null;
+
+        const start = new Date(booking.start_time);
+        const end = new Date(booking.end_time);
+        const now = new Date();
+        const canCancel =
+          statusTab === 'upcoming' &&
+          booking.status === BOOKING_STATUSES.CONFIRMED;
+        const canCheckIn =
+          statusTab === 'upcoming' &&
+          booking.status === BOOKING_STATUSES.CONFIRMED &&
+          user !== null &&
+          booking.user === user.id &&
+          now >= start &&
+          now <= end &&
+          !booking.checked_in_at;
+        const showQrLink = shouldShowBookingQrPanel(booking);
+
+        const closeDropdown = () => {
+          setOpenActionsId(null);
+          setDropdownCoords(null);
+        };
+
+        return createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[49]"
+              onClick={closeDropdown}
+              aria-hidden="true"
+            />
+            <div
+              style={{ top: dropdownCoords.top, right: dropdownCoords.right }}
+              className="fixed z-50 w-40 rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] shadow-[var(--shadow-card)] py-1"
+              role="menu"
+            >
+              {showQrLink && (
+                <Link
+                  to={`/bookings/${booking.id}`}
+                  role="menuitem"
+                  onClick={closeDropdown}
+                  className="flex w-full items-center gap-1.5 px-3 py-1.5 text-left text-[13px] text-[color:var(--text-primary)] hover:bg-[color:var(--bg-hover)] transition-colors"
+                >
+                  <QrCode className="h-3.5 w-3.5" />
+                  {t('booking.myBookings.showQr')}
+                </Link>
+              )}
+              {canCheckIn && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={checkInMutation.isPending}
+                  onClick={() => {
+                    setListError(null);
+                    closeDropdown();
+                    checkInMutation.mutate({ bookingId: booking.id });
+                  }}
+                  className="w-full px-3 py-1.5 text-left text-[13px] text-[color:var(--status-free-text)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-50"
+                >
+                  {checkInMutation.isPending ? '…' : t('booking.myBookings.checkIn')}
+                </button>
+              )}
+              {canCancel && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => { openEditModal(booking); }}
+                  className="w-full px-3 py-1.5 text-left text-[13px] text-[color:var(--text-primary)] hover:bg-[color:var(--bg-hover)] transition-colors"
+                >
+                  {t('common.edit')}
+                </button>
+              )}
+              {canCancel && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={cancelMutation.isPending}
+                  onClick={() => {
+                    setListError(null);
+                    closeDropdown();
+                    cancelMutation.mutate({ bookingId: booking.id });
+                  }}
+                  className="w-full px-3 py-1.5 text-left text-[13px] text-[color:var(--status-busy-text)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-50"
+                >
+                  {t('common.cancel')}
+                </button>
+              )}
+              {!canCheckIn && !canCancel && !showQrLink && (
+                <span className="block px-3 py-1.5 text-[12px] text-[color:var(--text-muted)]">
+                  {t('booking.manage.noActions')}
+                </span>
+              )}
+            </div>
+          </>,
+          document.body,
+        );
+      })()}
     </div>
   );
 }

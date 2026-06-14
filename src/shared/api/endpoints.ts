@@ -94,6 +94,8 @@ export const API = {
       cancel: (id: string) => `/bookings/reservations/${id}/cancel/`,
       adminCancel: (id: string) => `/bookings/reservations/${id}/admin-cancel/`,
       checkIn: (id: string) => `/bookings/reservations/${id}/check-in/`,
+      validateQr: '/bookings/reservations/validate-qr/',
+      qrImage: (qrCode: string) => `/bookings/reservations/qr/${qrCode}/image/`,
       addParticipants: (id: string) => `/bookings/reservations/${id}/participants/`,
       removeParticipant: (id: string, userId: string) =>
         `/bookings/reservations/${id}/participants/${userId}/`,
