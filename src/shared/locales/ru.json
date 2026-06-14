@@ -4,6 +4,7 @@
     "subtitle": "{{date}} · в БЦ сейчас {{count}} человек, загрузка {{load}}%",
     "createAnnouncement": "Создать объявление",
     "addResource": "Добавить ресурс",
+    "createCompany": "Создать компанию",
     "kpi": {
       "activeBookings": "Активные брони",
       "spaceLoad": "Загрузка пространств",
@@ -1285,6 +1286,27 @@
       "availabilitySection": "Доступность ресурса",
       "endLabel": "Конец",
       "availabilityDaysLabel": "Дни доступности"
+    },
+    "bulk": {
+      "selectedCount": "Выбрано: {{count}}",
+      "deselectAll": "Снять выделение",
+      "activate": "Активировать выбранные",
+      "deactivate": "Деактивировать выбранные",
+      "delete": "Удалить выбранные",
+      "confirmActivateTitle": "Активировать ресурсы",
+      "confirmActivateBody": "Активировать {{count}} ресурс(ов)?",
+      "confirmDeactivateTitle": "Деактивировать ресурсы",
+      "confirmDeactivateBody": "Деактивировать {{count}} ресурс(ов)?",
+      "confirmDeleteTitle": "Удалить ресурсы",
+      "confirmDeleteBody": "Это удалит {{count}} ресурс(ов) безвозвратно."
+    },
+    "row": {
+      "activateTitle": "Активировать ресурс",
+      "activateDesc": "Активировать \"{{name}}\"?",
+      "deactivateTitle": "Деактивировать ресурс",
+      "deactivateDesc": "Деактивировать \"{{name}}\"?",
+      "deleteTitle": "Удалить ресурс",
+      "deleteDesc": "Это удалит \"{{name}}\" безвозвратно."
     }
   },
   "map": {
@@ -1925,6 +1947,19 @@
     "templateDefaultUpdated": "Шаблон по умолчанию обновлён.",
     "templateNameRequired": "Введите название шаблона.",
     "templateStepRequired": "Добавьте хотя бы один шаг.",
+    "bulk": {
+      "selectedCount": "Выбрано: {{count}}",
+      "deselectAll": "Снять выделение",
+      "activate": "Активировать выбранные",
+      "deactivate": "Деактивировать выбранные",
+      "delete": "Удалить выбранные",
+      "confirmActivateTitle": "Активировать компании",
+      "confirmActivateBody": "Активировать {{count}} компани(й)?",
+      "confirmDeactivateTitle": "Деактивировать компании",
+      "confirmDeactivateBody": "Деактивировать {{count}} компани(й)?",
+      "confirmDeleteTitle": "Удалить компании",
+      "confirmDeleteBody": "Это удалит {{count}} компани(й) безвозвратно."
+    },
     "createTemplateTitle": "Создать новый шаблон онбординга",
     "createTemplateHint": "После создания вы сможете добавить собственные шаги к шаблону.",
     "createTemplateBtn": "Создать",
