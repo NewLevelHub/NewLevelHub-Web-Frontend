@@ -1058,7 +1058,7 @@
       "capsuleHint": "Capsule: 1 to 8 hours.",
       "meetingHint": "Meeting room: 30 minutes to 4 hours.",
       "participants": "Participants",
-      "selectCompanyForParticipants": "Select a company to add participants",
+      "searchParticipants": "Search by name or email…",
       "loadingParticipants": "Loading participants…",
       "noParticipants": "No participants available",
       "emailHint": "Verified email required. Times are sent in Asia/Almaty (+05:00).",

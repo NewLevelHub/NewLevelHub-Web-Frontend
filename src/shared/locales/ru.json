@@ -1053,7 +1053,7 @@
       "capsuleHint": "Капсула: от 1 до 8 часов.",
       "meetingHint": "Переговорка: от 30 минут до 4 часов.",
       "participants": "Участники",
-      "selectCompanyForParticipants": "Выберите компанию для добавления участников",
+      "searchParticipants": "Поиск по имени или email…",
       "loadingParticipants": "Загрузка участников…",
       "noParticipants": "Нет доступных участников",
       "emailHint": "Требуется подтверждённый email. Время отправляется с часовым поясом Asia/Almaty (+05:00).",

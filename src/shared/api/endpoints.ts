@@ -104,6 +104,7 @@ export const API = {
       create: '/bookings/recurring/',
       detail: (id: string) => `/bookings/recurring/${id}/`,
     },
+    members: '/bookings/members/',
     cancellationAudit: '/bookings/cancellation-audit/',
   },
   crm: {
