@@ -226,7 +226,7 @@ export default function BookingCreatePage() {
         <div>
           <h1 className="text-xl font-bold text-primary">{resource.name}</h1>
           <p className="text-sm text-zinc-400">
-            {t(RESOURCE_TYPE_LABEL_KEYS[resource.type])} · {t('booking.create.floorLabel', { floor: resource.floor })}
+            {t(RESOURCE_TYPE_LABEL_KEYS[resource.type])} · {t('booking.create.floorLabel', { floor: resource.floor_number })}
             {resource.zone ? ` · ${resource.zone}` : ''}
           </p>
         </div>

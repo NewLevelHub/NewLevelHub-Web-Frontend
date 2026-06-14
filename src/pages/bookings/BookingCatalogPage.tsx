@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   DoorOpen,
+  Map,
   Search,
   X,
 } from 'lucide-react';
@@ -192,6 +193,20 @@ export default function BookingCatalogPage() {
         .then((r) => r.data),
   });
 
+  const { data: mapPointData } = useQuery({
+    queryKey: ['resource-map-point', panelResource?.id],
+    queryFn: () =>
+      apiClient
+        .get<{ results: Array<{ id: number }> }>(
+          API.map.mapPoints.list,
+          { params: { resource_id: panelResource!.id, page_size: 1 } },
+        )
+        .then((r) => r.data),
+    enabled: panelResource != null,
+    staleTime: 5 * 60 * 1000,
+  });
+  const mapPoint = mapPointData?.results?.[0] ?? null;
+
   useEffect(() => {
     setPhotoIdx(0);
     setPanelDay(localIsoDate(new Date()));
@@ -250,7 +265,9 @@ export default function BookingCatalogPage() {
         id: preselectedResource.id,
         type: preselectedResource.type,
         name: preselectedResource.name,
-        floor: preselectedResource.floor,
+        floor_id: preselectedResource.floor_id,
+        floor_number: preselectedResource.floor_number,
+        floor_name: preselectedResource.floor_name,
         zone: preselectedResource.zone,
         photo: preselectedResource.photo,
         photo_url: null,
@@ -631,7 +648,7 @@ export default function BookingCatalogPage() {
                       </span>
                       <span className="flex items-center gap-1.5 text-xs text-muted">
                         <Building2 size={12} />
-                        {t('catalog.floor')} {r.floor}
+                        {t('catalog.floor')} {r.floor_number}
                         {r.zone ? ` · ${r.zone}` : ''}
                         {r.parking_type ? ` · ${r.parking_type === 'vip' ? 'VIP' : 'Regular'}` : ''}
                         {r.capsule_zone ? ` · ${r.capsule_zone === 'quiet' ? 'Quiet' : 'Regular'}` : ''}
@@ -843,7 +860,7 @@ export default function BookingCatalogPage() {
               <div>
                 <h2 className="text-xl font-bold text-primary">{panelResource.name}</h2>
                 <p className="mt-0.5 text-sm text-secondary">
-                  {t('catalog.floor')} {panelResource.floor}
+                  {t('catalog.floor')} {panelResource.floor_number}
                   {panelResource.zone ? ` · ${panelResource.zone}` : ''}
                   {panelResource.parking_type ? ` · ${panelResource.parking_type === 'vip' ? 'VIP' : 'Regular'}` : ''}
                   {panelResource.capsule_zone ? ` · ${panelResource.capsule_zone === 'quiet' ? 'Quiet' : 'Regular'}` : ''}
@@ -930,6 +947,19 @@ export default function BookingCatalogPage() {
 
             {/* Footer */}
             <div className="shrink-0 border-t border-default px-5 py-4">
+              {/* Show on map — above the book button */}
+              {mapPoint && panelResource.floor_id != null ? (
+                <Link
+                  to={`/building/map?floor_id=${panelResource.floor_id}&point_id=${mapPoint.id}`}
+                  onClick={() => setPanelResource(null)}
+                  className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-default bg-raised px-4 py-2.5 text-sm font-medium text-secondary hover:bg-hover hover:text-primary transition-colors"
+                >
+                  <Map size={15} aria-hidden />
+                  {t('catalog.showOnMap')}
+                </Link>
+              ) : mapPointData !== undefined ? (
+                <p className="mb-3 text-center text-xs text-muted">{t('catalog.notOnMap')}</p>
+              ) : null}
               {panelResource.status === BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED ? (
                 <button
                   type="button"

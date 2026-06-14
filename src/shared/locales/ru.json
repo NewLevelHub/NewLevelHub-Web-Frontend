@@ -834,7 +834,9 @@
     "back": "Назад в бронирования (админ)",
     "photoPrev": "Предыдущее фото",
     "photoNext": "Следующее фото",
-    "photoGoTo": "Перейти к фото {{n}}"
+    "photoGoTo": "Перейти к фото {{n}}",
+    "showOnMap": "Показать на карте",
+    "notOnMap": "Ресурс не добавлен на карту"
   },
   "profile": {
     "title": "Профиль",
@@ -1089,7 +1091,13 @@
       "actions": "Действия",
       "rowActions": "Действия для брони #{{id}}",
       "selectAll": "Выбрать все",
-      "selectRow": "Выбрать бронь #{{id}}",
+      "selectRow": "Выбрать строку",
+      "selectedCount": "Выбрано: {{count}}",
+      "bulkCancelBtn": "Отменить {{count}}",
+      "clearSelection": "Снять выделение",
+      "bulkCancelTitle": "Отменить {{count}} броней",
+      "bulkCancelDesc": "Укажите причину отмены. Уже отменённые или начавшиеся брони будут пропущены.",
+      "bulkCancelResult": "Отменено: {{cancelled}}, пропущено: {{skipped}}",
       "noResults": "Ничего не найдено по текущим фильтрам.",
       "noActions": "Нет доступных действий",
       "adminCancel": "Админ-отмена",
@@ -1099,7 +1107,14 @@
       "cancelReasonRequired": "Укажите причину отмены.",
       "confirmCancel": "Подтвердить отмену",
       "editTitle": "Изменение брони #{{id}}",
-      "participantsOnlyMeeting": "Управление участниками доступно только для бронирований переговорок."
+      "participantsOnlyMeeting": "Управление участниками доступно только для бронирований переговорок.",
+      "selectedCountShort": "{{count}} выбрано",
+      "clearSelectionShort": "Снять",
+      "bulkCancelWithCount": "Отменить выбранные ({{count}})",
+      "bulkCancelWarning": "Уже отменённые и начавшиеся брони будут пропущены автоматически.",
+      "cancelReasonRequired2": "Причина отмены *",
+      "bulkCancelledCount": "Отменено: {{count}}",
+      "bulkSkippedCount": "Пропущено: {{count}}"
     }
   },
   "resources": {
@@ -1423,7 +1438,10 @@
     "failedToLoad": "Не удалось загрузить задачу. Возможно, она архивирована или была удалена.",
     "failedToSave": "Не удалось сохранить изменения.",
     "failedToArchive": "Не удалось архивировать задачу.",
-    "failedToUnarchive": "Не удалось разархивировать задачу."
+    "failedToUnarchive": "Не удалось разархивировать задачу.",
+    "board": {
+      "template": "Шаблон"
+    }
   },
   "auth": {
     "login": {
@@ -1548,7 +1566,9 @@
     "dateJoined": "Дата вступления",
     "tasksSuffix": " Переназначено задач: {{count}}.",
     "directoryProfileLoadError": "Не удалось загрузить профиль.",
-    "rowActions": "Действия"
+    "rowActions": "Действия",
+    "changeRole": "Роль",
+    "changeRoleFor": "Изменить роль: {{name}}"
   },
   "passes": {
     "showing": "Показано {{start}}—{{end}} из {{total}}",

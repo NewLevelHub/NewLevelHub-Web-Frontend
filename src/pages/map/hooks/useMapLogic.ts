@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
@@ -98,6 +98,7 @@ export interface UseMapLogicReturn {
 
 export function useMapLogic(): UseMapLogicReturn {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
@@ -218,27 +219,79 @@ export function useMapLogic(): UseMapLogicReturn {
   });
 
   useEffect(() => {
+    if (searchParams.get('floor_id')) return; // deep link effect will set the floor
     if (floors && floors.length > 0 && selectedFloorId === null) {
       setSelectedFloorId(floors[0].id);
     }
-  }, [floors, selectedFloorId]);
+  }, [floors, selectedFloorId, searchParams]);
 
-  const atDatetime = new Date().toISOString();
+  const deepLinkHandled = useRef(false);
+  const pendingPointIdRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (deepLinkHandled.current) return;
+    if (!floors || floors.length === 0) return;
+
+    const floorIdParam = searchParams.get('floor_id');
+    const pointIdParam = searchParams.get('point_id');
+    if (!floorIdParam || !pointIdParam) return;
+
+    const floorId = parseInt(floorIdParam, 10);
+    const pointId = parseInt(pointIdParam, 10);
+    if (isNaN(floorId) || isNaN(pointId)) return;
+
+    deepLinkHandled.current = true;
+
+    // Clean params without triggering a React Router re-render
+    // (avoids a race where setSearchParams commits before setSelectedFloorId,
+    //  causing the auto-select to overwrite the correct floor with floors[0])
+    const cleanUrl =
+      window.location.pathname +
+      (window.location.search
+        .replace(/[?&]floor_id=[^&]*/g, '')
+        .replace(/[?&]point_id=[^&]*/g, '')
+        .replace(/^&/, '?') || '');
+    window.history.replaceState(null, '', cleanUrl);
+
+    pendingPointIdRef.current = pointId;
+    setSelectedFloorId(floorId);
+  }, [floors, searchParams]);
+
+  // Stable per-minute cache key — recalculated only once per mount so React Query
+  // does not receive a new key on every render.
+  const atDatetime = useMemo(() => {
+    const now = new Date().toISOString();
+    return now.slice(0, 16); // "YYYY-MM-DDTHH:mm" — stable for 60 s
+  }, []);
 
   const {
     data: floorMap,
     isLoading: mapLoading,
     isError: mapError,
   } = useQuery({
-    queryKey: ['floor-map', selectedFloorId, atDatetime.slice(0, 16)],
+    queryKey: ['floor-map', selectedFloorId, atDatetime],
     queryFn: () =>
       apiClient
         .get<FloorMap>(API.map.floorMap(selectedFloorId!), {
-          params: { datetime: atDatetime },
+          params: { datetime: new Date().toISOString() }, // send full ISO to backend
         })
         .then((r) => r.data),
-    enabled: selectedFloorId !== null,
+    enabled: selectedFloorId != null,
   });
+
+  // Reactive deep-link handler: fires as soon as the floor map loads and
+  // contains the pending point — no arbitrary timeout required.
+  useEffect(() => {
+    if (pendingPointIdRef.current === null) return;
+    if (!floorMap) return;
+
+    const targetId = pendingPointIdRef.current;
+    const exists = floorMap.points.some((p) => p.id === targetId);
+    if (!exists) return;
+
+    pendingPointIdRef.current = null; // consume the pending ref
+    setSelectedPointId(targetId);
+  }, [floorMap]);
 
   const {
     data: searchResults,

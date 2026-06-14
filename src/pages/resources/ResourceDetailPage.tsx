@@ -173,7 +173,7 @@ export default function ResourceDetailPage() {
         <div className="px-6 pt-5 pb-4 border-b border-[color:var(--border-faint)]">
           <h2 className="text-base font-semibold text-primary tracking-[-0.015em]">{data.name}</h2>
           <p className="text-xs text-muted mt-0.5">
-            {t(RESOURCE_TYPE_LABEL_KEYS[data.type])} · {t('resources.detail.floorLabel', { floor: data.floor_number ?? data.floor })}
+            {t(RESOURCE_TYPE_LABEL_KEYS[data.type])} · {t('resources.detail.floorLabel', { floor: data.floor_number })}
           </p>
           {activeBlock && (
             <p className="mt-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-full inline-block px-2.5 py-0.5">

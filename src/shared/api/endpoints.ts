@@ -45,6 +45,8 @@ export const API = {
       `/companies/${companyId}/members/${userId}/deactivate/`,
     memberActivate: (companyId: string, userId: string) =>
       `/companies/${companyId}/members/${userId}/activate/`,
+    memberChangeRole: (companyId: string, userId: string) =>
+      `/companies/${companyId}/members/${userId}/role/`,
     memberRemove: (companyId: string, userId: string, reassignTo?: string) =>
       `/companies/${companyId}/members/${userId}/${reassignTo ? `?reassign_to=${reassignTo}` : ''}`,
     onboardingStatus: (companyId: string) => `/companies/${companyId}/onboarding-status/`,
@@ -89,6 +91,7 @@ export const API = {
       addParticipants: (id: string) => `/bookings/reservations/${id}/participants/`,
       removeParticipant: (id: string, userId: string) =>
         `/bookings/reservations/${id}/participants/${userId}/`,
+      bulkCancel: '/bookings/reservations/bulk-cancel/',
     },
     recurring: {
       list: '/bookings/recurring/',
@@ -107,6 +110,7 @@ export const API = {
     columnsReorder: (boardId: string) => `/crm/boards/${boardId}/columns/reorder/`,
     tasks: (boardId: string) => `/crm/boards/${boardId}/tasks/`,
     task: (boardId: string, taskId: string) => `/crm/boards/${boardId}/tasks/${taskId}/`,
+    boardTemplates: '/crm/board-templates/',
     myTasks: '/crm/tasks/my/',
     tasksList: '/crm/tasks/',
     taskDetail: (id: number) => `/crm/tasks/${id}/`,

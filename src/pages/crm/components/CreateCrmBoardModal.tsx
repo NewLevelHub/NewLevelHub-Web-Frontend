@@ -1,12 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { X, AlertCircle } from 'lucide-react';
 import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
 import type { CrmBoard } from '@/shared/types';
+
+interface BoardTemplate {
+  id: string;
+  name: string;
+  columns: string[];
+}
 
 export interface CreateCrmBoardModalProps {
   onClose: () => void;
@@ -19,15 +25,22 @@ export function CreateCrmBoardModal({ onClose, companyId }: CreateCrmBoardModalP
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [templateId, setTemplateId] = useState<string>('basic');
   const [limitError, setLimitError] = useState<string | null>(null);
   const nameRef = useRef<HTMLInputElement>(null);
+
+  const { data: templates = [] } = useQuery<BoardTemplate[]>({
+    queryKey: ['crm', 'board-templates'],
+    queryFn: () => apiClient.get<BoardTemplate[]>(API.crm.boardTemplates).then(r => r.data),
+    staleTime: Infinity,
+  });
 
   useEffect(() => {
     nameRef.current?.focus();
   }, []);
 
   const mutation = useMutation({
-    mutationFn: async (payload: { name: string; description?: string }) => {
+    mutationFn: async (payload: { name: string; description?: string; template_id?: string }) => {
       const { data } = await apiClient.post<CrmBoard>(API.crm.boards, payload);
       return data;
     },
@@ -59,6 +72,7 @@ export function CreateCrmBoardModal({ onClose, companyId }: CreateCrmBoardModalP
     setLimitError(null);
     mutation.mutate({
       name: name.trim(),
+      template_id: templateId,
       ...(description.trim() ? { description: description.trim() } : {}),
     });
   };
@@ -135,6 +149,37 @@ export function CreateCrmBoardModal({ onClose, companyId }: CreateCrmBoardModalP
               )}
             />
           </div>
+
+          {templates.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-secondary">{t('crm.board.template')}</p>
+              <div className="grid grid-cols-2 gap-2">
+                {templates.map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    onClick={() => setTemplateId(tpl.id)}
+                    className={cn(
+                      'flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors',
+                      templateId === tpl.id
+                        ? 'border-[color:var(--brand)] bg-brand-subtle'
+                        : 'border-default bg-raised hover:bg-hover',
+                    )}
+                  >
+                    <span className={cn(
+                      'text-xs font-semibold',
+                      templateId === tpl.id ? 'text-brand' : 'text-primary',
+                    )}>
+                      {tpl.name}
+                    </span>
+                    <span className="text-[10px] text-muted leading-relaxed">
+                      {tpl.columns.join(' · ')}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center justify-end gap-3 pt-1">
             <button
