@@ -1466,6 +1466,11 @@
     "failedToSave": "Failed to save changes.",
     "failedToArchive": "Failed to archive task.",
     "failedToUnarchive": "Failed to unarchive task.",
+    "attachFromStorage": "From storage",
+    "storagePickerTitle": "Select a file from storage",
+    "storagePickerAttach": "Attach",
+    "attachmentFileTypeNotSupported": "This file type cannot be attached to a task.",
+    "attachmentFileTooLarge": "File is larger than 50 MB and cannot be attached.",
     "board": {
       "template": "Template"
     }

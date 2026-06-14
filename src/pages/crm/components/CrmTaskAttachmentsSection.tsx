@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import i18n from '@/shared/lib/i18n';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Paperclip, FileText, FileSpreadsheet, Image, File, Trash2, Loader2 } from 'lucide-react';
+import { Paperclip, FileText, FileSpreadsheet, Image, File, Trash2, Loader2, HardDrive } from 'lucide-react';
+import { StorageFilePickerModal } from '@/pages/crm/components/StorageFilePickerModal';
 import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
@@ -61,6 +62,7 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [pendingDeleteAttachmentId, setPendingDeleteAttachmentId] = useState<number | null>(null);
+  const [storagePickerOpen, setStoragePickerOpen] = useState(false);
 
   const attachmentsQueryKey = ['crm', 'task', taskId, 'attachments'] as const;
   const taskQueryKey = ['crm', 'task', taskId] as const;
@@ -75,6 +77,12 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
     },
   });
 
+  const invalidateAttachmentQueries = () => {
+    void queryClient.invalidateQueries({ queryKey: attachmentsQueryKey });
+    void queryClient.invalidateQueries({ queryKey: taskQueryKey });
+    void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+  };
+
   const uploadMutation = useMutation({
     mutationFn: async (file: globalThis.File) => {
       const formData = new FormData();
@@ -88,9 +96,24 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
     },
     onSuccess: () => {
       setUploadError(null);
-      void queryClient.invalidateQueries({ queryKey: attachmentsQueryKey });
-      void queryClient.invalidateQueries({ queryKey: taskQueryKey });
-      void queryClient.invalidateQueries({ queryKey: ['crm', 'tasks', boardId] });
+      invalidateAttachmentQueries();
+    },
+    onError: (error: unknown) => {
+      setUploadError(extractUploadError(error));
+    },
+  });
+
+  const linkFromStorageMutation = useMutation({
+    mutationFn: async (storageFileId: number) => {
+      const { data } = await apiClient.post<CrmAttachment>(API.crm.taskAttachments(taskId), {
+        storage_file_id: storageFileId,
+      });
+      return data;
+    },
+    onSuccess: () => {
+      setUploadError(null);
+      setStoragePickerOpen(false);
+      invalidateAttachmentQueries();
     },
     onError: (error: unknown) => {
       setUploadError(extractUploadError(error));
@@ -138,23 +161,38 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
           <Paperclip size={14} className="text-muted shrink-0" />
           <h3 className="text-xs font-medium text-muted uppercase tracking-wide">Вложения</h3>
         </div>
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploadMutation.isPending}
-          aria-label={t('common.attachFile')}
-          className={cn(
-            'flex items-center gap-1.5 text-xs text-secondary hover:text-secondary transition-colors',
-            'disabled:opacity-50 disabled:cursor-not-allowed',
-          )}
-        >
-          {uploadMutation.isPending ? (
-            <Loader2 size={13} className="animate-spin" />
-          ) : (
-            <Paperclip size={13} />
-          )}
-          {uploadMutation.isPending ? t('common.loading') : t('common.attachFile')}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setStoragePickerOpen(true)}
+            disabled={uploadMutation.isPending || linkFromStorageMutation.isPending}
+            aria-label={t('crm.attachFromStorage')}
+            className={cn(
+              'flex items-center gap-1.5 text-xs text-secondary hover:text-primary transition-colors',
+              'disabled:opacity-50 disabled:cursor-not-allowed',
+            )}
+          >
+            <HardDrive size={13} />
+            {t('crm.attachFromStorage')}
+          </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadMutation.isPending || linkFromStorageMutation.isPending}
+            aria-label={t('common.attachFile')}
+            className={cn(
+              'flex items-center gap-1.5 text-xs text-secondary hover:text-primary transition-colors',
+              'disabled:opacity-50 disabled:cursor-not-allowed',
+            )}
+          >
+            {uploadMutation.isPending ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : (
+              <Paperclip size={13} />
+            )}
+            {uploadMutation.isPending ? t('common.loading') : t('common.attachFile')}
+          </button>
+        </div>
         <input
           ref={fileInputRef}
           type="file"
@@ -242,6 +280,14 @@ export function AttachmentsSection({ taskId, boardId }: AttachmentsSectionProps)
             );
           })}
         </ul>
+      )}
+
+      {storagePickerOpen && (
+        <StorageFilePickerModal
+          onClose={() => !linkFromStorageMutation.isPending && setStoragePickerOpen(false)}
+          onSelect={(storageFileId) => linkFromStorageMutation.mutate(storageFileId)}
+          isAttaching={linkFromStorageMutation.isPending}
+        />
       )}
 
       <ConfirmModal
