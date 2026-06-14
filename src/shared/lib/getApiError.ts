@@ -22,6 +22,10 @@ export function getApiError(err: unknown): ApiError {
     };
   }
 
+  if (err instanceof Error && err.message) {
+    return { code: 'CLIENT_ERROR', message: err.message, fields: {} };
+  }
+
   return {
     code: 'UNKNOWN_ERROR',
     message: 'Что-то пошло не так. Попробуйте позже.',

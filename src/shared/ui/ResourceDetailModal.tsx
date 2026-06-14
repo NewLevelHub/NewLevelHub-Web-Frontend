@@ -155,7 +155,7 @@ export function ResourceDetailModal({ resource, open, onClose, onBook }: Resourc
           <div>
             <h2 className="text-xl font-bold text-primary">{resource.name}</h2>
             <p className="mt-0.5 text-sm text-secondary">
-              {t('catalog.floor')} {resource.floor}
+              {t('catalog.floor')} {resource.floor_number}
               {resource.zone ? ` · ${resource.zone}` : ''}
               {resource.parking_type ? ` · ${resource.parking_type === 'vip' ? 'VIP' : 'Regular'}` : ''}
               {resource.capsule_zone ? ` · ${resource.capsule_zone === 'quiet' ? 'Quiet' : 'Regular'}` : ''}

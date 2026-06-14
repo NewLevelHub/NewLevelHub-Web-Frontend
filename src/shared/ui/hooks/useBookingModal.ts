@@ -254,7 +254,7 @@ export function useBookingModal({ resource, open, onClose }: UseBookingModalOpti
   };
 
   const floorZoneInfo = [
-    t('common.floor', { floor: resource.floor }),
+    t('common.floor', { floor: resource.floor_number }),
     resource.zone || null,
     resource.parking_type
       ? t(PARKING_TYPE_LABEL_KEYS[resource.parking_type === PARKING_TYPES.VIP ? PARKING_TYPES.VIP : PARKING_TYPES.REGULAR])

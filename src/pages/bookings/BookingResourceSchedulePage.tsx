@@ -208,7 +208,7 @@ export default function BookingResourceSchedulePage() {
       <div>
         <h1 className="text-2xl font-bold text-primary">{detail.name}</h1>
         <p className="mt-1 text-sm text-secondary">
-          {t('common.floor', { floor: detail.floor })}
+          {t('common.floor', { floor: detail.floor_number })}
           {detail.zone ? ` · ${detail.zone}` : ''}
           {detail.parking_type ? ` · ${t(`common.parkingType.${detail.parking_type}`)}` : ''}
           {detail.capsule_zone ? ` · ${t(`common.capsuleZone.${detail.capsule_zone}`)}` : ''}

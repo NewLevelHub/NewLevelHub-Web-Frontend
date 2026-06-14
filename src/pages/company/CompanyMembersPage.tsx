@@ -202,6 +202,13 @@ export default function CompanyMembersPage() {
           <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
           {t('companies.onboardingTemplatesLink')}
         </Link>
+        <Link
+          to={`/company/settings/onboarding/team${companyId ? `?company=${companyId}` : ''}`}
+          className="inline-flex items-center gap-1.5 rounded-full border border-default px-4 py-1.5 text-sm text-secondary hover:bg-hover"
+        >
+          <Users className="h-3.5 w-3.5" aria-hidden="true" />
+          {t('companies.teamOnboardingTab')}
+        </Link>
       </nav>
 
       {/* Superadmin company selector */}

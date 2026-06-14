@@ -28,6 +28,7 @@ import CompanyDetailPage from '@/pages/companies/CompanyDetailPage';
 import CompanySettingsPage from '@/pages/company/CompanySettingsPage';
 import CompanyMembersPage from '@/pages/company/CompanyMembersPage';
 import CompanyOnboardingTemplatesPage from '@/pages/company/CompanyOnboardingTemplatesPage';
+import TeamOnboardingPage from '@/pages/company/TeamOnboardingPage';
 
 // Team
 import TeamDirectoryPage from '@/pages/team/TeamDirectoryPage';
@@ -51,6 +52,7 @@ import BookingDetailPage from '@/pages/bookings/BookingDetailPage';
 import MyBookingsPage from '@/pages/bookings/MyBookingsPage';
 import ManageBookingsPage from '@/pages/bookings/ManageBookingsPage';
 import RecurringBookingsPage from '@/pages/bookings/RecurringBookingsPage';
+import CancellationAuditPage from '@/pages/bookings/CancellationAuditPage';
 
 // Resources (superadmin)
 import ResourceListPage from '@/pages/resources/ResourceListPage';
@@ -82,6 +84,7 @@ import LeaveRequestEditPage from '@/pages/leave/LeaveRequestEditPage';
 
 // Files
 import FileBrowserPage from '@/pages/files/FileBrowserPage';
+import TrashPage from '@/pages/files/trash/TrashPage';
 
 // Notifications
 import NotificationListPage from '@/pages/notifications/NotificationListPage';
@@ -239,6 +242,7 @@ export const router = createBrowserRouter([
               { path: '/service-requests/new', element: <ServiceRequestCreatePage /> },
               { path: '/files', element: <FileBrowserPage /> },
               { path: '/storage', element: <FileBrowserPage /> },
+              { path: '/storage/trash', element: <TrashPage /> },
             ],
           },
 
@@ -296,6 +300,7 @@ export const router = createBrowserRouter([
             children: [
               { path: '/company/settings/members', element: <CompanyMembersPage /> },
               { path: '/company/settings/onboarding', element: <CompanyOnboardingTemplatesPage /> },
+              { path: '/company/settings/onboarding/team', element: <TeamOnboardingPage /> },
             ],
           },
 
@@ -322,6 +327,7 @@ export const router = createBrowserRouter([
             element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN]} />,
             children: [
               { path: `${STAFF_UI_PREFIX}/bookings`, element: <ManageBookingsPage /> },
+              { path: `${STAFF_UI_PREFIX}/bookings/cancellation-audit`, element: <CancellationAuditPage /> },
               { path: `${STAFF_UI_PREFIX}/bookings/:id`, element: <BookingDetailPage /> },
             ],
           },

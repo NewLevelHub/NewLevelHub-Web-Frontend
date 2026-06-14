@@ -5,7 +5,7 @@ import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { fmtDayMonth, fmtDateTime, fmtTime } from '@/shared/lib/formatDate';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BookMarked, Calendar, ChevronLeft, ChevronRight, MoreHorizontal, Repeat, X } from 'lucide-react';
+import { Ban, BookMarked, Calendar, CheckCircle2, ChevronLeft, ChevronRight, Info, MoreHorizontal, Repeat, X } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -67,6 +67,60 @@ function getInitials(name: string): string {
     .slice(0, 2)
     .map((part) => part[0].toUpperCase())
     .join('');
+}
+
+type BulkCheckboxProps = {
+  checked: boolean;
+  indeterminate?: boolean;
+  disabled?: boolean;
+  onChange: (checked: boolean) => void;
+  ariaLabel?: string;
+};
+
+function BulkCheckbox({ checked, indeterminate = false, disabled = false, onChange, ariaLabel }: BulkCheckboxProps) {
+  const ref = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = indeterminate;
+  }, [indeterminate]);
+
+  return (
+    <label
+      className={cn(
+        'relative inline-flex items-center justify-center w-4 h-4 flex-shrink-0 cursor-pointer',
+        disabled && 'opacity-30 cursor-not-allowed pointer-events-none',
+      )}
+    >
+      <input
+        ref={ref}
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+        aria-label={ariaLabel}
+        className="sr-only peer"
+      />
+      <span
+        className={cn(
+          'w-4 h-4 rounded-[3px] border flex items-center justify-center transition-colors',
+          'peer-focus-visible:ring-2 peer-focus-visible:ring-[color:var(--brand)] peer-focus-visible:ring-offset-1',
+          checked || indeterminate
+            ? 'bg-[color:var(--brand)] border-[color:var(--brand)]'
+            : 'bg-[color:var(--bg-surface)] border-[color:var(--border)]',
+        )}
+      >
+        {indeterminate && !checked ? (
+          <svg width="8" height="2" viewBox="0 0 8 2" fill="none" aria-hidden="true">
+            <rect x="0" y="0" width="8" height="2" rx="1" fill="white" />
+          </svg>
+        ) : checked ? (
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none" aria-hidden="true">
+            <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ) : null}
+      </span>
+    </label>
+  );
 }
 
 type StatusBadgeProps = { status: string };
@@ -136,6 +190,12 @@ export default function ManageBookingsPage() {
   const [dateTo, setDateTo] = useState('');
   const [showDateFilter, setShowDateFilter] = useState(false);
 
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkCancelOpen, setBulkCancelOpen] = useState(false);
+  const [bulkReason, setBulkReason] = useState('');
+  const [bulkCancelError, setBulkCancelError] = useState<string | null>(null);
+  const [bulkResultSummary, setBulkResultSummary] = useState<{ cancelled: number; skipped: number } | null>(null);
+
   const [openActionsId, setOpenActionsId] = useState<number | null>(null);
   const [dropdownCoords, setDropdownCoords] = useState<{ top: number; right: number } | null>(null);
   const actionButtonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
@@ -150,6 +210,12 @@ export default function ManageBookingsPage() {
       window.removeEventListener('resize', close);
     };
   }, [openActionsId]);
+
+  useEffect(() => {
+    if (!bulkResultSummary) return;
+    const timer = setTimeout(() => setBulkResultSummary(null), 4000);
+    return () => clearTimeout(timer);
+  }, [bulkResultSummary]);
 
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
   const [cancelReason, setCancelReason] = useState('');
@@ -366,9 +432,37 @@ export default function ManageBookingsPage() {
     },
   });
 
+  const bulkCancelMutation = useMutation({
+    mutationFn: async ({ bookingIds, reason }: { bookingIds: number[]; reason: string }) => {
+      const { data: result } = await apiClient.post<{ cancelled: number; skipped: number; skipped_ids: number[] }>(
+        API.bookings.reservations.bulkCancel,
+        { booking_ids: bookingIds, reason },
+      );
+      return result;
+    },
+    onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+      setSelectedIds(new Set());
+      setBulkCancelOpen(false);
+      setBulkReason('');
+      setBulkCancelError(null);
+      setBulkResultSummary({ cancelled: result.cancelled, skipped: result.skipped });
+    },
+    onError: (err) => {
+      setBulkCancelError(getApiError(err).message);
+    },
+  });
+
   const rows = data?.results ?? [];
   const totalCount = data?.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  const selectableIds = useMemo(
+    () => rows.filter((b) => b.status === BOOKING_STATUSES.CONFIRMED).map((b) => b.id),
+    [rows],
+  );
+  const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selectedIds.has(id));
+  const someSelected = selectableIds.some((id) => selectedIds.has(id));
 
   const rangeStart = (page - 1) * PAGE_SIZE + 1;
   const rangeEnd = Math.min(page * PAGE_SIZE, totalCount);
@@ -598,7 +692,7 @@ export default function ManageBookingsPage() {
               <button
                 type="button"
                 disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                onClick={() => { setPage((p) => Math.max(1, p - 1)); setSelectedIds(new Set()); }}
                 aria-label={t('common.previousPage')}
                 className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
@@ -607,7 +701,7 @@ export default function ManageBookingsPage() {
               <button
                 type="button"
                 disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() => { setPage((p) => Math.min(totalPages, p + 1)); setSelectedIds(new Set()); }}
                 aria-label={t('common.nextPage')}
                 className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
@@ -645,6 +739,53 @@ export default function ManageBookingsPage() {
           </div>
         )}
 
+        {/* Bulk action bar */}
+        {selectedIds.size > 0 && (
+          <div
+            className={cn(
+              'flex items-center gap-2 px-4 h-[36px] border-b border-[color:var(--border)]',
+              'bg-[color:var(--status-soon-bg)]',
+              'animate-slide-down',
+            )}
+            role="status"
+            aria-live="polite"
+          >
+            <span className="flex items-center gap-1.5 text-[13px] font-medium text-[color:var(--status-soon-text)] flex-shrink-0">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="flex-shrink-0">
+                <rect x="1" y="1" width="12" height="12" rx="2.5" fill="currentColor" fillOpacity="0.18" stroke="currentColor" strokeWidth="1.25" />
+                <path d="M4 7.2L6 9.2L10 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {t('booking.manage.selectedCountShort', { count: selectedIds.size })}
+            </span>
+            <span className="flex-1" />
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setSelectedIds(new Set())}
+                className={cn(
+                  'inline-flex items-center h-[26px] px-2.5 text-[12px] font-medium rounded-[var(--radius-sm)]',
+                  'border border-[color:var(--status-soon-text)]/30',
+                  'text-[color:var(--status-soon-text)]',
+                  'hover:bg-[color:var(--status-soon-text)]/10 transition-colors',
+                )}
+              >
+                {t('booking.manage.clearSelectionShort')}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setBulkCancelOpen(true); setBulkReason(''); setBulkCancelError(null); }}
+                className={cn(
+                  'inline-flex items-center gap-1.5 h-[26px] px-3 text-[12px] font-medium rounded-[var(--radius-sm)]',
+                  'bg-rose-600 text-white hover:bg-rose-700 transition-colors',
+                )}
+              >
+                <Ban className="w-3 h-3 flex-shrink-0" />
+                {t('booking.manage.bulkCancelWithCount', { count: selectedIds.size })}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Table */}
         {isLoading ? (
           <div className="px-4 py-10">
@@ -666,6 +807,17 @@ export default function ManageBookingsPage() {
             <table className="w-full border-collapse text-[13px]" role="table">
               <thead>
                 <tr className="border-b border-[color:var(--border)]">
+                  <th className="w-8 pl-3 pr-1 py-2">
+                    <BulkCheckbox
+                      checked={allSelected}
+                      indeterminate={someSelected && !allSelected}
+                      onChange={(isChecked) => {
+                        if (isChecked) setSelectedIds(new Set(selectableIds));
+                        else setSelectedIds(new Set());
+                      }}
+                      ariaLabel={t('booking.manage.selectAll')}
+                    />
+                  </th>
                   <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
                     {t('dashboard.table.resource')}
                   </th>
@@ -701,8 +853,28 @@ export default function ManageBookingsPage() {
                   return (
                     <tr
                       key={booking.id}
-                      className="border-b border-[color:var(--border)] hover:bg-[color:var(--bg-hover)] transition-colors"
+                      className={cn(
+                        'border-b border-[color:var(--border)] transition-colors',
+                        selectedIds.has(booking.id)
+                          ? 'bg-[color:var(--brand-subtle)]'
+                          : 'hover:bg-[color:var(--bg-hover)]',
+                      )}
                     >
+                      <td className="w-8 pl-3 pr-1 py-2.5 align-middle">
+                        <BulkCheckbox
+                          checked={selectedIds.has(booking.id)}
+                          disabled={booking.status !== BOOKING_STATUSES.CONFIRMED}
+                          onChange={(isChecked) => {
+                            setSelectedIds((prev) => {
+                              const next = new Set(prev);
+                              if (isChecked) next.add(booking.id);
+                              else next.delete(booking.id);
+                              return next;
+                            });
+                          }}
+                          ariaLabel={t('booking.manage.selectRow')}
+                        />
+                      </td>
                       <td className="px-3 py-2.5 align-middle">
                         <Link
                           to={`${STAFF_UI_PREFIX}/bookings/${booking.id}`}
@@ -987,6 +1159,128 @@ export default function ManageBookingsPage() {
         </div>
       )}
 
+      {/* Bulk Cancel Modal */}
+      {bulkCancelOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="bulk-cancel-title"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget && !bulkCancelMutation.isPending) setBulkCancelOpen(false);
+          }}
+        >
+          <div className="w-full max-w-md rounded-2xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] shadow-xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center gap-3 px-5 pt-5 pb-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center">
+                <Ban className="w-5 h-5 text-rose-600" aria-hidden="true" />
+              </div>
+              <h2
+                id="bulk-cancel-title"
+                className="flex-1 text-[15px] font-semibold text-[color:var(--text-primary)] leading-tight"
+              >
+                {t('booking.manage.bulkCancelTitle', { count: selectedIds.size })}
+              </h2>
+              <button
+                type="button"
+                onClick={() => { if (!bulkCancelMutation.isPending) setBulkCancelOpen(false); }}
+                disabled={bulkCancelMutation.isPending}
+                className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-50"
+                aria-label={t('common.close')}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-5 pb-5 space-y-4">
+              {/* Amber warning callout */}
+              <div
+                className={cn(
+                  'flex items-start gap-2 px-3 py-2.5 rounded-[var(--radius-sm)]',
+                  'bg-[color:var(--status-soon-bg)] border border-[color:var(--status-soon-text)]/20',
+                )}
+                role="note"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="flex-shrink-0 mt-px text-[color:var(--status-soon-text)]" aria-hidden="true">
+                  <path d="M7 1.5L12.5 11.5H1.5L7 1.5Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round"/>
+                  <path d="M7 5.5V8" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
+                  <circle cx="7" cy="9.75" r="0.5" fill="currentColor"/>
+                </svg>
+                <p className="text-[12px] text-[color:var(--status-soon-text)] leading-relaxed">
+                  {t('booking.manage.bulkCancelWarning')}
+                </p>
+              </div>
+
+              {/* Reason textarea */}
+              <label className="block">
+                <span className="block text-[13px] font-medium text-[color:var(--text-secondary)] mb-1.5">
+                  {t('booking.manage.cancelReasonRequired2')}
+                </span>
+                <textarea
+                  rows={3}
+                  value={bulkReason}
+                  onChange={(e) => { setBulkReason(e.target.value); if (bulkCancelError) setBulkCancelError(null); }}
+                  placeholder={t('booking.manage.cancelReasonPlaceholder')}
+                  autoFocus
+                  className={cn(
+                    'w-full resize-none rounded-[var(--radius-sm)] border px-3 py-2 text-[13px]',
+                    'bg-[color:var(--bg-surface)] text-[color:var(--text-primary)]',
+                    'focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)]/25 focus:border-[color:var(--brand)]',
+                    'transition-colors',
+                    bulkCancelError ? 'border-rose-400' : 'border-[color:var(--border)]',
+                  )}
+                />
+              </label>
+
+              {bulkCancelError && (
+                <p className="text-[12px] text-[color:var(--status-busy-text)]" role="alert">{bulkCancelError}</p>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-[color:var(--border)] bg-[color:var(--bg-raised)]">
+              <button
+                type="button"
+                onClick={() => setBulkCancelOpen(false)}
+                disabled={bulkCancelMutation.isPending}
+                className={cn(
+                  'inline-flex items-center h-8 px-3.5 text-[13px] font-medium rounded-[var(--radius-sm)]',
+                  'border border-[color:var(--border)] bg-[color:var(--bg-surface)]',
+                  'text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors',
+                  'disabled:opacity-50 disabled:cursor-not-allowed',
+                )}
+              >
+                {t('common.close')}
+              </button>
+              <button
+                type="button"
+                disabled={bulkCancelMutation.isPending || !bulkReason.trim()}
+                onClick={() => {
+                  if (!bulkReason.trim()) { setBulkCancelError(t('booking.manage.cancelReasonRequired')); return; }
+                  bulkCancelMutation.mutate({ bookingIds: Array.from(selectedIds), reason: bulkReason.trim() });
+                }}
+                className={cn(
+                  'inline-flex items-center gap-1.5 h-8 px-3.5 text-[13px] font-medium rounded-[var(--radius-sm)]',
+                  'bg-rose-600 text-white hover:bg-rose-700 transition-colors',
+                  'disabled:opacity-50 disabled:cursor-not-allowed',
+                )}
+              >
+                {bulkCancelMutation.isPending ? (
+                  <span className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" aria-hidden="true" />
+                ) : (
+                  <Ban className="w-3.5 h-3.5" aria-hidden="true" />
+                )}
+                {bulkCancelMutation.isPending
+                  ? t('common.saving')
+                  : t('booking.manage.bulkCancelWithCount', { count: selectedIds.size })}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {openActionsId !== null && dropdownCoords && (() => {
         const booking = rows.find((b) => b.id === openActionsId);
         if (!booking) return null;
@@ -1031,6 +1325,54 @@ export default function ManageBookingsPage() {
           document.body,
         );
       })()}
+
+      {/* Bulk cancel result toast */}
+      {bulkResultSummary && (
+        <div
+          className={cn(
+            'fixed bottom-6 right-6 z-50',
+            'flex items-start gap-3 px-4 py-3',
+            'bg-[color:var(--bg-surface)] border border-[color:var(--border)]',
+            'rounded-xl shadow-[var(--shadow-card)]',
+            'min-w-[240px] max-w-[320px]',
+            'animate-toast-in',
+          )}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <div className="flex-shrink-0 mt-px">
+            {bulkResultSummary.skipped === 0 ? (
+              <CheckCircle2 className="w-5 h-5 text-[color:var(--status-free-text)]" aria-hidden="true" />
+            ) : (
+              <Info className="w-5 h-5 text-[color:var(--status-soon-text)]" aria-hidden="true" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] text-[color:var(--text-primary)]">
+              <span className="text-[color:var(--status-free-text)]">
+                {t('booking.manage.bulkCancelledCount', { count: bulkResultSummary.cancelled })}
+              </span>
+              {bulkResultSummary.skipped > 0 && (
+                <>
+                  {' · '}
+                  <span className="text-[color:var(--status-soon-text)]">
+                    {t('booking.manage.bulkSkippedCount', { count: bulkResultSummary.skipped })}
+                  </span>
+                </>
+              )}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setBulkResultSummary(null)}
+            className="flex-shrink-0 -mt-0.5 w-6 h-6 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors"
+            aria-label={t('common.close')}
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

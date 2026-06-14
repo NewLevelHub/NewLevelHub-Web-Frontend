@@ -4,6 +4,7 @@
     "subtitle": "{{date}} · {{count}} people in the BC right now, load {{load}}%",
     "createAnnouncement": "Create announcement",
     "addResource": "Add resource",
+    "createCompany": "Create Company",
     "kpi": {
       "activeBookings": "Active bookings",
       "spaceLoad": "Space utilization",
@@ -374,6 +375,7 @@
     "pagination": "Pagination",
     "previousPage": "Previous page",
     "nextPage": "Next page",
+    "pageOf": "Page {{page}} of {{total}}",
     "selectCompany": "Select company",
     "selectEmployee": "Select employee",
     "active": "Active",
@@ -706,7 +708,8 @@
   "header": {
     "markAllRead": "Mark all as read",
     "noNotifications": "No notifications",
-    "viewAllNotifications": "View all notifications"
+    "viewAllNotifications": "View all notifications",
+    "companyLogoAlt": "Company logo"
   },
   "sidebar": {
     "themeLight": "Light",
@@ -750,6 +753,7 @@
       "myCompany": "My Company",
       "settings": "Settings",
       "onboardingTemplates": "Onboarding Templates",
+      "teamOnboarding": "Team Progress",
       "myTasks": "My Tasks",
       "calendar": "Calendar",
       "bookingCatalog": "Book a Resource",
@@ -757,10 +761,32 @@
       "adminBookings": "Bookings (Admin)",
       "guestPasses": "Guest Passes",
       "files": "Files",
+      "trash": "Trash",
       "leave": "Leave",
       "team": "Team",
       "serviceRequest": "Service Request",
-      "buildingStaff": "Building Staff"
+      "buildingStaff": "Building Staff",
+      "cancellationAudit": "Cancellation History"
+    }
+  },
+  "bookingCancellationAudit": {
+    "title": "Booking Cancellation History",
+    "description": "History of booking cancellations with reason and responsible user.",
+    "loading": "Loading log...",
+    "empty": "No cancellation records",
+    "deletedUser": "User deleted",
+    "totalRecords": "Total records: {{count}}",
+    "col": {
+      "cancelledAt": "Cancelled At",
+      "bookingId": "Booking ID",
+      "cancelledBy": "Cancelled By",
+      "reason": "Reason"
+    },
+    "filter": {
+      "bookingId": "Booking ID",
+      "cancelledBy": "Cancelled by",
+      "dateFrom": "Date from",
+      "dateTo": "Date to"
     }
   },
   "catalog": {
@@ -814,7 +840,9 @@
     "back": "Back to bookings (admin)",
     "photoPrev": "Previous photo",
     "photoNext": "Next photo",
-    "photoGoTo": "Go to photo {{n}}"
+    "photoGoTo": "Go to photo {{n}}",
+    "showOnMap": "Show on map",
+    "notOnMap": "Not added to the map"
   },
   "profile": {
     "title": "Profile",
@@ -1069,7 +1097,13 @@
       "actions": "Actions",
       "rowActions": "Actions for booking #{{id}}",
       "selectAll": "Select all",
-      "selectRow": "Select booking #{{id}}",
+      "selectRow": "Select row",
+      "selectedCount": "Selected: {{count}}",
+      "bulkCancelBtn": "Cancel {{count}}",
+      "clearSelection": "Clear selection",
+      "bulkCancelTitle": "Cancel {{count}} bookings",
+      "bulkCancelDesc": "Provide a reason. Already-cancelled or started bookings will be skipped.",
+      "bulkCancelResult": "Cancelled: {{cancelled}}, skipped: {{skipped}}",
       "noResults": "No bookings match the current filters.",
       "noActions": "No actions available",
       "adminCancel": "Admin cancel",
@@ -1079,7 +1113,14 @@
       "cancelReasonRequired": "Please specify a cancellation reason.",
       "confirmCancel": "Confirm cancellation",
       "editTitle": "Edit booking #{{id}}",
-      "participantsOnlyMeeting": "Participant management is only available for meeting room bookings."
+      "participantsOnlyMeeting": "Participant management is only available for meeting room bookings.",
+      "selectedCountShort": "{{count}} selected",
+      "clearSelectionShort": "Clear",
+      "bulkCancelWithCount": "Cancel selected ({{count}})",
+      "bulkCancelWarning": "Already-cancelled and started bookings will be skipped automatically.",
+      "cancelReasonRequired2": "Cancellation reason *",
+      "bulkCancelledCount": "Cancelled: {{count}}",
+      "bulkSkippedCount": "Skipped: {{count}}"
     }
   },
   "resources": {
@@ -1250,6 +1291,27 @@
       "availabilitySection": "Resource availability",
       "endLabel": "End",
       "availabilityDaysLabel": "Availability days"
+    },
+    "bulk": {
+      "selectedCount": "{{count}} selected",
+      "deselectAll": "Deselect all",
+      "activate": "Activate selected",
+      "deactivate": "Deactivate selected",
+      "delete": "Delete selected",
+      "confirmActivateTitle": "Activate resources",
+      "confirmActivateBody": "Activate {{count}} resource(s)?",
+      "confirmDeactivateTitle": "Deactivate resources",
+      "confirmDeactivateBody": "Deactivate {{count}} resource(s)?",
+      "confirmDeleteTitle": "Delete resources",
+      "confirmDeleteBody": "This will permanently delete {{count}} resource(s)."
+    },
+    "row": {
+      "activateTitle": "Activate resource",
+      "activateDesc": "Activate \"{{name}}\"?",
+      "deactivateTitle": "Deactivate resource",
+      "deactivateDesc": "Deactivate \"{{name}}\"?",
+      "deleteTitle": "Delete resource",
+      "deleteDesc": "This will permanently delete \"{{name}}\"."
     }
   },
   "map": {
@@ -1403,7 +1465,10 @@
     "failedToLoad": "Failed to load task. It may have been archived or deleted.",
     "failedToSave": "Failed to save changes.",
     "failedToArchive": "Failed to archive task.",
-    "failedToUnarchive": "Failed to unarchive task."
+    "failedToUnarchive": "Failed to unarchive task.",
+    "board": {
+      "template": "Template"
+    }
   },
   "auth": {
     "login": {
@@ -1528,7 +1593,9 @@
     "dateJoined": "Join date",
     "tasksSuffix": " Tasks reassigned: {{count}}.",
     "directoryProfileLoadError": "Failed to load profile.",
-    "rowActions": "Actions"
+    "rowActions": "Actions",
+    "changeRole": "Role",
+    "changeRoleFor": "Change role: {{name}}"
   },
   "passes": {
     "showing": "Showing {{start}}—{{end}} of {{total}}",
@@ -1884,7 +1951,44 @@
     "templateDeleted": "Template deleted.",
     "templateDefaultUpdated": "Default template updated.",
     "templateNameRequired": "Enter template name.",
-    "templateStepRequired": "Add at least one step."
+    "templateStepRequired": "Add at least one step.",
+    "bulk": {
+      "selectedCount": "{{count}} selected",
+      "deselectAll": "Deselect all",
+      "activate": "Activate selected",
+      "deactivate": "Deactivate selected",
+      "delete": "Delete selected",
+      "confirmActivateTitle": "Activate companies",
+      "confirmActivateBody": "Activate {{count}} company(ies)?",
+      "confirmDeactivateTitle": "Deactivate companies",
+      "confirmDeactivateBody": "Deactivate {{count}} company(ies)?",
+      "confirmDeleteTitle": "Delete companies",
+      "confirmDeleteBody": "This will permanently delete {{count}} company(ies)."
+    },
+    "createTemplateTitle": "Create new onboarding template",
+    "createTemplateHint": "After creating, you can add custom steps to the template.",
+    "createTemplateBtn": "Create",
+    "stepLinkUrl": "Link",
+    "stepLinkUrlPlaceholder": "https://... or /path (optional)",
+    "stepsTitle": "Template steps",
+    "stepsLoading": "Loading steps...",
+    "systemStep": "System",
+    "systemStepAria": "System step: {{title}}",
+    "newStepDefaultTitle": "New step",
+    "editStepAria": "Edit step: {{title}}",
+    "deleteStepAria": "Delete step: {{title}}",
+    "deleteStepModal": "Delete step?",
+    "deleteStepDesc": "Step «{{title}}» will be permanently deleted.",
+    "teamOnboardingTab": "Team progress",
+    "teamOnboardingTitle": "Team onboarding",
+    "teamOnboardingSubtitle": "Employee onboarding progress",
+    "teamOnboardingLoadError": "Failed to load team progress.",
+    "teamOnboardingEmpty": "No employees with active onboarding.",
+    "teamMemberAria": "View onboarding steps: {{name}}",
+    "stepsRatio": "{{completed}} / {{total}}",
+    "onboardingCompleted": "Onboarding completed",
+    "onboardingNotStarted": "Onboarding has not started yet.",
+    "completedAt": "Completed {{date}}"
   },
   "building": {
     "mapManage": "Manage map",
@@ -1940,8 +2044,8 @@
     "deleteFolder": "Delete folder?",
     "deleteFile": "Delete file?",
     "revokeShare": "Revoke access?",
-    "deleteFolderDesc": "Folder «{{name}}» and all its contents will be permanently deleted.",
-    "deleteFileDesc": "File «{{name}}» will be permanently deleted.",
+    "deleteFolderDesc": "Folder «{{name}}» and all its contents will be moved to trash.",
+    "deleteFileDesc": "File «{{name}}» will be moved to trash.",
     "revokeShareDesc": "Access to the file will be revoked for the selected user.",
     "renameFolder": "Rename folder",
     "renameFile": "Rename file",
@@ -1952,7 +2056,7 @@
     "storage": "Storage",
     "newFolder": "New folder",
     "allFolders": "All folders",
-    "recentFiles": "Recent files",
+    "recentFiles": "Files",
     "allFiles": "All files",
     "tableColName": "NAME",
     "tableColSize": "SIZE",
@@ -1967,6 +2071,7 @@
     "personalStorageSub": "Private to you",
     "sharedStorageSub": "Team access",
     "outOfUsed": "out of {{total}} used",
+    "storageRemaining": "{{remaining}} remaining",
     "dropTitle": "Upload file",
     "dropSub": "or drag files here · up to 100 MB",
     "bdDocs": "Documents",
@@ -1974,13 +2079,46 @@
     "bdMedia": "Media",
     "bdArch": "Archives",
     "bdOther": "Other",
-    "filterBtn": "Filter",
+    "bdTrash": "Trash",
+    "bdTrashPersonal": "Personal Trash",
+    "bdTrashCompany": "Company Trash",
+    "bdCompany": "Company",
+    "bdMyFiles": "My files",
+    "tableColType": "TYPE",
+    "categoryFilter": "Category",
+    "categoryAll": "All categories",
     "duplicateShare": "This user already has access to this file.",
     "selectedCount": "Selected: {{count}}",
     "deleteSelected": "Delete selected",
     "deselectAll": "Deselect all",
     "folderBreakdown": "Folder contents",
-    "allStorageBreakdown": "All storage"
+    "allStorageBreakdown": "All storage",
+    "manageAccess": "Manage Access",
+    "folderAccessTitle": "Folder access",
+    "folderPerm_view": "View only",
+    "folderPerm_upload": "View + Upload",
+    "folderPerm_full": "Full access",
+    "currentAccess": "Current access",
+    "addAccess": "Add access",
+    "rolePermission": "Role",
+    "folderRestricted": "Restricted",
+    "noFolderPerms": "No restrictions — folder is open to all.",
+    "duplicateFolderPerm": "This user already has access to this folder.",
+    "move": "Move",
+    "moveTo": "Move to...",
+    "moveHere": "Move here",
+    "rootFolder": "Root (no folder)",
+    "selectFolder": "Select a destination folder",
+    "alreadyInFolder": "File is already in this folder",
+    "viewOnlyAccess": "View only — no upload access",
+    "previewOpen": "Preview",
+    "previewTitle": "Preview: {{name}}",
+    "previewLoading": "Loading preview...",
+    "previewError": "Failed to load preview",
+    "previewNotSupported": "Preview not available",
+    "previewDownloadInstead": "This file type cannot be displayed in the browser. Download the file to open it.",
+    "previewOpenNewTab": "Open in new tab",
+    "previewPdfLabel": "PDF document: {{name}}"
   },
   "analytics": {
     "title": "Analytics",
@@ -2031,8 +2169,17 @@
     "resourceUtilization": "Resource utilization (by day)",
     "resourceUtilizationDesc": "Number of bookings per resource type per day",
     "noBookingsPeriod": "No bookings for the selected period",
-    "peakHours": "Peak hours",
-    "peakHoursDesc": "(bookings by day and hour)",
+    "peakHours": "Peak Hours",
+    "peakHoursDesc": "Bookings by day of week and hour",
+    "dow": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    },
     "newRegistrations": "New registrations",
     "newRegistrationsDesc": "Users registered by week",
     "noRegistrationsPeriod": "No registrations for the selected period",
@@ -2048,7 +2195,9 @@
     "parkings": "Parking spots",
     "capsules": "Capsules",
     "newUsers": "New users",
-    "requests": "Requests"
+    "requests": "Requests",
+    "exportPdf": "Download PDF",
+    "exportingPdf": "Generating PDF…"
   },
   "onboarding": {
     "title": "Onboarding",
@@ -2065,7 +2214,9 @@
     "stepN": "Step {{n}}",
     "markDone": "Done",
     "markDoneAria": "Mark step as done: {{title}}",
-    "saveError": "Failed to save step. Please try again."
+    "saveError": "Failed to save step. Please try again.",
+    "goToLink": "Go",
+    "visitLinkFirst": "First follow the link, then click \"Done\"."
   },
   "access": {
     "title": "Access log",
@@ -2204,5 +2355,23 @@
       "updating": "Updating...",
       "loadError": "Failed to load user data. Please reload the page."
     }
+  },
+  "trash": {
+    "title": "Trash",
+    "subtitle": "Items are automatically deleted after 30 days",
+    "empty": "Trash is empty",
+    "emptyHint": "Deleted files and folders will appear here",
+    "restore": "Restore",
+    "deleteForever": "Delete forever",
+    "deleteForeverConfirm": "Delete «{{name}}» forever?",
+    "deleteForeverDesc": "This action cannot be undone.",
+    "purgeIn": "Deletes in {{days}} d",
+    "purgeToday": "Deletes today",
+    "restoreSuccess": "«{{name}}» restored",
+    "deleteForeverSuccess": "«{{name}}» permanently deleted",
+    "scopePersonal": "Personal",
+    "scopeCompany": "Company",
+    "deleteAll": "Delete all",
+    "deleteAllDesc": "All trash items will be permanently deleted. This action cannot be undone."
   }
 }

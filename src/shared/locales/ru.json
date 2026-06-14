@@ -4,6 +4,7 @@
     "subtitle": "{{date}} · в БЦ сейчас {{count}} человек, загрузка {{load}}%",
     "createAnnouncement": "Создать объявление",
     "addResource": "Добавить ресурс",
+    "createCompany": "Создать компанию",
     "kpi": {
       "activeBookings": "Активные брони",
       "spaceLoad": "Загрузка пространств",
@@ -378,6 +379,7 @@
     "pagination": "Пагинация",
     "previousPage": "Предыдущая страница",
     "nextPage": "Следующая страница",
+    "pageOf": "Страница {{page}} из {{total}}",
     "selectCompany": "Выберите компанию",
     "selectEmployee": "Выберите сотрудника",
     "active": "Активен",
@@ -701,7 +703,8 @@
   "header": {
     "markAllRead": "Прочитать все",
     "noNotifications": "Нет уведомлений",
-    "viewAllNotifications": "Смотреть все уведомления"
+    "viewAllNotifications": "Смотреть все уведомления",
+    "companyLogoAlt": "Логотип компании"
   },
   "sidebar": {
     "themeLight": "Светлая",
@@ -745,6 +748,7 @@
       "myCompany": "Моя компания",
       "settings": "Настройки",
       "onboardingTemplates": "Онбординг шаблоны",
+      "teamOnboarding": "Прогресс команды",
       "myTasks": "Мои задачи",
       "calendar": "Календарь",
       "bookingCatalog": "Бронирование",
@@ -752,10 +756,32 @@
       "adminBookings": "Управление броней",
       "guestPasses": "Гостевые пропуска",
       "files": "Файлы",
+      "trash": "Корзина",
       "leave": "Отпуска",
       "team": "Команда",
       "serviceRequest": "Сервисная заявка",
-      "buildingStaff": "Сотрудники здания"
+      "buildingStaff": "Сотрудники здания",
+      "cancellationAudit": "История отмен"
+    }
+  },
+  "bookingCancellationAudit": {
+    "title": "История отмен бронирований",
+    "description": "История отмен бронирований с указанием причины и ответственного.",
+    "loading": "Загрузка лога...",
+    "empty": "Нет записей об отменах",
+    "deletedUser": "Пользователь удалён",
+    "totalRecords": "Всего записей: {{count}}",
+    "col": {
+      "cancelledAt": "Дата отмены",
+      "bookingId": "ID брони",
+      "cancelledBy": "Кто отменил",
+      "reason": "Причина"
+    },
+    "filter": {
+      "bookingId": "ID бронирования",
+      "cancelledBy": "Кто отменил",
+      "dateFrom": "Дата от",
+      "dateTo": "Дата до"
     }
   },
   "catalog": {
@@ -809,7 +835,9 @@
     "back": "Назад в бронирования (админ)",
     "photoPrev": "Предыдущее фото",
     "photoNext": "Следующее фото",
-    "photoGoTo": "Перейти к фото {{n}}"
+    "photoGoTo": "Перейти к фото {{n}}",
+    "showOnMap": "Показать на карте",
+    "notOnMap": "Ресурс не добавлен на карту"
   },
   "profile": {
     "title": "Профиль",
@@ -1064,7 +1092,13 @@
       "actions": "Действия",
       "rowActions": "Действия для брони #{{id}}",
       "selectAll": "Выбрать все",
-      "selectRow": "Выбрать бронь #{{id}}",
+      "selectRow": "Выбрать строку",
+      "selectedCount": "Выбрано: {{count}}",
+      "bulkCancelBtn": "Отменить {{count}}",
+      "clearSelection": "Снять выделение",
+      "bulkCancelTitle": "Отменить {{count}} броней",
+      "bulkCancelDesc": "Укажите причину отмены. Уже отменённые или начавшиеся брони будут пропущены.",
+      "bulkCancelResult": "Отменено: {{cancelled}}, пропущено: {{skipped}}",
       "noResults": "Ничего не найдено по текущим фильтрам.",
       "noActions": "Нет доступных действий",
       "adminCancel": "Админ-отмена",
@@ -1074,7 +1108,14 @@
       "cancelReasonRequired": "Укажите причину отмены.",
       "confirmCancel": "Подтвердить отмену",
       "editTitle": "Изменение брони #{{id}}",
-      "participantsOnlyMeeting": "Управление участниками доступно только для бронирований переговорок."
+      "participantsOnlyMeeting": "Управление участниками доступно только для бронирований переговорок.",
+      "selectedCountShort": "{{count}} выбрано",
+      "clearSelectionShort": "Снять",
+      "bulkCancelWithCount": "Отменить выбранные ({{count}})",
+      "bulkCancelWarning": "Уже отменённые и начавшиеся брони будут пропущены автоматически.",
+      "cancelReasonRequired2": "Причина отмены *",
+      "bulkCancelledCount": "Отменено: {{count}}",
+      "bulkSkippedCount": "Пропущено: {{count}}"
     }
   },
   "resources": {
@@ -1245,6 +1286,27 @@
       "availabilitySection": "Доступность ресурса",
       "endLabel": "Конец",
       "availabilityDaysLabel": "Дни доступности"
+    },
+    "bulk": {
+      "selectedCount": "Выбрано: {{count}}",
+      "deselectAll": "Снять выделение",
+      "activate": "Активировать выбранные",
+      "deactivate": "Деактивировать выбранные",
+      "delete": "Удалить выбранные",
+      "confirmActivateTitle": "Активировать ресурсы",
+      "confirmActivateBody": "Активировать {{count}} ресурс(ов)?",
+      "confirmDeactivateTitle": "Деактивировать ресурсы",
+      "confirmDeactivateBody": "Деактивировать {{count}} ресурс(ов)?",
+      "confirmDeleteTitle": "Удалить ресурсы",
+      "confirmDeleteBody": "Это удалит {{count}} ресурс(ов) безвозвратно."
+    },
+    "row": {
+      "activateTitle": "Активировать ресурс",
+      "activateDesc": "Активировать \"{{name}}\"?",
+      "deactivateTitle": "Деактивировать ресурс",
+      "deactivateDesc": "Деактивировать \"{{name}}\"?",
+      "deleteTitle": "Удалить ресурс",
+      "deleteDesc": "Это удалит \"{{name}}\" безвозвратно."
     }
   },
   "map": {
@@ -1398,7 +1460,10 @@
     "failedToLoad": "Не удалось загрузить задачу. Возможно, она архивирована или была удалена.",
     "failedToSave": "Не удалось сохранить изменения.",
     "failedToArchive": "Не удалось архивировать задачу.",
-    "failedToUnarchive": "Не удалось разархивировать задачу."
+    "failedToUnarchive": "Не удалось разархивировать задачу.",
+    "board": {
+      "template": "Шаблон"
+    }
   },
   "auth": {
     "login": {
@@ -1523,7 +1588,9 @@
     "dateJoined": "Дата вступления",
     "tasksSuffix": " Переназначено задач: {{count}}.",
     "directoryProfileLoadError": "Не удалось загрузить профиль.",
-    "rowActions": "Действия"
+    "rowActions": "Действия",
+    "changeRole": "Роль",
+    "changeRoleFor": "Изменить роль: {{name}}"
   },
   "passes": {
     "showing": "Показано {{start}}—{{end}} из {{total}}",
@@ -1879,7 +1946,44 @@
     "templateDeleted": "Шаблон удалён.",
     "templateDefaultUpdated": "Шаблон по умолчанию обновлён.",
     "templateNameRequired": "Введите название шаблона.",
-    "templateStepRequired": "Добавьте хотя бы один шаг."
+    "templateStepRequired": "Добавьте хотя бы один шаг.",
+    "bulk": {
+      "selectedCount": "Выбрано: {{count}}",
+      "deselectAll": "Снять выделение",
+      "activate": "Активировать выбранные",
+      "deactivate": "Деактивировать выбранные",
+      "delete": "Удалить выбранные",
+      "confirmActivateTitle": "Активировать компании",
+      "confirmActivateBody": "Активировать {{count}} компани(й)?",
+      "confirmDeactivateTitle": "Деактивировать компании",
+      "confirmDeactivateBody": "Деактивировать {{count}} компани(й)?",
+      "confirmDeleteTitle": "Удалить компании",
+      "confirmDeleteBody": "Это удалит {{count}} компани(й) безвозвратно."
+    },
+    "createTemplateTitle": "Создать новый шаблон онбординга",
+    "createTemplateHint": "После создания вы сможете добавить собственные шаги к шаблону.",
+    "createTemplateBtn": "Создать",
+    "stepLinkUrl": "Ссылка",
+    "stepLinkUrlPlaceholder": "https://... или /путь (необязательно)",
+    "stepsTitle": "Шаги шаблона",
+    "stepsLoading": "Загрузка шагов...",
+    "systemStep": "Системный",
+    "systemStepAria": "Системный шаг: {{title}}",
+    "newStepDefaultTitle": "Новый шаг",
+    "editStepAria": "Редактировать шаг: {{title}}",
+    "deleteStepAria": "Удалить шаг: {{title}}",
+    "deleteStepModal": "Удалить шаг?",
+    "deleteStepDesc": "Шаг «{{title}}» будет удалён без возможности восстановления.",
+    "teamOnboardingTab": "Прогресс команды",
+    "teamOnboardingTitle": "Онбординг команды",
+    "teamOnboardingSubtitle": "Прогресс онбординга сотрудников",
+    "teamOnboardingLoadError": "Не удалось загрузить прогресс команды.",
+    "teamOnboardingEmpty": "Нет сотрудников с активным онбордингом.",
+    "teamMemberAria": "Просмотреть шаги онбординга: {{name}}",
+    "stepsRatio": "{{completed}} / {{total}}",
+    "onboardingCompleted": "Онбординг завершён",
+    "onboardingNotStarted": "Онбординг ещё не начат.",
+    "completedAt": "Выполнено {{date}}"
   },
   "building": {
     "mapManage": "Управление картой",
@@ -1935,8 +2039,8 @@
     "deleteFolder": "Удалить папку?",
     "deleteFile": "Удалить файл?",
     "revokeShare": "Отозвать доступ?",
-    "deleteFolderDesc": "Папка «{{name}}» и всё её содержимое будут удалены без возможности восстановления.",
-    "deleteFileDesc": "Файл «{{name}}» будет удалён без возможности восстановления.",
+    "deleteFolderDesc": "Папка «{{name}}» и всё её содержимое будут перемещены в корзину.",
+    "deleteFileDesc": "Файл «{{name}}» будет перемещён в корзину.",
     "revokeShareDesc": "Доступ к файлу у выбранного пользователя будет отозван.",
     "renameFolder": "Переименовать папку",
     "renameFile": "Переименовать файл",
@@ -1947,7 +2051,7 @@
     "storage": "Хранилище",
     "newFolder": "Новая папка",
     "allFolders": "Все папки",
-    "recentFiles": "Последние файлы",
+    "recentFiles": "Файлы",
     "allFiles": "Все файлы",
     "tableColName": "ИМЯ",
     "tableColSize": "РАЗМЕР",
@@ -1962,6 +2066,7 @@
     "personalStorageSub": "Только для вас",
     "sharedStorageSub": "Доступ команды",
     "outOfUsed": "из {{total}} занято",
+    "storageRemaining": "Осталось {{remaining}}",
     "dropTitle": "Загрузить файл",
     "dropSub": "или перетащите сюда · до 100 МБ",
     "bdDocs": "Документы",
@@ -1969,13 +2074,46 @@
     "bdMedia": "Медиа",
     "bdArch": "Архивы",
     "bdOther": "Прочее",
-    "filterBtn": "Фильтр",
+    "bdTrash": "Корзина",
+    "bdTrashPersonal": "Личная корзина",
+    "bdTrashCompany": "Общая корзина",
+    "bdCompany": "Компания",
+    "bdMyFiles": "Мои файлы",
+    "tableColType": "ТИП",
+    "categoryFilter": "Категория",
+    "categoryAll": "Все категории",
     "duplicateShare": "Этому пользователю уже расшарен данный файл.",
     "selectedCount": "Выбрано: {{count}}",
     "deleteSelected": "Удалить выбранные",
     "deselectAll": "Снять выделение",
     "folderBreakdown": "Содержимое папки",
-    "allStorageBreakdown": "Всё хранилище"
+    "allStorageBreakdown": "Всё хранилище",
+    "manageAccess": "Управление доступом",
+    "folderAccessTitle": "Доступ к папке",
+    "folderPerm_view": "Только просмотр",
+    "folderPerm_upload": "Просмотр + загрузка",
+    "folderPerm_full": "Полный доступ",
+    "currentAccess": "Текущий доступ",
+    "addAccess": "Добавить доступ",
+    "rolePermission": "Роль",
+    "folderRestricted": "Ограничено",
+    "noFolderPerms": "Ограничений нет — папка открыта для всех.",
+    "duplicateFolderPerm": "Этому пользователю уже выдан доступ к данной папке.",
+    "move": "Переместить",
+    "moveTo": "Переместить в...",
+    "moveHere": "Переместить сюда",
+    "rootFolder": "Корень (без папки)",
+    "selectFolder": "Выберите папку назначения",
+    "alreadyInFolder": "Файл уже находится в этой папке",
+    "viewOnlyAccess": "Только просмотр — нет доступа для загрузки",
+    "previewOpen": "Предпросмотр",
+    "previewTitle": "Предпросмотр: {{name}}",
+    "previewLoading": "Загрузка предпросмотра...",
+    "previewError": "Не удалось загрузить предпросмотр",
+    "previewNotSupported": "Предпросмотр недоступен",
+    "previewDownloadInstead": "Этот формат нельзя отобразить в браузере. Скачайте файл, чтобы открыть его.",
+    "previewOpenNewTab": "Открыть в новой вкладке",
+    "previewPdfLabel": "PDF-документ: {{name}}"
   },
   "analytics": {
     "title": "Аналитика",
@@ -2027,7 +2165,16 @@
     "resourceUtilizationDesc": "Количество броней каждого типа за день",
     "noBookingsPeriod": "Нет бронирований за выбранный период",
     "peakHours": "Пиковые часы",
-    "peakHoursDesc": "(бронирований по дню и часу)",
+    "peakHoursDesc": "Бронирований по дню недели и часу",
+    "dow": {
+      "mon": "Пн",
+      "tue": "Вт",
+      "wed": "Ср",
+      "thu": "Чт",
+      "fri": "Пт",
+      "sat": "Сб",
+      "sun": "Вс"
+    },
     "newRegistrations": "Новые регистрации",
     "newRegistrationsDesc": "Пользователей зарегистрировано по неделям",
     "noRegistrationsPeriod": "Нет регистраций за выбранный период",
@@ -2043,7 +2190,9 @@
     "parkings": "Парковки",
     "capsules": "Капсулы",
     "newUsers": "Новых пользователей",
-    "requests": "Заявок"
+    "requests": "Заявок",
+    "exportPdf": "Скачать PDF",
+    "exportingPdf": "Формирование PDF…"
   },
   "onboarding": {
     "title": "Онбординг",
@@ -2060,7 +2209,9 @@
     "stepN": "Шаг {{n}}",
     "markDone": "Выполнено",
     "markDoneAria": "Отметить шаг выполненным: {{title}}",
-    "saveError": "Не удалось сохранить шаг. Попробуйте снова."
+    "saveError": "Не удалось сохранить шаг. Попробуйте снова.",
+    "goToLink": "Перейти",
+    "visitLinkFirst": "Сначала перейдите по ссылке, затем нажмите «Выполнено»."
   },
   "access": {
     "title": "Лог доступа",
@@ -2203,5 +2354,23 @@
       "updating": "Обновление...",
       "loadError": "Не удалось загрузить данные пользователя. Попробуйте перезагрузить страницу."
     }
+  },
+  "trash": {
+    "title": "Корзина",
+    "subtitle": "Элементы автоматически удаляются через 30 дней",
+    "empty": "Корзина пуста",
+    "emptyHint": "Удалённые файлы и папки появятся здесь",
+    "restore": "Восстановить",
+    "deleteForever": "Удалить навсегда",
+    "deleteForeverConfirm": "Удалить «{{name}}» навсегда?",
+    "deleteForeverDesc": "Это действие нельзя отменить.",
+    "purgeIn": "Удалится через {{days}} дн",
+    "purgeToday": "Удаляется сегодня",
+    "restoreSuccess": "«{{name}}» восстановлен",
+    "deleteForeverSuccess": "«{{name}}» удалён навсегда",
+    "scopePersonal": "Личное",
+    "scopeCompany": "Компания",
+    "deleteAll": "Удалить все",
+    "deleteAllDesc": "Все элементы корзины будут удалены навсегда. Это действие нельзя отменить."
   }
 }
