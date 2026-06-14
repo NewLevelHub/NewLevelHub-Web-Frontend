@@ -27,7 +27,7 @@ export interface User {
   company_id: number | null;
   company_name: string | null;
   /** Nested company object returned by /api/v1/auth/me/ */
-  company: { id: number; name: string; onboarding_completed?: boolean } | null;
+  company: { id: number; name: string; onboarding_completed?: boolean; logo?: string | null; plan?: string | null } | null;
   avatar: string | null;
   /** Синхронно с бэкендом `is_email_verified` */
   is_email_verified: boolean;
@@ -184,6 +184,15 @@ export interface CompanyMember {
   last_login: string | null;
 }
 
+/** GET /bookings/members/ — participant picker autocomplete. */
+export interface ParticipantPickerUser {
+  id: number;
+  email: string;
+  full_name: string;
+  avatar: string | null;
+  position: string | null;
+}
+
 export interface MemberActivity {
   last_login: string | null;
   active_tasks_count: number;
@@ -292,10 +301,9 @@ export interface BookingResourceListItem {
   id: number;
   type: ResourceType;
   name: string;
-  floor?: number;
-  floor_id?: number | null;
-  floor_number?: number | null;
-  floor_name?: string | null;
+  floor_id: number | null;
+  floor_number: number | null;
+  floor_name: string | null;
   zone: string;
   photo: string | null;
   photo_url: string | null;
@@ -340,10 +348,9 @@ export interface BookingResourceDetail {
   id: number;
   type: ResourceType;
   name: string;
-  floor?: number;
-  floor_id?: number | null;
-  floor_number?: number | null;
-  floor_name?: string | null;
+  floor_id: number | null;
+  floor_number: number | null;
+  floor_name: string | null;
   zone: string;
   description: string;
   photo: string | null;
@@ -382,7 +389,6 @@ export interface Resource {
   id: number;
   name: string;
   type: ResourceType;
-  floor?: number;
   floor_id?: number | null;
   floor_number?: number | null;
   floor_name?: string | null;
@@ -467,6 +473,14 @@ export interface RecurringBookingCreatePayload {
 
 export interface RecurringBookingCreateResponse extends RecurringBooking {
   skipped_dates: string[];
+}
+
+export interface CancellationAuditEntry {
+  id: number;
+  booking_id: number;
+  cancelled_by: { id: number; full_name: string } | null;
+  cancel_reason: string;
+  cancelled_at: string;
 }
 
 export interface Board {
@@ -721,6 +735,24 @@ export interface StorageFolder {
   files_count: number;
   created_at: string;
   updated_at: string;
+  is_deleted?: boolean;
+  deleted_at?: string | null;
+  is_restricted?: boolean;
+  user_permission?: FolderPermissionLevel | null;
+}
+
+export type FolderPermissionLevel = 'view' | 'upload' | 'full';
+
+export interface FolderPermission {
+  id: number;
+  folder: number;
+  user: number | null;
+  user_name: string | null;
+  role: string | null;
+  permission: FolderPermissionLevel;
+  granted_by: number | null;
+  granted_by_name: string | null;
+  created_at: string;
 }
 
 export interface StorageFile {
@@ -739,6 +771,8 @@ export interface StorageFile {
   company: number | null;
   created_at: string;
   updated_at: string;
+  is_deleted?: boolean;
+  deleted_at?: string | null;
 }
 
 export interface StorageFolderDetail extends StorageFolder {
@@ -746,16 +780,28 @@ export interface StorageFolderDetail extends StorageFolder {
   files: StorageFile[];
 }
 
+export interface StorageUsageBreakdown {
+  document: number;
+  image: number;
+  archive: number;
+  media: number;
+  other: number;
+}
+
 export interface StorageUsage {
   personal: {
     used_bytes: number;
     file_count: number;
     limit_bytes: number | null;
+    trash_bytes: number;
+    breakdown: StorageUsageBreakdown;
   };
   company: {
     used_bytes: number;
     limit_bytes: number;
     file_count: number;
+    trash_bytes: number;
+    breakdown: StorageUsageBreakdown;
   };
 }
 
@@ -776,6 +822,18 @@ export interface StorageFileShare {
   permission: StorageSharePermission;
   comment: string;
   created_at: string;
+}
+
+export interface TrashItem {
+  id: number;
+  name: string;
+  item_type: 'file' | 'folder';
+  deleted_at: string;
+  scope: 'personal' | 'company';
+  file_size?: number;
+  content_type?: string;
+  files_count?: number;
+  children_count?: number;
 }
 
 export interface Notification {
@@ -981,6 +1039,9 @@ export interface OnboardingStep {
   id: number;
   title: string;
   is_completed: boolean;
+  is_system?: boolean;
+  completed_at?: string | null;
+  url?: string | null;
 }
 
 export interface OnboardingStatus {
@@ -992,6 +1053,16 @@ export interface OnboardingTemplateStepInput {
   title: string;
   description: string;
   order: number;
+  url?: string | null;
+}
+
+export interface OnboardingTemplateStep {
+  id: number;
+  title: string;
+  description: string;
+  url?: string | null;
+  order: number;
+  is_system: boolean;
 }
 
 export interface OnboardingTemplate {
@@ -999,8 +1070,38 @@ export interface OnboardingTemplate {
   name: string;
   is_active: boolean;
   is_default: boolean;
-  steps: Array<OnboardingTemplateStepInput & { id: number }>;
+  steps: OnboardingTemplateStep[];
   created_at: string;
+}
+
+export interface TeamMemberProgress {
+  user: number;
+  first_name: string;
+  last_name: string;
+  avatar: string | null;
+  role: string;
+  completed_steps: number;
+  total_steps: number;
+}
+
+export interface TeamMemberProgressStep {
+  id: number;
+  title: string;
+  is_system: boolean;
+  is_completed: boolean;
+  completed_at: string | null;
+}
+
+export interface TeamMemberProgressDetail {
+  user: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    avatar: string | null;
+  };
+  completed_steps: number;
+  total_steps: number;
+  steps: TeamMemberProgressStep[];
 }
 
 export interface CrmAttachmentUploader {

@@ -21,6 +21,9 @@ export const API = {
     deactivate: (id: string) => `/companies/${id}/deactivate/`,
     activate: (id: string) => `/companies/${id}/activate/`,
     delete: (id: string) => `/companies/${id}/?confirm=true`,
+    bulkActivate: '/companies/bulk-activate/',
+    bulkDeactivate: '/companies/bulk-deactivate/',
+    bulkDelete: '/companies/bulk-delete/',
     members: (id: string) => `/companies/${id}/members/`,
     invitations: (id: string) => `/companies/${id}/invitations/`,
     invitationRevoke: (companyId: string, invitationId: string) =>
@@ -45,6 +48,8 @@ export const API = {
       `/companies/${companyId}/members/${userId}/deactivate/`,
     memberActivate: (companyId: string, userId: string) =>
       `/companies/${companyId}/members/${userId}/activate/`,
+    memberChangeRole: (companyId: string, userId: string) =>
+      `/companies/${companyId}/members/${userId}/role/`,
     memberRemove: (companyId: string, userId: string, reassignTo?: string) =>
       `/companies/${companyId}/members/${userId}/${reassignTo ? `?reassign_to=${reassignTo}` : ''}`,
     onboardingStatus: (companyId: string) => `/companies/${companyId}/onboarding-status/`,
@@ -77,6 +82,9 @@ export const API = {
       uploadPhoto: (id: string) => `/bookings/resources/${id}/photos/`,
       deletePhoto: (id: string, photoId: string) => `/bookings/resources/${id}/photos/${photoId}/`,
       bulkCreate: '/bookings/resources/bulk-create/',
+      bulkActivate: '/bookings/resources/bulk-activate/',
+      bulkDeactivate: '/bookings/resources/bulk-deactivate/',
+      bulkDelete: '/bookings/resources/bulk-delete/',
     },
     reservations: {
       list: '/bookings/reservations/',
@@ -89,12 +97,15 @@ export const API = {
       addParticipants: (id: string) => `/bookings/reservations/${id}/participants/`,
       removeParticipant: (id: string, userId: string) =>
         `/bookings/reservations/${id}/participants/${userId}/`,
+      bulkCancel: '/bookings/reservations/bulk-cancel/',
     },
     recurring: {
       list: '/bookings/recurring/',
       create: '/bookings/recurring/',
       detail: (id: string) => `/bookings/recurring/${id}/`,
     },
+    members: '/bookings/members/',
+    cancellationAudit: '/bookings/cancellation-audit/',
   },
   crm: {
     boards: '/crm/boards/',
@@ -106,6 +117,7 @@ export const API = {
     columnsReorder: (boardId: string) => `/crm/boards/${boardId}/columns/reorder/`,
     tasks: (boardId: string) => `/crm/boards/${boardId}/tasks/`,
     task: (boardId: string, taskId: string) => `/crm/boards/${boardId}/tasks/${taskId}/`,
+    boardTemplates: '/crm/board-templates/',
     myTasks: '/crm/tasks/my/',
     tasksList: '/crm/tasks/',
     taskDetail: (id: number) => `/crm/tasks/${id}/`,
@@ -193,9 +205,12 @@ export const API = {
     progress: '/hr/onboarding/progress/',
     completeStep: (stepId: number) => `/hr/onboarding/progress/steps/${stepId}/complete/`,
     teamProgress: '/hr/onboarding/progress/team/',
+    teamProgressDetail: (userId: number) => `/hr/onboarding/progress/team/${userId}/`,
     templates: '/hr/onboarding/templates/',
     template: (templateId: number) => `/hr/onboarding/templates/${templateId}/`,
     templateSetDefault: (templateId: number) => `/hr/onboarding/templates/${templateId}/set-default/`,
+    templateSteps: (templateId: number) => `/hr/onboarding/templates/${templateId}/steps/`,
+    templateStep: (templateId: number, stepId: number) => `/hr/onboarding/templates/${templateId}/steps/${stepId}/`,
   },
   storage: {
     folders: '/storage/folders/',
@@ -209,6 +224,13 @@ export const API = {
     share: (id: string) => `/storage/shares/${id}/`,
     fileShares: (id: string) => `/storage/files/${id}/shares/`,
     usage: '/storage/usage/',
+    trash: '/storage/trash/',
+    fileRestore: (id: string) => `/storage/files/${id}/restore/`,
+    folderRestore: (id: string) => `/storage/folders/${id}/restore/`,
+    filePermDelete: (id: string) => `/storage/files/${id}/permanent/`,
+    folderPermDelete: (id: string) => `/storage/folders/${id}/permanent/`,
+    folderPermissions: (folderId: string) => `/storage/folders/${folderId}/permissions/`,
+    folderPermission: (permId: string) => `/storage/folder-permissions/${permId}/`,
   },
   files: {
     list: '/files/',

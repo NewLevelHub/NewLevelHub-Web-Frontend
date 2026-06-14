@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Settings2, Plus, Trash2, Users, ListChecks, CheckCircle2, AlertCircle } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { USER_ROLES } from '@/shared/config/constants';
+import { COMPANY_TIERS, USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { cn } from '@/shared/lib/cn';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
@@ -52,6 +52,15 @@ export default function CompanySettingsPage() {
         .get<CompanySettings>(API.companies.settings(companyId!))
         .then((r) => r.data),
   });
+
+  const { data: companyData } = useQuery({
+    queryKey: ['company', companyId],
+    enabled: Boolean(companyId),
+    queryFn: () =>
+      apiClient.get<Company>(API.companies.detail(companyId!)).then((r) => r.data),
+  });
+
+  const isPremium = companyData?.plan === COMPANY_TIERS.PREMIUM;
 
   const crmLabelsUrl =
     isSuperadmin && companyId ? `${API.crm.labels}?company_id=${companyId}` : API.crm.labels;
@@ -236,6 +245,13 @@ export default function CompanySettingsPage() {
           <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
           {t('companies.onboardingTemplatesLink')}
         </Link>
+        <Link
+          to={`/company/settings/onboarding/team${companyId ? `?company=${companyId}` : ''}`}
+          className="inline-flex items-center gap-1.5 rounded-full border border-default px-4 py-1.5 text-sm text-secondary hover:bg-hover"
+        >
+          <Users className="h-3.5 w-3.5" aria-hidden="true" />
+          {t('companies.teamOnboardingTab')}
+        </Link>
       </nav>
 
       {/* Superadmin company selector */}
@@ -280,31 +296,23 @@ export default function CompanySettingsPage() {
               className={inputClass}
             />
           </div>
-          <div>
-            <label className={labelClass} htmlFor="brand-color">
-              {t('companies.brandColor')}
-            </label>
-            <div className="mt-1 flex items-center gap-2">
-              <button
-                type="button"
-                className="h-10 w-10 shrink-0 rounded-lg border border-default cursor-pointer"
-                style={{ backgroundColor: brandColor || '#4F46E5' }}
-                aria-label={t('companies.brandColor')}
-                onClick={() => {
-                  void navigator.clipboard.writeText(brandColor);
-                }}
-                title={brandColor}
-              />
-              <input
-                id="brand-color"
-                type="text"
-                value={brandColor}
-                onChange={(e) => setBrandColor(e.target.value)}
-                className="w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-                placeholder="#6366F1"
-              />
+          {isPremium && (
+            <div>
+              <label className={labelClass} htmlFor="brand-color">
+                {t('companies.brandColor')}
+              </label>
+              <div className="mt-1 flex items-center gap-3">
+                <input
+                  id="brand-color"
+                  type="color"
+                  value={brandColor}
+                  onChange={(e) => setBrandColor(e.target.value)}
+                  className="h-10 w-10 shrink-0 cursor-pointer rounded-lg border border-default bg-surface p-0.5"
+                />
+                <span className="text-sm font-mono text-secondary">{brandColor}</span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
         <div className="rounded-lg border border-default bg-raised p-3">
           <label className="flex cursor-pointer items-center gap-3">

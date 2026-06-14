@@ -308,7 +308,7 @@ export default function BookingDetailPage() {
             setFormSuccess(null);
             checkInMutation.mutate();
           }}
-          className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          className="w-full rounded-lg bg-brand py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
         >
           {checkInMutation.isPending ? t('booking.detail.checkInPending') : t('booking.detail.checkInBtn')}
         </button>

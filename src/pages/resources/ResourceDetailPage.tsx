@@ -173,7 +173,7 @@ export default function ResourceDetailPage() {
         <div className="px-6 pt-5 pb-4 border-b border-[color:var(--border-faint)]">
           <h2 className="text-base font-semibold text-primary tracking-[-0.015em]">{data.name}</h2>
           <p className="text-xs text-muted mt-0.5">
-            {t(RESOURCE_TYPE_LABEL_KEYS[data.type])} · {t('resources.detail.floorLabel', { floor: data.floor_number ?? data.floor })}
+            {t(RESOURCE_TYPE_LABEL_KEYS[data.type])} · {t('resources.detail.floorLabel', { floor: data.floor_number })}
           </p>
           {activeBlock && (
             <p className="mt-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-full inline-block px-2.5 py-0.5">
@@ -468,7 +468,7 @@ export default function ResourceDetailPage() {
               <button
                 type="button"
                 onClick={() => { setErrorMsg(null); setActivateModal(true); }}
-                className="h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                className="h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] border border-[color:var(--brand)] bg-brand-subtle text-brand hover:opacity-90 transition-colors"
               >
                 {t('common.activate')}
               </button>

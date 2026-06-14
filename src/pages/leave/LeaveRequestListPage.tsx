@@ -515,7 +515,7 @@ export default function LeaveRequestListPage() {
                 className={cn(
                   'rounded-lg px-3 py-2 text-sm font-medium text-primary',
                   reviewDialog.status === LEAVE_STATUSES.APPROVED
-                    ? 'bg-emerald-600 hover:bg-emerald-500'
+                    ? 'bg-brand hover:bg-brand-hover'
                     : 'bg-rose-600 hover:bg-rose-500',
                 )}
                 onClick={submitReview}

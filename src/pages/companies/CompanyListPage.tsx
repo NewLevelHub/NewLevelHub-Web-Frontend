@@ -6,13 +6,16 @@ import {
   Plus,
   Search,
   Building2,
-  ChevronDown,
   Trash2,
   PowerOff,
   Power,
   ChevronLeft,
   ChevronRight,
   Sparkle,
+  Check,
+  Minus,
+  X,
+  Zap,
 } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
@@ -103,10 +106,11 @@ function modalConfig(action: ModalAction, companyName: string, t: (k: string, op
 
 // ─── Skeleton row ─────────────────────────────────────────────────────────────
 
-function SkeletonRow() {
+function SkeletonRow({ isSuperadmin }: { isSuperadmin: boolean }) {
   const cell = 'bg-[color:var(--bg-raised)] animate-pulse rounded-[var(--radius-sm)]';
   return (
     <tr className="border-b border-[color:var(--border)]">
+      {isSuperadmin && <td className="px-3 py-2.5" />}
       <td className="px-3 py-2.5">
         <div className="flex items-center gap-2.5">
           <div className={cn('w-6 h-6 rounded-md shrink-0', cell)} />
@@ -201,6 +205,37 @@ export default function CompanyListPage() {
     }
   }, [isSuperadmin, authLoading, isLoading, companies, navigate]);
 
+  // ── Bulk selection state ────────────────────────────────────────────────────
+
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [confirmBulkActivate, setConfirmBulkActivate] = useState(false);
+  const [confirmBulkDeactivate, setConfirmBulkDeactivate] = useState(false);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+
+  // Reset selection when companies array changes (page turn / filter change)
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [companies]);
+
+  const allSelected = companies.length > 0 && selectedIds.size === companies.length;
+  const someSelected = selectedIds.size > 0 && selectedIds.size < companies.length;
+
+  function toggleSelectAll() {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(companies.map((c) => c.id)));
+    }
+  }
+
+  function toggleSelectRow(id: number) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
   // ── Mutations ──────────────────────────────────────────────────────────────
 
   const [modal, setModal] = useState<ModalState | null>(null);
@@ -244,6 +279,35 @@ export default function CompanyListPage() {
 
   const isPending =
     deactivateMutation.isPending || activateMutation.isPending || deleteMutation.isPending;
+
+  // ── Bulk mutations ─────────────────────────────────────────────────────────
+
+  const bulkActivateMutation = useMutation({
+    mutationFn: (ids: number[]) => apiClient.post(API.companies.bulkActivate, { ids }),
+    onSuccess: () => {
+      setSelectedIds(new Set());
+      setConfirmBulkActivate(false);
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+    },
+  });
+
+  const bulkDeactivateMutation = useMutation({
+    mutationFn: (ids: number[]) => apiClient.post(API.companies.bulkDeactivate, { ids }),
+    onSuccess: () => {
+      setSelectedIds(new Set());
+      setConfirmBulkDeactivate(false);
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+    },
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: number[]) => apiClient.delete(API.companies.bulkDelete, { data: { ids } }),
+    onSuccess: () => {
+      setSelectedIds(new Set());
+      setConfirmBulkDelete(false);
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+    },
+  });
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
@@ -301,6 +365,8 @@ export default function CompanyListPage() {
     { value: COMPANY_TIERS.STANDARD, label: t('companies.planStandard') },
     { value: COMPANY_TIERS.BASIC, label: t('companies.planBasic') },
   ];
+
+  const emptyStateColSpan = isSuperadmin ? 9 : 8;
 
   return (
     <div className="space-y-4">
@@ -403,6 +469,56 @@ export default function CompanyListPage() {
           </div>
         )}
 
+        {/* Bulk action bar */}
+        {isSuperadmin && selectedIds.size > 0 && (
+          <div className="flex items-center gap-3 rounded-xl border border-[var(--brand)] bg-brand-subtle px-4 py-2.5 text-sm mx-4 my-2">
+            <span className="font-medium text-[var(--brand-text)]">
+              {t('companies.bulk.selectedCount', { count: selectedIds.size })}
+            </span>
+            <div className="ml-auto flex items-center gap-2">
+              {/* Deselect All */}
+              <button
+                type="button"
+                onClick={() => setSelectedIds(new Set())}
+                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] text-[12px] font-medium text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors"
+              >
+                <X size={12} />
+                {t('companies.bulk.deselectAll')}
+              </button>
+              {/* Activate */}
+              <button
+                type="button"
+                onClick={() => setConfirmBulkActivate(true)}
+                disabled={bulkActivateMutation.isPending}
+                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-[var(--radius-sm)] bg-[color:var(--status-free-bg)] border border-[color:var(--status-free-text)] text-[12px] font-medium text-[color:var(--status-free-text)] hover:opacity-80 disabled:opacity-50 transition-colors"
+              >
+                <Zap size={12} />
+                {t('companies.bulk.activate')}
+              </button>
+              {/* Deactivate */}
+              <button
+                type="button"
+                onClick={() => setConfirmBulkDeactivate(true)}
+                disabled={bulkDeactivateMutation.isPending}
+                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-[var(--radius-sm)] bg-[color:var(--status-soon-bg)] border border-[color:var(--status-soon-text)] text-[12px] font-medium text-[color:var(--status-soon-text)] hover:opacity-80 disabled:opacity-50 transition-colors"
+              >
+                <PowerOff size={12} />
+                {t('companies.bulk.deactivate')}
+              </button>
+              {/* Delete */}
+              <button
+                type="button"
+                onClick={() => setConfirmBulkDelete(true)}
+                disabled={bulkDeleteMutation.isPending}
+                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-[var(--radius-sm)] bg-danger-subtle border border-[var(--danger)] text-[12px] font-medium text-danger hover:bg-[var(--danger)] hover:text-white disabled:opacity-50 transition-colors"
+              >
+                <Trash2 size={12} />
+                {t('companies.bulk.delete')}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Table */}
         <div className="overflow-x-auto">
           <table
@@ -412,6 +528,24 @@ export default function CompanyListPage() {
           >
             <thead>
               <tr className="border-b border-[color:var(--border)]">
+                {/* Checkbox header — superadmin only */}
+                {isSuperadmin && (
+                  <th className="w-[34px] px-3 py-2 text-left">
+                    <button
+                      type="button"
+                      onClick={toggleSelectAll}
+                      className={cn(
+                        'w-3.5 h-3.5 rounded-[3px] border-[1.5px] transition-colors flex items-center justify-center',
+                        allSelected || someSelected
+                          ? 'bg-[var(--brand)] border-[var(--brand)]'
+                          : 'border-[var(--border-strong)] hover:border-[var(--brand)]',
+                      )}
+                    >
+                      {allSelected && <Check size={10} strokeWidth={3} className="text-white" />}
+                      {someSelected && <Minus size={10} strokeWidth={3} className="text-white" />}
+                    </button>
+                  </th>
+                )}
                 <th
                   scope="col"
                   className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap"
@@ -464,10 +598,10 @@ export default function CompanyListPage() {
             </thead>
             <tbody>
               {showLoading ? (
-                Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)
+                Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} isSuperadmin={isSuperadmin} />)
               ) : companies.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-16 text-center">
+                  <td colSpan={emptyStateColSpan} className="py-16 text-center">
                     <div className="flex flex-col items-center gap-2">
                       <Building2 className="h-8 w-8 text-[color:var(--text-muted)]" aria-hidden="true" />
                       <p className="text-[13px] text-[color:var(--text-secondary)]">{t('companies.notFound')}</p>
@@ -482,12 +616,15 @@ export default function CompanyListPage() {
                       company={company}
                       detailBasePath={companiesBasePath}
                       isSuperadmin={isSuperadmin}
+                      isSelected={selectedIds.has(company.id)}
+                      onToggleSelect={() => toggleSelectRow(company.id)}
                       onDeactivate={() => openModal('deactivate', company)}
                       onActivate={() => openModal('activate', company)}
                       onDelete={() => openModal('delete', company)}
                     />
                   ))}
                   <tr className="bg-[color:var(--bg-raised)]/40 border-t border-[color:var(--border)]">
+                    {isSuperadmin && <td className="px-3 py-2" />}
                     <td className="px-3 py-2 text-[11px] font-medium text-[color:var(--text-muted)]">
                       {companies.length} {t('companies.footerCount')}
                     </td>
@@ -573,7 +710,38 @@ export default function CompanyListPage() {
         </div>
       )}
 
-      {/* Confirmation modal */}
+      {/* Bulk confirm modals */}
+      <ConfirmModal
+        isOpen={confirmBulkActivate}
+        onClose={() => !bulkActivateMutation.isPending && setConfirmBulkActivate(false)}
+        onConfirm={() => bulkActivateMutation.mutate(Array.from(selectedIds))}
+        title={t('companies.bulk.confirmActivateTitle')}
+        description={t('companies.bulk.confirmActivateBody', { count: selectedIds.size })}
+        variant="warning"
+        isLoading={bulkActivateMutation.isPending}
+      />
+
+      <ConfirmModal
+        isOpen={confirmBulkDeactivate}
+        onClose={() => !bulkDeactivateMutation.isPending && setConfirmBulkDeactivate(false)}
+        onConfirm={() => bulkDeactivateMutation.mutate(Array.from(selectedIds))}
+        title={t('companies.bulk.confirmDeactivateTitle')}
+        description={t('companies.bulk.confirmDeactivateBody', { count: selectedIds.size })}
+        variant="warning"
+        isLoading={bulkDeactivateMutation.isPending}
+      />
+
+      <ConfirmModal
+        isOpen={confirmBulkDelete}
+        onClose={() => !bulkDeleteMutation.isPending && setConfirmBulkDelete(false)}
+        onConfirm={() => bulkDeleteMutation.mutate(Array.from(selectedIds))}
+        title={t('companies.bulk.confirmDeleteTitle')}
+        description={t('companies.bulk.confirmDeleteBody', { count: selectedIds.size })}
+        variant="danger"
+        isLoading={bulkDeleteMutation.isPending}
+      />
+
+      {/* Single-company confirmation modal */}
       {modal && currentModal && (
         <ConfirmModal
           isOpen={true}
@@ -596,6 +764,8 @@ interface CompanyRowProps {
   company: Company;
   detailBasePath: string;
   isSuperadmin: boolean;
+  isSelected: boolean;
+  onToggleSelect: () => void;
   onDeactivate: () => void;
   onActivate: () => void;
   onDelete: () => void;
@@ -605,6 +775,8 @@ function CompanyRow({
   company,
   detailBasePath,
   isSuperadmin,
+  isSelected,
+  onToggleSelect,
   onDeactivate,
   onActivate,
   onDelete,
@@ -617,7 +789,32 @@ function CompanyRow({
   const createdDate = fmtDate(company.created_at, { month: 'short', year: 'numeric' });
 
   return (
-    <tr className="group border-b border-[color:var(--border)] hover:bg-[color:var(--bg-hover)] transition-colors">
+    <tr
+      className={cn(
+        'group border-b border-[color:var(--border)] transition-colors',
+        isSelected
+          ? 'bg-[color-mix(in_srgb,var(--brand)_7%,transparent)]'
+          : 'hover:bg-[color:var(--bg-hover)]',
+      )}
+    >
+      {/* Checkbox — superadmin only */}
+      {isSuperadmin && (
+        <td className="px-3 py-2.5 align-middle">
+          <button
+            type="button"
+            onClick={onToggleSelect}
+            className={cn(
+              'w-3.5 h-3.5 rounded-[3px] border-[1.5px] transition-colors flex items-center justify-center',
+              isSelected
+                ? 'bg-[var(--brand)] border-[var(--brand)]'
+                : 'border-[var(--border-strong)] hover:border-[var(--brand)]',
+            )}
+          >
+            {isSelected && <Check size={10} strokeWidth={3} className="text-white" />}
+          </button>
+        </td>
+      )}
+
       {/* Company column: avatar + name + floor/office */}
       <td className="px-3 py-2.5 align-middle font-medium text-[color:var(--text-primary)]">
         <div className="flex items-center gap-2.5">
