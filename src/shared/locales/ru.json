@@ -1702,6 +1702,7 @@
     "columnMethod": "Метод",
     "columnDetails": "Детали",
     "columnGuest": "Гость",
+    "columnCreatedBy": "Создал",
     "columnVisitDate": "Дата визита",
     "columnVisitTime": "Время",
     "columnActions": "Действия",

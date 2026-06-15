@@ -2,26 +2,20 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
-import { fmtDateTime } from '@/shared/lib/formatDate';
+import { PASS_STATUSES, PASS_STATUS_LABEL_KEYS } from '@/shared/config/constants';
+import { fmtDate } from '@/shared/lib/formatDate';
 import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import { PassQRPanel } from '@/pages/passes/components/PassQRPanel';
+import { PassStatusBadge } from '@/pages/passes/components/PassStatusBadge';
 import { useAccessLogs } from '@/pages/passes/hooks/useAccessLogs';
-
-function fmt(value: string | null | undefined) {
-  if (!value) return '—';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return fmtDateTime(date);
-}
 
 export default function PassListPage() {
   const { t } = useTranslation();
   const [selectedPassId, setSelectedPassId] = useState<number | null>(null);
 
   const {
-    logs,
-    guestPassMap,
+    passes,
     companiesData,
     isLoading,
     isError,
@@ -36,6 +30,8 @@ export default function PassListPage() {
     setDateTo,
     companyId,
     setCompanyId,
+    status,
+    setStatus,
     page,
     setPage,
     totalCount,
@@ -43,6 +39,7 @@ export default function PassListPage() {
     handleExport,
     isExporting,
     exportError,
+    isAdminView,
   } = useAccessLogs();
 
   return (
@@ -53,14 +50,16 @@ export default function PassListPage() {
           <p className="text-sm text-secondary">{t('passes.listSubtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleExport}
-            disabled={isExporting}
-            className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isExporting ? t('common.exportingPlain') : t('common.exportCsv')}
-          </button>
+          {isAdminView && (
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={isExporting}
+              className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isExporting ? t('common.exportingPlain') : t('common.exportCsv')}
+            </button>
+          )}
           <Link
             to="/passes/new"
             className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
@@ -71,16 +70,13 @@ export default function PassListPage() {
       </div>
 
       <section className="rounded-xl border border-default bg-raised p-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className={cn('grid gap-3 sm:grid-cols-2', isSuperadmin ? 'lg:grid-cols-5' : 'lg:grid-cols-4')}>
           <label className="text-sm text-secondary">
             {t('common.search')}
             <input
               type="search"
               value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               placeholder={t('access.searchPlaceholder')}
             />
@@ -91,10 +87,7 @@ export default function PassListPage() {
             <input
               type="date"
               value={dateFrom}
-              onChange={(e) => {
-                setDateFrom(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
               className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             />
           </label>
@@ -104,12 +97,23 @@ export default function PassListPage() {
             <input
               type="date"
               value={dateTo}
-              onChange={(e) => {
-                setDateTo(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
               className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
             />
+          </label>
+
+          <label className="text-sm text-secondary">
+            {t('common.status')}
+            <select
+              value={status}
+              onChange={(e) => { setStatus(e.target.value as typeof status); setPage(1); }}
+              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+            >
+              <option value="">{t('common.all')}</option>
+              {(Object.values(PASS_STATUSES)).map((s) => (
+                <option key={s} value={s}>{t(PASS_STATUS_LABEL_KEYS[s])}</option>
+              ))}
+            </select>
           </label>
 
           {isSuperadmin ? (
@@ -117,10 +121,7 @@ export default function PassListPage() {
               {t('common.company')}
               <select
                 value={companyId}
-                onChange={(e) => {
-                  setCompanyId(e.target.value);
-                  setPage(1);
-                }}
+                onChange={(e) => { setCompanyId(e.target.value); setPage(1); }}
                 className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               >
                 <option value="">
@@ -147,64 +148,52 @@ export default function PassListPage() {
               <table className="w-full min-w-[700px] divide-y divide-[color:var(--border)] text-sm">
                 <thead className="bg-surface text-left text-secondary">
                   <tr>
-                    <th className="px-4 py-3">{t('team.roleGuest')}</th>
+                    <th className="px-4 py-3">{t('passes.columnGuest')}</th>
                     <th className="px-4 py-3">{t('common.company')}</th>
-                    <th className="px-4 py-3">{t('access.invited')}</th>
-                    <th className="px-4 py-3">{t('access.validated')}</th>
-                    <th className="px-4 py-3">{t('access.validatedAt')}</th>
-                    <th className="px-4 py-3">{t('access.method')}</th>
+                    <th className="px-4 py-3">{t('passes.columnCreatedBy')}</th>
+                    <th className="px-4 py-3">{t('passes.columnPeriod')}</th>
+                    <th className="px-4 py-3">{t('common.status')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[color:var(--border)]">
                   {isLoading ? (
                     <tr>
-                      <td className="px-4 py-6 text-center text-secondary" colSpan={6}>
+                      <td className="px-4 py-6 text-center text-secondary" colSpan={5}>
                         {t('access.loadingLog')}
                       </td>
                     </tr>
-                  ) : logs.length === 0 ? (
+                  ) : passes.length === 0 ? (
                     <tr>
-                      <td className="px-4 py-6 text-center text-secondary" colSpan={6}>
+                      <td className="px-4 py-6 text-center text-secondary" colSpan={5}>
                         {t('access.noResults')}
                       </td>
                     </tr>
                   ) : (
-                    logs.map((log) => {
-                      const passId = typeof log.guest_pass === 'number' ? log.guest_pass : null;
-                      const isSelected = passId !== null && passId === selectedPassId;
+                    passes.map((pass) => {
+                      const isSelected = pass.id === selectedPassId;
                       return (
                         <tr
-                          key={log.id}
+                          key={pass.id}
+                          onClick={() => setSelectedPassId(isSelected ? null : pass.id)}
                           className={cn(
-                            'text-secondary transition-colors',
-                            passId !== null && 'cursor-pointer hover:bg-hover/40 transition-colors',
+                            'cursor-pointer text-secondary transition-colors hover:bg-hover/40',
                             isSelected && 'bg-[color:var(--bg-active)]',
                           )}
-                          onClick={() => passId !== null && setSelectedPassId(isSelected ? null : passId)}
                         >
                           <td className="px-4 py-3 align-top">
-                            {passId !== null && guestPassMap[passId] ? (
-                              <div>
-                                <div className="font-medium text-primary">
-                                  {guestPassMap[passId].guest_name}
-                                </div>
-                                <div className="text-xs text-secondary">
-                                  {guestPassMap[passId].guest_email}
-                                </div>
-                              </div>
-                            ) : (
-                              '—'
-                            )}
+                            <div className="font-medium text-primary">{pass.guest_name}</div>
+                            <div className="text-xs text-secondary">{pass.guest_email}</div>
                           </td>
                           <td className="px-4 py-3 align-top">
-                            {passId !== null
-                              ? (guestPassMap[passId]?.created_by_company_name ?? '—')
-                              : '—'}
+                            {pass.created_by_company_name ?? '—'}
                           </td>
-                          <td className="px-4 py-3 align-top">{log.invited_by ?? '—'}</td>
-                          <td className="px-4 py-3 align-top">{log.validated_by ?? '—'}</td>
-                          <td className="px-4 py-3 align-top whitespace-nowrap">{fmt(log.validated_at)}</td>
-                          <td className="px-4 py-3 align-top">{log.method || '—'}</td>
+                          <td className="px-4 py-3 align-top">{pass.created_by_name}</td>
+                          <td className="px-4 py-3 align-top whitespace-nowrap">
+                            {fmtDate(pass.valid_from)} — {fmtDate(pass.valid_until)}
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <PassStatusBadge status={pass.status} />
+                          </td>
                         </tr>
                       );
                     })
@@ -225,9 +214,7 @@ export default function PassListPage() {
               >
                 {t('common.back')}
               </button>
-              <span className="text-secondary">
-                {t('access.pageOf', { page, total: totalPages })}
-              </span>
+              <span>{t('access.pageOf', { page, total: totalPages })}</span>
               <button
                 type="button"
                 disabled={page >= totalPages || isLoading}

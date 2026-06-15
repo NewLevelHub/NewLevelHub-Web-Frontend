@@ -1707,6 +1707,7 @@
     "columnMethod": "Method",
     "columnDetails": "Details",
     "columnGuest": "Guest",
+    "columnCreatedBy": "Created by",
     "columnVisitDate": "Visit date",
     "columnVisitTime": "Time",
     "columnActions": "Actions",

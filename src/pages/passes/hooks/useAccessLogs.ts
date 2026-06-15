@@ -3,73 +3,57 @@ import { useQuery } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { USER_ROLES } from '@/shared/config/constants';
+import { USER_ROLES, type PassStatus } from '@/shared/config/constants';
 import { useUser } from '@/shared/hooks/useAuth';
+import { useDebounce } from '@/pages/crm/hooks/useDebounce';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { getApiError } from '@/shared/lib/getApiError';
-import type { AccessLogEntry, Company, GuestPass, PaginatedResponse } from '@/shared/types';
+import type { Company, GuestPass, PaginatedResponse } from '@/shared/types';
 
 const PAGE_SIZE = 20;
+const DEBOUNCE_MS = 400;
 
 export function useAccessLogs() {
   const user = useUser();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
+  const isAdminView =
+    user?.role === USER_ROLES.SUPERADMIN || user?.role === USER_ROLES.COMPANY_ADMIN;
 
   const [search, setSearch] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [companyId, setCompanyId] = useState('');
+  const [status, setStatus] = useState<PassStatus | ''>('');
   const [page, setPage] = useState(1);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
+  const debouncedSearch = useDebounce(search.trim(), DEBOUNCE_MS);
+
   const params = useMemo(() => {
-    const query: Record<string, string | number> = {
+    const q: Record<string, string | number> = {
       page,
       page_size: PAGE_SIZE,
-      ordering: '-validated_at',
     };
-    if (search.trim()) query.search = search.trim();
-    if (dateFrom) query.date_from = dateFrom;
-    if (dateTo) query.date_to = dateTo;
-    if (isSuperadmin && companyId.trim()) query.company_id = companyId.trim();
-    return query;
-  }, [companyId, dateFrom, dateTo, isSuperadmin, page, search]);
+    if (debouncedSearch) q.guest_name = debouncedSearch;
+    if (dateFrom) q.valid_from_after = dateFrom;
+    if (dateTo) q.valid_from_before = dateTo;
+    if (isSuperadmin && companyId.trim()) q.company_id = companyId.trim();
+    if (status) q.status = status;
+    return q;
+  }, [companyId, dateFrom, dateTo, debouncedSearch, isSuperadmin, page, status]);
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['access-logs', params],
+    queryKey: ['guest-passes', params],
     queryFn: () =>
       apiClient
-        .get<PaginatedResponse<AccessLogEntry>>(API.accessLog.list, { params })
+        .get<PaginatedResponse<GuestPass>>(API.passes.list, { params })
         .then((r) => r.data),
     placeholderData: (prev) => prev,
-    refetchInterval: page === 1 ? 10_000 : false,
-  });
-
-  const guestPassIds = useMemo(() => {
-    const ids = new Set<number>();
-    for (const log of data?.results ?? []) {
-      if (typeof log.guest_pass === 'number') ids.add(log.guest_pass);
-    }
-    return Array.from(ids);
-  }, [data?.results]);
-
-  const { data: guestPassMap } = useQuery({
-    queryKey: ['access-log-guest-passes', guestPassIds],
-    queryFn: async () => {
-      const entries = await Promise.all(
-        guestPassIds.map(async (passId) => {
-          const r = await apiClient.get<GuestPass>(API.passes.detail(String(passId)));
-          return [passId, r.data] as const;
-        }),
-      );
-      return Object.fromEntries(entries) as Record<number, GuestPass>;
-    },
-    enabled: guestPassIds.length > 0,
   });
 
   const { data: companiesData, isLoading: isCompaniesLoading } = useQuery({
-    queryKey: [...companiesCacheRoot(user?.id), 'access-log-companies'],
+    queryKey: [...companiesCacheRoot(user?.id), 'passes-companies'],
     queryFn: () =>
       apiClient
         .get<PaginatedResponse<Company>>(API.companies.list, { params: { page_size: 200 } })
@@ -84,13 +68,14 @@ export function useAccessLogs() {
     try {
       setIsExporting(true);
       setExportError(null);
-      const exportParams: Record<string, string> = { format: 'csv' };
-      if (dateFrom) exportParams.date_from = dateFrom;
-      if (dateTo) exportParams.date_to = dateTo;
+      const exportParams: Record<string, string> = {};
+      if (debouncedSearch) exportParams.guest_name = debouncedSearch;
+      if (dateFrom) exportParams.valid_from_after = dateFrom;
+      if (dateTo) exportParams.valid_from_before = dateTo;
       if (isSuperadmin && companyId.trim()) exportParams.company_id = companyId.trim();
-      if (search.trim()) exportParams.search = search.trim();
+      if (status) exportParams.status = status;
 
-      const response = await apiClient.get<Blob>(API.accessLog.export, {
+      const response = await apiClient.get<Blob>(API.passes.export, {
         params: exportParams,
         responseType: 'blob',
         headers: { Accept: 'text/csv, */*;q=0.9' },
@@ -98,9 +83,8 @@ export function useAccessLogs() {
       const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      const stamp = new Date().toISOString().slice(0, 10);
       link.href = url;
-      link.setAttribute('download', `access_logs_${stamp}.csv`);
+      link.setAttribute('download', `passes_${new Date().toISOString().slice(0, 10)}.csv`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -110,17 +94,17 @@ export function useAccessLogs() {
     } finally {
       setIsExporting(false);
     }
-  }, [companyId, dateFrom, dateTo, isSuperadmin, search]);
+  }, [companyId, dateFrom, dateTo, debouncedSearch, isSuperadmin, status]);
 
   return {
-    logs: data?.results ?? [],
-    guestPassMap: guestPassMap ?? {},
+    passes: data?.results ?? [],
     companiesData,
     isLoading,
     isError,
     error,
     isCompaniesLoading,
     isSuperadmin,
+    isAdminView,
     search,
     setSearch,
     dateFrom,
@@ -129,6 +113,8 @@ export function useAccessLogs() {
     setDateTo,
     companyId,
     setCompanyId,
+    status,
+    setStatus,
     page,
     setPage,
     totalCount,
