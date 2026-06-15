@@ -19,6 +19,7 @@ import {
   Bell,
   Ban,
   Trash2,
+  ClipboardList,
   type LucideIcon,
 } from 'lucide-react';
 import { STAFF_UI_PREFIX, SUPERADMIN_UI_PREFIX, USER_ROLES, type UserRole } from '@/shared/config/constants';
@@ -49,6 +50,7 @@ const superadminNav: NavSection[] = [
       { labelKey: 'sidebar.navItem.cancellationAudit', path: `${STAFF_UI_PREFIX}/bookings/cancellation-audit`,    icon: Ban },
       { labelKey: 'sidebar.navItem.passes',             path: '/passes',                                           icon: ShieldCheck },
       { labelKey: 'sidebar.navItem.qrCheck',         path: '/access/validate',                      icon: ShieldCheck },
+      { labelKey: 'sidebar.navItem.accessLog',        path: '/access/logs',                          icon: ClipboardList },
     ],
   },
   {
@@ -108,6 +110,7 @@ const companyAdminNav: NavSection[] = [
       { labelKey: 'sidebar.navItem.cancellationAudit', path: `${STAFF_UI_PREFIX}/bookings/cancellation-audit`,    icon: Ban },
       { labelKey: 'sidebar.navItem.buildingMap',        path: '/building/map',                                     icon: Map },
       { labelKey: 'sidebar.navItem.guestPasses',     path: '/passes',                               icon: ShieldCheck },
+      { labelKey: 'sidebar.navItem.accessLog',       path: '/access/logs',                          icon: ClipboardList },
       { labelKey: 'sidebar.navItem.files',           path: '/storage',                              icon: FileText },
       { labelKey: 'sidebar.navItem.trash',           path: '/storage/trash',                        icon: Trash2 },
       { labelKey: 'sidebar.navItem.announcements',   path: '/announcements',                        icon: Megaphone },

@@ -132,10 +132,8 @@ export default function AccessLogPage() {
     <main className="mx-auto max-w-7xl space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-primary">Лог доступа</h1>
-          <p className="text-sm text-secondary">
-            История валидаций QR-пропусков и ручных проверок доступа.
-          </p>
+          <h1 className="text-2xl font-bold text-primary">{t('access.title')}</h1>
+          <p className="text-sm text-secondary">{t('access.subtitle')}</p>
         </div>
         <button
           type="button"
@@ -143,7 +141,7 @@ export default function AccessLogPage() {
           disabled={isExporting}
           className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isExporting ? 'Экспорт...' : t('common.exportCsv')}
+          {isExporting ? t('common.exportingPlain') : t('common.exportCsv')}
         </button>
       </div>
 
@@ -157,12 +155,12 @@ export default function AccessLogPage() {
                 setPage(1);
               }}
               className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-              placeholder="Имя или email гостя"
+              placeholder={t('access.searchPlaceholder')}
             />
           </label>
 
           <label className="text-sm text-secondary">
-            Дата от
+            {t('access.dateFrom')}
             <input
               type="date"
               value={dateFrom}
@@ -175,7 +173,7 @@ export default function AccessLogPage() {
           </label>
 
           <label className="text-sm text-secondary">
-            Дата до
+            {t('access.dateTo')}
             <input
               type="date"
               value={dateTo}
@@ -196,7 +194,7 @@ export default function AccessLogPage() {
                 }}
                 className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
               >
-                <option value="">{isCompaniesLoading ? 'Загрузка компаний...' : t('common.allCompanies')}</option>
+                <option value="">{isCompaniesLoading ? t('access.loadingCompanies') : t('common.allCompanies')}</option>
                 {(companiesData?.results ?? []).map((company) => (
                   <option key={company.id} value={String(company.id)}>
                     {company.name}
@@ -218,23 +216,23 @@ export default function AccessLogPage() {
               <tr>
                 <th className="px-4 py-3">{t('team.roleGuest')}</th>
                 <th className="px-4 py-3">{t('common.company')}</th>
-                <th className="px-4 py-3">Пригласил</th>
-                <th className="px-4 py-3">Проверил</th>
-                <th className="px-4 py-3">Валидирован</th>
-                <th className="px-4 py-3">Метод</th>
+                <th className="px-4 py-3">{t('access.invited')}</th>
+                <th className="px-4 py-3">{t('access.validated')}</th>
+                <th className="px-4 py-3">{t('access.validatedAt')}</th>
+                <th className="px-4 py-3">{t('access.method')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[color:var(--border)]">
               {isLoading ? (
                 <tr>
                   <td className="px-4 py-6 text-center text-secondary" colSpan={6}>
-                    Загрузка лога...
+                    {t('access.loadingLog')}
                   </td>
                 </tr>
               ) : (data?.results?.length ?? 0) === 0 ? (
                 <tr>
                   <td className="px-4 py-6 text-center text-secondary" colSpan={6}>
-                    По выбранным фильтрам ничего не найдено.
+                    {t('access.noResults')}
                   </td>
                 </tr>
               ) : (
@@ -268,9 +266,7 @@ export default function AccessLogPage() {
       </div>
 
       <div className="flex flex-col gap-3 text-sm text-secondary sm:flex-row sm:items-center sm:justify-between">
-        <span>
-          Всего записей: {totalCount}
-        </span>
+        <span>{t('access.totalRecords', { count: totalCount })}</span>
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -279,7 +275,7 @@ export default function AccessLogPage() {
             className="rounded-lg border border-default px-3 py-2 text-secondary hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
           >{t('common.back')}</button>
           <span className="text-secondary">
-            Страница {page} из {totalPages}
+            {t('access.pageOf', { page, total: totalPages })}
           </span>
           <button
             type="button"
@@ -287,7 +283,7 @@ export default function AccessLogPage() {
             onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
             className="rounded-lg border border-default px-3 py-2 text-secondary hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Вперед
+            {t('access.forward')}
           </button>
         </div>
       </div>
