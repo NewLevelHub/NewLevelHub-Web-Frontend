@@ -6,6 +6,7 @@ import { useAuthStore } from '@/shared/store/auth';
 import { useTheme } from '@/shared/hooks/useTheme';
 import { sidebarConfig, type NavSection } from './sidebar-config';
 import { cn } from '@/shared/lib/cn';
+import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -63,6 +64,7 @@ export function Sidebar({ mobileOpen, onCloseMobile, collapsed, onToggleCollapse
   }, [mobileOpen]);
 
   const initials = (user.first_name?.[0] ?? user.email[0] ?? '').toUpperCase();
+  const avatarUrl = resolveMediaUrl(user.avatar);
 
   return (
     <>
@@ -246,9 +248,13 @@ export function Sidebar({ mobileOpen, onCloseMobile, collapsed, onToggleCollapse
           {/* User block */}
           {collapsed ? (
             <div className="border-t border-default pt-2.5 mt-1 flex flex-col items-center gap-1.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-raised text-[12px] font-semibold text-primary">
-                {initials}
-              </div>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={initials} className="h-7 w-7 rounded-full object-cover" />
+              ) : (
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-raised text-[12px] font-semibold text-primary">
+                  {initials}
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => logout()}
@@ -260,9 +266,13 @@ export function Sidebar({ mobileOpen, onCloseMobile, collapsed, onToggleCollapse
             </div>
           ) : (
             <div className="border-t border-default pt-2.5 mt-1 flex items-center gap-2.5">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-raised text-[12px] font-semibold text-primary">
-                {initials}
-              </div>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={initials} className="h-7 w-7 shrink-0 rounded-full object-cover" />
+              ) : (
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-raised text-[12px] font-semibold text-primary">
+                  {initials}
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <p className="truncate text-[13px] font-medium text-primary leading-tight">
                   {user.full_name || user.email}
