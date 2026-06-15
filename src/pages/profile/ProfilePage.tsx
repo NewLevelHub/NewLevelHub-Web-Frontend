@@ -190,6 +190,10 @@ export default function ProfilePage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['profile'] });
       await fetchMe();
+      await queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+      await queryClient.invalidateQueries({ queryKey: ['company-members'] });
+      await queryClient.invalidateQueries({ queryKey: ['company-directory'] });
+      await queryClient.invalidateQueries({ queryKey: ['company-directory-profile'] });
       setAvatarPreview(null);
       setAvatarError(null);
     },
@@ -204,6 +208,10 @@ export default function ProfilePage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['profile'] });
       await fetchMe();
+      await queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+      await queryClient.invalidateQueries({ queryKey: ['company-members'] });
+      await queryClient.invalidateQueries({ queryKey: ['company-directory'] });
+      await queryClient.invalidateQueries({ queryKey: ['company-directory-profile'] });
       setAvatarPreview(null);
       setAvatarError(null);
     },
