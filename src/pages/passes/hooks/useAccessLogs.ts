@@ -35,7 +35,7 @@ export function useAccessLogs() {
       page,
       page_size: PAGE_SIZE,
     };
-    if (debouncedSearch) q.guest_name = debouncedSearch;
+    if (debouncedSearch) q.search = debouncedSearch;
     if (dateFrom) q.valid_from_after = dateFrom;
     if (dateTo) q.valid_from_before = dateTo;
     if (isSuperadmin && companyId.trim()) q.company_id = companyId.trim();
@@ -69,7 +69,7 @@ export function useAccessLogs() {
       setIsExporting(true);
       setExportError(null);
       const exportParams: Record<string, string> = {};
-      if (debouncedSearch) exportParams.guest_name = debouncedSearch;
+      if (debouncedSearch) exportParams.search = debouncedSearch;
       if (dateFrom) exportParams.valid_from_after = dateFrom;
       if (dateTo) exportParams.valid_from_before = dateTo;
       if (isSuperadmin && companyId.trim()) exportParams.company_id = companyId.trim();
