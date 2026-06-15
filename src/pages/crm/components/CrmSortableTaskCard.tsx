@@ -20,6 +20,7 @@ export function CrmSortableTaskCard({ task, onTaskClick, onArchive }: CrmSortabl
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
+    touchAction: 'none',
   };
 
   return (

@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Loader2, Minus, Pencil, Plus, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
+import { Layers, Loader2, Minus, Pencil, Plus, ToggleLeft, ToggleRight, Trash2, X } from 'lucide-react';
 
 import { cn } from '@/shared/lib/cn';
 import { fmtTime } from '@/shared/lib/formatDate';
@@ -154,6 +154,7 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
   const [cleaningFloorId, setCleaningFloorId] = useState<string>('');
   const [cleaningLocation, setCleaningLocation] = useState<string>('');
   const [cleaningKey, setCleaningKey] = useState(0);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -191,10 +192,33 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
     setIsPanning(false);
   }, []);
 
+  const handleCanvasTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if (editMode) return;
+    if (e.touches.length !== 1) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) return;
+    const touch = e.touches[0];
+    panStart.current = { mx: touch.clientX, my: touch.clientY, px: pan.x, py: pan.y };
+    setIsPanning(true);
+  }, [editMode, pan]);
+
+  const handleCanvasTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if (!panStart.current || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - panStart.current.mx;
+    const dy = touch.clientY - panStart.current.my;
+    setPan({ x: panStart.current.px + dx, y: panStart.current.py + dy });
+  }, []);
+
+  const handleCanvasTouchEnd = useCallback(() => {
+    panStart.current = null;
+    setIsPanning(false);
+  }, []);
+
   return (
     <div className="flex flex-col gap-4 p-6">
       {/* Page header + search */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-primary">{t('map.buildingMap')}</h1>
           {floorMap && statusCounts && (
@@ -221,15 +245,14 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
 
       {/* MAP FRAME: left sidebar + right stage */}
       <div
-        className="grid overflow-hidden rounded-xl border border-default bg-surface"
+        className="grid overflow-hidden rounded-xl border border-default bg-surface md:grid-cols-[200px_1fr]"
         style={{
-          gridTemplateColumns: '200px 1fr',
           minHeight: '540px',
           boxShadow: 'var(--shadow-card)',
         }}
       >
         {/* LEFT SIDEBAR */}
-        <div className="flex flex-col gap-1 border-r border-default bg-raised p-3">
+        <div className="hidden flex-col gap-1 border-r border-default bg-raised p-3 md:flex">
           {/* Floors section */}
           <p className="px-2 pb-2.5 pt-1 text-[11px] font-medium uppercase tracking-wider text-muted">
             {t('map.floorsTitle')}
@@ -380,6 +403,15 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
               </span>
             )}
 
+            <button
+              type="button"
+              onClick={() => setMobileSidebarOpen(true)}
+              className="flex items-center gap-1.5 rounded-md border border-default bg-surface px-3 py-1.5 text-[12px] font-medium text-secondary transition-colors hover:bg-raised md:hidden"
+            >
+              <Layers className="h-3.5 w-3.5" aria-hidden="true" />
+              {t('map.floorsTitle')}
+            </button>
+
             <div className="ml-auto flex items-center gap-2">
               {/* 2D / 3D toggle — only when floorMap is ready */}
               {floorMap && !mapLoading && !mapError && (
@@ -483,11 +515,15 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
                       linear-gradient(90deg, var(--border-faint) 1px, transparent 1px) 0 0/24px 24px,
                       var(--bg-page)
                     `,
+                    touchAction: editMode ? 'auto' : 'none',
                   }}
                   onMouseDown={handleCanvasMouseDown}
                   onMouseMove={handleCanvasMouseMove}
                   onMouseUp={handleCanvasMouseUp}
                   onMouseLeave={handleCanvasMouseUp}
+                  onTouchStart={handleCanvasTouchStart}
+                  onTouchMove={handleCanvasTouchMove}
+                  onTouchEnd={handleCanvasTouchEnd}
                 >
                   {/* 3D perspective wrapper */}
                   <div
@@ -717,6 +753,128 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
         initialFloorId={cleaningFloorId}
         initialLocation={cleaningLocation}
       />
+
+      {/* Mobile floor picker bottom sheet */}
+      {mobileSidebarOpen && createPortal(
+        <div
+          className="fixed inset-0 z-50 md:hidden"
+          style={{ background: 'rgba(0,0,0,0.4)' }}
+          onClick={() => setMobileSidebarOpen(false)}
+        >
+          <div
+            className="absolute bottom-0 left-0 right-0 flex flex-col gap-1 rounded-t-2xl border-t border-default bg-surface p-4"
+            style={{ maxHeight: '60vh', overflowY: 'auto', boxShadow: 'var(--shadow-card)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-muted">
+                {t('map.floorsTitle')}
+              </p>
+              <button
+                type="button"
+                onClick={() => setMobileSidebarOpen(false)}
+                className="flex h-6 w-6 items-center justify-center rounded text-muted hover:bg-hover focus:outline-none"
+                aria-label={t('common.close')}
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+
+            {floorsLoading && (
+              <div className="flex items-center gap-2 px-2 py-1 text-xs text-muted">
+                <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                ...
+              </div>
+            )}
+
+            {floors?.map((floor) => {
+              const isSelected = selectedFloorId === floor.id;
+              const pct = Math.max(0, Math.min(100, floor.occupancy_pct ?? 0));
+              return (
+                <div
+                  key={floor.id}
+                  role="tab"
+                  aria-selected={isSelected}
+                  className={cn(
+                    'group flex w-full flex-col gap-0.5 rounded-md px-2.5 py-2 transition-colors',
+                    isSelected ? 'bg-active' : 'hover:bg-hover',
+                  )}
+                >
+                  <div className="flex w-full items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => { handleSelectFloor(floor.id); setMobileSidebarOpen(false); }}
+                      className={cn(
+                        'min-w-0 flex-1 truncate text-left text-[13px] font-medium transition-colors',
+                        isSelected ? 'text-[var(--brand-text)] font-semibold' : 'text-secondary',
+                      )}
+                    >
+                      {floor.name || `${t('map.floorFallbackName')} ${floor.number}`}
+                    </button>
+                  </div>
+                  <div className="mt-1 flex items-center gap-1.5">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--bg-hover)]">
+                      <span
+                        role="progressbar"
+                        aria-valuenow={pct}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        className={cn(
+                          'block h-full rounded-full transition-all',
+                          pct > 70 ? 'bg-[var(--danger)]' : pct >= 50 ? 'bg-amber-500' : 'bg-emerald-500',
+                        )}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="whitespace-nowrap font-mono text-[10px] text-muted">{pct}%</span>
+                  </div>
+                </div>
+              );
+            })}
+
+            {isSuperadmin && (
+              <button
+                type="button"
+                onClick={() => { onOpenCreateFloor(); setMobileSidebarOpen(false); }}
+                className={cn(
+                  'mt-1 flex w-full items-center gap-1.5 rounded-md px-2.5 py-1.5 text-left text-[12px] font-medium transition-colors',
+                  editMode
+                    ? 'text-[var(--brand-text)] hover:bg-active'
+                    : 'text-muted hover:bg-hover hover:text-primary',
+                )}
+              >
+                <Plus className="h-3 w-3" aria-hidden="true" />
+                {t('map.addFloor')}
+              </button>
+            )}
+
+            <div className="my-2 border-t border-default" />
+
+            <p className="px-2 pb-2 text-[11px] font-medium uppercase tracking-wider text-muted">
+              {t('map.legendTitle')}
+            </p>
+            {LEGEND_STATUS_KEYS.map((status) => (
+              <div key={status} className="flex items-center gap-2 px-2 py-1 text-[12px] text-muted">
+                <span
+                  className={cn(
+                    'block h-3.5 w-3.5 shrink-0 rounded-[3px] border',
+                    LEGEND_ITEM_COLORS[status],
+                    status === 'free' && 'border-emerald-600',
+                    status === 'occupied' && 'border-rose-600',
+                    status === 'soon_available' && 'border-amber-600',
+                    status === 'none' && 'border-stone-600',
+                  )}
+                />
+                <span>
+                  {t(POINT_STATUS_LABEL_KEYS[status])}
+                  {statusCounts ? ` (${statusCounts[status]})` : ''}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>,
+        document.body,
+      )}
     </div>
   );
 });
