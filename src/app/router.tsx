@@ -282,7 +282,7 @@ export const router = createBrowserRouter([
               { path: '/announcements/new', element: <AnnouncementCreatePage /> },
               { path: '/analytics', element: <AnalyticsDashboardPage /> },
               { path: '/company/analytics', element: <AnalyticsDashboardPage /> },
-              { path: '/access/logs', element: <Navigate to="/passes" replace /> },
+
             ],
           },
 

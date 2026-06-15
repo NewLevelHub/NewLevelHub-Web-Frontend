@@ -1707,6 +1707,7 @@
     "columnMethod": "Method",
     "columnDetails": "Details",
     "columnGuest": "Guest",
+    "columnCreatedBy": "Created by",
     "columnVisitDate": "Visit date",
     "columnVisitTime": "Time",
     "columnActions": "Actions",
@@ -2260,7 +2261,10 @@
     "invited": "Invited by",
     "validated": "Validated by",
     "validatedAt": "Validated at",
-    "method": "Method"
+    "method": "Method",
+    "dateFrom": "Date from",
+    "dateTo": "Date to",
+    "forward": "Forward"
   },
   "announcements": {
     "enableOnboarding": "Enable onboarding process",

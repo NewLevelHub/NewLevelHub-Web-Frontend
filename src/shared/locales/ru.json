@@ -1702,6 +1702,7 @@
     "columnMethod": "Метод",
     "columnDetails": "Детали",
     "columnGuest": "Гость",
+    "columnCreatedBy": "Создал",
     "columnVisitDate": "Дата визита",
     "columnVisitTime": "Время",
     "columnActions": "Действия",
@@ -2255,7 +2256,10 @@
     "invited": "Пригласил",
     "validated": "Проверил",
     "validatedAt": "Валидирован",
-    "method": "Метод"
+    "method": "Метод",
+    "dateFrom": "Дата от",
+    "dateTo": "Дата до",
+    "forward": "Вперёд"
   },
   "announcements": {
     "enableOnboarding": "Включить onboarding-процесс",
