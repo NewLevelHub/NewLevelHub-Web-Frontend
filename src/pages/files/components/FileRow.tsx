@@ -125,16 +125,20 @@ export const FileRow = memo(function FileRow({
             {isSelected && <Check size={10} strokeWidth={3} className="text-white" />}
           </button>
         </td>
-        <td className="px-3 py-2.5 min-w-0">
-          <span className="font-medium text-primary truncate block">{file.name}</span>
+        <td className="min-w-0 px-3 py-2.5">
+          <span className="block truncate font-medium text-primary">{file.name}</span>
+          <span className="mt-0.5 flex items-center gap-2 text-[11px] text-muted sm:hidden">
+            <FileTypeBadge name={file.name} />
+            <span className="font-mono">{formatFileSize(file.file_size ?? file.size ?? 0)}</span>
+          </span>
         </td>
-        <td className="px-3 py-2.5">
+        <td className="hidden px-3 py-2.5 md:table-cell">
           <FileTypeBadge name={file.name} />
         </td>
-        <td className="px-3 py-2.5 font-mono text-[12px] text-muted whitespace-nowrap">
+        <td className="px-3 py-2.5 font-mono text-[12px] text-muted whitespace-nowrap hidden sm:table-cell">
           {formatFileSize(file.file_size ?? file.size ?? 0)}
         </td>
-        <td className="px-3 py-2.5 text-muted whitespace-nowrap">
+        <td className="hidden px-3 py-2.5 text-muted whitespace-nowrap lg:table-cell">
           {relativeDate(file.created_at, lang)}
         </td>
         <td className="px-3 py-2.5">
