@@ -200,7 +200,8 @@ export function FilesTableShell({
       )}
 
       <div className="bg-surface border border-default rounded-xl overflow-hidden">
-        <table className="w-full border-collapse text-[13px]">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-0 border-collapse text-[13px]">
           <thead>
             <tr className="border-b border-default bg-raised/40">
 
@@ -237,7 +238,7 @@ export function FilesTableShell({
               </th>
 
               {/* Type — sortable */}
-              <th className="w-[72px] text-left px-3 py-2.5">
+              <th className="hidden w-[72px] px-3 py-2.5 text-left md:table-cell">
                 <button
                   type="button"
                   onClick={() => onSortChange('type')}
@@ -252,7 +253,7 @@ export function FilesTableShell({
               </th>
 
               {/* Size — sortable */}
-              <th className="w-[110px] text-left px-3 py-2.5">
+              <th className="w-[72px] px-3 py-2.5 text-left sm:w-[110px]">
                 <button
                   type="button"
                   onClick={() => onSortChange('file_size')}
@@ -267,7 +268,7 @@ export function FilesTableShell({
               </th>
 
               {/* Created — sortable */}
-              <th className="w-[148px] text-left px-3 py-2.5">
+              <th className="hidden w-[148px] px-3 py-2.5 text-left lg:table-cell">
                 <button
                   type="button"
                   onClick={() => onSortChange('created_at')}
@@ -289,6 +290,7 @@ export function FilesTableShell({
             {children}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

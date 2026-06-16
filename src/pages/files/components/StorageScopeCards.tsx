@@ -19,7 +19,7 @@ interface StorageScopeCardsProps {
 
 export function StorageScopeCards({ scope, sourceCards, onSelect }: StorageScopeCardsProps) {
   return (
-    <div className={cn('grid gap-3', sourceCards.length === 1 ? 'grid-cols-1' : 'grid-cols-2')}>
+    <div className={cn('grid gap-3', sourceCards.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2')}>
       {sourceCards.map((s) => {
         const isActive = scope === s.id;
         return (

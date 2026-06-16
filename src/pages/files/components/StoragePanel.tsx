@@ -87,7 +87,7 @@ export function StoragePanel({
   const crossBarClass = scope === 'personal' ? 'from-violet-400 to-violet-500' : 'from-blue-400 to-blue-500';
 
   return (
-    <aside className="sticky top-4">
+    <aside className="lg:sticky lg:top-4">
       <div className="bg-surface border border-default rounded-2xl p-4 flex flex-col gap-3">
 
         <div className="flex items-center">
@@ -95,9 +95,9 @@ export function StoragePanel({
         </div>
 
         {/* SVG semicircle gauge */}
-        <div className="flex flex-col items-center">
-          <div className="relative" style={{ width: '196px', height: '106px' }}>
-            <svg viewBox="0 0 200 106" width="196" height="106" aria-hidden="true">
+        <div className="flex flex-col items-center max-w-full">
+          <div className="relative w-full max-w-[196px]" style={{ aspectRatio: '196 / 106' }}>
+            <svg viewBox="0 0 200 106" className="h-full w-full" aria-hidden="true">
               <path
                 d={arcAll}
                 fill="none"

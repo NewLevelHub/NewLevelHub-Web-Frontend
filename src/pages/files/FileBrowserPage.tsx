@@ -36,11 +36,11 @@ export default function FileBrowserPage() {
       )}
 
       {/* Page header */}
-      <div className="flex items-end justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <h1 className="text-[22px] font-semibold tracking-tight leading-none text-primary">
           {t('files.title')}
         </h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {!fb.isGuest && !fb.isCurrentLocationViewOnly && (
             <button
               type="button"
@@ -80,8 +80,8 @@ export default function FileBrowserPage() {
         </div>
       </div>
 
-      {/* Two-column layout */}
-      <div className="grid gap-3.5 items-start" style={{ gridTemplateColumns: 'minmax(0,1fr) 300px' }}>
+      {/* Two-column layout — stacks on mobile */}
+      <div className="grid grid-cols-1 gap-3.5 items-start lg:grid-cols-[minmax(0,1fr)_300px]">
 
         {/* ── Left column ── */}
         <div className="space-y-4 min-w-0">
@@ -131,7 +131,7 @@ export default function FileBrowserPage() {
               <p className="text-sm text-muted">{t('files.noFolders')}</p>
             ) : (
               <>
-                <div className="grid grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
                   {fb.folders.map((folder) => (
                     <FolderCard
                       key={folder.id}
@@ -199,11 +199,11 @@ export default function FileBrowserPage() {
 
           {/* Bulk action bar */}
           {fb.selectedFileIds.size > 0 && (
-            <div className="flex items-center gap-3 rounded-xl border border-[var(--brand)] bg-brand-subtle px-4 py-2.5 text-sm">
+            <div className="flex flex-col gap-2.5 rounded-xl border border-[var(--brand)] bg-brand-subtle px-4 py-2.5 text-sm sm:flex-row sm:items-center sm:gap-3">
               <span className="font-medium text-[var(--brand-text)]">
                 {t('files.selectedCount', { count: fb.selectedFileIds.size })}
               </span>
-              <div className="ml-auto flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
                 <button
                   type="button"
                   onClick={() => fb.setSelectedFileIds(new Set())}
@@ -245,7 +245,7 @@ export default function FileBrowserPage() {
           >
             {fb.files.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-3 py-10 text-center text-sm text-muted">
+                <td colSpan={6} className="px-3 py-10 text-center text-sm text-muted">
                   {fb.isSearching
                     ? t('files.noFilesSearch')
                     : fb.currentFolder
