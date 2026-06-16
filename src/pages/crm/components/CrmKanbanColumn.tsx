@@ -92,6 +92,7 @@ export function CrmKanbanColumn({
             <button
               {...dragHandleProps}
               tabIndex={0}
+              style={{ touchAction: 'none' }}
               className={cn(
                 'p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity',
                 'text-secondary group-hover:text-muted',
