@@ -622,6 +622,20 @@ export interface AccessLogEntry {
   created_at: string;
 }
 
+export interface ServiceRequestUserBrief {
+  id: number;
+  full_name: string;
+  avatar: string | null;
+  email: string;
+  role: string;
+}
+
+export interface ServiceRequestCompanyBrief {
+  id: number;
+  name: string;
+  logo: string | null;
+}
+
 export interface ServiceRequest {
   id: number;
   user: number;
@@ -636,8 +650,15 @@ export interface ServiceRequest {
   photo: string | null;
   status: ServiceRequestStatus;
   rating: number | null;
-  assigned_to: number | null;
+  /** Rating given by the service_manager to the request author after completing. */
+  manager_rating?: number | null;
+  /** Flat format (non-superadmin): assignee user id. Superadmin format sends an object — see assigned_to as ServiceRequestUserBrief. */
+  assigned_to: number | ServiceRequestUserBrief | null;
   assigned_to_name: string | null;
+  /** Superadmin format: nested author object */
+  created_by?: ServiceRequestUserBrief | null;
+  /** Superadmin format: nested company object (replaces flat company_name) */
+  company?: ServiceRequestCompanyBrief | null;
   completed_at: string | null;
   created_at: string;
   updated_at: string;
@@ -657,7 +678,8 @@ export interface ServiceRequestCleaningPayload {
 }
 
 export interface ServiceRequestUpdateStatusPayload {
-  status: ServiceRequestStatus;
+  status?: ServiceRequestStatus;
+  assigned_to?: number | null;
 }
 
 export interface ServiceRequestRatePayload {
