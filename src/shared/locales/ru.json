@@ -213,7 +213,7 @@
     "impersonationCompanySuffix": " — {{company}}",
     "serviceRequestType": {
       "cleaning": "Уборка",
-      "repair": "Поломка",
+      "repair": "Ремонт",
       "supplies": "Расходники",
       "general": "Общая"
     },
@@ -258,18 +258,6 @@
       "used": "Использован",
       "expired": "Истёк",
       "revoked": "Отозван"
-    },
-    "serviceRequestType": {
-      "cleaning": "Уборка",
-      "repair": "Ремонт",
-      "supplies": "Расходники",
-      "general": "Общая"
-    },
-    "serviceRequestStatus": {
-      "new": "Новая",
-      "accepted": "Принята",
-      "in_progress": "В работе",
-      "completed": "Выполнена"
     },
     "leaveType": {
       "vacation": "Отпуск",
@@ -664,7 +652,7 @@
     "managementAssign": "Исполнитель",
     "managementAssignPlaceholder": "Имя сотрудника",
     "managementApply": "Применить",
-    "rateTitle": "Оцените выполнение",
+    "rateTitle": "Оценить заявку",
     "rateHint": "Ваша оценка помогает улучшить сервис",
     "rated": "Ваша оценка",
     "rateSubmit": "Отправить оценку",
@@ -693,7 +681,6 @@
     },
     "title": "Сервисные заявки",
     "createRequest": "Создать заявку",
-    "filterType": "Тип",
     "noRequests": "Заявок пока нет.",
     "columnType": "Тип",
     "columnDescription": "Описание",
@@ -705,7 +692,6 @@
     "openPhoto": "Открыть",
     "rateRequest": "Оценить",
     "rateAriaLabel": "Оценить выполненную заявку",
-    "rateTitle": "Оценить заявку",
     "rateAuto": "Заявка выполнена!",
     "rateAutoHint": "Пожалуйста, оцените качество выполненной работы",
     "ratePrompt": "Выберите оценку от 1 до 5",
@@ -731,8 +717,6 @@
     "photoLabel": "Фото (необязательно)",
     "selectedFile": "Выбрано: {{name}}",
     "urgencyLabel": "Срочность",
-    "urgencyNormal": "Обычная",
-    "urgencyUrgent": "Срочная",
     "locationRequired": "Укажите место.",
     "locationSelectFloorFirst": "Сначала выберите этаж",
     "locationSelectResource": "Выберите ресурс",
@@ -751,10 +735,21 @@
     "assigneeLockedHint": "Нельзя изменить исполнителя: заявка уже в работе",
     "takeInProgressBtn": "Взять в работу",
     "completeBtn": "Выполнено",
+    "acceptBtn": "Принять",
+    "startBtn": "Начать",
+    "takeBtn": "Взять",
     "rateTitleManager": "Оцените автора заявки",
     "rateHintManager": "Ваша оценка помогает улучшить качество заявок",
     "ratingLabel": "Оценка автора",
-    "ratingNotYet": "Автор ещё не оценил"
+    "ratingNotYet": "Автор ещё не оценил",
+    "errorInvalidTransition": "Недопустимый переход статуса",
+    "errorAssigneeLocked": "Нельзя изменить исполнителя: заявка уже в работе",
+    "errorManagerAlreadyActive": "У вас уже есть активная заявка",
+    "errorRequestAlreadyTaken": "Заявка уже взята другим исполнителем",
+    "assignBtn": "Назначить",
+    "takeSelfBtn": "Взять самому",
+    "assigneeLocked": "Заблокировано",
+    "colCompletedAt": "Завершена"
   },
   "notifications": {
     "filters": {

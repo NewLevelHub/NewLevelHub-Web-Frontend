@@ -639,7 +639,6 @@ export interface ServiceRequestCompanyBrief {
 export interface ServiceRequest {
   id: number;
   user: number;
-  user_name: string;
   request_type: ServiceRequestType;
   floor: number | null;
   floor_number?: number | null;
@@ -652,13 +651,12 @@ export interface ServiceRequest {
   rating: number | null;
   /** Rating given by the service_manager to the request author after completing. */
   manager_rating?: number | null;
-  /** Flat format (non-superadmin): assignee user id. Superadmin format sends an object — see assigned_to as ServiceRequestUserBrief. */
-  assigned_to: number | ServiceRequestUserBrief | null;
-  assigned_to_name: string | null;
-  /** Superadmin format: nested author object */
-  created_by?: ServiceRequestUserBrief | null;
-  /** Superadmin format: nested company object (replaces flat company_name) */
-  company?: ServiceRequestCompanyBrief | null;
+  /** Always an object (or null) — backend now returns nested form for all roles. */
+  assigned_to: ServiceRequestUserBrief | null;
+  /** Always an object — backend now returns nested form for all roles. */
+  created_by: ServiceRequestUserBrief;
+  /** Nested company object (always object or null). */
+  company: ServiceRequestCompanyBrief | null;
   completed_at: string | null;
   created_at: string;
   updated_at: string;

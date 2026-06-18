@@ -255,18 +255,6 @@
       "expired": "Expired",
       "revoked": "Revoked"
     },
-    "serviceRequestType": {
-      "cleaning": "Cleaning",
-      "repair": "Repair",
-      "supplies": "Supplies",
-      "general": "General"
-    },
-    "serviceRequestStatus": {
-      "new": "New",
-      "accepted": "Accepted",
-      "in_progress": "In progress",
-      "completed": "Completed"
-    },
     "leaveType": {
       "vacation": "Vacation",
       "day_off": "Day off",
@@ -660,7 +648,7 @@
     "managementAssign": "Assignee",
     "managementAssignPlaceholder": "Employee name",
     "managementApply": "Apply",
-    "rateTitle": "Rate the work",
+    "rateTitle": "Rate request",
     "rateHint": "Your rating helps improve the service",
     "rated": "Your rating",
     "rateSubmit": "Submit rating",
@@ -689,7 +677,6 @@
     },
     "title": "Service requests",
     "createRequest": "Create request",
-    "filterType": "Type",
     "noRequests": "No requests yet.",
     "columnType": "Type",
     "columnDescription": "Description",
@@ -701,7 +688,6 @@
     "openPhoto": "Open",
     "rateRequest": "Rate",
     "rateAriaLabel": "Rate completed request",
-    "rateTitle": "Rate request",
     "rateAuto": "Request completed!",
     "rateAutoHint": "Please rate the quality of the work done",
     "ratePrompt": "Select a rating from 1 to 5",
@@ -727,8 +713,6 @@
     "photoLabel": "Photo (optional)",
     "selectedFile": "Selected: {{name}}",
     "urgencyLabel": "Urgency",
-    "urgencyNormal": "Normal",
-    "urgencyUrgent": "Urgent",
     "locationRequired": "Please specify a location.",
     "locationSelectFloorFirst": "Select a floor first",
     "locationSelectResource": "Select a resource",
@@ -747,10 +731,21 @@
     "assigneeLockedHint": "Cannot change assignee: request is already in progress",
     "takeInProgressBtn": "Take into work",
     "completeBtn": "Mark as completed",
+    "acceptBtn": "Accept",
+    "startBtn": "Start",
+    "takeBtn": "Take",
     "rateTitleManager": "Rate the request author",
     "rateHintManager": "Your rating helps improve request quality",
     "ratingLabel": "Author's rating",
-    "ratingNotYet": "Author hasn't rated yet"
+    "ratingNotYet": "Author hasn't rated yet",
+    "errorInvalidTransition": "Invalid status transition",
+    "errorAssigneeLocked": "Cannot change assignee: request is in progress",
+    "errorManagerAlreadyActive": "You already have an active request",
+    "errorRequestAlreadyTaken": "Request already taken by another assignee",
+    "assignBtn": "Assign",
+    "takeSelfBtn": "Take myself",
+    "assigneeLocked": "Locked",
+    "colCompletedAt": "Completed at"
   },
   "notifications": {
     "filters": {

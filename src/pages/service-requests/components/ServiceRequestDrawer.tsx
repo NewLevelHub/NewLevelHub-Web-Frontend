@@ -7,23 +7,19 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import {
   SERVICE_REQUEST_STATUSES,
-  SERVICE_REQUEST_STATUS_TRANSITIONS,
   type ServiceRequestStatus,
   type ServiceRequestType,
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { cn } from '@/shared/lib/cn';
 import { fmtDate } from '@/shared/lib/formatDate';
-import { getApiError } from '@/shared/lib/getApiError';
 import type {
   CompanyMember,
   PaginatedResponse,
   ServiceRequest,
-  ServiceRequestUpdateStatusPayload,
-  ServiceRequestUserBrief,
 } from '@/shared/types';
 import { AvatarCircle } from '@/pages/service-requests/components/ServiceRequestAvatar';
-import { StatusBadge, UrgBadge, getStatusConfig, getTypeConfig } from '@/pages/service-requests/components/ServiceRequestBadges';
+import { StatusBadge, UrgBadge, getTypeConfig, getStatusConfig } from '@/pages/service-requests/components/ServiceRequestBadges';
 import { useServiceRequestMutations } from '@/pages/service-requests/hooks/useServiceRequestMutations';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -43,7 +39,6 @@ export default function ServiceRequestDrawer({
   id,
   onClose,
   isAdmin,
-  canChangeStatus = false,
   isSuperadmin = false,
   isServiceManager = false,
 }: Props) {
@@ -51,30 +46,29 @@ export default function ServiceRequestDrawer({
   const { user } = useAuth();
 
   const TYPE_CONFIG = getTypeConfig(t);
-  const STATUS_CONFIG = getStatusConfig(t);
 
-  const { updateStatusMutation, rateMutation, takeInProgress } = useServiceRequestMutations(id);
+  const [drawerError, setDrawerError] = useState<string | null>(null);
+  const [assignedToId, setAssignedToId] = useState<number | ''>('');
 
-  const [currentStatus, setCurrentStatus] = useState<ServiceRequestStatus | ''>('');
-  const [hoveredStar, setHoveredStar]     = useState(0);
-  const [selectedStar, setSelectedStar]   = useState(5);
-  const [drawerError, setDrawerError]     = useState<string | null>(null);
-  const [assignedToId, setAssignedToId]             = useState<number | ''>('');
-  const [takeInProgressPending, setTakeInProgressPending] = useState(false);
+  const {
+    rateMutation,
+    assignRequest,
+    takeRequest,
+    startRequest,
+    completeRequest,
+    actionPending,
+  } = useServiceRequestMutations(id, (msg) => setDrawerError(msg), user?.id ? Number(user.id) : null);
+
+  const [hoveredStar, setHoveredStar]   = useState(0);
+  const [selectedStar, setSelectedStar] = useState(5);
 
   const isOpen = id !== null;
 
   // Reset assignee selection when drawer opens/closes for a different request
   useEffect(() => {
     setAssignedToId('');
+    setDrawerError(null);
   }, [id]);
-
-  // When an assignee is chosen, pre-select in_progress so the UI stays in sync
-  useEffect(() => {
-    if (assignedToId !== '') {
-      setCurrentStatus(SERVICE_REQUEST_STATUSES.IN_PROGRESS);
-    }
-  }, [assignedToId]);
 
   const { data: buildingStaffData } = useQuery<PaginatedResponse<CompanyMember>>({
     queryKey: ['building-staff-for-assign'],
@@ -94,25 +88,27 @@ export default function ServiceRequestDrawer({
     enabled: isOpen,
   });
 
-  const displayStatus = (currentStatus || request?.status) as ServiceRequestStatus | undefined;
+  // ─── Computed values ──────────────────────────────────────────────────────
 
-  function handleSave() {
-    if (!request) return;
-    const statusChanged  = currentStatus !== '' && currentStatus !== request.status;
-    const assigneeChanged = isSuperadmin && assignedToId !== '';
-    if (!statusChanged && !assigneeChanged) return;
+  const assignedUserId = request?.assigned_to?.id ?? null;
+  const isAssignedToMe = assignedUserId !== null && Number(user?.id) === Number(assignedUserId);
+  const requestAuthorId = request?.created_by?.id ?? null;
+  const isAuthor = requestAuthorId !== null && Number(user?.id) === Number(requestAuthorId);
 
-    const payload: ServiceRequestUpdateStatusPayload = {};
-    if (statusChanged)  payload.status      = currentStatus as ServiceRequestStatus;
-    if (assigneeChanged) payload.assigned_to = Number(assignedToId);
+  const canRate =
+    isAuthor &&
+    request?.status === SERVICE_REQUEST_STATUSES.COMPLETED &&
+    request.rating === null;
 
-    updateStatusMutation.mutate(
-      { reqId: request.id, ...payload },
-      {
-        onError: (err) => setDrawerError(getApiError(err).message),
-        onSuccess: () => setDrawerError(null),
-      },
-    );
+  const alreadyRated =
+    isAuthor &&
+    request?.status === SERVICE_REQUEST_STATUSES.COMPLETED &&
+    request.rating !== null;
+
+  function handleAssign() {
+    if (!request || assignedToId === '') return;
+    setDrawerError(null);
+    assignRequest(Number(assignedToId));
   }
 
   function handleSubmitRating() {
@@ -120,49 +116,11 @@ export default function ServiceRequestDrawer({
     rateMutation.mutate(
       { reqId: request.id, rating: selectedStar },
       {
-        onError: (err) => setDrawerError(getApiError(err).message),
+        onError: () => {},
         onSuccess: () => setDrawerError(null),
       },
     );
   }
-
-  async function handleTakeInProgress() {
-    if (!request) return;
-    setDrawerError(null);
-    setTakeInProgressPending(true);
-    const err = await takeInProgress(request.id, request.status);
-    setTakeInProgressPending(false);
-    if (err) setDrawerError(err);
-  }
-
-  // Backend returns 400 if assignee is changed while status is in_progress
-  const assigneeLocked = request?.status === SERVICE_REQUEST_STATUSES.IN_PROGRESS;
-
-  const requestAuthorId = request != null
-    ? (request.created_by?.id ?? request.user)
-    : null;
-  const isOwner = requestAuthorId != null && user?.id != null && Number(user.id) === Number(requestAuthorId);
-
-  const canRate =
-    isOwner &&
-    request?.status === SERVICE_REQUEST_STATUSES.COMPLETED &&
-    request.rating === null;
-
-  const alreadyRated =
-    isOwner &&
-    request?.status === SERVICE_REQUEST_STATUSES.COMPLETED &&
-    request.rating !== null;
-
-  const showTakeInProgress =
-    isServiceManager &&
-    (request?.status === SERVICE_REQUEST_STATUSES.NEW ||
-      request?.status === SERVICE_REQUEST_STATUSES.ACCEPTED);
-
-  const showComplete =
-    isServiceManager &&
-    request?.status === SERVICE_REQUEST_STATUSES.IN_PROGRESS;
-
-  const statusEntries = Object.entries(STATUS_CONFIG) as [ServiceRequestStatus, typeof STATUS_CONFIG[ServiceRequestStatus]][];
 
   const typeConfig = request
     ? (TYPE_CONFIG[request.request_type as ServiceRequestType] ?? { Icon: FileText, label: request.request_type, color: 'var(--text-secondary)', bg: 'var(--bg-raised)' })
@@ -174,17 +132,9 @@ export default function ServiceRequestDrawer({
         : '—')
     : '—';
 
-  const authorName   = request ? (request.created_by?.full_name ?? request.user_name ?? '—') : '—';
-  const assigneeName = request
-    ? (typeof request.assigned_to === 'object' && request.assigned_to !== null
-        ? (request.assigned_to as ServiceRequestUserBrief).full_name
-        : (request.assigned_to_name ?? '—'))
-    : '—';
-  const companyName = request ? (request.company?.name ?? (request as any).company_name ?? null) : null;
-
-  const assigneeAvatar = request && typeof request.assigned_to === 'object' && request.assigned_to !== null
-    ? (request.assigned_to as ServiceRequestUserBrief).avatar
-    : null;
+  const authorName  = request ? (request.created_by?.full_name ?? '—') : '—';
+  const assigneeName = request ? (request.assigned_to?.full_name ?? '—') : '—';
+  const companyName  = request ? (request.company?.name ?? null) : null;
 
   const metaItems: [string, ReactNode][] = request ? [
     [t('serviceRequests.colFloor'), floorLabel],
@@ -192,7 +142,7 @@ export default function ServiceRequestDrawer({
     [t('serviceRequests.colCreated'), fmtDate(request.created_at)],
     [t('serviceRequests.managementAssign'), assigneeName !== '—' ? (
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-        <AvatarCircle avatar={assigneeAvatar} name={assigneeName} />
+        <AvatarCircle avatar={request.assigned_to?.avatar ?? null} name={assigneeName} />
         {assigneeName}
       </span>
     ) : '—'],
@@ -203,19 +153,47 @@ export default function ServiceRequestDrawer({
       </span>
     )] as [string, ReactNode]] : []),
     ...(isSuperadmin && companyName ? [[t('serviceRequests.colCompany'), companyName] as [string, ReactNode]] : []),
+    ...(request.status === SERVICE_REQUEST_STATUSES.COMPLETED && request.completed_at
+      ? [[t('serviceRequests.colCompletedAt'), fmtDate(request.completed_at)] as [string, ReactNode]]
+      : []),
   ] : [];
 
-  const availableStatuses: ServiceRequestStatus[] = request
-    ? (Object.entries(SERVICE_REQUEST_STATUS_TRANSITIONS)
-        .filter(([from]) => from === request.status)
-        .flatMap(([, to]) => (to ? [to] : [])))
-    : [];
+  // ─── Inline ActionButton helper ───────────────────────────────────────────
 
-  const restrictedToCompleted =
-    request?.status === SERVICE_REQUEST_STATUSES.ACCEPTED ||
-    request?.status === SERVICE_REQUEST_STATUSES.IN_PROGRESS;
-
-  const showStatusPills = canChangeStatus && !isServiceManager;
+  function ActionButton({
+    label,
+    onClick,
+    pending,
+    variant = 'brand',
+  }: {
+    label: string;
+    onClick: () => void;
+    pending: boolean;
+    variant?: 'brand' | 'success';
+  }) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={pending}
+        className={variant !== 'success' ? 'bg-brand hover:bg-brand-hover text-on-brand' : ''}
+        style={{
+          height: 32,
+          padding: '0 12px',
+          borderRadius: 'var(--radius-sm)',
+          border: 'none',
+          fontSize: 13,
+          fontWeight: 500,
+          cursor: pending ? 'not-allowed' : 'pointer',
+          opacity: pending ? 0.5 : 1,
+          transition: 'background 0.15s',
+          ...(variant === 'success' ? { background: 'var(--success)', color: '#fff' } : {}),
+        }}
+      >
+        {pending ? t('common.submittingPlain') : label}
+      </button>
+    );
+  }
 
   if (!isOpen) return null;
 
@@ -313,6 +291,40 @@ export default function ServiceRequestDrawer({
                 ))}
               </div>
 
+              {/* Status flow — read-only display */}
+              {(() => {
+                const statusCfg = getStatusConfig(t);
+                const statuses: ServiceRequestStatus[] = [
+                  SERVICE_REQUEST_STATUSES.NEW,
+                  SERVICE_REQUEST_STATUSES.ACCEPTED,
+                  SERVICE_REQUEST_STATUSES.IN_PROGRESS,
+                  SERVICE_REQUEST_STATUSES.COMPLETED,
+                ];
+                return (
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {statuses.map((k) => {
+                      const cfg = statusCfg[k];
+                      const isActive = request.status === k;
+                      return (
+                        <span
+                          key={k}
+                          style={{
+                            padding: '4px 12px', borderRadius: 20,
+                            border: `1.5px solid ${isActive ? cfg.color : 'var(--border-faint)'}`,
+                            background: isActive ? cfg.bg : 'transparent',
+                            color: isActive ? cfg.color : 'var(--text-muted)',
+                            fontSize: 11, fontWeight: isActive ? 600 : 400,
+                            opacity: isActive ? 1 : 0.5,
+                          }}
+                        >
+                          {cfg.label}
+                        </span>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+
               {/* Description */}
               <div>
                 <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
@@ -343,46 +355,8 @@ export default function ServiceRequestDrawer({
                 </div>
               )}
 
-              {/* Status change pills — CA/SA only (not service_manager) */}
-              {showStatusPills && (
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 8 }}>
-                    {t('serviceRequests.managementStatus')}
-                  </label>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {statusEntries.map(([k, cfg]) => {
-                      const isCurrentStatus = k === request.status;
-                      const isAvailable = restrictedToCompleted
-                        ? k === SERVICE_REQUEST_STATUSES.COMPLETED
-                        : (isCurrentStatus || availableStatuses.includes(k));
-                      const isActive = (displayStatus ?? request.status) === k;
-                      return (
-                        <button
-                          key={k}
-                          type="button"
-                          onClick={() => isAvailable && setCurrentStatus(k)}
-                          disabled={!isAvailable}
-                          style={{
-                            padding: '5px 12px', borderRadius: 20,
-                            border: `1.5px solid ${isActive ? cfg.color : 'var(--border)'}`,
-                            background: isActive ? cfg.bg : 'transparent',
-                            color: isActive ? cfg.color : 'var(--text-muted)',
-                            fontSize: 11, fontWeight: isActive ? 700 : 400,
-                            cursor: isAvailable ? 'pointer' : 'default',
-                            opacity: isAvailable ? 1 : 0.4,
-                            transition: 'all 0.15s',
-                          }}
-                        >
-                          {cfg.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Assignee dropdown — superadmin only */}
-              {canChangeStatus && isSuperadmin && (
+              {/* Superadmin: assignee dropdown — only when status === 'new' */}
+              {isSuperadmin && request.status === SERVICE_REQUEST_STATUSES.NEW && (
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
                     {t('serviceRequests.fieldAssignee')}
@@ -390,15 +364,13 @@ export default function ServiceRequestDrawer({
                   <select
                     value={assignedToId}
                     onChange={(e) => setAssignedToId(e.target.value === '' ? '' : Number(e.target.value))}
-                    disabled={assigneeLocked}
                     style={{
                       width: '100%', boxSizing: 'border-box',
                       height: 36, padding: '0 12px', fontSize: 13,
                       border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
                       background: 'var(--bg-surface)', color: 'var(--text-primary)',
                       fontFamily: 'inherit', appearance: 'none', outline: 'none',
-                      opacity: assigneeLocked ? 0.5 : 1,
-                      cursor: assigneeLocked ? 'not-allowed' : 'pointer',
+                      cursor: 'pointer',
                     }}
                   >
                     <option value="">{t('serviceRequests.assigneeNoChange')}</option>
@@ -406,15 +378,31 @@ export default function ServiceRequestDrawer({
                       <option key={u.id} value={u.id}>{u.full_name}</option>
                     ))}
                   </select>
-                  {assigneeLocked && (
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-                      {t('serviceRequests.assigneeLockedHint')}
-                    </div>
-                  )}
                 </div>
               )}
 
-              {/* Rating block */}
+              {/* Superadmin: read-only assignee display for accepted / in_progress */}
+              {isSuperadmin && (
+                request.status === SERVICE_REQUEST_STATUSES.ACCEPTED ||
+                request.status === SERVICE_REQUEST_STATUSES.IN_PROGRESS
+              ) && request.assigned_to && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-raised)', border: '1px solid var(--border-faint)' }}>
+                  <AvatarCircle avatar={request.assigned_to.avatar} name={request.assigned_to.full_name} size={24} />
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                      {t('serviceRequests.fieldAssignee')}
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>
+                      {request.assigned_to.full_name}
+                    </div>
+                  </div>
+                  <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--text-muted)', padding: '2px 6px', borderRadius: 4, background: 'var(--bg-raised)', border: '1px solid var(--border-faint)' }}>
+                    {t('serviceRequests.assigneeLocked')}
+                  </span>
+                </div>
+              )}
+
+              {/* Rating block — author only, completed status */}
               {(canRate || alreadyRated) && (
                 <div style={{
                   padding: 18, borderRadius: 12,
@@ -508,84 +496,63 @@ export default function ServiceRequestDrawer({
             {t('serviceRequests.drawerClose')}
           </button>
 
-          {/* Service manager action buttons */}
-          {isServiceManager && showTakeInProgress && (
-            <button
-              type="button"
-              onClick={handleTakeInProgress}
-              disabled={takeInProgressPending}
-              className="bg-brand hover:bg-brand-hover text-on-brand"
-              style={{
-                height: 32, padding: '0 12px', borderRadius: 'var(--radius-sm)',
-                border: 'none', fontSize: 13, fontWeight: 500,
-                cursor: takeInProgressPending ? 'not-allowed' : 'pointer',
-                opacity: takeInProgressPending ? 0.5 : 1,
-                transition: 'background 0.15s',
-              }}
-            >
-              {takeInProgressPending ? t('common.submittingPlain') : t('serviceRequests.takeInProgressBtn')}
-            </button>
-          )}
-
-          {isServiceManager && showComplete && (
-            <button
-              type="button"
-              onClick={() => request && updateStatusMutation.mutate(
-                { reqId: request.id, status: SERVICE_REQUEST_STATUSES.COMPLETED },
-                {
-                  onError: (err) => setDrawerError(getApiError(err).message),
-                  onSuccess: () => setDrawerError(null),
-                },
+          {/* ── status === 'new' ── */}
+          {request?.status === SERVICE_REQUEST_STATUSES.NEW && (
+            <>
+              {/* Superadmin: take for myself — hidden when a staff member is selected */}
+              {isSuperadmin && assignedToId === '' && (
+                <ActionButton
+                  label={t('serviceRequests.takeSelfBtn')}
+                  onClick={() => takeRequest()}
+                  pending={actionPending}
+                />
               )}
-              disabled={updateStatusMutation.isPending}
-              style={{
-                height: 32, padding: '0 12px', borderRadius: 'var(--radius-sm)',
-                border: 'none', fontSize: 13, fontWeight: 500,
-                background: 'var(--success)', color: 'white',
-                cursor: updateStatusMutation.isPending ? 'not-allowed' : 'pointer',
-                opacity: updateStatusMutation.isPending ? 0.5 : 1,
-                transition: 'background 0.15s',
-              }}
-            >
-              {updateStatusMutation.isPending ? t('common.submittingPlain') : t('serviceRequests.completeBtn')}
-            </button>
+              {/* Superadmin: assign to staff member */}
+              {isSuperadmin && assignedToId !== '' && (
+                <ActionButton
+                  label={t('serviceRequests.assignBtn')}
+                  onClick={handleAssign}
+                  pending={actionPending}
+                />
+              )}
+              {/* Service manager: take request */}
+              {isServiceManager && (
+                <ActionButton
+                  label={t('serviceRequests.takeBtn')}
+                  onClick={() => takeRequest()}
+                  pending={actionPending}
+                />
+              )}
+            </>
           )}
 
-          {/* Non-service-manager admin save button */}
-          {canChangeStatus && !isServiceManager && (
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={
-                updateStatusMutation.isPending ||
-                (
-                  (currentStatus === '' || currentStatus === request?.status) &&
-                  !(isSuperadmin && assignedToId !== '')
-                )
-              }
-              className="bg-brand hover:bg-brand-hover text-on-brand"
-              style={{
-                height: 32, padding: '0 12px', borderRadius: 'var(--radius-sm)',
-                border: 'none', fontSize: 13, fontWeight: 500,
-                cursor: (
-                  updateStatusMutation.isPending ||
-                  (
-                    (currentStatus === '' || currentStatus === request?.status) &&
-                    !(isSuperadmin && assignedToId !== '')
-                  )
-                ) ? 'not-allowed' : 'pointer',
-                opacity: (
-                  updateStatusMutation.isPending ||
-                  (
-                    (currentStatus === '' || currentStatus === request?.status) &&
-                    !(isSuperadmin && assignedToId !== '')
-                  )
-                ) ? 0.5 : 1,
-                transition: 'background 0.15s',
-              }}
-            >
-              {updateStatusMutation.isPending ? t('common.submittingPlain') : t('serviceRequests.managementApply')}
-            </button>
+          {/* ── status === 'accepted' ── */}
+          {request?.status === SERVICE_REQUEST_STATUSES.ACCEPTED && (
+            <>
+              {/* Service manager assigned to this request: start */}
+              {isServiceManager && isAssignedToMe && (
+                <ActionButton
+                  label={t('serviceRequests.takeInProgressBtn')}
+                  onClick={() => startRequest()}
+                  pending={actionPending}
+                />
+              )}
+            </>
+          )}
+
+          {/* ── status === 'in_progress' ── */}
+          {request?.status === SERVICE_REQUEST_STATUSES.IN_PROGRESS && (
+            <>
+              {/* Superadmin assigned to this request OR service manager assigned to this request */}
+              {isAssignedToMe && (isSuperadmin || isServiceManager) && (
+                <ActionButton
+                  label={t('serviceRequests.completeBtn')}
+                  onClick={() => completeRequest()}
+                  pending={actionPending}
+                  variant="success"
+                />
+              )}
+            </>
           )}
         </div>
       </div>

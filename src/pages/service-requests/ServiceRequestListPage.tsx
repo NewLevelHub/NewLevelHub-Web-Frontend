@@ -15,7 +15,7 @@ import {
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { fmtDate } from '@/shared/lib/formatDate';
-import type { PaginatedResponse, ServiceFloor, ServiceRequestUserBrief } from '@/shared/types';
+import type { PaginatedResponse, ServiceFloor } from '@/shared/types';
 import ServiceRequestCreateModal from '@/pages/service-requests/components/ServiceRequestCreateModal';
 import ServiceRequestDrawer from '@/pages/service-requests/components/ServiceRequestDrawer';
 import { AvatarCircle } from '@/pages/service-requests/components/ServiceRequestAvatar';
@@ -31,7 +31,8 @@ export default function ServiceRequestListPage() {
   const { user } = useAuth();
 
   const isSA = user?.role === USER_ROLES.SUPERADMIN;
-  const isCA = user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SERVICE_MANAGER;
+  const isSM = user?.role === USER_ROLES.SERVICE_MANAGER;
+  const isCA = user?.role === USER_ROLES.COMPANY_ADMIN;
 
   const [fType,    setFType]    = useState<ServiceRequestType | ''>('');
   const [fStatus,  setFStatus]  = useState<ServiceRequestStatus | ''>('');
@@ -52,7 +53,7 @@ export default function ServiceRequestListPage() {
     page,
   };
 
-  const { requests: rows, total, isLoading, pageSize } = useServiceRequests(filters, isSA);
+  const { requests: rows, total, isLoading, pageSize } = useServiceRequests(filters, isSA || isSM);
 
   const { data: floorsData } = useQuery({
     queryKey: ['building-floors'],
@@ -76,7 +77,7 @@ export default function ServiceRequestListPage() {
     setFType(''); setFStatus(''); setFUrg(''); setFFloor(''); setFCompany(''); setPage(1);
   }
 
-  const greeting = isSA
+  const greeting = (isSA || isSM)
     ? t('serviceRequests.greetingAll')
     : isCA
     ? (user?.company_name ? `${user.company_name} · ${t('serviceRequests.greetingCompany')}` : t('serviceRequests.greetingCompany'))
@@ -110,12 +111,14 @@ export default function ServiceRequestListPage() {
     verticalAlign: 'middle',
   };
 
+  const isElevated = isCA || isSA || isSM;
+
   const colCount =
     6 +
-    (isCA || isSA ? 1 : 0) +
-    (isSA ? 1 : 0) +
-    (isCA || isSA ? 1 : 0) +
-    (isSA ? 1 : 0) +
+    (isElevated ? 1 : 0) +
+    (isSA || isSM ? 1 : 0) +
+    (isElevated ? 1 : 0) +
+    (isSA || isSM ? 1 : 0) +
     1;
 
   return (
@@ -130,23 +133,25 @@ export default function ServiceRequestListPage() {
             {greeting}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowCreate(true)}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            height: 32, padding: '0 12px',
-            borderRadius: 'var(--radius-sm)',
-            border: 'none',
-            background: 'var(--brand)',
-            color: 'var(--text-onbrand)',
-            fontSize: 13, fontWeight: 500,
-            cursor: 'pointer', whiteSpace: 'nowrap',
-            flexShrink: 0,
-          }}
-        >
-          + {t('serviceRequests.createBtn')}
-        </button>
+        {user?.role !== USER_ROLES.SERVICE_MANAGER && (
+          <button
+            type="button"
+            onClick={() => setShowCreate(true)}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              height: 32, padding: '0 12px',
+              borderRadius: 'var(--radius-sm)',
+              border: 'none',
+              background: 'var(--brand)',
+              color: 'var(--text-onbrand)',
+              fontSize: 13, fontWeight: 500,
+              cursor: 'pointer', whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+          >
+            + {t('serviceRequests.createBtn')}
+          </button>
+        )}
       </div>
 
       {/* Table card */}
@@ -240,10 +245,10 @@ export default function ServiceRequestListPage() {
                   <th style={thStyle}>{t('serviceRequests.colLocation')}</th>
                   <th style={thStyle}>{t('serviceRequests.colStatus')}</th>
                   <th style={thStyle}>{t('serviceRequests.colUrgency')}</th>
-                  {(isCA || isSA) && <th style={thStyle}>{t('serviceRequests.colAuthor')}</th>}
-                  {isSA && <th style={thStyle}>{t('serviceRequests.colCompany')}</th>}
-                  {(isCA || isSA) && <th style={thStyle}>{t('serviceRequests.managementAssign')}</th>}
-                  {isSA && <th style={thStyle}>{t('serviceRequests.colRating')}</th>}
+                  {isElevated && <th style={thStyle}>{t('serviceRequests.colAuthor')}</th>}
+                  {(isSA || isSM) && <th style={thStyle}>{t('serviceRequests.colCompany')}</th>}
+                  {isElevated && <th style={thStyle}>{t('serviceRequests.managementAssign')}</th>}
+                  {(isSA || isSM) && <th style={thStyle}>{t('serviceRequests.colRating')}</th>}
                   <th style={thStyle}>{t('serviceRequests.colCreated')}</th>
                 </tr>
               </thead>
@@ -272,11 +277,9 @@ export default function ServiceRequestListPage() {
                   </tr>
                 ) : (
                   rows.map((r) => {
-                    const authorName   = r.created_by?.full_name ?? r.user_name ?? '—';
-                    const companyName  = r.company?.name ?? (r as any).company_name ?? '—';
-                    const assigneeName = typeof r.assigned_to === 'object' && r.assigned_to !== null
-                      ? (r.assigned_to as ServiceRequestUserBrief).full_name
-                      : (r.assigned_to_name ?? '—');
+                    const authorName   = r.created_by?.full_name ?? '—';
+                    const companyName  = r.company?.name ?? '—';
+                    const assigneeName = r.assigned_to?.full_name ?? '—';
                     return (
                       <tr
                         key={r.id}
@@ -306,7 +309,7 @@ export default function ServiceRequestListPage() {
                         </td>
                         <td style={tdStyle}><StatusBadge status={r.status} /></td>
                         <td style={tdStyle}><UrgBadge urgency={r.urgency} /></td>
-                        {(isCA || isSA) && (
+                        {isElevated && (
                           <td style={{ ...tdStyle, color: 'var(--text-secondary)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                               <AvatarCircle avatar={r.created_by?.avatar} name={authorName} />
@@ -314,7 +317,7 @@ export default function ServiceRequestListPage() {
                             </div>
                           </td>
                         )}
-                        {isSA && (
+                        {(isSA || isSM) && (
                           <td style={tdStyle}>
                             {companyName !== '—' ? (
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -327,9 +330,10 @@ export default function ServiceRequestListPage() {
                                 )}
                                 <span style={{
                                   display: 'inline-flex', alignItems: 'center',
-                                  height: 22, padding: '0 8px',
+                                  padding: '2px 8px',
                                   borderRadius: 6, fontSize: 11, fontWeight: 600,
-                                  background: '#ecfdf5', color: '#047857',
+                                  whiteSpace: 'nowrap',
+                                  background: 'var(--success-bg)', color: 'var(--success-text)',
                                 }}>
                                   {companyName}
                                 </span>
@@ -339,14 +343,12 @@ export default function ServiceRequestListPage() {
                             )}
                           </td>
                         )}
-                        {(isCA || isSA) && (
+                        {isElevated && (
                           <td style={{ ...tdStyle, color: 'var(--text-muted)' }}>
                             {assigneeName !== '—' ? (
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <AvatarCircle
-                                  avatar={typeof r.assigned_to === 'object' && r.assigned_to !== null
-                                    ? (r.assigned_to as ServiceRequestUserBrief).avatar
-                                    : null}
+                                  avatar={r.assigned_to?.avatar ?? null}
                                   name={assigneeName}
                                 />
                                 <span>{assigneeName}</span>
@@ -356,7 +358,7 @@ export default function ServiceRequestListPage() {
                             )}
                           </td>
                         )}
-                        {isSA && (
+                        {(isSA || isSM) && (
                           <td style={tdStyle}>
                             {r.status === 'completed' ? (
                               r.rating != null ? (
@@ -431,10 +433,10 @@ export default function ServiceRequestListPage() {
       <ServiceRequestDrawer
         id={selectedRequest?.id ?? null}
         onClose={() => setSelectedRequest(null)}
-        isAdmin={isCA || isSA}
-        canChangeStatus={isCA || isSA}
+        isAdmin={isElevated}
+        canChangeStatus={isElevated}
         isSuperadmin={isSA}
-        isServiceManager={user?.role === USER_ROLES.SERVICE_MANAGER}
+        isServiceManager={isSM}
       />
     </div>
   );
