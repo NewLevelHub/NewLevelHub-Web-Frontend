@@ -1451,8 +1451,7 @@
     "priority": {
       "low": "Низкий",
       "medium": "Средний",
-      "high": "Высокий",
-      "critical": "Критический"
+      "high": "Высокий"
     },
     "taskRowAria": "Задача: {{title}}",
     "wipToast": "Достигнут WIP-лимит колонки",
@@ -2406,5 +2405,35 @@
     "scopeCompany": "Компания",
     "deleteAll": "Удалить все",
     "deleteAllDesc": "Все элементы корзины будут удалены навсегда. Это действие нельзя отменить."
+  },
+  "myTasks": {
+    "title": "Мои задачи",
+    "subtitle": "{{count}} задач · {{boards}} досок",
+    "searchPlaceholder": "Поиск задач",
+    "filterPriorityAll": "Все приоритеты",
+    "filterDeadlineAll": "Любой срок",
+    "filterOverdue": "Просрочено",
+    "filterToday": "Сегодня",
+    "filterThisWeek": "На этой неделе",
+    "sortNewest": "Новые сначала",
+    "sortOldest": "Старые сначала",
+    "sortDeadlineAsc": "Срок ↑",
+    "sortDeadlineDesc": "Срок ↓",
+    "sortPriorityAsc": "Приоритет ↑",
+    "sortPriorityDesc": "Приоритет ↓",
+    "colTask": "Задача",
+    "colAssignee": "Исполнитель",
+    "colLabels": "Метки",
+    "colProgress": "Прогресс",
+    "colPriority": "Приоритет",
+    "colDeadline": "Дедлайн",
+    "colComments": "Комм.",
+    "openBoard": "Открыть доску",
+    "loadMore": "Ещё {{count}}",
+    "emptyAll": "Нет активных задач",
+    "emptyAllHint": "Отличная работа — все задачи выполнены!",
+    "emptyFiltered": "Задачи не найдены",
+    "emptyFilteredHint": "Попробуйте изменить фильтры",
+    "loadError": "Не удалось загрузить задачи. Попробуйте обновить страницу."
   }
 }
