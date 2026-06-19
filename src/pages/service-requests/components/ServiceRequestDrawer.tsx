@@ -334,6 +334,7 @@ export default function ServiceRequestDrawer({
                   padding: 12, borderRadius: 'var(--radius-sm)',
                   background: 'var(--bg-raised)', border: '1px solid var(--border-faint)',
                   fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6,
+                  overflowWrap: 'break-word', minWidth: 0,
                 }}>
                   {request.description || '—'}
                 </div>
