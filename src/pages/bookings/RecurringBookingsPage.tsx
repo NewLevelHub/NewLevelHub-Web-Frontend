@@ -1,19 +1,16 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
-import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
-import { cn } from '@/shared/lib/cn';
 import { getApiError } from '@/shared/lib/getApiError';
 import {
   hasCreatableRecurringSeriesDate,
   localTodayIso,
-  recurringSeriesDateEntries,
 } from '@/shared/lib/recurringSeriesDates';
 import type {
   BookingResourceListItem,
@@ -22,6 +19,12 @@ import type {
   RecurringBookingCreatePayload,
   RecurringBookingCreateResponse,
 } from '@/shared/types';
+
+import { RecurringBadge } from '@/features/bookings/recurring/components/RecurringBadge';
+import { RecurringTable } from '@/features/bookings/recurring/components/RecurringTable';
+import { RecurringForm } from '@/features/bookings/recurring/components/RecurringForm';
+import { RecurringScopeModal } from '@/features/bookings/recurring/components/RecurringScopeModal';
+import type { ScopeModalState } from '@/features/bookings/recurring/types';
 
 const WEEKDAY_KEYS = [
   'booking.recurring.monday',
@@ -33,12 +36,20 @@ const WEEKDAY_KEYS = [
   'booking.recurring.sunday',
 ] as const;
 
+type TabValue = 'series' | 'create';
+
 export default function RecurringBookingsPage() {
   const { t, i18n } = useTranslation();
   const dateLocale = dateLocaleTag(i18n.language);
   const WEEKDAY_OPTIONS = WEEKDAY_KEYS.map((key, idx) => ({ value: idx, label: t(key) }));
+  const DAY_LABELS = WEEKDAY_KEYS.map((key) => t(key));
   const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  const [tab, setTab] = useState<TabValue>('series');
+  const [scopeModal, setScopeModal] = useState<ScopeModalState | null>(null);
+
+  // Form state
   const [resourceId, setResourceId] = useState('');
   const [dayOfWeek, setDayOfWeek] = useState('0');
   const [startTime, setStartTime] = useState('10:00');
@@ -46,7 +57,6 @@ export default function RecurringBookingsPage() {
   const [repeatUntil, setRepeatUntil] = useState(localTodayIso);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [lastSkippedDates, setLastSkippedDates] = useState<string[]>([]);
-  const [expandedSeriesId, setExpandedSeriesId] = useState<number | null>(null);
 
   const { data: resourcesData, isLoading: resourcesLoading } = useQuery({
     queryKey: ['recurring-bookings', 'resources'],
@@ -91,11 +101,11 @@ export default function RecurringBookingsPage() {
     return Array.from(
       new Set(sourceDays.filter((day) => Number.isInteger(day) && day >= 0 && day <= 6)),
     ).sort((left, right) => left - right);
-  }, [selectedResource]);
+  }, [selectedResource, WEEKDAY_OPTIONS]);
 
   const allowedWeekdayOptions = useMemo(
     () => WEEKDAY_OPTIONS.filter((option) => allowedWeekdayValues.includes(option.value)),
-    [allowedWeekdayValues],
+    [allowedWeekdayValues, WEEKDAY_OPTIONS],
   );
 
   useEffect(() => {
@@ -114,16 +124,6 @@ export default function RecurringBookingsPage() {
     });
   }, [resourceId, dayOfWeek, repeatUntil, endTime]);
 
-  const formatSeriesDate = useMemo(() => {
-    const formatter = new Intl.DateTimeFormat(dateLocale, {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-    return (iso: string) => formatter.format(new Date(`${iso}T12:00:00`));
-  }, [dateLocale]);
-
   const createMutation = useMutation({
     mutationFn: async (payload: RecurringBookingCreatePayload) => {
       const { data } = await apiClient.post<RecurringBookingCreateResponse>(
@@ -138,7 +138,7 @@ export default function RecurringBookingsPage() {
         try {
           await apiClient.delete(API.bookings.recurring.detail(String(data.id)));
         } catch {
-          // Если откат не удался, всё равно показываем понятную причину пользователю.
+          // Rollback failed — still show the user a meaningful error.
         }
         setLastSkippedDates(skippedDates);
         setErrorMessage(t('booking.recurring.conflictError'));
@@ -147,6 +147,7 @@ export default function RecurringBookingsPage() {
       }
       setErrorMessage(null);
       setLastSkippedDates([]);
+      setTab('series');
       await queryClient.invalidateQueries({ queryKey: ['recurring-bookings', 'list'] });
     },
     onError: (error: unknown) => {
@@ -161,11 +162,12 @@ export default function RecurringBookingsPage() {
     },
     onSuccess: async () => {
       setErrorMessage(null);
-      setExpandedSeriesId(null);
+      setScopeModal(null);
       await queryClient.invalidateQueries({ queryKey: ['recurring-bookings', 'list'] });
     },
     onError: (error: unknown) => {
       setErrorMessage(getApiError(error).message);
+      setScopeModal(null);
     },
   });
 
@@ -191,42 +193,176 @@ export default function RecurringBookingsPage() {
     return false;
   }
 
-  function toggleSeriesExpanded(rowId: number) {
-    setExpandedSeriesId((current) => (current === rowId ? null : rowId));
-  }
+  const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
 
-  const listColumnCount =
-    (user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN ? 6 : 5);
+  const tabs: Array<{ value: TabValue; label: string }> = [
+    { value: 'series', label: t('booking.recurring.seriesTab') },
+    { value: 'create', label: t('booking.recurring.createTab') },
+  ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-primary">{t('booking.recurring.title')}</h1>
-        <Link
-          to="/bookings/catalog"
-          className="rounded-lg border border-default bg-raised px-3 py-2 text-sm font-medium text-secondary hover:bg-hover"
-        >{t('common.goToCatalog')}</Link>
+    <div style={{ maxWidth: 1100 }}>
+      {/* Page header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          marginBottom: 20,
+          gap: 16,
+          flexWrap: 'wrap',
+        }}
+      >
+        <div>
+          <h1
+            style={{
+              fontSize: 22,
+              fontWeight: 700,
+              color: 'var(--text-primary)',
+              margin: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            {t('booking.recurring.title')}
+            <RecurringBadge />
+          </h1>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4, marginBottom: 0 }}>
+            {t('booking.recurring.allSeriesLabel', {
+              count: visibleRecurringRows.length,
+              active: visibleRecurringRows.filter((r) => r.is_active).length,
+            })}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setTab('create')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: 8,
+            border: 'none',
+            background: 'var(--brand)',
+            color: 'var(--text-on-brand)',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          + {t('booking.recurring.createBtn')}
+        </button>
       </div>
 
+      {/* Error banner */}
       {errorMessage && (
-        <div className="rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-4 py-3 text-sm text-danger">
+        <div
+          style={{
+            borderRadius: 8,
+            border: '1px solid var(--danger)',
+            background: 'var(--danger-bg)',
+            padding: '10px 14px',
+            fontSize: 13,
+            color: 'var(--danger)',
+            marginBottom: 14,
+          }}
+          role="alert"
+        >
           {errorMessage}
         </div>
       )}
 
+      {/* Conflict dates banner */}
       {lastSkippedDates.length > 0 && (
-        <div className="rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-4 py-3 text-sm text-danger">
-          <p className="font-medium">{t('booking.recurring.conflictsTitle')}</p>
-          <p className="mt-1">{lastSkippedDates.join(', ')}</p>
+        <div
+          style={{
+            borderRadius: 8,
+            border: '1px solid var(--danger)',
+            background: 'var(--danger-bg)',
+            padding: '10px 14px',
+            fontSize: 13,
+            color: 'var(--danger)',
+            marginBottom: 14,
+          }}
+          role="alert"
+        >
+          <p style={{ margin: '0 0 4px', fontWeight: 600 }}>{t('booking.recurring.conflictsTitle')}</p>
+          <p style={{ margin: 0 }}>{lastSkippedDates.join(', ')}</p>
         </div>
       )}
 
-      <section className="rounded-2xl border border-default bg-raised p-5">
-        <h2 className="text-lg font-semibold text-primary">{t('booking.recurring.createSection')}</h2>
-        <form
-          className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-          onSubmit={(event) => {
-            event.preventDefault();
+      {/* Tab strip */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+        {tabs.map((tabItem) => (
+          <button
+            key={tabItem.value}
+            type="button"
+            onClick={() => setTab(tabItem.value)}
+            style={{
+              padding: '6px 14px',
+              borderRadius: 20,
+              border: tab === tabItem.value ? 'none' : '1px solid var(--border)',
+              background: tab === tabItem.value ? 'var(--brand)' : 'var(--bg-raised)',
+              color: tab === tabItem.value ? 'var(--text-on-brand)' : 'var(--text-secondary)',
+              fontSize: 13,
+              fontWeight: tab === tabItem.value ? 600 : 400,
+              cursor: 'pointer',
+              transition: 'background 0.15s, color 0.15s',
+            }}
+          >
+            {tabItem.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Series tab */}
+      {tab === 'series' && (
+        recurringError ? (
+          <div style={{ padding: '40px 0', textAlign: 'center', fontSize: 13, color: 'var(--text-muted)' }}>
+            {t('booking.recurring.loadError')}
+          </div>
+        ) : (
+          <RecurringTable
+            rows={visibleRecurringRows}
+            resourceNameById={resourceNameById}
+            dayLabels={DAY_LABELS}
+            isSuperadmin={isSuperadmin}
+            isLoading={recurringLoading}
+            onCancelSeries={(id) =>
+              setScopeModal({
+                mode: 'cancel',
+                bookingLabel: resourceNameById.get(
+                  visibleRecurringRows.find((r) => r.id === id)?.resource_id ?? 0,
+                ) ?? '...',
+                seriesId: id,
+              })
+            }
+            canCancel={canCancelSeries}
+            isCancelling={deleteMutation.isPending}
+            locale={dateLocale}
+          />
+        )
+      )}
+
+      {/* Create tab */}
+      {tab === 'create' && (
+        <RecurringForm
+          resources={resourcesData ?? []}
+          resourcesLoading={resourcesLoading}
+          dayOptions={WEEKDAY_OPTIONS}
+          allowedDayOptions={allowedWeekdayOptions}
+          resourceId={resourceId}
+          setResourceId={setResourceId}
+          dayOfWeek={dayOfWeek}
+          setDayOfWeek={setDayOfWeek}
+          startTime={startTime}
+          setStartTime={setStartTime}
+          endTime={endTime}
+          setEndTime={setEndTime}
+          repeatUntil={repeatUntil}
+          setRepeatUntil={setRepeatUntil}
+          canCreate={canCreateSeries}
+          isPending={createMutation.isPending}
+          onSubmit={() => {
             setErrorMessage(null);
             setLastSkippedDates([]);
             createMutation.mutate({
@@ -237,266 +373,27 @@ export default function RecurringBookingsPage() {
               repeat_until: repeatUntil,
             });
           }}
-        >
-          <label className="text-sm text-secondary">
-            {t('booking.recurring.resourceLabel')}
-            <select
-              required
-              value={resourceId}
-              onChange={(event) => setResourceId(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-              disabled={resourcesLoading}
-            >
-              <option value="">{t('booking.recurring.selectResource')}</option>
-              {(resourcesData ?? []).map((resource) => (
-                <option key={resource.id} value={resource.id}>
-                  {resource.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          onCancel={() => setTab('series')}
+          locale={dateLocale}
+        />
+      )}
 
-          <label className="text-sm text-secondary">
-            {t('booking.recurring.dayOfWeekLabel')}
-            <select
-              required
-              value={dayOfWeek}
-              onChange={(event) => setDayOfWeek(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-              disabled={allowedWeekdayOptions.length === 0}
-            >
-              {allowedWeekdayOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="text-sm text-secondary">
-            {t('booking.recurring.repeatUntilLabel')}
-            <input
-              type="date"
-              required
-              min={localTodayIso()}
-              value={repeatUntil}
-              onChange={(event) => setRepeatUntil(event.target.value)}
-              lang={dateLocale}
-              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-            />
-          </label>
-
-          <label className="text-sm text-secondary">{t('common.start')}<input
-              type="time"
-              required
-              value={startTime}
-              onChange={(event) => setStartTime(event.target.value)}
-              lang={dateLocale}
-              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-            />
-          </label>
-
-          <label className="text-sm text-secondary">{t('common.end')}<input
-              type="time"
-              required
-              value={endTime}
-              onChange={(event) => setEndTime(event.target.value)}
-              lang={dateLocale}
-              className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-            />
-          </label>
-
-          <div className="sm:col-span-2 lg:col-span-1 flex items-end">
-            <button
-              type="submit"
-              disabled={
-                createMutation.isPending
-                || !resourceId
-                || allowedWeekdayOptions.length === 0
-                || !canCreateSeries
-              }
-              className="w-full rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
-            >
-              {createMutation.isPending ? t('common.creating') : t('booking.recurring.createBtn')}
-            </button>
-          </div>
-
-          {resourceId && !canCreateSeries && (
-            <p className="sm:col-span-2 lg:col-span-3 text-xs text-danger">
-              {t('booking.recurring.noCreatableDates')}
-            </p>
-          )}
-
-          {resourceId && (
-            <p className="sm:col-span-2 lg:col-span-3 text-xs text-secondary">
-              {t('booking.recurring.availableDaysHint')}{' '}
-              {allowedWeekdayOptions.length > 0
-                ? allowedWeekdayOptions.map((option) => option.label).join(', ')
-                : t('booking.recurring.noDays')}
-            </p>
-          )}
-        </form>
-      </section>
-
-      <div>
-        <div className="mb-3">
-          <h2 className="text-[15px] font-semibold text-[color:var(--text-primary)]">
-            {user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN
-              ? t('booking.recurring.listSectionAdmin')
-              : t('booking.recurring.listSectionMy')}
-          </h2>
-          <p className="mt-1 text-xs text-[color:var(--text-muted)]">{t('booking.recurring.expandSeriesHint')}</p>
-        </div>
-
-        <div className="bg-[color:var(--bg-surface)] border border-[color:var(--border)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
-          {recurringError ? (
-            <div className="px-4 py-12 text-center text-[13px] text-[color:var(--text-muted)]">
-              {t('booking.recurring.loadError')}
-            </div>
-          ) : recurringLoading ? (
-            <div className="px-4 py-12 text-center text-[13px] text-[color:var(--text-muted)]">
-              {t('common.loading')}
-            </div>
-          ) : visibleRecurringRows.length === 0 ? (
-            <div className="px-4 py-12 text-center text-[13px] text-[color:var(--text-muted)]">
-              {t('booking.recurring.noSeries')}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-[13px]" role="table">
-                <thead>
-                  <tr className="border-b border-[color:var(--border)]">
-                    <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
-                      {t('dashboard.table.resource')}
-                    </th>
-                    <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
-                      {t('booking.recurring.dayOfWeekLabel')}
-                    </th>
-                    <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
-                      {t('booking.manage.dateTime')}
-                    </th>
-                    <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
-                      {t('booking.recurring.repeatUntilLabel')}
-                    </th>
-                    {(user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN) && (
-                      <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
-                        {t('dashboard.table.user')}
-                      </th>
-                    )}
-                    <th className="px-3 py-2" aria-label={t('booking.manage.actions')} />
-                  </tr>
-                </thead>
-                <tbody>
-                  {visibleRecurringRows.map((row) => {
-                    const isExpanded = expandedSeriesId === row.id;
-                    const seriesDates = recurringSeriesDateEntries({
-                      dayOfWeek: row.day_of_week,
-                      validFrom: row.valid_from,
-                      repeatUntil: row.valid_until,
-                      endTime: row.end_time,
-                    });
-
-                    return (
-                      <Fragment key={row.id}>
-                        <tr
-                          className={cn(
-                            'border-b border-[color:var(--border)] transition-colors cursor-pointer',
-                            isExpanded
-                              ? 'bg-[color:var(--bg-hover)]'
-                              : 'hover:bg-[color:var(--bg-hover)]',
-                          )}
-                          onClick={() => toggleSeriesExpanded(row.id)}
-                        >
-                          <td className="px-3 py-2.5 align-middle text-[13px] font-medium text-[color:var(--text-primary)]">
-                            {resourceNameById.get(row.resource_id) ?? t('booking.recurring.resourcePrefix', { id: row.resource_id })}
-                          </td>
-                          <td className="px-3 py-2.5 align-middle text-[13px] text-[color:var(--text-muted)]">
-                            {WEEKDAY_OPTIONS[row.day_of_week]?.label ?? String(row.day_of_week)}
-                          </td>
-                          <td className="px-3 py-2.5 align-middle text-[13px] font-mono text-[color:var(--text-primary)]">
-                            {row.start_time.slice(0, 5)}–{row.end_time.slice(0, 5)}
-                          </td>
-                          <td className="px-3 py-2.5 align-middle text-[13px] text-[color:var(--text-muted)]">
-                            {row.valid_until ?? t('common.noDate')}
-                          </td>
-                          {(user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN) && (
-                            <td className="px-3 py-2.5 align-middle text-[13px] text-[color:var(--text-muted)]">
-                              {row.user_name ?? '—'}
-                            </td>
-                          )}
-                          <td className="px-3 py-2.5 align-middle" onClick={(event) => event.stopPropagation()}>
-                            {canCancelSeries(row) ? (
-                              <button
-                                type="button"
-                                onClick={() => deleteMutation.mutate(row.id)}
-                                disabled={deleteMutation.isPending}
-                                className="inline-flex items-center gap-1 h-7 px-2.5 text-[12px] rounded-[var(--radius-sm)] border border-[color:var(--status-busy-bg)] text-[color:var(--status-busy-text)] hover:bg-[color:var(--status-busy-bg)] disabled:opacity-50 transition-colors"
-                              >
-                                {t('booking.recurring.cancelSeries')}
-                              </button>
-                            ) : (
-                              <span className="text-[12px] text-[color:var(--text-muted)]">
-                                {t('booking.recurring.noAccess')}
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                        {isExpanded && (
-                          <tr className="border-b border-[color:var(--border)] bg-[color:var(--bg-raised)]">
-                            <td colSpan={listColumnCount} className="px-3 py-3">
-                              <p className="text-xs font-medium text-[color:var(--text-primary)] mb-2">
-                                {t('booking.recurring.previewTitle')}
-                              </p>
-                              {seriesDates.length === 0 ? (
-                                <p className="text-xs text-[color:var(--text-muted)]">
-                                  {t('booking.recurring.previewNoDates')}
-                                </p>
-                              ) : (
-                                <div className="flex flex-wrap gap-2">
-                                  {seriesDates.map((entry) => (
-                                    <div
-                                      key={entry.iso}
-                                      className={cn(
-                                        'min-w-[9.5rem] rounded-lg border px-3 py-2',
-                                        entry.status === 'will_create'
-                                          ? 'border-brand/40 bg-brand/5'
-                                          : 'border-[color:var(--border)] bg-[color:var(--bg-surface)] opacity-75',
-                                      )}
-                                    >
-                                      <p className="text-sm font-medium text-[color:var(--text-primary)]">
-                                        {formatSeriesDate(entry.iso)}
-                                      </p>
-                                      <p className="mt-0.5 font-mono text-xs text-[color:var(--text-muted)]">
-                                        {row.start_time.slice(0, 5)}–{row.end_time.slice(0, 5)}
-                                      </p>
-                                      <p
-                                        className={cn(
-                                          'mt-1 text-[11px] font-medium',
-                                          entry.status === 'will_create'
-                                            ? 'text-brand'
-                                            : 'text-[color:var(--text-muted)]',
-                                        )}
-                                      >
-                                        {entry.status === 'will_create'
-                                          ? t('booking.recurring.dateWillCreate')
-                                          : t('booking.recurring.dateSkippedPast')}
-                                      </p>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </td>
-                          </tr>
-                        )}
-                      </Fragment>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Scope modal */}
+      {scopeModal && (
+        <RecurringScopeModal
+          mode={scopeModal.mode}
+          bookingLabel={scopeModal.bookingLabel}
+          onClose={() => setScopeModal(null)}
+          onConfirm={(scope) => {
+            if (scope === 'all' || scope === 'this_and_following') {
+              deleteMutation.mutate(scopeModal.seriesId);
+            } else {
+              // this_only: just close (no single-occurrence API yet)
+              setScopeModal(null);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -22,10 +22,13 @@ import {
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
-import type { Booking, BookingResourceDetail, CompanyMember, PaginatedResponse } from '@/shared/types';
+import type { Booking, BookingResourceDetail, CompanyMember, PaginatedResponse, RecurringBooking } from '@/shared/types';
 import { shouldShowBookingQrPanel } from '@/pages/bookings/components/BookingQRPanel';
+import { RecurringSeriesCard } from '@/features/bookings/recurring/components/RecurringSeriesCard';
+import { RecurringScopeModal } from '@/features/bookings/recurring/components/RecurringScopeModal';
+import type { ScopeModalState } from '@/features/bookings/recurring/types';
 
-type MyBookingsStatusFilter = 'upcoming' | 'past' | 'cancelled';
+type MyBookingsStatusFilter = 'upcoming' | 'past' | 'cancelled' | 'recurring';
 
 function localDateTimeToIso(value: string): string | undefined {
   if (!value) return undefined;
@@ -112,6 +115,7 @@ export default function MyBookingsPage() {
   const [openActionsId, setOpenActionsId] = useState<number | null>(null);
   const [dropdownCoords, setDropdownCoords] = useState<{ top: number; right: number } | null>(null);
   const actionButtonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+  const [recurringScopeModal, setRecurringScopeModal] = useState<ScopeModalState | null>(null);
 
   useEffect(() => {
     if (openActionsId === null) return;
@@ -132,6 +136,7 @@ export default function MyBookingsPage() {
       { value: 'upcoming' as const, label: t('common.bookingFilter.upcoming') },
       { value: 'past' as const, label: t('common.bookingFilter.past') },
       { value: 'cancelled' as const, label: t('common.bookingFilter.cancelled') },
+      { value: 'recurring' as const, label: t('booking.recurring.myTab') },
     ],
     [t],
   );
@@ -147,7 +152,10 @@ export default function MyBookingsPage() {
     [t],
   );
 
+  const isRecurringTab = statusTab === 'recurring';
+
   const queryParams = useMemo(() => {
+    if (isRecurringTab) return { status: 'upcoming' };
     const params: Record<string, string> = { status: statusTab };
     if (resourceType) params.resource_type = resourceType;
     const fromIso = localDateTimeToIso(dateFrom);
@@ -155,7 +163,7 @@ export default function MyBookingsPage() {
     if (fromIso) params.date_from = fromIso;
     if (toIso) params.date_to = toIso;
     return params;
-  }, [statusTab, resourceType, dateFrom, dateTo]);
+  }, [statusTab, resourceType, dateFrom, dateTo, isRecurringTab]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['my-bookings', queryParams],
@@ -167,6 +175,7 @@ export default function MyBookingsPage() {
       return res;
     },
     refetchInterval: 30_000,
+    enabled: !isRecurringTab,
   });
 
   const cancelMutation = useMutation({
@@ -288,6 +297,19 @@ export default function MyBookingsPage() {
     onError: (error: unknown) => {
       setEditSuccess(null);
       setEditError(getApiError(error).message);
+    },
+  });
+
+  const recurringDeleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiClient.delete(API.bookings.recurring.detail(String(id)));
+    },
+    onSuccess: async () => {
+      setRecurringScopeModal(null);
+      await queryClient.invalidateQueries({ queryKey: ['my-bookings-recurring'] });
+    },
+    onError: () => {
+      setRecurringScopeModal(null);
     },
   });
 
@@ -467,8 +489,16 @@ export default function MyBookingsPage() {
           )}
         </div>
 
+        {/* Recurring tab content */}
+        {isRecurringTab && (
+          <RecurringTabContent
+            userId={user?.id ?? null}
+            onScopeModal={(modal) => setRecurringScopeModal(modal)}
+          />
+        )}
+
         {/* Table */}
-        {isLoading ? (
+        {!isRecurringTab && (isLoading ? (
           <div className="px-4 py-10">
             <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -587,7 +617,7 @@ export default function MyBookingsPage() {
               </tbody>
             </table>
           </div>
-        )}
+        ))}
       </div>
 
       {/* Edit Modal */}
@@ -846,6 +876,125 @@ export default function MyBookingsPage() {
           document.body,
         );
       })()}
+
+      {/* Recurring scope modal */}
+      {recurringScopeModal && (
+        <RecurringScopeModal
+          mode={recurringScopeModal.mode}
+          bookingLabel={recurringScopeModal.bookingLabel}
+          onClose={() => setRecurringScopeModal(null)}
+          onConfirm={(scope) => {
+            if (scope === 'all' || scope === 'this_and_following') {
+              recurringDeleteMutation.mutate(recurringScopeModal.seriesId);
+            } else {
+              setRecurringScopeModal(null);
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Inline RecurringTabContent ──────────────────────────────────────────────
+
+const WEEKDAY_LABEL_KEYS_TAB = [
+  'booking.recurring.monday',
+  'booking.recurring.tuesday',
+  'booking.recurring.wednesday',
+  'booking.recurring.thursday',
+  'booking.recurring.friday',
+  'booking.recurring.saturday',
+  'booking.recurring.sunday',
+] as const;
+
+interface RecurringTabContentProps {
+  userId: number | null;
+  onScopeModal: (modal: ScopeModalState) => void;
+}
+
+function RecurringTabContent({ userId, onScopeModal }: RecurringTabContentProps) {
+  const { t } = useTranslation();
+
+  const { data: resourcesData } = useQuery({
+    queryKey: ['my-bookings-recurring', 'resources'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PaginatedResponse<{ id: number; name: string }>>(
+        API.bookings.resources.list,
+        { params: { page_size: 1000, ordering: 'name' } },
+      );
+      return data.results;
+    },
+  });
+
+  const { data: recurringData, isLoading } = useQuery({
+    queryKey: ['my-bookings-recurring'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PaginatedResponse<RecurringBooking> | RecurringBooking[]>(
+        API.bookings.recurring.list,
+      );
+      return Array.isArray(data) ? data : data.results;
+    },
+  });
+
+  const resourceNameById = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const r of resourcesData ?? []) map.set(r.id, r.name);
+    return map;
+  }, [resourcesData]);
+
+  const dayLabels = WEEKDAY_LABEL_KEYS_TAB.map((key) => t(key));
+
+  const myRows = useMemo(
+    () => (recurringData ?? []).filter((r) => !userId || r.user === userId),
+    [recurringData, userId],
+  );
+
+  if (isLoading) {
+    return (
+      <div className="px-4 py-10">
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-20 rounded-[var(--radius-sm)] bg-[color:var(--bg-raised)] animate-pulse"
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (myRows.length === 0) {
+    return (
+      <div className="px-4 py-12 text-center">
+        <p className="text-[13px] font-medium text-[color:var(--text-primary)]">
+          {t('recurring.noRecurring')}
+        </p>
+        <p className="mt-1 text-[12px] text-[color:var(--text-muted)]">
+          {t('recurring.noRecurringSub')}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 py-4 space-y-3">
+      {myRows.map((series) => (
+        <RecurringSeriesCard
+          key={series.id}
+          series={series}
+          resourceName={resourceNameById.get(series.resource_id) ?? t('booking.recurring.resourcePrefix', { id: series.resource_id })}
+          dayLabel={dayLabels[series.day_of_week] ?? String(series.day_of_week)}
+          onCancel={() =>
+            onScopeModal({
+              mode: 'cancel',
+              bookingLabel: resourceNameById.get(series.resource_id) ?? '...',
+              seriesId: series.id,
+            })
+          }
+        />
+      ))}
     </div>
   );
 }
