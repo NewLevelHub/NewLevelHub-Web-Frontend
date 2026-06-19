@@ -15,7 +15,7 @@ import {
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { fmtDate } from '@/shared/lib/formatDate';
-import type { PaginatedResponse, ServiceFloor } from '@/shared/types';
+import type { Company, PaginatedResponse, ServiceFloor } from '@/shared/types';
 import ServiceRequestCreateModal from '@/pages/service-requests/components/ServiceRequestCreateModal';
 import ServiceRequestDrawer from '@/pages/service-requests/components/ServiceRequestDrawer';
 import { AvatarCircle } from '@/pages/service-requests/components/ServiceRequestAvatar';
@@ -66,7 +66,20 @@ export default function ServiceRequestListPage() {
         }),
   });
 
+  const { data: companiesData } = useQuery({
+    queryKey: ['companies-list-filter'],
+    queryFn: () =>
+      apiClient
+        .get<Company[] | PaginatedResponse<Company>>(API.companies.list, { params: { page_size: 500 } })
+        .then((r) => {
+          const d = r.data;
+          return Array.isArray(d) ? d : d.results;
+        }),
+    enabled: isSA,
+  });
+
   const floors    = floorsData ?? [];
+  const companies = companiesData ?? [];
   const pageCount = Math.ceil(total / pageSize);
   const pageStart = (page - 1) * pageSize + 1;
   const pageEnd   = Math.min(page * pageSize, total);
@@ -208,6 +221,11 @@ export default function ServiceRequestListPage() {
             <select style={selStyle} value={fCompany}
               onChange={(e) => { setFCompany(e.target.value); setPage(1); }}>
               <option value="">{t('serviceRequests.filterAllCompanies')}</option>
+              {companies.map((c) => (
+                <option key={c.id} value={String(c.id)}>
+                  {c.name}
+                </option>
+              ))}
             </select>
           )}
 
