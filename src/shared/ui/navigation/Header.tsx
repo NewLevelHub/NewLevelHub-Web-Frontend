@@ -7,8 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/shared/store/auth';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { cn } from '@/shared/lib/cn';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
+import { NotifIcon } from '@/pages/notifications/components/NotificationTypeIcon';
 import type { Notification, PaginatedResponse } from '@/shared/types';
 
 interface HeaderProps {
@@ -149,7 +149,7 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
           >
             <Bell size={17} />
             {unreadCount > 0 && (
-              <span className="absolute right-1 top-1 flex h-[7px] w-[7px] items-center justify-center rounded-full bg-red-500">
+              <span className="absolute right-1 top-1 flex h-[7px] w-[7px] items-center justify-center rounded-full bg-[color:var(--danger)]">
                 <span className="sr-only">{badgeLabel}</span>
               </span>
             )}
@@ -158,73 +158,163 @@ export function Header({ onOpenMobileNav, isMobileNavOpen }: HeaderProps) {
           {open && createPortal(
             <div
               ref={dropdownRef}
-              style={{ top: dropdownPos.top, right: dropdownPos.right }}
-              className="fixed z-[9999] w-[calc(100vw-1rem)] max-w-sm max-h-[28rem] overflow-y-auto rounded-xl border border-default bg-surface shadow-lg"
+              style={{
+                position: 'fixed',
+                top: dropdownPos.top,
+                right: dropdownPos.right,
+                zIndex: 9999,
+                width: 380,
+                maxWidth: 'calc(100vw - 1rem)',
+                maxHeight: 520,
+                background: 'var(--bg-surface)',
+                borderRadius: 'var(--radius-lg)',
+                boxShadow: 'var(--shadow-pop)',
+                border: '1px solid var(--border)',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+              }}
               role="dialog"
               aria-label={t('common.notifications')}
             >
-              <div className="flex items-center justify-between border-b border-default px-4 py-3">
-                <span className="text-sm font-semibold text-primary">{t('common.notifications')}</span>
-                {hasUnread && (
+              {/* Header — fixed, never scrolls */}
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 16px 10px',
+                borderBottom: '1px solid var(--border)',
+                flexShrink: 0,
+              }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {t('common.notifications')}
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {unreadCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => markAllReadMutation.mutate()}
+                      disabled={markAllReadMutation.isPending}
+                      style={{
+                        fontSize: 11, fontWeight: 500,
+                        color: 'var(--brand)',
+                        background: 'none', border: 'none',
+                        cursor: 'pointer', padding: 0,
+                        opacity: markAllReadMutation.isPending ? 0.5 : 1,
+                      }}
+                    >
+                      {t('header.markAllRead')}
+                    </button>
+                  )}
                   <button
                     type="button"
-                    onClick={() => markAllReadMutation.mutate()}
-                    disabled={markAllReadMutation.isPending}
-                    className="text-xs text-brand hover:text-brand-hover disabled:opacity-50 transition-colors"
+                    onClick={() => setOpen(false)}
+                    style={{
+                      width: 22, height: 22, borderRadius: 5, border: 'none',
+                      background: 'transparent', cursor: 'pointer',
+                      color: 'var(--text-muted)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                    aria-label={t('common.close')}
                   >
-                    {t('header.markAllRead')}
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <path d="M18 6 6 18M6 6l12 12"/>
+                    </svg>
                   </button>
+                </div>
+              </div>
+
+              {/* Scrollable list */}
+              <div style={{ overflowY: 'auto', flex: 1 }}>
+                {recentLoading ? (
+                  <div style={{ padding: '16px' }}>
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '10px 0', borderBottom: '1px solid var(--border-faint)' }}>
+                        <div className="animate-pulse" style={{ width: 26, height: 26, borderRadius: 8, background: 'var(--bg-raised)', flexShrink: 0 }} />
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <div className="animate-pulse" style={{ height: 11, width: '60%', borderRadius: 4, background: 'var(--bg-raised)' }} />
+                          <div className="animate-pulse" style={{ height: 10, width: '80%', borderRadius: 4, background: 'var(--bg-raised)' }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : recentItems.length === 0 ? (
+                  <div style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+                    {t('header.noNotifications')}
+                  </div>
+                ) : (
+                  recentItems.map(n => (
+                    <div
+                      key={n.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleItemClick(n)}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleItemClick(n); }}
+                      aria-label={n.title}
+                      style={{
+                        display: 'flex', gap: 10, alignItems: 'flex-start',
+                        padding: '10px 16px',
+                        borderBottom: '1px solid var(--border-faint)',
+                        background: n.is_read ? 'transparent' : 'var(--bg-hover)',
+                        cursor: 'pointer', position: 'relative',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-raised)'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = n.is_read ? 'transparent' : 'var(--bg-hover)'; }}
+                    >
+                      {!n.is_read && (
+                        <div aria-hidden="true" style={{
+                          position: 'absolute', left: 4, top: '50%', transform: 'translateY(-50%)',
+                          width: 5, height: 5, borderRadius: '50%', background: 'var(--brand)',
+                        }} />
+                      )}
+                      <NotifIcon type={n.type ?? n.notification_type ?? ''} size={14} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontSize: 12, fontWeight: n.is_read ? 400 : 600,
+                          color: 'var(--text-primary)',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                          {n.title}
+                        </div>
+                        <div style={{
+                          fontSize: 11, color: 'var(--text-muted)', marginTop: 2,
+                          display: '-webkit-box', WebkitLineClamp: 1,
+                          WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                        }}>
+                          {n.message ?? n.body}
+                        </div>
+                      </div>
+                      <span style={{ fontSize: 10, color: 'var(--text-subtle)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        {formatRelativeTime(n.created_at)}
+                      </span>
+                    </div>
+                  ))
                 )}
               </div>
 
-              {recentLoading ? (
-                <div className="flex flex-col gap-3 px-4 py-4">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="animate-pulse space-y-1.5">
-                      <div className="h-3 w-3/4 rounded bg-raised" />
-                      <div className="h-3 w-1/2 rounded bg-hover" />
-                    </div>
-                  ))}
-                </div>
-              ) : recentItems.length === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-muted">{t('header.noNotifications')}</p>
-              ) : (
-                <ul>
-                  {recentItems.map(n => (
-                    <li key={n.id}>
-                      <button
-                        type="button"
-                        onClick={() => handleItemClick(n)}
-                        className="w-full text-left px-4 py-3 flex items-start gap-2.5 border-b border-default last:border-b-0 hover:bg-raised transition-colors"
-                      >
-                        {!n.is_read && (
-                          <span
-                            className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-500"
-                            aria-label={t('common.unreadNotification')}
-                          />
-                        )}
-                        <div className={cn('flex-1 min-w-0', n.is_read && 'ml-4')}>
-                          <p className="truncate text-sm font-medium text-primary">{n.title}</p>
-                          <p className="mt-0.5 line-clamp-3 whitespace-pre-line text-xs text-secondary">
-                            {n.message ?? n.body}
-                          </p>
-                          <p className="mt-1 text-[11px] text-muted">
-                            {formatRelativeTime(n.created_at)}
-                          </p>
-                        </div>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              <div className="border-t border-default px-4 py-2.5">
+              {/* Footer — fixed, never scrolls */}
+              <div style={{
+                padding: '10px 16px',
+                borderTop: '1px solid var(--border)',
+                flexShrink: 0,
+              }}>
                 <Link
                   to="/notifications"
                   onClick={() => setOpen(false)}
-                  className="block text-center text-xs text-brand hover:text-brand-hover transition-colors"
+                  style={{
+                    display: 'block', width: '100%', textAlign: 'center',
+                    fontSize: 12, fontWeight: 500,
+                    color: 'var(--text-secondary)',
+                    padding: '6px 0',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'transparent',
+                    textDecoration: 'none',
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'var(--bg-raised)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'; }}
                 >
-                  {t('header.viewAllNotifications')}
+                  {t('header.viewAllNotifications')} →
                 </Link>
               </div>
             </div>,
