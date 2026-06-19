@@ -1,61 +1,168 @@
 import { useTranslation } from 'react-i18next';
-import { useQueryClient } from '@tanstack/react-query';
-
-import { useNotificationSettings } from '@/pages/notifications/hooks/useNotificationSettings';
+import { useAuth } from '@/shared/hooks/useAuth';
+import { USER_ROLE_LABEL_KEYS } from '@/shared/config/constants';
+import { useNotificationPreferences } from '@/features/notifications/preferences/useNotificationPreferences';
 import { DoNotDisturbCard } from '@/pages/notifications/components/DoNotDisturbCard';
 import { PreferencesTable } from '@/pages/notifications/components/PreferencesTable';
 import { PreferencesSkeleton } from '@/pages/notifications/components/PreferencesSkeleton';
 
+// ---------------------------------------------------------------------------
+// Button styles
+// ---------------------------------------------------------------------------
+
+const ghostBtnStyle: React.CSSProperties = {
+  background: 'transparent',
+  border: '1px solid var(--border)',
+  color: 'var(--text-secondary)',
+  borderRadius: 8,
+  padding: '7px 14px',
+  fontSize: 13,
+  fontWeight: 500,
+  cursor: 'pointer',
+  transition: 'background 0.15s, color 0.15s',
+};
+
+const primaryBtnStyle: React.CSSProperties = {
+  background: 'var(--brand)',
+  border: 'none',
+  color: 'var(--text-on-brand)',
+  borderRadius: 8,
+  padding: '7px 16px',
+  fontSize: 13,
+  fontWeight: 500,
+  cursor: 'pointer',
+  transition: 'opacity 0.15s',
+};
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 export default function NotificationPreferencesPage() {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
-  const { preferences, isLoading, isError, pendingKeys, handleToggle } = useNotificationSettings();
+  const { user } = useAuth();
+
+  const {
+    isLoading,
+    isError,
+    localPrefs,
+    toggle,
+    groupToggle,
+    disableAll,
+    enableAll,
+    allDisabled,
+    save,
+    isSaving,
+    isSaved,
+    total,
+    activeCount,
+    pushActive,
+    emailActive,
+    visibleTotal,
+    groupedData,
+    dndSettings,
+    setDndEnabled,
+    setDndFrom,
+    setDndTo,
+    setDndWeekend,
+    saveDnd,
+    isDndSaving,
+    isDndSaved,
+  } = useNotificationPreferences();
+
+  const roleKey = user?.role ? USER_ROLE_LABEL_KEYS[user.role] : '';
+  const roleLabel = roleKey ? t(roleKey) : '';
 
   return (
-    <div className="min-h-screen bg-surface px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-3xl space-y-8">
+    <main style={{ padding: '24px 24px 48px', maxWidth: 860, margin: '0 auto' }}>
+      {/* Page header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          marginBottom: 20,
+          gap: 16,
+          flexWrap: 'wrap',
+        }}
+      >
         <div>
-          <h1 className="text-2xl font-bold text-primary">Настройки уведомлений</h1>
-          <p className="mt-1 text-sm text-secondary">
-            Управляйте тем, какие уведомления вы получаете и по каким каналам.
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+            {t('notifications.settingsTitle')}
+          </h1>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4, margin: '4px 0 0' }}>
+            {t('notifications.activeCount', { total, active: activeCount })}
+            {roleLabel ? ` · ${roleLabel}` : ''}
           </p>
         </div>
-        {isLoading && (
-          <div
-            className="h-24 rounded-xl bg-raised animate-pulse"
-            aria-busy="true"
-            aria-label="Загрузка настроек режима «Не беспокоить»"
-          />
-        )}
-        {preferences && (
-          <DoNotDisturbCard
-            initialEnabled={preferences.dnd_enabled}
-            initialUntil={preferences.dnd_until}
-            onSaved={() => queryClient.invalidateQueries({ queryKey: ['notification-preferences'] })}
-          />
-        )}
-        <section
-          className="rounded-xl border border-default bg-raised p-6"
-          aria-labelledby="prefs-heading"
-        >
-          <h2 id="prefs-heading" className="text-base font-semibold text-primary mb-6">
-            Типы уведомлений
-          </h2>
-          {isLoading && <PreferencesSkeleton />}
-          {isError && (
-            <p className="text-sm text-red-400" role="alert">
-              Не удалось загрузить настройки уведомлений. Попробуйте обновить страницу.
-            </p>
-          )}
-          {preferences && (
-            <PreferencesTable
-              preferences={preferences}
-              pendingKeys={pendingKeys}
-              onToggle={handleToggle}
-            />
-          )}
-        </section>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            type="button"
+            onClick={allDisabled ? enableAll : disableAll}
+            style={ghostBtnStyle}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-hover)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+            }}
+          >
+            {allDisabled ? t('notifications.enableAll') : t('notifications.disableAll')}
+          </button>
+          <button
+            type="button"
+            onClick={save}
+            disabled={isSaving}
+            style={{ ...primaryBtnStyle, opacity: isSaving ? 0.7 : 1, cursor: isSaving ? 'not-allowed' : 'pointer' }}
+          >
+            {isSaving ? t('common.saving') : t('notifications.saveSettings')}
+          </button>
+        </div>
       </div>
-    </div>
+
+      {/* Saved feedback */}
+      {isSaved && (
+        <p style={{ fontSize: 13, color: 'var(--success)', marginBottom: 12 }} role="status">
+          {t('notifications.saved')}
+        </p>
+      )}
+
+      {/* Error feedback */}
+      {isError && (
+        <p style={{ fontSize: 13, color: 'var(--danger)', marginBottom: 12 }} role="alert">
+          {t('notifications.loadError')}
+        </p>
+      )}
+
+      {/* DND Card */}
+      <DoNotDisturbCard
+        settings={dndSettings}
+        onToggle={setDndEnabled}
+        onChangeFrom={setDndFrom}
+        onChangeTo={setDndTo}
+        onChangeWeekend={setDndWeekend}
+        onSave={saveDnd}
+        isSaving={isDndSaving}
+        isSaved={isDndSaved}
+      />
+
+      {/* Preferences Table */}
+      {isLoading ? (
+        <PreferencesSkeleton />
+      ) : (
+        <PreferencesTable
+          groupedData={groupedData}
+          prefs={localPrefs}
+          onToggle={toggle}
+          onGroupToggle={groupToggle}
+          onSave={save}
+          isSaving={isSaving}
+          pushActive={pushActive}
+          emailActive={emailActive}
+          visibleTotal={visibleTotal}
+        />
+      )}
+    </main>
   );
 }
