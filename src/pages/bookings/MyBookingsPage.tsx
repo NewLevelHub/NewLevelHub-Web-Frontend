@@ -11,21 +11,25 @@ import { API } from '@/shared/api/endpoints';
 import { fmtDate, fmtDateTime, fmtDayMonth, fmtTime } from '@/shared/lib/formatDate';
 import {
   BOOKING_STATUSES,
-  BOOKING_STATUS_LABEL_KEYS,
   RESOURCE_TYPES,
   RESOURCE_TYPE_LABEL_KEYS,
   STAFF_UI_PREFIX,
   USER_ROLES,
-  type BookingStatus,
   type ResourceType,
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
-import type { Booking, BookingResourceDetail, CompanyMember, PaginatedResponse } from '@/shared/types';
+import type { Booking, BookingResourceDetail, CompanyMember, PaginatedResponse, RecurringBooking } from '@/shared/types';
 import { shouldShowBookingQrPanel } from '@/pages/bookings/components/BookingQRPanel';
+import { BookingStatusBadge } from '@/pages/bookings/components/BookingStatusBadge';
+import { RecurringSeriesCard } from '@/features/bookings/recurring/components/RecurringSeriesCard';
+import { recurringSeriesDateEntries } from '@/shared/lib/recurringSeriesDates';
+import { RecurringScopeModal } from '@/features/bookings/recurring/components/RecurringScopeModal';
+import type { ScopeModalState } from '@/features/bookings/recurring/types';
+import { CheckInButton, CheckInUrgencyBadge, canCheckIn as isCheckInAllowed, getCheckInUrgency } from '@/features/bookings/components/CheckInButton';
 
-type MyBookingsStatusFilter = 'upcoming' | 'past' | 'cancelled';
+type MyBookingsStatusFilter = 'upcoming' | 'past' | 'cancelled' | 'recurring';
 
 function localDateTimeToIso(value: string): string | undefined {
   if (!value) return undefined;
@@ -54,44 +58,6 @@ function getInitials(name: string): string {
     .join('');
 }
 
-type StatusBadgeProps = { status: string };
-
-function StatusBadge({ status }: StatusBadgeProps) {
-  const { t } = useTranslation();
-
-  const colorClass = useMemo(() => {
-    switch (status) {
-      case BOOKING_STATUSES.CONFIRMED:
-      case BOOKING_STATUSES.CHECKED_IN:
-        return 'bg-[color:var(--status-free-bg)] text-[color:var(--status-free-text)]';
-      case 'pending':
-        return 'bg-[color:var(--status-soon-bg)] text-[color:var(--status-soon-text)]';
-      case BOOKING_STATUSES.CANCELLED:
-      case BOOKING_STATUSES.NO_SHOW:
-        return 'bg-[color:var(--status-busy-bg)] text-[color:var(--status-busy-text)]';
-      case BOOKING_STATUSES.COMPLETED:
-        return 'bg-[color:var(--status-na-bg)] text-[color:var(--status-na-text)]';
-      default:
-        return 'bg-[color:var(--status-na-bg)] text-[color:var(--status-na-text)]';
-    }
-  }, [status]);
-
-  const label = BOOKING_STATUS_LABEL_KEYS[status as BookingStatus]
-    ? t(BOOKING_STATUS_LABEL_KEYS[status as BookingStatus])
-    : status;
-
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium',
-        colorClass,
-      )}
-    >
-      <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" />
-      {label}
-    </span>
-  );
-}
 
 export default function MyBookingsPage() {
   const { t, i18n } = useTranslation();
@@ -112,6 +78,7 @@ export default function MyBookingsPage() {
   const [openActionsId, setOpenActionsId] = useState<number | null>(null);
   const [dropdownCoords, setDropdownCoords] = useState<{ top: number; right: number } | null>(null);
   const actionButtonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+  const [recurringScopeModal, setRecurringScopeModal] = useState<ScopeModalState | null>(null);
 
   useEffect(() => {
     if (openActionsId === null) return;
@@ -132,6 +99,7 @@ export default function MyBookingsPage() {
       { value: 'upcoming' as const, label: t('common.bookingFilter.upcoming') },
       { value: 'past' as const, label: t('common.bookingFilter.past') },
       { value: 'cancelled' as const, label: t('common.bookingFilter.cancelled') },
+      { value: 'recurring' as const, label: t('booking.recurring.myTab') },
     ],
     [t],
   );
@@ -147,7 +115,10 @@ export default function MyBookingsPage() {
     [t],
   );
 
+  const isRecurringTab = statusTab === 'recurring';
+
   const queryParams = useMemo(() => {
+    if (isRecurringTab) return { status: 'upcoming' };
     const params: Record<string, string> = { status: statusTab };
     if (resourceType) params.resource_type = resourceType;
     const fromIso = localDateTimeToIso(dateFrom);
@@ -155,7 +126,7 @@ export default function MyBookingsPage() {
     if (fromIso) params.date_from = fromIso;
     if (toIso) params.date_to = toIso;
     return params;
-  }, [statusTab, resourceType, dateFrom, dateTo]);
+  }, [statusTab, resourceType, dateFrom, dateTo, isRecurringTab]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['my-bookings', queryParams],
@@ -167,6 +138,7 @@ export default function MyBookingsPage() {
       return res;
     },
     refetchInterval: 30_000,
+    enabled: !isRecurringTab,
   });
 
   const cancelMutation = useMutation({
@@ -288,6 +260,19 @@ export default function MyBookingsPage() {
     onError: (error: unknown) => {
       setEditSuccess(null);
       setEditError(getApiError(error).message);
+    },
+  });
+
+  const recurringDeleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiClient.delete(API.bookings.recurring.detail(String(id)));
+    },
+    onSuccess: async () => {
+      setRecurringScopeModal(null);
+      await queryClient.invalidateQueries({ queryKey: ['my-bookings-recurring'] });
+    },
+    onError: () => {
+      setRecurringScopeModal(null);
     },
   });
 
@@ -467,8 +452,16 @@ export default function MyBookingsPage() {
           )}
         </div>
 
+        {/* Recurring tab content */}
+        {isRecurringTab && (
+          <RecurringTabContent
+            userId={user?.id ?? null}
+            onScopeModal={(modal) => setRecurringScopeModal(modal)}
+          />
+        )}
+
         {/* Table */}
-        {isLoading ? (
+        {!isRecurringTab && (isLoading ? (
           <div className="px-4 py-10">
             <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -508,6 +501,9 @@ export default function MyBookingsPage() {
                   const start = new Date(b.start_time);
                   const end = new Date(b.end_time);
                   const isActionsOpen = openActionsId === b.id;
+                  const rowNow = new Date();
+                  const rowUrgency = getCheckInUrgency(b, rowNow);
+                  const rowCanCheckIn = isCheckInAllowed(b, rowNow);
 
                   return (
                     <tr
@@ -528,6 +524,11 @@ export default function MyBookingsPage() {
                           <p className="text-[11px] text-[color:var(--status-free-text)] mt-0.5">
                             {t('booking.myBookings.checkedIn', { time: fmtDateTime(b.checked_in_at) })}
                           </p>
+                        )}
+                        {rowUrgency !== 'none' && (
+                          <div className="mt-1">
+                            <CheckInUrgencyBadge urgency={rowUrgency} />
+                          </div>
                         )}
                       </td>
                       <td className="px-3 py-2.5 align-middle">
@@ -550,7 +551,12 @@ export default function MyBookingsPage() {
                         {fmtTime(end)}
                       </td>
                       <td className="px-3 py-2.5 align-middle">
-                        <StatusBadge status={b.status} />
+                        <div className="flex flex-col items-start gap-1">
+                          <BookingStatusBadge status={b.status} />
+                          {rowCanCheckIn && (
+                            <CheckInButton booking={b} variant="row" />
+                          )}
+                        </div>
                       </td>
                       <td className="w-8 px-3 py-2.5 align-middle">
                         <button
@@ -587,7 +593,7 @@ export default function MyBookingsPage() {
               </tbody>
             </table>
           </div>
-        )}
+        ))}
       </div>
 
       {/* Edit Modal */}
@@ -752,20 +758,15 @@ export default function MyBookingsPage() {
         const booking = rows.find((b) => b.id === openActionsId);
         if (!booking) return null;
 
-        const start = new Date(booking.start_time);
-        const end = new Date(booking.end_time);
-        const now = new Date();
+        const dropdownNow = new Date();
         const canCancel =
           statusTab === 'upcoming' &&
           booking.status === BOOKING_STATUSES.CONFIRMED;
-        const canCheckIn =
+        const dropdownCanCheckIn =
           statusTab === 'upcoming' &&
-          booking.status === BOOKING_STATUSES.CONFIRMED &&
           user !== null &&
           booking.user === user.id &&
-          now >= start &&
-          now <= end &&
-          !booking.checked_in_at;
+          isCheckInAllowed(booking, dropdownNow);
         const showQrLink = shouldShowBookingQrPanel(booking);
 
         const closeDropdown = () => {
@@ -796,7 +797,7 @@ export default function MyBookingsPage() {
                   {t('booking.myBookings.showQr')}
                 </Link>
               )}
-              {canCheckIn && (
+              {dropdownCanCheckIn && (
                 <button
                   type="button"
                   role="menuitem"
@@ -836,7 +837,7 @@ export default function MyBookingsPage() {
                   {t('common.cancel')}
                 </button>
               )}
-              {!canCheckIn && !canCancel && !showQrLink && (
+              {!dropdownCanCheckIn && !canCancel && !showQrLink && (
                 <span className="block px-3 py-1.5 text-[12px] text-[color:var(--text-muted)]">
                   {t('booking.manage.noActions')}
                 </span>
@@ -846,6 +847,138 @@ export default function MyBookingsPage() {
           document.body,
         );
       })()}
+
+      {/* Recurring scope modal */}
+      {recurringScopeModal && (
+        <RecurringScopeModal
+          mode={recurringScopeModal.mode}
+          bookingLabel={recurringScopeModal.bookingLabel}
+          onClose={() => setRecurringScopeModal(null)}
+          onConfirm={(scope) => {
+            if (scope === 'all') {
+              recurringDeleteMutation.mutate(recurringScopeModal.seriesId);
+            } else {
+              setRecurringScopeModal(null);
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Inline RecurringTabContent ──────────────────────────────────────────────
+
+const WEEKDAY_LABEL_KEYS_TAB = [
+  'booking.recurring.monday',
+  'booking.recurring.tuesday',
+  'booking.recurring.wednesday',
+  'booking.recurring.thursday',
+  'booking.recurring.friday',
+  'booking.recurring.saturday',
+  'booking.recurring.sunday',
+] as const;
+
+interface RecurringTabContentProps {
+  userId: number | null;
+  onScopeModal: (modal: ScopeModalState) => void;
+}
+
+function RecurringTabContent({ userId, onScopeModal }: RecurringTabContentProps) {
+  const { t } = useTranslation();
+
+  const { data: resourcesData } = useQuery({
+    queryKey: ['my-bookings-recurring', 'resources'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PaginatedResponse<{ id: number; name: string }>>(
+        API.bookings.resources.list,
+        { params: { page_size: 1000, ordering: 'name' } },
+      );
+      return data.results;
+    },
+  });
+
+  const { data: recurringData, isLoading } = useQuery({
+    queryKey: ['my-bookings-recurring'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PaginatedResponse<RecurringBooking> | RecurringBooking[]>(
+        API.bookings.recurring.list,
+      );
+      return Array.isArray(data) ? data : data.results;
+    },
+  });
+
+  const resourceNameById = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const r of resourcesData ?? []) map.set(r.id, r.name);
+    return map;
+  }, [resourcesData]);
+
+  const dayLabels = WEEKDAY_LABEL_KEYS_TAB.map((key) => t(key));
+
+  const myRows = useMemo(
+    () => (recurringData ?? []).filter((r) => !userId || r.user === userId),
+    [recurringData, userId],
+  );
+
+  if (isLoading) {
+    return (
+      <div className="px-4 py-10">
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-20 rounded-[var(--radius-sm)] bg-[color:var(--bg-raised)] animate-pulse"
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (myRows.length === 0) {
+    return (
+      <div className="px-4 py-12 text-center">
+        <p className="text-[13px] font-medium text-[color:var(--text-primary)]">
+          {t('recurring.noRecurring')}
+        </p>
+        <p className="mt-1 text-[12px] text-[color:var(--text-muted)]">
+          {t('recurring.noRecurringSub')}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 py-4 space-y-3">
+      {myRows.map((series) => {
+        const seriesEntries = recurringSeriesDateEntries({
+          dayOfWeek: series.day_of_week,
+          validFrom: series.valid_from,
+          repeatUntil: series.valid_until,
+          endTime: series.end_time,
+          recurrenceType: series.recurrence_type ?? 'weekly',
+        });
+        const nextEntry = seriesEntries.find((e) => e.status === 'will_create');
+        const seriesNotStarted =
+          series.is_active &&
+          nextEntry !== undefined &&
+          new Date(`${nextEntry.iso}T${series.start_time}`) > new Date();
+        return (
+          <RecurringSeriesCard
+            key={series.id}
+            series={series}
+            resourceName={resourceNameById.get(series.resource_id) ?? t('booking.recurring.resourcePrefix', { id: series.resource_id })}
+            dayLabel={dayLabels[series.day_of_week] ?? String(series.day_of_week)}
+            onCancel={seriesNotStarted ? () =>
+              onScopeModal({
+                mode: 'cancel',
+                bookingLabel: resourceNameById.get(series.resource_id) ?? '...',
+                seriesId: series.id,
+              }) : undefined}
+          />
+        );
+      })}
     </div>
   );
 }

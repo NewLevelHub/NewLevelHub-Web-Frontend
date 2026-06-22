@@ -456,6 +456,7 @@ export interface RecurringBooking {
   user_name?: string;
   user_role?: UserRole;
   company: number | null;
+  recurrence_type?: 'weekly' | 'daily';
   day_of_week: number;
   start_time: string;
   end_time: string;
@@ -468,10 +469,11 @@ export interface RecurringBooking {
 
 export interface RecurringBookingCreatePayload {
   resource_id: number;
-  day_of_week: number;
+  recurrence_type: 'weekly' | 'daily';
   start_time: string;
   end_time: string;
   repeat_until: string;
+  day_of_week?: number;
 }
 
 export interface RecurringBookingCreateResponse extends RecurringBooking {
