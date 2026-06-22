@@ -1,107 +1,149 @@
 import { useTranslation } from 'react-i18next';
-import type { NotificationPreferences, NotificationType } from '@/shared/types';
-import { Toggle } from '@/pages/notifications/components/Toggle';
+import { Mail, Smartphone } from 'lucide-react';
 
-const NOTIFICATION_LABELS: Record<NotificationType, string> = {
-  booking_confirmed: 'Бронирование подтверждено',
-  booking_reminder: 'Напоминание о бронировании',
-  booking_cancelled: 'Бронирование отменено',
-  booking_completed: 'Бронирование завершено',
-  task_assigned: 'Задача назначена',
-  task_moved: 'Задача перемещена',
-  task_comment: 'Комментарий к задаче',
-  task_deadline: 'Дедлайн задачи',
-  guest_validated: 'Гость подтверждён',
-  guest_pass_expiring: 'Пропуск гостя истекает',
-  service_request_update: 'Обновление заявки',
-  announcement: 'Объявление',
-  invitation: 'Приглашение',
-  leave_review: 'Проверка отпуска',
-  new_employee: 'Новый сотрудник',
-  system: 'Системное',
-};
+import type { NotificationPreferenceEntry, NotificationType } from '@/shared/types';
+import { PreferenceGroupSection } from '@/features/notifications/preferences/PreferenceGroupSection';
+import type { NotificationChannel, PreferenceGroup } from '@/features/notifications/preferences/types';
 
-const ALL_TYPES = Object.keys(NOTIFICATION_LABELS) as NotificationType[];
-
-const EMAIL_SUPPORTED_TYPES = new Set<NotificationType>([
-  'booking_confirmed',
-  'booking_completed',
-  'task_assigned',
-  'task_deadline',
-  'leave_review',
-  'guest_validated',
-  'announcement',
-  'new_employee',
-]);
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
 
 export interface PreferencesTableProps {
-  preferences: NotificationPreferences;
-  pendingKeys: Set<string>;
-  onToggle: (type: NotificationType, field: 'in_app' | 'email', value: boolean) => void;
+  groupedData: PreferenceGroup[];
+  prefs: Record<NotificationType, NotificationPreferenceEntry>;
+  onToggle: (type: NotificationType, channel: NotificationChannel) => void;
+  onGroupToggle: (groupId: string, channel: NotificationChannel, value: boolean) => void;
+  onSave: () => void;
+  isSaving: boolean;
+  pushActive: number;
+  emailActive: number;
+  visibleTotal: number;
 }
 
-export function PreferencesTable({ preferences, pendingKeys, onToggle }: PreferencesTableProps) {
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export function PreferencesTable({
+  groupedData,
+  prefs,
+  onToggle,
+  onGroupToggle,
+  onSave,
+  isSaving,
+  pushActive,
+  emailActive,
+  visibleTotal,
+}: PreferencesTableProps) {
   const { t } = useTranslation();
+
+  const headerCellStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 4,
+    color: 'var(--text-muted)',
+    fontSize: 11,
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+  };
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm" role="table" aria-label="Настройки уведомлений">
-        <thead>
-          <tr className="border-b border-default">
-            <th
-              scope="col"
-              className="py-3 pr-6 text-left text-xs font-medium uppercase tracking-wider text-secondary"
-            >
-              Тип уведомления
-            </th>
-            <th
-              scope="col"
-              className="py-3 px-6 text-center text-xs font-medium uppercase tracking-wider text-secondary"
-            >{t('common.inApp')}</th>
-            <th
-              scope="col"
-              className="py-3 pl-6 text-center text-xs font-medium uppercase tracking-wider text-secondary"
-            >
-              Email
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-[color:var(--border)]/50">
-          {ALL_TYPES.map((type) => {
-            const entry = preferences[type];
-            const inAppKey = `${type}:in_app`;
-            const emailKey = `${type}:email`;
-            return (
-              <tr key={type} className="hover:bg-hover/30 transition-colors">
-                <td className="py-3 pr-6 text-secondary">
-                  {NOTIFICATION_LABELS[type]}
-                </td>
-                <td className="py-3 px-6 text-center">
-                  <div className="flex justify-center">
-                    <Toggle
-                      checked={entry?.in_app ?? false}
-                      onChange={(v) => onToggle(type, 'in_app', v)}
-                      disabled={pendingKeys.has(inAppKey)}
-                    />
-                  </div>
-                </td>
-                <td className="py-3 pl-6 text-center">
-                  <div className="flex justify-center">
-                    {EMAIL_SUPPORTED_TYPES.has(type) ? (
-                      <Toggle
-                        checked={entry?.email ?? false}
-                        onChange={(v) => onToggle(type, 'email', v)}
-                        disabled={pendingKeys.has(emailKey)}
-                      />
-                    ) : (
-                      <span className="text-muted text-xs select-none">—</span>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div
+      style={{
+        borderRadius: 12,
+        border: '1px solid var(--border)',
+        background: 'var(--bg-surface)',
+        overflow: 'hidden',
+        marginTop: 16,
+      }}
+    >
+      {/* Column header row */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 90px 90px',
+          background: 'var(--bg-raised)',
+          borderBottom: '1px solid var(--border)',
+          padding: '10px 16px',
+        }}
+      >
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.06em',
+            color: 'var(--text-muted)',
+          }}
+        >
+          {t('notifications.typesHeading')}
+        </span>
+        <div style={headerCellStyle}>
+          <Smartphone size={13} aria-hidden="true" />
+          Push
+        </div>
+        <div style={headerCellStyle}>
+          <Mail size={13} aria-hidden="true" />
+          Email
+        </div>
+      </div>
+
+      {/* Groups */}
+      {groupedData.map((group) => (
+        <PreferenceGroupSection
+          key={group.id}
+          group={group}
+          prefs={prefs}
+          onToggle={onToggle}
+          onGroupToggle={onGroupToggle}
+        />
+      ))}
+
+      {/* Footer */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 16,
+          background: 'var(--bg-raised)',
+          borderTop: '1px solid var(--border)',
+          padding: '12px 16px',
+          flexWrap: 'wrap',
+        }}
+      >
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            {t('notifications.pushSummary', { count: pushActive, total: visibleTotal })}
+          </span>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            {t('notifications.emailSummary', { count: emailActive, total: visibleTotal })}
+          </span>
+        </div>
+
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={isSaving}
+          style={{
+            background: 'var(--brand)',
+            color: 'var(--text-on-brand)',
+            border: 'none',
+            borderRadius: 8,
+            padding: '7px 18px',
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: isSaving ? 'not-allowed' : 'pointer',
+            opacity: isSaving ? 0.7 : 1,
+            transition: 'opacity 0.15s',
+          }}
+        >
+          {isSaving ? t('common.saving') : t('notifications.saveSettings')}
+        </button>
+      </div>
     </div>
   );
 }

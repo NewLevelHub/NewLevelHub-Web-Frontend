@@ -913,6 +913,8 @@ export type NotificationType =
   | 'announcement'
   | 'invitation'
   | 'leave_review'
+  | 'leave_approved'
+  | 'leave_rejected'
   | 'new_employee'
   | 'system';
 
@@ -938,6 +940,8 @@ export interface NotificationPreferences {
   announcement: NotificationPreferenceEntry;
   invitation: NotificationPreferenceEntry;
   leave_review: NotificationPreferenceEntry;
+  leave_approved: NotificationPreferenceEntry;
+  leave_rejected: NotificationPreferenceEntry;
   new_employee: NotificationPreferenceEntry;
   system: NotificationPreferenceEntry;
 }

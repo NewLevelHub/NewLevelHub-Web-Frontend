@@ -14,18 +14,36 @@ export function Toggle({ checked, onChange, disabled }: ToggleProps) {
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
+      style={{
+        width: 36,
+        height: 20,
+        borderRadius: 10,
+        border: 'none',
+        padding: 2,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        background: checked ? 'var(--brand)' : 'var(--border-strong)',
+        transition: 'background 0.2s',
+        opacity: disabled ? 0.5 : 1,
+        flexShrink: 0,
+        display: 'inline-flex',
+        alignItems: 'center',
+      }}
       className={cn(
-        'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
-        'disabled:cursor-not-allowed disabled:opacity-50',
-        checked ? 'bg-blue-600' : 'bg-gray-600',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
       )}
     >
       <span
-        className={cn(
-          'pointer-events-none inline-block h-4 w-4 rounded-full bg-surface shadow ring-0 transition-transform',
-          checked ? 'translate-x-4' : 'translate-x-0',
-        )}
+        style={{
+          display: 'block',
+          width: 16,
+          height: 16,
+          borderRadius: '50%',
+          background: 'white',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+          transform: checked ? 'translateX(16px)' : 'translateX(0px)',
+          transition: 'transform 0.2s',
+          pointerEvents: 'none',
+        }}
       />
     </button>
   );

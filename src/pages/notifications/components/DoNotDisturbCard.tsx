@@ -1,167 +1,126 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMutation } from '@tanstack/react-query';
-import { Bell, BellOff } from 'lucide-react';
+import { Bell } from 'lucide-react';
 
-import { apiClient } from '@/shared/api/client';
-import { API } from '@/shared/api/endpoints';
-import { cn } from '@/shared/lib/cn';
 import { Toggle } from '@/pages/notifications/components/Toggle';
+import { DndSettingsForm } from '@/features/notifications/preferences/DndSettingsForm';
+import type { DndSettings } from '@/features/notifications/preferences/types';
 
-export interface DndPayload {
-  enabled: boolean;
-  until?: string;
-}
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
 
 export interface DoNotDisturbCardProps {
-  initialEnabled: boolean;
-  initialUntil: string | null;
-  onSaved: () => void;
+  settings: DndSettings;
+  onToggle: (v: boolean) => void;
+  onChangeFrom: (v: string) => void;
+  onChangeTo: (v: string) => void;
+  onChangeWeekend: (v: boolean) => void;
+  onSave: () => void;
+  isSaving: boolean;
+  isSaved: boolean;
 }
 
-export function DoNotDisturbCard({ initialEnabled, initialUntil, onSaved }: DoNotDisturbCardProps) {
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export function DoNotDisturbCard({
+  settings,
+  onToggle,
+  onChangeFrom,
+  onChangeTo,
+  onChangeWeekend,
+  onSave,
+  isSaving,
+  isSaved,
+}: DoNotDisturbCardProps) {
   const { t } = useTranslation();
-  const [enabled, setEnabled] = useState(initialEnabled);
-  const [until, setUntil] = useState(() => {
-    if (initialUntil) {
-      return new Date(initialUntil).toLocaleString('sv').slice(0, 16);
-    }
-    return '';
-  });
-  const [success, setSuccess] = useState(false);
-  const [fieldError, setFieldError] = useState<string | null>(null);
-  const [generalError, setGeneralError] = useState<string | null>(null);
 
-  const mutation = useMutation({
-    mutationFn: (payload: DndPayload) =>
-      apiClient.post(API.notifications.doNotDisturb, payload).then((r) => r.data),
-    onSuccess: () => {
-      setSuccess(true);
-      setFieldError(null);
-      setGeneralError(null);
-      onSaved();
-    },
-    onError: (error: unknown) => {
-      setSuccess(false);
-      const detail = (error as { response?: { data?: { detail?: Record<string, string[]> } } })
-        ?.response?.data?.detail;
-      if (detail?.dnd_until?.length) {
-        setFieldError('Укажите дату и время в будущем.');
-        setGeneralError(null);
-      } else {
-        setFieldError(null);
-        setGeneralError('Не удалось сохранить настройки. Попробуйте снова.');
-      }
-    },
-  });
-
-  function handleSave() {
-    setSuccess(false);
-    setFieldError(null);
-    setGeneralError(null);
-    const payload: DndPayload = { enabled };
-    if (enabled && until) {
-      payload.until = new Date(until).toISOString();
-    }
-    mutation.mutate(payload);
-  }
+  const statusText = settings.enabled
+    ? t('notifications.dndActiveRange', { from: settings.from, to: settings.to })
+    : t('notifications.dndInactive');
 
   return (
-    <section
-      className="rounded-xl border border-default bg-raised p-6"
-      aria-labelledby="dnd-heading"
+    <div
+      style={{
+        borderRadius: 12,
+        border: '1px solid var(--border)',
+        background: 'var(--bg-surface)',
+        padding: '16px 20px',
+      }}
     >
-      <div className="flex items-center gap-3 mb-4">
-        {enabled ? (
-          <BellOff className="h-5 w-5 text-blue-400" aria-hidden="true" />
-        ) : (
-          <Bell className="h-5 w-5 text-secondary" aria-hidden="true" />
-        )}
-        <h2 id="dnd-heading" className="text-base font-semibold text-primary">
-          Режим «Не беспокоить»
-        </h2>
-      </div>
-
-      <div className="flex items-center gap-3 mb-4">
-        <Toggle
-          checked={enabled}
-          onChange={(v) => {
-            setEnabled(v);
-            setFieldError(null);
-            setGeneralError(null);
-            setSuccess(false);
+      {/* Main row: icon + title + status + toggle */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 8,
+            background: settings.enabled ? 'var(--warning-bg)' : 'var(--bg-raised)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
           }}
-          disabled={mutation.isPending}
-        />
-        <span className="text-sm text-secondary">
-          {enabled ? 'Включён' : 'Выключен'}
-        </span>
+        >
+          <Bell
+            size={18}
+            aria-hidden="true"
+            style={{ color: settings.enabled ? 'var(--warning)' : 'var(--text-muted)' }}
+          />
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
+            {t('notifications.dndTitle')}
+          </p>
+          <p style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+            {statusText}
+          </p>
+        </div>
+
+        <Toggle checked={settings.enabled} onChange={onToggle} disabled={isSaving} />
       </div>
 
-      {initialEnabled && (
-        <p className="text-sm text-amber-400 mb-4">
-          {initialUntil
-            ? `Активен до: ${new Date(initialUntil).toLocaleString('ru')}`
-            : 'Активен без ограничения по времени'}
-        </p>
+      {/* Expanded form when enabled */}
+      {settings.enabled && (
+        <DndSettingsForm
+          settings={settings}
+          onChangeFrom={onChangeFrom}
+          onChangeTo={onChangeTo}
+          onChangeWeekend={onChangeWeekend}
+          disabled={isSaving}
+        />
       )}
 
-      {enabled && (
-        <div className="mb-4">
-          <label
-            htmlFor="dnd-until"
-            className="block text-sm text-secondary mb-1"
-          >
-            До (необязательно)
-          </label>
-          {(() => {
-            const nowLocal = new Date(Date.now() + 60_000).toLocaleString('sv').slice(0, 16);
-            return (
-              <>
-                <input
-                  id="dnd-until"
-                  type="datetime-local"
-                  value={until}
-                  min={nowLocal}
-                  onChange={(e) => { setUntil(e.target.value); setFieldError(null); }}
-                  className={cn(
-                    'rounded-lg border bg-hover px-3 py-2 text-sm text-primary [color-scheme:dark]',
-                    'focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50',
-                    fieldError ? 'border-red-500' : 'border-default',
-                  )}
-                  disabled={mutation.isPending}
-                />
-                {fieldError && (
-                  <p className="mt-1 text-xs text-red-400" role="alert">{fieldError}</p>
-                )}
-              </>
-            );
-          })()}
-        </div>
-      )}
-
-      <div className="flex items-center gap-4">
+      {/* Save row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 14 }}>
         <button
           type="button"
-          onClick={handleSave}
-          disabled={mutation.isPending}
-          className={cn(
-            'rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white',
-            'hover:bg-blue-500 transition-colors',
-            'disabled:opacity-50 disabled:cursor-not-allowed',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
-          )}
+          onClick={onSave}
+          disabled={isSaving}
+          style={{
+            background: 'var(--brand)',
+            color: 'var(--text-on-brand)',
+            border: 'none',
+            borderRadius: 8,
+            padding: '7px 16px',
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: isSaving ? 'not-allowed' : 'pointer',
+            opacity: isSaving ? 0.7 : 1,
+            transition: 'opacity 0.15s',
+          }}
         >
-          {mutation.isPending ? t('common.saving') : t('common.save')}
+          {isSaving ? t('common.saving') : t('common.save')}
         </button>
 
-        {success && (
-          <span className="text-sm text-green-400" role="status">Настройки сохранены</span>
-        )}
-        {generalError && (
-          <span className="text-sm text-red-400" role="alert">{generalError}</span>
+        {isSaved && (
+          <span style={{ fontSize: 12, color: 'var(--success)' }} role="status">
+            {t('notifications.saved')}
+          </span>
         )}
       </div>
-    </section>
+    </div>
   );
 }
