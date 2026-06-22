@@ -106,7 +106,6 @@ export function BoardFilterBar({ filters, onChange, members = [], currentUserId,
           <option value="low">{t('crm.priority.low')}</option>
           <option value="medium">{t('crm.priority.medium')}</option>
           <option value="high">{t('crm.priority.high')}</option>
-          <option value="critical">{t('crm.priority.critical')}</option>
         </select>
         <ChevronDown
           className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[color:var(--text-muted)]"

@@ -50,9 +50,8 @@ export const CrmTaskCard = memo(function CrmTaskCard({ task, onClick, onArchive 
         className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r-sm"
         style={{
           backgroundColor:
-            task.priority === 'critical' ? 'var(--danger)' :
-            task.priority === 'high'     ? 'var(--warning)' :
-            task.priority === 'medium'   ? '#d4b300' :
+            task.priority === 'high'   ? 'var(--warning)' :
+            task.priority === 'medium' ? '#d4b300' :
             'var(--text-subtle)',
         }}
       />

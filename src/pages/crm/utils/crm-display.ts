@@ -8,14 +8,12 @@ export const CRM_PRIORITY_LABEL_KEYS: Record<CrmTaskPriority, string> = {
   low: 'crm.priority.low',
   medium: 'crm.priority.medium',
   high: 'crm.priority.high',
-  critical: 'crm.priority.critical',
 };
 
 export const CRM_PRIORITY_BADGE_CLASS: Record<CrmTaskPriority, string> = {
   low: 'bg-gray-700 text-gray-300 border-gray-600',
   medium: 'bg-blue-900/60 text-blue-300 border-blue-700',
   high: 'bg-orange-900/60 text-orange-300 border-orange-700',
-  critical: 'bg-red-900/60 text-red-300 border-red-700',
 };
 
 export function formatDeadline(iso: string): string {

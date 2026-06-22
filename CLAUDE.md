@@ -347,6 +347,261 @@ contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border
 
 ---
 
+## Table Styling Standard
+
+All data tables in the project must use these exact style values. Do not use Tailwind classes on `<th>` or `<td>`. Do not hardcode hex colors. This standard is derived from `ManageBookingsPage.tsx` and `MyBookingsPage.tsx` and must be applied to every new table and every refactored table.
+
+### Card wrapper `<div>`
+
+```tsx
+<div style={{
+  background: 'var(--bg-surface)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-lg)',
+  boxShadow: 'var(--shadow-card)',
+  overflow: 'hidden',
+}}>
+```
+
+### `<table>` element
+
+```tsx
+<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+```
+
+### `thStyle` — header cell
+
+```ts
+const thStyle: React.CSSProperties = {
+  textAlign: 'left',
+  fontSize: 11,
+  fontWeight: 500,
+  color: 'var(--text-muted)',
+  padding: '8px 12px',
+  whiteSpace: 'nowrap',
+};
+```
+
+### `tdStyle` — body cell
+
+```ts
+const tdStyle: React.CSSProperties = {
+  padding: '10px 12px',
+  fontSize: 13,
+  color: 'var(--text-primary)',
+  verticalAlign: 'middle',
+};
+```
+
+### Row borders — on `<tr>`, not on `<th>`/`<td>`
+
+The `borderBottom` belongs on the `<tr>`, never on individual cells:
+
+```tsx
+// thead row
+<tr style={{ borderBottom: '1px solid var(--border)' }}>
+
+// tbody rows
+<tr
+  style={{ borderBottom: '1px solid var(--border)' }}
+  onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--bg-hover)'; }}
+  onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = ''; }}
+>
+```
+
+When the table is inside a Tailwind-styled page (e.g. using `className` on the `<table>` wrapper), use the equivalent Tailwind pattern from the bookings pages:
+
+```tsx
+<table className="w-full border-collapse text-[13px]">
+  <thead>
+    <tr className="border-b border-[color:var(--border)]">
+      <th className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">...</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr className="border-b border-[color:var(--border)] hover:bg-[color:var(--bg-hover)] transition-colors">
+      <td className="px-3 py-2.5 align-middle">...</td>
+    </tr>
+  </tbody>
+</table>
+```
+
+### Rules
+
+- **Do not** add `textTransform: 'uppercase'`, `letterSpacing`, or `background: 'transparent'` to `thStyle` — these are not part of the standard.
+- **Do not** put `borderBottom` on `<td>` or `<th>` — put it on `<tr>`.
+- **Do not** use `border-faint` for table row separators — use `var(--border)`.
+- **Do not** hardcode hex colors anywhere in table cells (e.g. `#ecfdf5`, `#047857`) — use CSS vars.
+
+---
+
+## Modal Styling Standard
+
+All modals in the project must use these exact style values. Match `BookingModal` (`src/shared/ui/BookingModal.tsx`) as the canonical reference. Do not invent new modal layouts — apply this standard to every new modal and every refactored modal.
+
+### Backdrop
+
+```tsx
+<div
+  className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+  onClick={(e) => e.target === e.currentTarget && handleClose()}
+  role="dialog"
+  aria-modal="true"
+>
+```
+
+- `position: fixed`, `inset: 0`, `z-index: 50`
+- Backdrop color: `bg-black/50` (`rgba(0,0,0,0.5)`)
+- Content alignment: `flex items-center justify-center`
+- Padding: `p-4`
+
+### Modal box
+
+```tsx
+<div className="relative w-full max-w-[560px] rounded-2xl border border-default bg-surface shadow-xl overflow-y-auto max-h-[90vh]">
+```
+
+- Max width: `max-w-[560px]`
+- Border radius: `rounded-2xl`
+- Border: `border border-default`
+- Background: `bg-surface`
+- Shadow: `shadow-xl`
+- Scroll: `overflow-y-auto max-h-[90vh]`
+
+### Header
+
+```tsx
+<div className="flex items-start justify-between px-[22px] pt-[18px] pb-[14px]">
+  <div className="min-w-0 pr-4">
+    <h2 className="text-base font-semibold text-primary tracking-[-0.015em]">
+      {title}
+    </h2>
+    <p className="text-xs text-muted mt-0.5">{subtitle}</p>
+  </div>
+  <button
+    type="button"
+    onClick={onClose}
+    className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg text-secondary hover:bg-raised hover:text-primary focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)]"
+    aria-label={t('common.close')}
+  >
+    <X size={14} />
+  </button>
+</div>
+```
+
+- Padding: `px-[22px] pt-[18px] pb-[14px]`
+- No `border-bottom` on the header — the separator belongs on the footer (`border-t`)
+- Title: `text-base font-semibold text-primary tracking-[-0.015em]`
+- Subtitle: `text-xs text-muted mt-0.5`
+- Close button: `w-7 h-7 rounded-lg`
+
+### Body
+
+```tsx
+<div className="px-[22px] pb-0 flex flex-col gap-4 max-h-[calc(90vh-120px)] overflow-y-auto">
+```
+
+- Padding: `px-[22px] pb-0`
+- Gap between fields: `gap-4`
+- Scroll guard: `max-h-[calc(90vh-120px)] overflow-y-auto`
+
+### Footer
+
+```tsx
+<div className="flex justify-end gap-2 border-t border-[color:var(--border-faint)] px-[22px] pt-[14px] pb-[18px] mt-3">
+```
+
+- Padding: `px-[22px] pt-[14px] pb-[18px]`
+- Top separator: `border-t border-[color:var(--border-faint)]`
+- Gap between buttons: `gap-2`
+- Top margin from body: `mt-3`
+- No background override on footer (inherits `bg-surface`)
+
+### `inputStyle` object
+
+```ts
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  boxSizing: 'border-box',
+  height: 36,
+  padding: '0 12px',
+  borderRadius: 'var(--radius-sm)',
+  border: '1px solid var(--border)',
+  background: 'var(--bg-surface)',
+  color: 'var(--text-primary)',
+  fontSize: 14,
+  outline: 'none',
+  fontFamily: 'inherit',
+};
+```
+
+For `<textarea>`, override height and add vertical padding:
+
+```ts
+style={{ ...inputStyle, height: 'auto', padding: '8px 12px', resize: 'none', minHeight: 80 }}
+```
+
+### `labelStyle` object
+
+```ts
+const labelStyle: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 500,
+  color: 'var(--text-secondary)',
+  display: 'block',
+  marginBottom: 6,
+};
+```
+
+### Cancel button
+
+```tsx
+<button
+  type="button"
+  onClick={onClose}
+  className="h-8 px-4 text-sm font-medium text-secondary hover:bg-raised rounded-[var(--radius-sm)] transition-colors"
+>
+```
+
+- Height: `h-8` (32px)
+- Padding: `px-4`
+- Font: `text-sm font-medium`
+- Color: `text-secondary`
+- Background: no default background; `hover:bg-raised` on hover
+- No border
+
+### Primary (submit) button
+
+```tsx
+<button
+  type="submit"
+  className={cn(
+    'inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)]',
+    'text-white bg-[color:var(--brand)] hover:opacity-90 transition-opacity',
+    'disabled:opacity-60 disabled:cursor-not-allowed',
+  )}
+>
+```
+
+- Height: `h-8` (32px)
+- Padding: `px-4`
+- Font: `text-sm font-medium`
+- Background: `bg-[color:var(--brand)]`
+- Text: `text-white`
+- Hover: `hover:opacity-90`
+- Disabled: `disabled:opacity-60 disabled:cursor-not-allowed`
+
+### Rules
+
+- **Do not** set `alignItems: 'flex-start'` on the backdrop — always center with `items-center`.
+- **Do not** add `background` to the footer — it inherits `bg-surface` from the modal box.
+- **Do not** use `border-faint` for header separation — put the separator only on the footer with `border-[color:var(--border-faint)]`.
+- **Do not** hardcode `zIndex: 1000` or similar integers — use the Tailwind `z-50` class.
+- **Do not** set `maxWidth: 540` inline — use the class `max-w-[560px]`.
+- **Do not** use `overflow: 'hidden'` on the modal box — use `overflow-y-auto` with `max-h-[90vh]` so the modal scrolls internally.
+
+---
+
 ## Frontend Development
 
 Перед редактированием любого компонента:
