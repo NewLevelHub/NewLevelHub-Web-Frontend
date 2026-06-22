@@ -6,10 +6,9 @@ import {
   Archive,
   Paperclip,
 } from 'lucide-react';
-import { cn } from '@/shared/lib/cn';
 import { fmtDateLong } from '@/shared/lib/formatDate';
 import type { CrmTask } from '@/shared/types';
-import { CRM_PRIORITY_BADGE_CLASS, CRM_PRIORITY_LABEL_KEYS } from '@/pages/crm/utils/crm-display';
+import { CRM_PRIORITY_LABEL_KEYS } from '@/pages/crm/utils/crm-display';
 import { ChecklistSection } from '@/pages/crm/components/CrmTaskChecklistSection';
 import { CommentSection } from '@/pages/crm/components/CrmTaskCommentSection';
 import { HistorySection } from '@/pages/crm/components/CrmTaskHistorySection';
@@ -17,6 +16,63 @@ import { TaskLabelsSection } from '@/pages/crm/components/CrmTaskLabelsSection';
 import { useTaskDetail } from '@/pages/crm/hooks/useTaskDetail';
 
 export type TaskDetailViewProps = ReturnType<typeof useTaskDetail>;
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  boxSizing: 'border-box',
+  height: 36,
+  padding: '0 12px',
+  borderRadius: 'var(--radius-sm)',
+  border: '1px solid var(--border)',
+  background: 'var(--bg-surface)',
+  color: 'var(--text-primary)',
+  fontSize: 14,
+  outline: 'none',
+  fontFamily: 'inherit',
+};
+
+const textareaStyle: React.CSSProperties = {
+  ...inputStyle,
+  height: 'auto',
+  padding: '8px 12px',
+  resize: 'none',
+  minHeight: 100,
+  lineHeight: 1.6,
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 500,
+  color: 'var(--text-secondary)',
+  display: 'block',
+  marginBottom: 6,
+};
+
+const cardStyle: React.CSSProperties = {
+  borderRadius: 'var(--radius-lg)',
+  border: '1px solid var(--border)',
+  background: 'var(--bg-surface)',
+  boxShadow: 'var(--shadow-card)',
+  overflow: 'hidden',
+};
+
+const cardHeaderStyle: React.CSSProperties = {
+  padding: '14px 20px',
+  borderBottom: '1px solid var(--border-faint)',
+};
+
+const cardHeaderTitleStyle: React.CSSProperties = {
+  fontSize: 13,
+  fontWeight: 600,
+  color: 'var(--text-primary)',
+  margin: 0,
+};
+
+const PRIORITY_STYLE: Record<CrmTask['priority'], { col: string; bg: string }> = {
+  high:   { col: 'var(--warning)',   bg: 'var(--warning-bg)' },
+  medium: { col: 'var(--info)',      bg: 'var(--bg-raised)' },
+  low:    { col: 'var(--text-muted)', bg: 'var(--bg-raised)' },
+};
 
 export function TaskDetailView(props: TaskDetailViewProps) {
   const { t } = useTranslation();
@@ -46,7 +102,7 @@ export function TaskDetailView(props: TaskDetailViewProps) {
 
   if (isLoading) {
     return (
-      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-4xl mx-auto space-y-6">
+      <main className="space-y-6">
         <div className="h-4 w-28 rounded bg-hover animate-pulse" />
         <div className="animate-pulse space-y-5">
           <div className="h-8 w-2/3 rounded bg-hover" />
@@ -66,16 +122,39 @@ export function TaskDetailView(props: TaskDetailViewProps) {
 
   if (isError || !task) {
     return (
-      <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-4xl mx-auto space-y-4">
-        <div className="flex items-center gap-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-warning-subtle px-4 py-3 text-sm text-warning">
-          <AlertCircle size={16} className="shrink-0" />
-          <span>{t('crm.taskNotFound')}</span>
+      <main className="space-y-4">
+        <div
+          role="alert"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '10px 14px',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--warning)',
+            background: 'var(--warning-bg)',
+            color: 'var(--warning)',
+            fontSize: 13,
+          }}
+        >
+          <AlertCircle size={15} />
+          {t('crm.taskNotFound')}
         </div>
         <Link
           to="/crm"
-          className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-primary"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            fontSize: 13,
+            color: 'var(--text-muted)',
+            textDecoration: 'none',
+            marginTop: 8,
+          }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = 'var(--text-primary)'; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = 'var(--text-muted)'; }}
         >
-          <ChevronLeft size={16} />
+          <ChevronLeft size={14} />
           {t('common.backToBoards')}
         </Link>
       </main>
@@ -85,20 +164,32 @@ export function TaskDetailView(props: TaskDetailViewProps) {
   const createdDate = fmtDateLong(task.created_at);
 
   return (
-    <main className="px-3 py-4 sm:px-4 sm:py-6 md:py-8 max-w-4xl mx-auto space-y-6">
+    <main className="space-y-6">
       {/* Back link */}
       <Link
         to={boardId ? `/crm/boards/${boardId}` : '/crm'}
-        className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-primary"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          fontSize: 13,
+          color: 'var(--text-muted)',
+          textDecoration: 'none',
+          marginBottom: 16,
+        }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = 'var(--text-primary)'; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = 'var(--text-muted)'; }}
       >
-        <ChevronLeft size={16} />
+        <ChevronLeft size={14} />
         {boardId ? t('common.toBoard') : t('common.toBoards')}
       </Link>
 
       {/* Title card */}
-      <div className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
-        <div className="px-6 pt-5 pb-5">
-          <p className="text-xs text-muted mb-1">{t('crm.taskIdLabel', { id: task.id })}</p>
+      <div style={cardStyle}>
+        <div style={{ padding: '20px 20px 20px' }}>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
+            {t('crm.taskIdLabel', { id: task.id })}
+          </p>
           <input
             id="page-task-title"
             type="text"
@@ -106,11 +197,23 @@ export function TaskDetailView(props: TaskDetailViewProps) {
             onChange={(e) => setTitle(e.target.value)}
             maxLength={255}
             disabled={patchMutation.isPending}
-            className={cn(
-              'w-full bg-transparent text-2xl font-bold text-primary outline-none',
-              'border-b-2 border-transparent focus:border-[color:var(--brand)] transition-colors py-1',
-              'disabled:opacity-60',
-            )}
+            style={{
+              width: '100%',
+              background: 'transparent',
+              fontSize: 22,
+              fontWeight: 700,
+              color: 'var(--text-primary)',
+              border: 'none',
+              borderBottom: '2px solid transparent',
+              outline: 'none',
+              padding: '4px 0',
+              fontFamily: 'inherit',
+              letterSpacing: '-0.025em',
+              opacity: patchMutation.isPending ? 0.6 : 1,
+              transition: 'border-color 0.15s',
+            }}
+            onFocus={(e) => { (e.currentTarget as HTMLInputElement).style.borderBottomColor = 'var(--brand)'; }}
+            onBlur={(e) => { (e.currentTarget as HTMLInputElement).style.borderBottomColor = 'transparent'; }}
           />
         </div>
       </div>
@@ -119,13 +222,13 @@ export function TaskDetailView(props: TaskDetailViewProps) {
         {/* Left column */}
         <div className="lg:col-span-2 space-y-6">
           {/* Description */}
-          <section className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
-            <div className="px-6 pt-5 pb-4 border-b border-[color:var(--border-faint)]">
-              <h2 className="text-base font-semibold text-primary tracking-[-0.015em]">
+          <section style={cardStyle}>
+            <div style={cardHeaderStyle}>
+              <h2 style={cardHeaderTitleStyle}>
                 {t('common.description')}
               </h2>
             </div>
-            <div className="px-6 py-5">
+            <div style={{ padding: '16px 20px' }}>
               <textarea
                 id="page-task-description"
                 value={description}
@@ -133,34 +236,33 @@ export function TaskDetailView(props: TaskDetailViewProps) {
                 rows={6}
                 placeholder={t('common.addTaskDescription')}
                 disabled={patchMutation.isPending}
-                className={cn(
-                  'w-full px-3 py-2 text-sm border border-default rounded-[var(--radius-sm)] bg-surface',
-                  'focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)] resize-none transition-colors',
-                  'placeholder:text-[color:var(--text-muted)] disabled:opacity-60',
-                )}
+                style={{
+                  ...textareaStyle,
+                  opacity: patchMutation.isPending ? 0.6 : 1,
+                }}
               />
             </div>
           </section>
 
           {/* Checklist */}
           {boardId && (
-            <section className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
-              <div className="px-6 py-5">
+            <section style={cardStyle}>
+              <div style={{ padding: '16px 20px' }}>
                 <ChecklistSection taskId={taskId} boardId={boardId} checklists={task.checklists ?? []} />
               </div>
             </section>
           )}
 
           {/* Comments */}
-          <section className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
-            <div className="px-6 py-5">
+          <section style={cardStyle}>
+            <div style={{ padding: '16px 20px' }}>
               <CommentSection taskId={taskId} boardId={boardId} />
             </div>
           </section>
 
           {/* History */}
-          <section className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
-            <div className="px-6 py-5">
+          <section style={cardStyle}>
+            <div style={{ padding: '16px 20px' }}>
               <HistorySection taskId={taskId} />
             </div>
           </section>
@@ -169,19 +271,16 @@ export function TaskDetailView(props: TaskDetailViewProps) {
         {/* Right column */}
         <div className="space-y-5">
           {/* Details */}
-          <section className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
-            <div className="px-6 pt-5 pb-4 border-b border-[color:var(--border-faint)]">
-              <h2 className="text-base font-semibold text-primary tracking-[-0.015em]">
+          <section style={cardStyle}>
+            <div style={cardHeaderStyle}>
+              <h2 style={cardHeaderTitleStyle}>
                 {t('crm.detailsLabel')}
               </h2>
             </div>
-            <div className="px-6 py-5 space-y-4">
+            <div style={{ padding: '16px 20px' }} className="space-y-4">
               {/* Priority */}
               <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="page-task-priority"
-                  className="text-xs font-medium text-secondary"
-                >
+                <label htmlFor="page-task-priority" style={labelStyle}>
                   {t('crm.priorityLabel')}
                 </label>
                 <select
@@ -189,11 +288,10 @@ export function TaskDetailView(props: TaskDetailViewProps) {
                   value={priority}
                   onChange={(e) => setPriority(e.target.value as CrmTask['priority'])}
                   disabled={patchMutation.isPending}
-                  className={cn(
-                    'w-full h-9 px-3 text-sm border border-default rounded-[var(--radius-sm)] bg-surface',
-                    'focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)] transition-colors',
-                    'disabled:opacity-60',
-                  )}
+                  style={{
+                    ...inputStyle,
+                    opacity: patchMutation.isPending ? 0.6 : 1,
+                  }}
                 >
                   {(Object.keys(CRM_PRIORITY_LABEL_KEYS) as CrmTask['priority'][]).map((val) => (
                     <option key={val} value={val}>
@@ -202,21 +300,23 @@ export function TaskDetailView(props: TaskDetailViewProps) {
                   ))}
                 </select>
                 <span
-                  className={cn(
-                    'inline-block rounded-full px-2.5 py-0.5 text-xs font-medium border',
-                    CRM_PRIORITY_BADGE_CLASS[priority],
-                  )}
+                  style={{
+                    display: 'inline-block',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                    background: PRIORITY_STYLE[priority].bg,
+                    color: PRIORITY_STYLE[priority].col,
+                  }}
                 >
-                  {t(CRM_PRIORITY_LABEL_KEYS[priority]) ?? priority}
+                  {t(CRM_PRIORITY_LABEL_KEYS[priority])}
                 </span>
               </div>
 
               {/* Deadline */}
               <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="page-task-deadline"
-                  className="text-xs font-medium text-secondary"
-                >
+                <label htmlFor="page-task-deadline" style={labelStyle}>
                   {t('crm.deadlineLabel')}
                 </label>
                 <input
@@ -225,20 +325,17 @@ export function TaskDetailView(props: TaskDetailViewProps) {
                   value={deadline}
                   onChange={(e) => setDeadline(e.target.value)}
                   disabled={patchMutation.isPending}
-                  className={cn(
-                    'w-full h-9 px-3 text-sm border border-default rounded-[var(--radius-sm)] bg-surface',
-                    'focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)] transition-colors',
-                    '[color-scheme:dark] disabled:opacity-60',
-                  )}
+                  style={{
+                    ...inputStyle,
+                    opacity: patchMutation.isPending ? 0.6 : 1,
+                    colorScheme: 'dark',
+                  }}
                 />
               </div>
 
               {/* Assignee */}
               <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="page-task-assignee"
-                  className="text-xs font-medium text-secondary"
-                >
+                <label htmlFor="page-task-assignee" style={labelStyle}>
                   {t('crm.assigneeLabel')}
                 </label>
                 <select
@@ -246,11 +343,11 @@ export function TaskDetailView(props: TaskDetailViewProps) {
                   value={assigneeId}
                   onChange={(e) => setAssigneeId(e.target.value)}
                   disabled={patchMutation.isPending}
-                  className={cn(
-                    'w-full h-9 px-3 text-sm border border-default rounded-[var(--radius-sm)] bg-surface',
-                    'focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)] transition-colors',
-                    'disabled:opacity-60 disabled:cursor-not-allowed',
-                  )}
+                  style={{
+                    ...inputStyle,
+                    opacity: patchMutation.isPending ? 0.6 : 1,
+                    cursor: patchMutation.isPending ? 'not-allowed' : undefined,
+                  }}
                 >
                   <option value="">— {t('common.notAssigned')} —</option>
                   {task.assignee && !members.some((m) => String(m.id) === String(task.assignee!.id)) ? (
@@ -270,15 +367,25 @@ export function TaskDetailView(props: TaskDetailViewProps) {
 
               {/* Created date */}
               <div className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-secondary">
+                <span style={{ ...labelStyle, marginBottom: 2 }}>
                   {t('crm.createdLabel')}
                 </span>
-                <p className="text-sm text-secondary">{createdDate}</p>
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>{createdDate}</p>
               </div>
 
               {/* Attachments count */}
               {task.attachments_count > 0 && (
-                <div className="flex items-center gap-1.5 text-sm text-muted pt-1 border-t border-[color:var(--border-faint)]">
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: 13,
+                    color: 'var(--text-muted)',
+                    paddingTop: 8,
+                    borderTop: '1px solid var(--border-faint)',
+                  }}
+                >
                   <Paperclip size={14} />
                   {task.attachments_count}{' '}
                   {task.attachments_count === 1 ? t('common.file') : t('common.files')}
@@ -287,33 +394,46 @@ export function TaskDetailView(props: TaskDetailViewProps) {
             </div>
           </section>
 
-          {/* Labels */}
+          {/* Labels — overflow visible so dropdown isn't clipped */}
           {boardId && (
-            <section className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
-              <div className="px-6 py-5">
+            <section style={{ ...cardStyle, overflow: 'visible' }}>
+              <div style={{ padding: '16px 20px' }}>
                 <TaskLabelsSection taskId={taskId} boardId={boardId} taskLabels={task.labels ?? []} />
               </div>
             </section>
           )}
 
           {/* Actions */}
-          <section className="rounded-2xl border border-default bg-surface shadow-xl overflow-hidden">
-            <div className="px-6 pt-5 pb-4 border-b border-[color:var(--border-faint)]">
-              <h2 className="text-base font-semibold text-primary tracking-[-0.015em]">
+          <section style={cardStyle}>
+            <div style={cardHeaderStyle}>
+              <h2 style={cardHeaderTitleStyle}>
                 {t('crm.actionsLabel')}
               </h2>
             </div>
-            <div className="flex flex-col gap-2 px-6 py-5">
+            <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
               {/* Save */}
               <button
                 type="button"
                 onClick={handleSave}
                 disabled={patchMutation.isPending}
-                className={cn(
-                  'inline-flex items-center justify-center gap-1.5 h-8 px-4 text-sm font-medium w-full',
-                  'rounded-[var(--radius-sm)] text-white bg-[color:var(--brand)] hover:opacity-90 transition-opacity',
-                  'disabled:opacity-60 disabled:cursor-not-allowed',
-                )}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  width: '100%',
+                  height: 32,
+                  padding: '0 16px',
+                  borderRadius: 'var(--radius-sm)',
+                  border: 'none',
+                  background: 'var(--brand)',
+                  color: '#fff',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: patchMutation.isPending ? 'not-allowed' : 'pointer',
+                  fontFamily: 'inherit',
+                  opacity: patchMutation.isPending ? 0.6 : 1,
+                }}
               >
                 {patchMutation.isPending ? t('common.savingPlain') : t('common.save')}
               </button>
@@ -323,24 +443,33 @@ export function TaskDetailView(props: TaskDetailViewProps) {
                 type="button"
                 onClick={handleCancel}
                 disabled={patchMutation.isPending}
-                className={cn(
-                  'h-8 px-4 text-sm font-medium w-full rounded-[var(--radius-sm)]',
-                  'border border-default text-secondary hover:bg-hover transition-colors',
-                  'disabled:opacity-60',
-                )}
+                style={{
+                  height: 32,
+                  padding: '0 16px',
+                  width: '100%',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--border)',
+                  background: 'transparent',
+                  color: 'var(--text-secondary)',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: patchMutation.isPending ? 'not-allowed' : 'pointer',
+                  fontFamily: 'inherit',
+                  opacity: patchMutation.isPending ? 0.6 : 1,
+                }}
               >
                 {t('common.cancel')}
               </button>
 
               {patchMutation.isError && (
-                <p className="text-xs text-danger">{t('crm.failedToSave')}</p>
+                <p style={{ fontSize: 12, color: 'var(--danger)', margin: 0 }}>{t('crm.failedToSave')}</p>
               )}
 
               {archiveMutation.isError && (
-                <p className="text-xs text-danger">{t('crm.failedToArchive')}</p>
+                <p style={{ fontSize: 12, color: 'var(--danger)', margin: 0 }}>{t('crm.failedToArchive')}</p>
               )}
               {unarchiveMutation.isError && (
-                <p className="text-xs text-danger">{t('crm.failedToUnarchive')}</p>
+                <p style={{ fontSize: 12, color: 'var(--danger)', margin: 0 }}>{t('crm.failedToUnarchive')}</p>
               )}
 
               {/* Archive / Unarchive */}
@@ -349,12 +478,24 @@ export function TaskDetailView(props: TaskDetailViewProps) {
                   type="button"
                   onClick={() => unarchiveMutation.mutate()}
                   disabled={unarchiveMutation.isPending}
-                  className={cn(
-                    'inline-flex items-center justify-center gap-1.5 h-8 px-4 text-sm font-medium w-full',
-                    'rounded-[var(--radius-sm)] border border-[color:var(--info)] text-[color:var(--info)]',
-                    'hover:bg-hover transition-colors',
-                    'disabled:opacity-50 disabled:cursor-not-allowed',
-                  )}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    width: '100%',
+                    height: 32,
+                    padding: '0 16px',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--info)',
+                    background: 'transparent',
+                    color: 'var(--info)',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: unarchiveMutation.isPending ? 'not-allowed' : 'pointer',
+                    fontFamily: 'inherit',
+                    opacity: unarchiveMutation.isPending ? 0.5 : 1,
+                  }}
                 >
                   <Archive size={14} />
                   {unarchiveMutation.isPending ? t('common.unarchivingPlain') : t('common.unarchiveTask')}
@@ -364,11 +505,24 @@ export function TaskDetailView(props: TaskDetailViewProps) {
                   type="button"
                   onClick={() => archiveMutation.mutate()}
                   disabled={archiveMutation.isPending}
-                  className={cn(
-                    'inline-flex items-center justify-center gap-1.5 h-8 px-4 text-sm font-medium w-full',
-                    'rounded-[var(--radius-sm)] border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors',
-                    'disabled:opacity-50 disabled:cursor-not-allowed',
-                  )}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    width: '100%',
+                    height: 32,
+                    padding: '0 16px',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--danger)',
+                    background: 'var(--danger-bg)',
+                    color: 'var(--danger)',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: archiveMutation.isPending ? 'not-allowed' : 'pointer',
+                    fontFamily: 'inherit',
+                    opacity: archiveMutation.isPending ? 0.5 : 1,
+                  }}
                 >
                   <Archive size={14} />
                   {archiveMutation.isPending ? t('common.archivingPlain') : t('common.archiveTask')}

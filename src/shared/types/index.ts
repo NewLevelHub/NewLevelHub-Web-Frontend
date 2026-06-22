@@ -1246,7 +1246,7 @@ export interface CrmTask {
   column_id: number;
   title: string;
   description: string | null;
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  priority: 'low' | 'medium' | 'high';
   deadline: string | null; // ISO date
   assignee: { id: number; first_name: string; last_name: string; avatar?: string } | null;
   label_ids: number[];
