@@ -741,42 +741,24 @@ export default function ManageBookingsPage() {
 
         {/* Bulk action bar */}
         {selectedIds.size > 0 && (
-          <div
-            className={cn(
-              'flex items-center gap-2 px-4 h-[36px] border-b border-[color:var(--border)]',
-              'bg-[color:var(--status-soon-bg)]',
-              'animate-slide-down',
-            )}
-            role="status"
-            aria-live="polite"
-          >
-            <span className="flex items-center gap-1.5 text-[13px] font-medium text-[color:var(--status-soon-text)] flex-shrink-0">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="flex-shrink-0">
-                <rect x="1" y="1" width="12" height="12" rx="2.5" fill="currentColor" fillOpacity="0.18" stroke="currentColor" strokeWidth="1.25" />
-                <path d="M4 7.2L6 9.2L10 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {t('booking.manage.selectedCountShort', { count: selectedIds.size })}
+          <div className="flex items-center gap-3 mx-4 my-3 rounded-xl border border-[var(--brand)] bg-brand-subtle px-4 py-2.5 text-sm">
+            <span className="font-medium text-[var(--brand-text)]">
+              {t('resources.bulk.selectedCount', { count: selectedIds.size })}
             </span>
-            <span className="flex-1" />
-            <div className="flex items-center gap-1.5">
+            <div className="ml-auto flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setSelectedIds(new Set())}
-                className={cn(
-                  'inline-flex items-center h-[26px] px-2.5 text-[12px] font-medium rounded-[var(--radius-sm)]',
-                  'border border-[color:var(--status-soon-text)]/30',
-                  'text-[color:var(--status-soon-text)]',
-                  'hover:bg-[color:var(--status-soon-text)]/10 transition-colors',
-                )}
+                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-[var(--radius-sm)] border border-default bg-surface text-[12px] font-medium text-secondary hover:bg-hover transition-colors"
               >
-                {t('booking.manage.clearSelectionShort')}
+                <X size={12} />
+                {t('resources.bulk.deselectAll')}
               </button>
               <button
                 type="button"
                 onClick={() => { setBulkCancelOpen(true); setBulkReason(''); setBulkCancelError(null); }}
                 className={cn(
-                  'inline-flex items-center gap-1.5 h-[26px] px-3 text-[12px] font-medium rounded-[var(--radius-sm)]',
-                  'bg-rose-600 text-white hover:bg-rose-700 transition-colors',
+                  'inline-flex items-center gap-1.5 h-7 px-3 rounded-[var(--radius-sm)] bg-danger-subtle border border-[var(--danger)] text-[12px] font-medium text-danger hover:bg-[var(--danger)] hover:text-white transition-colors disabled:opacity-50',
                 )}
               >
                 <Ban className="w-3 h-3 flex-shrink-0" />

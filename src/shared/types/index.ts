@@ -622,10 +622,23 @@ export interface AccessLogEntry {
   created_at: string;
 }
 
+export interface ServiceRequestUserBrief {
+  id: number;
+  full_name: string;
+  avatar: string | null;
+  email: string;
+  role: string;
+}
+
+export interface ServiceRequestCompanyBrief {
+  id: number;
+  name: string;
+  logo: string | null;
+}
+
 export interface ServiceRequest {
   id: number;
   user: number;
-  user_name: string;
   request_type: ServiceRequestType;
   floor: number | null;
   floor_number?: number | null;
@@ -636,8 +649,14 @@ export interface ServiceRequest {
   photo: string | null;
   status: ServiceRequestStatus;
   rating: number | null;
-  assigned_to: number | null;
-  assigned_to_name: string | null;
+  /** Rating given by the service_manager to the request author after completing. */
+  manager_rating?: number | null;
+  /** Always an object (or null) — backend now returns nested form for all roles. */
+  assigned_to: ServiceRequestUserBrief | null;
+  /** Always an object — backend now returns nested form for all roles. */
+  created_by: ServiceRequestUserBrief;
+  /** Nested company object (always object or null). */
+  company: ServiceRequestCompanyBrief | null;
   completed_at: string | null;
   created_at: string;
   updated_at: string;
@@ -657,7 +676,8 @@ export interface ServiceRequestCleaningPayload {
 }
 
 export interface ServiceRequestUpdateStatusPayload {
-  status: ServiceRequestStatus;
+  status?: ServiceRequestStatus;
+  assigned_to?: number | null;
 }
 
 export interface ServiceRequestRatePayload {
