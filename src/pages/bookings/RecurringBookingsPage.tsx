@@ -9,10 +9,10 @@ import { USER_ROLES } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
 import {
-  hasCreatableRecurringSeriesDate,
   localTodayIso,
 } from '@/shared/lib/recurringSeriesDates';
 import type {
+  Booking,
   BookingResourceListItem,
   PaginatedResponse,
   RecurringBooking,
@@ -54,7 +54,9 @@ export default function RecurringBookingsPage() {
   const [dayOfWeek, setDayOfWeek] = useState('0');
   const [startTime, setStartTime] = useState('10:00');
   const [endTime, setEndTime] = useState('11:00');
-  const [repeatUntil, setRepeatUntil] = useState(localTodayIso);
+  const [freq, setFreq] = useState<'weekly' | 'daily'>('weekly');
+  const [startDate, setStartDate] = useState(localTodayIso);
+  const [endDate, setEndDate] = useState(localTodayIso);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [lastSkippedDates, setLastSkippedDates] = useState<string[]>([]);
 
@@ -116,13 +118,9 @@ export default function RecurringBookingsPage() {
   }, [allowedWeekdayValues, dayOfWeek]);
 
   const canCreateSeries = useMemo(() => {
-    if (!resourceId || !repeatUntil) return false;
-    return hasCreatableRecurringSeriesDate({
-      dayOfWeek: Number(dayOfWeek),
-      repeatUntil,
-      endTime,
-    });
-  }, [resourceId, dayOfWeek, repeatUntil, endTime]);
+    if (!resourceId || !endDate) return false;
+    return endDate > localTodayIso();
+  }, [resourceId, endDate]);
 
   const createMutation = useMutation({
     mutationFn: async (payload: RecurringBookingCreatePayload) => {
@@ -171,6 +169,19 @@ export default function RecurringBookingsPage() {
     },
   });
 
+  const cancelBookingMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiClient.post(API.bookings.reservations.cancel(String(id)), { reason: '' });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['recurring-series-bookings'] });
+      await queryClient.invalidateQueries({ queryKey: ['recurring-bookings', 'list'] });
+    },
+    onError: (error: unknown) => {
+      setErrorMessage(getApiError(error).message);
+    },
+  });
+
   const visibleRecurringRows = useMemo(() => {
     const rows = recurringRows ?? [];
     if (!user) return rows;
@@ -201,7 +212,7 @@ export default function RecurringBookingsPage() {
   ];
 
   return (
-    <div style={{ maxWidth: 1100 }}>
+    <div>
       {/* Page header */}
       <div
         style={{
@@ -336,8 +347,9 @@ export default function RecurringBookingsPage() {
                 seriesId: id,
               })
             }
+            onCancelBooking={(bookingId) => cancelBookingMutation.mutate(bookingId)}
             canCancel={canCancelSeries}
-            isCancelling={deleteMutation.isPending}
+            isCancelling={deleteMutation.isPending || cancelBookingMutation.isPending}
             locale={dateLocale}
           />
         )
@@ -358,8 +370,12 @@ export default function RecurringBookingsPage() {
           setStartTime={setStartTime}
           endTime={endTime}
           setEndTime={setEndTime}
-          repeatUntil={repeatUntil}
-          setRepeatUntil={setRepeatUntil}
+          freq={freq}
+          setFreq={setFreq}
+          startDate={startDate}
+          setStartDate={setStartDate}
+          endDate={endDate}
+          setEndDate={setEndDate}
           canCreate={canCreateSeries}
           isPending={createMutation.isPending}
           onSubmit={() => {
@@ -367,10 +383,11 @@ export default function RecurringBookingsPage() {
             setLastSkippedDates([]);
             createMutation.mutate({
               resource_id: Number(resourceId),
-              day_of_week: Number(dayOfWeek),
+              recurrence_type: freq,
               start_time: startTime,
               end_time: endTime,
-              repeat_until: repeatUntil,
+              repeat_until: endDate,
+              ...(freq === 'weekly' ? { day_of_week: Number(dayOfWeek) } : {}),
             });
           }}
           onCancel={() => setTab('series')}
@@ -385,11 +402,29 @@ export default function RecurringBookingsPage() {
           bookingLabel={scopeModal.bookingLabel}
           onClose={() => setScopeModal(null)}
           onConfirm={(scope) => {
-            if (scope === 'all' || scope === 'this_and_following') {
+            if (scope === 'all') {
               deleteMutation.mutate(scopeModal.seriesId);
             } else {
-              // this_only: just close (no single-occurrence API yet)
+              // this_only — find next confirmed booking for this series and cancel it
               setScopeModal(null);
+              apiClient.get<PaginatedResponse<Booking> | Booking[]>(
+                API.bookings.reservations.list,
+                {
+                  params: {
+                    recurring_booking_id: scopeModal.seriesId,
+                    status: 'confirmed',
+                    ordering: 'start_time',
+                    page_size: 1,
+                  },
+                },
+              ).then((r) => {
+                const bookings = Array.isArray(r.data) ? r.data : r.data.results;
+                if (bookings.length > 0) {
+                  cancelBookingMutation.mutate(bookings[0].id);
+                }
+              }).catch(() => {
+                // silently ignore — user already dismissed modal
+              });
             }
           }}
         />

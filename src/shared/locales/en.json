@@ -987,6 +987,12 @@
       "addBtn": "Add",
       "participantsAdminOnly": "Participant management is available to company administrators only."
     },
+    "checkIn": {
+      "btn": "Check in",
+      "pending": "Checking in…",
+      "urgentHint": "Check in within 15 min",
+      "expiredHint": "Check-in window expired"
+    },
     "qrPanel": {
       "title": "Capsule access QR",
       "imageAlt": "Booking access QR code",
@@ -1052,7 +1058,10 @@
       "periodLabel": "Period",
       "statusLabel": "Status",
       "doneLabel": "Done",
-      "allSeriesLabel": "{{count}} series · {{active}} active"
+      "allSeriesLabel": "{{count}} series · {{active}} active",
+      "resourceScheduleLabel": "Resource / Schedule",
+      "periodUntilPrefix": "until",
+      "datesCount": "dates"
     },
     "timeline": {
       "booking": "Booking",
@@ -2446,6 +2455,19 @@
     "conflictCount": "{{count}} conflict",
     "noRecurring": "No recurring bookings",
     "noRecurringSub": "Create your first series in the Recurring Bookings section",
-    "seriesLabel": "Series bookings"
+    "seriesLabel": "Series bookings",
+    "weeklyFreq": "Weekly",
+    "entryUpcoming": "Upcoming",
+    "entryDone": "Done",
+    "entryCancelled": "Cancelled",
+    "cancelEntry": "Cancel",
+    "createNewSeries": "New booking series",
+    "freqWeekly": "Weekly",
+    "freqDaily": "Daily",
+    "freqLabel": "Repeat type",
+    "daysLabel": "Days of week",
+    "availDaysHint": "(available: {{days}})",
+    "dateFromLabel": "Series start",
+    "dateToLabel": "Series end"
   }
 }

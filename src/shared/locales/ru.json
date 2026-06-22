@@ -982,6 +982,12 @@
       "addBtn": "Добавить",
       "participantsAdminOnly": "Управление участниками доступно только администраторам компании."
     },
+    "checkIn": {
+      "btn": "Чек-ин",
+      "pending": "Выполняется…",
+      "urgentHint": "Зачекинитесь в течение 15 мин",
+      "expiredHint": "Время чекина истекло"
+    },
     "qrPanel": {
       "title": "QR доступа в капсулу",
       "imageAlt": "QR-код доступа по бронированию",
@@ -1047,7 +1053,10 @@
       "periodLabel": "Период",
       "statusLabel": "Статус",
       "doneLabel": "Выполнено",
-      "allSeriesLabel": "{{count}} серий · {{active}} активных"
+      "allSeriesLabel": "{{count}} серий · {{active}} активных",
+      "resourceScheduleLabel": "Ресурс / Расписание",
+      "periodUntilPrefix": "до",
+      "datesCount": "дат"
     },
     "timeline": {
       "booking": "Бронь",
@@ -2445,6 +2454,19 @@
     "conflictCount": "{{count}} конфликт",
     "noRecurring": "Нет регулярных бронирований",
     "noRecurringSub": "Создайте первую серию в разделе «Регулярные бронирования»",
-    "seriesLabel": "Брони серии"
+    "seriesLabel": "Брони серии",
+    "weeklyFreq": "Еженедельно",
+    "entryUpcoming": "Предстоит",
+    "entryDone": "Выполнено",
+    "entryCancelled": "Отменено",
+    "cancelEntry": "Отменить",
+    "createNewSeries": "Новая серия бронирований",
+    "freqWeekly": "Еженедельно",
+    "freqDaily": "Ежедневно",
+    "freqLabel": "Тип повторения",
+    "daysLabel": "Дни недели",
+    "availDaysHint": "(доступны: {{days}})",
+    "dateFromLabel": "Начало серии",
+    "dateToLabel": "Конец серии"
   }
 }

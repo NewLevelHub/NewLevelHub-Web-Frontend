@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { CalendarDays, List, RefreshCw } from 'lucide-react';
+import { CalendarDays, RefreshCw } from 'lucide-react';
 
-type ScopeOption = 'this_only' | 'this_and_following' | 'all';
+export type ScopeOption = 'this_only' | 'all';
 
 interface RecurringScopeModalProps {
   mode: 'cancel' | 'edit';
@@ -30,12 +30,6 @@ export function RecurringScopeModal({ mode, bookingLabel, onConfirm, onClose }: 
       icon: <CalendarDays style={{ width: 16, height: 16 }} aria-hidden="true" />,
       label: t('recurring.thisOnly'),
       sub: t('recurring.thisOnlySub'),
-    },
-    {
-      value: 'this_and_following',
-      icon: <List style={{ width: 16, height: 16 }} aria-hidden="true" />,
-      label: t('recurring.thisAndFollowing'),
-      sub: t('recurring.thisAndFollowingSub', { action: actionWord }),
     },
     {
       value: 'all',

@@ -11,12 +11,10 @@ import { API } from '@/shared/api/endpoints';
 import { fmtDate, fmtDateTime, fmtDayMonth, fmtTime } from '@/shared/lib/formatDate';
 import {
   BOOKING_STATUSES,
-  BOOKING_STATUS_LABEL_KEYS,
   RESOURCE_TYPES,
   RESOURCE_TYPE_LABEL_KEYS,
   STAFF_UI_PREFIX,
   USER_ROLES,
-  type BookingStatus,
   type ResourceType,
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
@@ -24,9 +22,12 @@ import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import type { Booking, BookingResourceDetail, CompanyMember, PaginatedResponse, RecurringBooking } from '@/shared/types';
 import { shouldShowBookingQrPanel } from '@/pages/bookings/components/BookingQRPanel';
+import { BookingStatusBadge } from '@/pages/bookings/components/BookingStatusBadge';
 import { RecurringSeriesCard } from '@/features/bookings/recurring/components/RecurringSeriesCard';
+import { recurringSeriesDateEntries } from '@/shared/lib/recurringSeriesDates';
 import { RecurringScopeModal } from '@/features/bookings/recurring/components/RecurringScopeModal';
 import type { ScopeModalState } from '@/features/bookings/recurring/types';
+import { CheckInButton, CheckInUrgencyBadge, canCheckIn as isCheckInAllowed, getCheckInUrgency } from '@/features/bookings/components/CheckInButton';
 
 type MyBookingsStatusFilter = 'upcoming' | 'past' | 'cancelled' | 'recurring';
 
@@ -57,44 +58,6 @@ function getInitials(name: string): string {
     .join('');
 }
 
-type StatusBadgeProps = { status: string };
-
-function StatusBadge({ status }: StatusBadgeProps) {
-  const { t } = useTranslation();
-
-  const colorClass = useMemo(() => {
-    switch (status) {
-      case BOOKING_STATUSES.CONFIRMED:
-      case BOOKING_STATUSES.CHECKED_IN:
-        return 'bg-[color:var(--status-free-bg)] text-[color:var(--status-free-text)]';
-      case 'pending':
-        return 'bg-[color:var(--status-soon-bg)] text-[color:var(--status-soon-text)]';
-      case BOOKING_STATUSES.CANCELLED:
-      case BOOKING_STATUSES.NO_SHOW:
-        return 'bg-[color:var(--status-busy-bg)] text-[color:var(--status-busy-text)]';
-      case BOOKING_STATUSES.COMPLETED:
-        return 'bg-[color:var(--status-na-bg)] text-[color:var(--status-na-text)]';
-      default:
-        return 'bg-[color:var(--status-na-bg)] text-[color:var(--status-na-text)]';
-    }
-  }, [status]);
-
-  const label = BOOKING_STATUS_LABEL_KEYS[status as BookingStatus]
-    ? t(BOOKING_STATUS_LABEL_KEYS[status as BookingStatus])
-    : status;
-
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium',
-        colorClass,
-      )}
-    >
-      <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" />
-      {label}
-    </span>
-  );
-}
 
 export default function MyBookingsPage() {
   const { t, i18n } = useTranslation();
@@ -538,6 +501,9 @@ export default function MyBookingsPage() {
                   const start = new Date(b.start_time);
                   const end = new Date(b.end_time);
                   const isActionsOpen = openActionsId === b.id;
+                  const rowNow = new Date();
+                  const rowUrgency = getCheckInUrgency(b, rowNow);
+                  const rowCanCheckIn = isCheckInAllowed(b, rowNow);
 
                   return (
                     <tr
@@ -558,6 +524,11 @@ export default function MyBookingsPage() {
                           <p className="text-[11px] text-[color:var(--status-free-text)] mt-0.5">
                             {t('booking.myBookings.checkedIn', { time: fmtDateTime(b.checked_in_at) })}
                           </p>
+                        )}
+                        {rowUrgency !== 'none' && (
+                          <div className="mt-1">
+                            <CheckInUrgencyBadge urgency={rowUrgency} />
+                          </div>
                         )}
                       </td>
                       <td className="px-3 py-2.5 align-middle">
@@ -580,7 +551,12 @@ export default function MyBookingsPage() {
                         {fmtTime(end)}
                       </td>
                       <td className="px-3 py-2.5 align-middle">
-                        <StatusBadge status={b.status} />
+                        <div className="flex flex-col items-start gap-1">
+                          <BookingStatusBadge status={b.status} />
+                          {rowCanCheckIn && (
+                            <CheckInButton booking={b} variant="row" />
+                          )}
+                        </div>
                       </td>
                       <td className="w-8 px-3 py-2.5 align-middle">
                         <button
@@ -782,20 +758,15 @@ export default function MyBookingsPage() {
         const booking = rows.find((b) => b.id === openActionsId);
         if (!booking) return null;
 
-        const start = new Date(booking.start_time);
-        const end = new Date(booking.end_time);
-        const now = new Date();
+        const dropdownNow = new Date();
         const canCancel =
           statusTab === 'upcoming' &&
           booking.status === BOOKING_STATUSES.CONFIRMED;
-        const canCheckIn =
+        const dropdownCanCheckIn =
           statusTab === 'upcoming' &&
-          booking.status === BOOKING_STATUSES.CONFIRMED &&
           user !== null &&
           booking.user === user.id &&
-          now >= start &&
-          now <= end &&
-          !booking.checked_in_at;
+          isCheckInAllowed(booking, dropdownNow);
         const showQrLink = shouldShowBookingQrPanel(booking);
 
         const closeDropdown = () => {
@@ -826,7 +797,7 @@ export default function MyBookingsPage() {
                   {t('booking.myBookings.showQr')}
                 </Link>
               )}
-              {canCheckIn && (
+              {dropdownCanCheckIn && (
                 <button
                   type="button"
                   role="menuitem"
@@ -866,7 +837,7 @@ export default function MyBookingsPage() {
                   {t('common.cancel')}
                 </button>
               )}
-              {!canCheckIn && !canCancel && !showQrLink && (
+              {!dropdownCanCheckIn && !canCancel && !showQrLink && (
                 <span className="block px-3 py-1.5 text-[12px] text-[color:var(--text-muted)]">
                   {t('booking.manage.noActions')}
                 </span>
@@ -884,7 +855,7 @@ export default function MyBookingsPage() {
           bookingLabel={recurringScopeModal.bookingLabel}
           onClose={() => setRecurringScopeModal(null)}
           onConfirm={(scope) => {
-            if (scope === 'all' || scope === 'this_and_following') {
+            if (scope === 'all') {
               recurringDeleteMutation.mutate(recurringScopeModal.seriesId);
             } else {
               setRecurringScopeModal(null);
@@ -980,21 +951,34 @@ function RecurringTabContent({ userId, onScopeModal }: RecurringTabContentProps)
 
   return (
     <div className="px-4 py-4 space-y-3">
-      {myRows.map((series) => (
-        <RecurringSeriesCard
-          key={series.id}
-          series={series}
-          resourceName={resourceNameById.get(series.resource_id) ?? t('booking.recurring.resourcePrefix', { id: series.resource_id })}
-          dayLabel={dayLabels[series.day_of_week] ?? String(series.day_of_week)}
-          onCancel={() =>
-            onScopeModal({
-              mode: 'cancel',
-              bookingLabel: resourceNameById.get(series.resource_id) ?? '...',
-              seriesId: series.id,
-            })
-          }
-        />
-      ))}
+      {myRows.map((series) => {
+        const seriesEntries = recurringSeriesDateEntries({
+          dayOfWeek: series.day_of_week,
+          validFrom: series.valid_from,
+          repeatUntil: series.valid_until,
+          endTime: series.end_time,
+          recurrenceType: series.recurrence_type ?? 'weekly',
+        });
+        const nextEntry = seriesEntries.find((e) => e.status === 'will_create');
+        const seriesNotStarted =
+          series.is_active &&
+          nextEntry !== undefined &&
+          new Date(`${nextEntry.iso}T${series.start_time}`) > new Date();
+        return (
+          <RecurringSeriesCard
+            key={series.id}
+            series={series}
+            resourceName={resourceNameById.get(series.resource_id) ?? t('booking.recurring.resourcePrefix', { id: series.resource_id })}
+            dayLabel={dayLabels[series.day_of_week] ?? String(series.day_of_week)}
+            onCancel={seriesNotStarted ? () =>
+              onScopeModal({
+                mode: 'cancel',
+                bookingLabel: resourceNameById.get(series.resource_id) ?? '...',
+                seriesId: series.id,
+              }) : undefined}
+          />
+        );
+      })}
     </div>
   );
 }

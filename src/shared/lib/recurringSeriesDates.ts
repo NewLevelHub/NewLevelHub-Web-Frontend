@@ -36,14 +36,23 @@ export function matchingSeriesDateIsos(
   dayOfWeek: number,
   validFrom: Date,
   repeatUntilIso: string,
+  recurrenceType: 'weekly' | 'daily' = 'weekly',
 ): string[] {
   const endDate = parseLocalDate(repeatUntilIso);
   const dates: string[] = [];
-  const daysUntilFirst = (dayOfWeek - pythonWeekday(validFrom) + 7) % 7;
-  let current = addDays(validFrom, daysUntilFirst);
-  while (current <= endDate) {
-    dates.push(formatLocalIso(current));
-    current = addDays(current, 7);
+  if (recurrenceType === 'daily') {
+    let current = new Date(validFrom);
+    while (current <= endDate) {
+      dates.push(formatLocalIso(current));
+      current = addDays(current, 1);
+    }
+  } else {
+    const daysUntilFirst = (dayOfWeek - pythonWeekday(validFrom) + 7) % 7;
+    let current = addDays(validFrom, daysUntilFirst);
+    while (current <= endDate) {
+      dates.push(formatLocalIso(current));
+      current = addDays(current, 7);
+    }
   }
   return dates;
 }
@@ -67,13 +76,14 @@ export function recurringSeriesDateEntries(params: {
   validFrom: string;
   repeatUntil: string | null;
   endTime: string;
+  recurrenceType?: 'weekly' | 'daily';
   now?: Date;
 }): RecurringSeriesDateEntry[] {
   if (!params.repeatUntil) return [];
   const now = params.now ?? new Date();
   const endTime = params.endTime.slice(0, 5);
   const validFrom = parseLocalDate(params.validFrom);
-  const isos = matchingSeriesDateIsos(params.dayOfWeek, validFrom, params.repeatUntil);
+  const isos = matchingSeriesDateIsos(params.dayOfWeek, validFrom, params.repeatUntil, params.recurrenceType ?? 'weekly');
   return isos.map((iso) => ({
     iso,
     status: isSlotEndInPast(iso, endTime, now) ? 'skipped_past' : 'will_create',
@@ -85,6 +95,7 @@ export function hasCreatableRecurringSeriesDate(params: {
   dayOfWeek: number;
   repeatUntil: string;
   endTime: string;
+  recurrenceType?: 'weekly' | 'daily';
   now?: Date;
 }): boolean {
   return previewRecurringSeriesDates(params).some((entry) => entry.status === 'will_create');
@@ -95,15 +106,21 @@ export function previewRecurringSeriesDates(params: {
   dayOfWeek: number;
   repeatUntil: string;
   endTime: string;
+  recurrenceType?: 'weekly' | 'daily';
   now?: Date;
 }): RecurringSeriesDateEntry[] {
   const today = parseLocalDate(localTodayIso());
-  const validFrom = formatLocalIso(firstMatchingWeekday(params.dayOfWeek, today));
+  const recurrenceType = params.recurrenceType ?? 'weekly';
+  const validFrom =
+    recurrenceType === 'daily'
+      ? localTodayIso()
+      : formatLocalIso(firstMatchingWeekday(params.dayOfWeek, today));
   return recurringSeriesDateEntries({
     dayOfWeek: params.dayOfWeek,
     validFrom,
     repeatUntil: params.repeatUntil,
     endTime: params.endTime,
+    recurrenceType,
     now: params.now,
   });
 }

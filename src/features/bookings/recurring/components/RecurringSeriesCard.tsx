@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { RecurringBooking } from '@/shared/types';
 import { recurringSeriesDateEntries } from '@/shared/lib/recurringSeriesDates';
+import { BookingStatusBadge } from '@/pages/bookings/components/BookingStatusBadge';
 
 interface RecurringSeriesCardProps {
   series: RecurringBooking;
@@ -18,12 +19,12 @@ function RecurringSeriesCardInner({ series, resourceName, dayLabel, onCancel }: 
     validFrom: series.valid_from,
     repeatUntil: series.valid_until,
     endTime: series.end_time,
+    recurrenceType: series.recurrence_type ?? 'weekly',
   });
 
   const nextEntry = entries.find((e) => e.status === 'will_create');
 
   const isActive = series.is_active && nextEntry !== undefined;
-  const statusLabel = isActive ? t('booking.recurring.activeLabel') : t('booking.recurring.completedLabel');
 
   return (
     <div
@@ -77,18 +78,7 @@ function RecurringSeriesCardInner({ series, resourceName, dayLabel, onCancel }: 
             <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
               {resourceName}
             </span>
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 500,
-                padding: '1px 7px',
-                borderRadius: 20,
-                background: isActive ? 'rgba(52,211,153,0.12)' : 'var(--bg-raised)',
-                color: isActive ? 'var(--success)' : 'var(--text-muted)',
-              }}
-            >
-              {statusLabel}
-            </span>
+            <BookingStatusBadge status={isActive ? 'confirmed' : 'completed'} />
           </div>
           {/* Frequency label */}
           <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
