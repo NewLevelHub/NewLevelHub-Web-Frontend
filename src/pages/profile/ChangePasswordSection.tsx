@@ -1,11 +1,96 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
+import { Eye, EyeOff } from 'lucide-react';
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { getApiError } from '@/shared/lib/getApiError';
-import { AuthPasswordField } from '@/shared/ui/AuthPasswordField';
 import { cn } from '@/shared/lib/cn';
+
+// ---------------------------------------------------------------------------
+// Shared styles (mirrors personal data section in ProfilePage)
+// ---------------------------------------------------------------------------
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  boxSizing: 'border-box',
+  height: 36,
+  padding: '0 36px 0 12px',
+  borderRadius: 'var(--radius-sm)',
+  border: '1px solid var(--border)',
+  background: 'var(--bg-surface)',
+  color: 'var(--text-primary)',
+  fontSize: 14,
+  outline: 'none',
+  fontFamily: 'inherit',
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 500,
+  color: 'var(--text-secondary)',
+  display: 'block',
+  marginBottom: 6,
+};
+
+// ---------------------------------------------------------------------------
+// PasswordInput — native input with show/hide eye toggle
+// ---------------------------------------------------------------------------
+
+interface PasswordInputProps {
+  id: string;
+  name: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  autoComplete?: string;
+  required?: boolean;
+  minLength?: number;
+}
+
+function PasswordInput({ id, name, value, onChange, autoComplete, required, minLength }: PasswordInputProps) {
+  const { t } = useTranslation();
+  const [show, setShow] = useState(false);
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <input
+        id={id}
+        name={name}
+        type={show ? 'text' : 'password'}
+        value={value}
+        onChange={onChange}
+        autoComplete={autoComplete}
+        required={required}
+        minLength={minLength}
+        style={inputStyle}
+      />
+      <button
+        type="button"
+        onClick={() => setShow((s) => !s)}
+        style={{
+          position: 'absolute',
+          right: 10,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          color: 'var(--text-muted)',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          padding: 0,
+          display: 'flex',
+        }}
+        tabIndex={-1}
+        aria-label={show ? t('common.hidePassword') : t('common.showPassword')}
+      >
+        {show ? <EyeOff size={14} /> : <Eye size={14} />}
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Alert
+// ---------------------------------------------------------------------------
 
 interface AlertProps {
   type: 'success' | 'error';
@@ -16,22 +101,99 @@ function Alert({ type, message }: AlertProps) {
   return (
     <div
       role="alert"
-      className={cn(
-        'rounded-lg px-4 py-3 text-sm font-medium',
-        type === 'success' && 'bg-green-50 text-green-800 border border-green-200',
-        type === 'error' && 'bg-red-50 text-red-800 border border-red-200',
-      )}
+      className="rounded-lg px-4 py-3 text-sm font-medium"
+      style={
+        type === 'success'
+          ? { background: 'var(--success-bg)', color: 'var(--success-text)', border: '1px solid var(--success)' }
+          : { background: 'var(--danger-bg)', color: 'var(--danger-text)', border: '1px solid var(--danger)' }
+      }
     >
       {message}
     </div>
   );
 }
 
+// ---------------------------------------------------------------------------
+// Password strength meter
+// ---------------------------------------------------------------------------
+
+function getStrengthLevel(password: string): 0 | 1 | 2 | 3 {
+  if (password.length === 0) return 0;
+  let score = 0;
+  if (password.length >= 8) score += 1;
+  if (/[a-z]/.test(password)) score += 1;
+  if (/[A-Z]/.test(password)) score += 1;
+  if (/[0-9]/.test(password)) score += 1;
+  if (/[^a-zA-Z0-9]/.test(password)) score += 1;
+  if (score <= 2) return 1;
+  if (score <= 4) return 2;
+  return 3;
+}
+
+interface StrengthMeterProps {
+  password: string;
+}
+
+function PasswordStrengthMeter({ password }: StrengthMeterProps) {
+  const { t } = useTranslation();
+  const level = getStrengthLevel(password);
+
+  const activeSegmentColor =
+    level === 1 ? 'var(--danger)' : level === 2 ? '#f97316' : 'var(--success)';
+
+  const segmentColor = (index: number): string => {
+    if (level === 0 || level < index) return 'var(--border)';
+    return activeSegmentColor;
+  };
+
+  const labelText =
+    level === 0
+      ? ''
+      : level === 1
+        ? t('profile.passwordStrengthLow')
+        : level === 2
+          ? t('profile.passwordStrengthMedium')
+          : t('profile.passwordStrengthHigh');
+
+  const labelColor =
+    level === 1
+      ? 'var(--danger-text)'
+      : level === 2
+        ? '#f97316'
+        : level === 3
+          ? 'var(--success-text)'
+          : 'var(--text-muted)';
+
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <div className="flex flex-1 gap-1">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="h-1 flex-1 rounded-full transition-colors duration-200"
+            style={{ background: segmentColor(i) }}
+          />
+        ))}
+      </div>
+      {labelText && (
+        <span className="shrink-0 text-xs font-medium" style={{ color: labelColor }}>
+          {labelText}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Section
+// ---------------------------------------------------------------------------
+
 const EMPTY_FORM = { current_password: '', new_password: '', confirm_password: '' };
 
 export function ChangePasswordSection() {
   const { t } = useTranslation();
 
+  const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -42,6 +204,7 @@ export function ChangePasswordSection() {
     onSuccess: () => {
       setForm(EMPTY_FORM);
       setFieldErrors({});
+      setIsOpen(false);
       setAlert({ type: 'success', message: t('profile.changePasswordSuccess') });
     },
     onError: (err) => {
@@ -77,88 +240,142 @@ export function ChangePasswordSection() {
     mutation.mutate({ current_password: form.current_password, new_password: form.new_password });
   }
 
+  function handleToggle() {
+    if (isOpen) {
+      setIsOpen(false);
+      setForm(EMPTY_FORM);
+      setFieldErrors({});
+      setAlert(null);
+    } else {
+      setIsOpen(true);
+      setAlert(null);
+    }
+  }
+
   return (
     <section
-      className="bg-surface rounded-2xl shadow-sm border border-default p-6 space-y-4"
+      className="bg-surface rounded-2xl shadow-sm border border-default p-6"
       aria-label={t('profile.changePasswordTitle')}
     >
-      <h2 className="text-base font-semibold text-primary">{t('profile.changePasswordTitle')}</h2>
-
-      <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        {alert && <Alert type={alert.type} message={alert.message} />}
-
-        <div>
-          <label htmlFor="current_password" className="block text-sm font-medium text-gray-700 mb-1">
-            {t('profile.currentPassword')}
-          </label>
-          <AuthPasswordField
-            id="current_password"
-            name="current_password"
-            value={form.current_password}
-            onChange={handleChange}
-            autoComplete="current-password"
-            required
-          />
-          {fieldErrors.current_password && (
-            <p className="mt-1 text-sm text-red-600">{fieldErrors.current_password}</p>
-          )}
-        </div>
-
-        <div>
-          <label htmlFor="new_password" className="block text-sm font-medium text-gray-700 mb-1">
-            {t('profile.newPassword')}
-          </label>
-          <AuthPasswordField
-            id="new_password"
-            name="new_password"
-            value={form.new_password}
-            onChange={handleChange}
-            autoComplete="new-password"
-            required
-            minLength={8}
-          />
-          {fieldErrors.new_password && (
-            <p className="mt-1 text-sm text-red-600">{fieldErrors.new_password}</p>
-          )}
-        </div>
-
-        <div>
-          <label htmlFor="confirm_password" className="block text-sm font-medium text-gray-700 mb-1">
-            {t('profile.confirmPassword')}
-          </label>
-          <AuthPasswordField
-            id="confirm_password"
-            name="confirm_password"
-            value={form.confirm_password}
-            onChange={handleChange}
-            autoComplete="new-password"
-            required
-            minLength={8}
-          />
-          {fieldErrors.confirm_password && (
-            <p className="mt-1 text-sm text-red-600">{fieldErrors.confirm_password}</p>
-          )}
-        </div>
-
+      {/* Header row with collapsible toggle */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-semibold text-primary">{t('profile.changePasswordTitle')}</h2>
         <button
-          type="submit"
-          disabled={mutation.isPending}
+          type="button"
+          onClick={handleToggle}
           className={cn(
-            'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors',
-            mutation.isPending && 'opacity-60 cursor-not-allowed',
+            'inline-flex items-center gap-1.5 h-8 px-3 text-sm font-medium rounded-[var(--radius-sm)] transition-colors',
+            isOpen
+              ? 'text-secondary hover:bg-raised'
+              : 'text-brand hover:bg-brand-subtle',
           )}
         >
-          {mutation.isPending ? (
-            <>
-              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" aria-hidden="true" />
-              {t('profile.changingPassword')}
-            </>
-          ) : (
-            t('profile.changePasswordBtn')
-          )}
+          {isOpen ? t('profile.changePasswordCollapse') : t('profile.changePasswordExpand')}
         </button>
-      </form>
+      </div>
+
+      {/* Success alert shown outside form (after collapse) */}
+      {!isOpen && alert?.type === 'success' && (
+        <div className="mt-4">
+          <Alert type="success" message={alert.message} />
+        </div>
+      )}
+
+      {/* Description shown when collapsed and no success alert */}
+      {!isOpen && alert?.type !== 'success' && (
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', paddingTop: 8 }}>
+          {t('profile.changePasswordDesc')}
+        </p>
+      )}
+
+      {/* Collapsible form */}
+      {isOpen && (
+        <form onSubmit={handleSubmit} noValidate className="mt-5 space-y-4">
+          {alert && <Alert type={alert.type} message={alert.message} />}
+
+          <div>
+            <label htmlFor="current_password" style={labelStyle}>
+              {t('profile.currentPassword')}
+            </label>
+            <PasswordInput
+              id="current_password"
+              name="current_password"
+              value={form.current_password}
+              onChange={handleChange}
+              autoComplete="current-password"
+              required
+            />
+            {fieldErrors.current_password && (
+              <p className="mt-1 text-sm" style={{ color: 'var(--danger)' }}>
+                {fieldErrors.current_password}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="new_password" style={labelStyle}>
+              {t('profile.newPassword')}
+            </label>
+            <PasswordInput
+              id="new_password"
+              name="new_password"
+              value={form.new_password}
+              onChange={handleChange}
+              autoComplete="new-password"
+              required
+              minLength={8}
+            />
+            <PasswordStrengthMeter password={form.new_password} />
+            {fieldErrors.new_password && (
+              <p className="mt-1 text-sm" style={{ color: 'var(--danger)' }}>
+                {fieldErrors.new_password}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="confirm_password" style={labelStyle}>
+              {t('profile.confirmPassword')}
+            </label>
+            <PasswordInput
+              id="confirm_password"
+              name="confirm_password"
+              value={form.confirm_password}
+              onChange={handleChange}
+              autoComplete="new-password"
+              required
+              minLength={8}
+            />
+            {fieldErrors.confirm_password && (
+              <p className="mt-1 text-sm" style={{ color: 'var(--danger)' }}>
+                {fieldErrors.confirm_password}
+              </p>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            disabled={mutation.isPending}
+            className={cn(
+              'inline-flex items-center gap-2 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)]',
+              'text-white bg-[color:var(--brand)] hover:opacity-90 transition-opacity',
+              'disabled:opacity-60 disabled:cursor-not-allowed',
+            )}
+          >
+            {mutation.isPending ? (
+              <>
+                <span
+                  className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+                  aria-hidden="true"
+                />
+                {t('profile.changingPassword')}
+              </>
+            ) : (
+              t('profile.changePasswordBtn')
+            )}
+          </button>
+        </form>
+      )}
     </section>
   );
 }
