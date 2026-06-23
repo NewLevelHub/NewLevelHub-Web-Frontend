@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Calendar, CheckSquare, Key, ArrowRight } from 'lucide-react';
+import { Calendar, CheckSquare, Key, ChevronRight } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -9,177 +9,126 @@ import { useUser } from '@/shared/hooks/useAuth';
 import { USER_ROLES } from '@/shared/config/constants';
 import { fmtDateTime, fmtDate } from '@/shared/lib/formatDate';
 import { cn } from '@/shared/lib/cn';
-import type { UserActivityResponse, BookingActivity, TaskActivity, PassActivity } from '@/shared/types';
+import type { UserActivityResponse } from '@/shared/types';
 
-// ── Chip colour maps — only semantic token classes ────────────────────
+// ── Skeleton ──────────────────────────────────────────────────────────────────
 
-const BOOKING_STATUS_COLORS: Record<string, string> = {
-  confirmed:  'bg-success-subtle text-success-badge',
-  pending:    'bg-raised text-[color:var(--info)]',
-  checked_in: 'bg-raised text-[color:var(--info)]',
-  completed:  'bg-raised text-muted',
-  cancelled:  'bg-danger-subtle text-danger-badge',
-  no_show:    'bg-warning-subtle text-warning-badge',
-};
-
-const PASS_STATUS_COLORS: Record<string, string> = {
-  active:  'bg-success-subtle text-success-badge',
-  used:    'bg-raised text-muted',
-  expired: 'bg-warning-subtle text-warning-badge',
-  revoked: 'bg-danger-subtle text-danger-badge',
-};
-
-const TASK_PRIORITY_COLORS: Record<string, string> = {
-  low:      'bg-raised text-[color:var(--info)]',
-  medium:   'bg-warning-subtle text-warning-badge',
-  high:     'bg-warning-subtle text-warning-badge',
-  urgent:   'bg-danger-subtle text-danger-badge',
-  critical: 'bg-danger-subtle text-danger-badge',
-};
-
-// ── Chip ──────────────────────────────────────────────────────────────
-
-function Chip({ label, colorClass }: { label: string; colorClass: string }) {
+function ActivityCardSkeleton() {
   return (
-    <span className={cn('inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium', colorClass)}>
-      {label}
-    </span>
-  );
-}
-
-// ── Skeleton ──────────────────────────────────────────────────────────
-
-function RowSkeleton() {
-  return (
-    <div className="animate-pulse space-y-3 py-2">
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="flex items-center gap-3">
-          <div className="h-3.5 flex-1 rounded bg-raised" />
-          <div className="h-5 w-16 rounded-full bg-raised" />
+    <div
+      className="animate-pulse rounded-2xl border border-default bg-surface shadow-sm"
+      style={{ padding: '12px 16px' }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ width: 36, height: 36, borderRadius: 9, flexShrink: 0, background: 'var(--bg-raised)' }} />
+        <div style={{ flex: 1 }}>
+          <div className="h-5 w-10 rounded bg-raised" />
+          <div className="mt-1.5 h-3 w-24 rounded bg-raised" />
+          <div className="mt-1.5 h-3 w-16 rounded bg-raised" />
         </div>
-      ))}
+        <div style={{ width: 14, height: 14, borderRadius: 2, background: 'var(--bg-raised)', flexShrink: 0 }} />
+      </div>
+      <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-faint)' }}>
+        <div className="h-3 w-48 rounded bg-raised" />
+      </div>
     </div>
   );
 }
 
-// ── Card ──────────────────────────────────────────────────────────────
+// ── Count Card ────────────────────────────────────────────────────────────────
 
-interface MiniCardProps {
+interface ActivityCountCardProps {
   icon: React.ReactNode;
-  title: string;
-  viewAllHref: string;
-  viewAllLabel: string;
+  count: number;
+  subtitle: string;
+  label: string;
+  detail: string;
+  href: string;
   isLoading: boolean;
-  isEmpty: boolean;
-  emptyLabel: string;
-  children: React.ReactNode;
 }
 
-function MiniCard({
+function ActivityCountCard({
   icon,
-  title,
-  viewAllHref,
-  viewAllLabel,
+  count,
+  subtitle,
+  label,
+  detail,
+  href,
   isLoading,
-  isEmpty,
-  emptyLabel,
-  children,
-}: MiniCardProps) {
+}: ActivityCountCardProps) {
+  if (isLoading) {
+    return <ActivityCardSkeleton />;
+  }
+
   return (
-    <div className="flex flex-col overflow-hidden rounded-2xl border border-default bg-surface shadow-sm">
-      {/* Header */}
-      <div className="flex items-center gap-2.5 px-4 py-3">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-subtle text-brand">
+    <Link
+      to={href}
+      className={cn(
+        'block rounded-2xl border border-default bg-surface shadow-sm',
+        'cursor-pointer transition-colors hover:bg-hover',
+      )}
+      style={{ padding: '12px 16px' }}
+    >
+      {/* Top row: icon + number/subtitle/label + chevron */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {/* Icon container */}
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 9,
+            flexShrink: 0,
+            background: 'var(--bg-raised)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           {icon}
-        </span>
-        <span className="text-sm font-semibold text-primary">{title}</span>
+        </div>
+
+        {/* Number + subtitle + label */}
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                fontFamily: 'var(--font-mono)',
+                letterSpacing: '-0.025em',
+              }}
+            >
+              {count}
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{subtitle}</span>
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>
+            {label}
+          </div>
+        </div>
+
+        {/* Chevron */}
+        <ChevronRight size={14} style={{ color: 'var(--text-subtle)', flexShrink: 0 }} />
       </div>
 
-      <div className="mx-4 h-px bg-[color:var(--border)]" />
-
-      {/* Body */}
-      <div className="flex-1 px-4">
-        {isLoading ? (
-          <RowSkeleton />
-        ) : isEmpty ? (
-          <p className="py-6 text-center text-sm text-muted">{emptyLabel}</p>
-        ) : (
-          <div className="divide-y divide-[color:var(--border-faint)]">{children}</div>
-        )}
-      </div>
-
-      {/* Footer CTA */}
-      <div className="mx-4 h-px bg-[color:var(--border)]" />
-      <Link
-        to={viewAllHref}
-        className="flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-brand transition-colors hover:bg-brand-subtle"
+      {/* Separator + detail */}
+      <div
+        style={{
+          fontSize: 11,
+          color: 'var(--text-muted)',
+          marginTop: 8,
+          paddingTop: 8,
+          borderTop: '1px solid var(--border-faint)',
+        }}
       >
-        {viewAllLabel}
-        <ArrowRight className="h-3.5 w-3.5" />
-      </Link>
-    </div>
+        {detail}
+      </div>
+    </Link>
   );
 }
 
-// ── Rows ──────────────────────────────────────────────────────────────
-
-function BookingRow({ item }: { item: BookingActivity }) {
-  const { t } = useTranslation();
-  const colorClass = BOOKING_STATUS_COLORS[item.status] ?? 'bg-raised text-muted';
-  return (
-    <div className="flex items-start gap-3 py-2.5">
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-primary">{item.resource_name}</p>
-        <p className="mt-0.5 text-xs text-muted">{fmtDateTime(item.start_time)}</p>
-      </div>
-      <Chip
-        label={t(`dashboard.status.${item.status}`, { defaultValue: item.status })}
-        colorClass={colorClass}
-      />
-    </div>
-  );
-}
-
-function TaskRow({ item }: { item: TaskActivity }) {
-  const { t } = useTranslation();
-  const colorClass = TASK_PRIORITY_COLORS[item.priority] ?? 'bg-raised text-muted';
-  return (
-    <div className="flex items-center gap-3 py-2.5">
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-primary">{item.title}</p>
-        <p className="mt-0.5 truncate text-xs text-muted">{item.board_name}</p>
-      </div>
-      <div className="flex shrink-0 flex-col items-end gap-1">
-        <Chip
-          label={t(`crm.priority.${item.priority}`, { defaultValue: item.priority })}
-          colorClass={colorClass}
-        />
-        {item.deadline && (
-          <span className="text-xs text-muted">{fmtDate(item.deadline)}</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function PassRow({ item }: { item: PassActivity }) {
-  const { t } = useTranslation();
-  const colorClass = PASS_STATUS_COLORS[item.status] ?? 'bg-raised text-muted';
-  return (
-    <div className="flex items-start gap-3 py-2.5">
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-primary">{item.guest_name}</p>
-        <p className="mt-0.5 text-xs text-muted">{fmtDate(item.valid_until)}</p>
-      </div>
-      <Chip
-        label={t(`passes.status.${item.status}`, { defaultValue: item.status })}
-        colorClass={colorClass}
-      />
-    </div>
-  );
-}
-
-// ── Main ──────────────────────────────────────────────────────────────
+// ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function ProfileActivitySection() {
   const { t } = useTranslation();
@@ -200,53 +149,57 @@ export default function ProfileActivitySection() {
     user?.role !== USER_ROLES.RECEPTION &&
     user?.role !== USER_ROLES.SERVICE_MANAGER;
 
+  // Derive booking detail
+  const lastBooking = data?.bookings[data.bookings.length - 1];
+  const bookingDetail = lastBooking
+    ? `${lastBooking.resource_name} · ${fmtDateTime(lastBooking.start_time)}`
+    : t('profile.activity.noBookings');
+
+  // Derive task detail
+  const firstTask = data?.tasks[0];
+  const taskDetail = firstTask ? firstTask.title : t('profile.activity.noTasks');
+
+  // Derive pass detail
+  const firstPass = data?.passes[0];
+  const passDetail = firstPass
+    ? `${firstPass.guest_name} · ${fmtDate(firstPass.valid_until)}`
+    : t('profile.activity.noPasses');
+
   return (
-    <section aria-label={t('profile.activity.title')} className="mt-8">
-      <h2 className="mb-4 text-base font-semibold text-primary">
-        {t('profile.activity.title')}
-      </h2>
+    <section aria-label={t('profile.activity.title')} className="flex flex-col gap-3">
+      <ActivityCountCard
+        icon={<Calendar size={16} style={{ color: 'var(--text-secondary)' }} />}
+        count={data?.bookings.length ?? 0}
+        subtitle={t('profile.activity.lastMonth')}
+        label={t('profile.activity.bookings')}
+        detail={bookingDetail}
+        href="/bookings/my"
+        isLoading={isLoading}
+      />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <MiniCard
-          icon={<Calendar className="h-4 w-4" />}
-          title={t('profile.activity.bookings')}
-          viewAllHref="/bookings/my"
-          viewAllLabel={t('profile.activity.viewAll')}
+      {showTasks && (
+        <ActivityCountCard
+          icon={<CheckSquare size={16} style={{ color: 'var(--text-secondary)' }} />}
+          count={data?.tasks.length ?? 0}
+          subtitle={t('profile.activity.activeTasks')}
+          label={t('profile.activity.tasks')}
+          detail={taskDetail}
+          href="/crm/my-tasks"
           isLoading={isLoading}
-          isEmpty={(data?.bookings.length ?? 0) === 0}
-          emptyLabel={t('profile.activity.noBookings')}
-        >
-          {data?.bookings.map((b) => <BookingRow key={b.id} item={b} />)}
-        </MiniCard>
+        />
+      )}
 
-        {showTasks && (
-          <MiniCard
-            icon={<CheckSquare className="h-4 w-4" />}
-            title={t('profile.activity.tasks')}
-            viewAllHref="/crm/my-tasks"
-            viewAllLabel={t('profile.activity.viewAll')}
-            isLoading={isLoading}
-            isEmpty={(data?.tasks.length ?? 0) === 0}
-            emptyLabel={t('profile.activity.noTasks')}
-          >
-            {data?.tasks.map((task) => <TaskRow key={task.id} item={task} />)}
-          </MiniCard>
-        )}
-
-        {showPasses && (
-          <MiniCard
-            icon={<Key className="h-4 w-4" />}
-            title={t('profile.activity.passes')}
-            viewAllHref="/passes"
-            viewAllLabel={t('profile.activity.viewAll')}
-            isLoading={isLoading}
-            isEmpty={(data?.passes.length ?? 0) === 0}
-            emptyLabel={t('profile.activity.noPasses')}
-          >
-            {data?.passes.map((p) => <PassRow key={p.id} item={p} />)}
-          </MiniCard>
-        )}
-      </div>
+      {showPasses && (
+        <ActivityCountCard
+          icon={<Key size={16} style={{ color: 'var(--text-secondary)' }} />}
+          count={data?.passes.length ?? 0}
+          subtitle={t('profile.activity.myPasses')}
+          label={t('profile.activity.passes')}
+          detail={passDetail}
+          href="/passes"
+          isLoading={isLoading}
+        />
+      )}
     </section>
   );
 }

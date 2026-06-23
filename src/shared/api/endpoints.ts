@@ -264,6 +264,7 @@ export const API = {
     me: '/auth/me/',
     update: '/auth/me/update/',
     deleteAvatar: '/auth/me/avatar/',
+    deleteAccount: '/auth/me/delete/',
     activity: '/auth/me/activity/',
   },
   users: {
