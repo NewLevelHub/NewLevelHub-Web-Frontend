@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
-import { dateLocaleTag } from '@/shared/lib/localeFormat';
+import { Check, Image } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
@@ -19,9 +19,89 @@ import type { Announcement, Company, PaginatedResponse } from '@/shared/types';
 
 type AudienceMode = 'building' | 'company';
 
+const CAT_CONFIG: Record<AnnouncementCategory, { bg: string; color: string; emoji: string }> = {
+  info: {
+    bg: 'var(--bg-hover)',
+    color: 'var(--info)',
+    emoji: 'ℹ️',
+  },
+  important: {
+    bg: 'rgba(185,28,28,0.08)',
+    color: 'var(--danger)',
+    emoji: '⚠️',
+  },
+  event: {
+    bg: 'var(--bg-active)',
+    color: 'var(--brand)',
+    emoji: '🎉',
+  },
+};
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  boxSizing: 'border-box',
+  padding: '8px 12px',
+  borderRadius: 'var(--radius-sm)',
+  border: '1px solid var(--border)',
+  background: 'var(--bg-surface)',
+  color: 'var(--text-primary)',
+  fontSize: 14,
+  outline: 'none',
+  fontFamily: 'inherit',
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  marginBottom: 6,
+  fontSize: 12,
+  fontWeight: 500,
+  color: 'var(--text-secondary)',
+};
+
+interface DSCheckboxProps {
+  checked: boolean;
+  onChange: () => void;
+  label: string;
+  hint?: string;
+}
+
+function DSCheckbox({ checked, onChange, label, hint }: DSCheckboxProps) {
+  return (
+    <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+      <div
+        onClick={onChange}
+        role="checkbox"
+        aria-checked={checked}
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') onChange(); }}
+        style={{
+          width: 18,
+          height: 18,
+          borderRadius: 4,
+          border: `1.5px solid ${checked ? 'var(--brand)' : 'var(--border-strong)'}`,
+          background: checked ? 'var(--brand)' : 'transparent',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          transition: 'all 0.15s',
+          cursor: 'pointer',
+        }}
+      >
+        {checked ? <Check size={11} color="#fff" strokeWidth={3} /> : null}
+      </div>
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{label}</div>
+        {hint ? (
+          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{hint}</div>
+        ) : null}
+      </div>
+    </label>
+  );
+}
+
 export default function AnnouncementCreatePage() {
-  const { t, i18n } = useTranslation();
-  const dateLocale = dateLocaleTag(i18n.language);
+  const { t } = useTranslation();
   const user = useUser();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -105,11 +185,11 @@ export default function AnnouncementCreatePage() {
     event.preventDefault();
     setFormError(null);
     if (!title.trim() || !text.trim()) {
-      setFormError('Заполните заголовок и текст объявления.');
+      setFormError(t('announcements.formErrorTitleText'));
       return;
     }
     if (isSuperadmin && audience === 'company' && companyId === '') {
-      setFormError('Выберите компанию-получателя или переключите на «БЦ».');
+      setFormError(t('announcements.formErrorCompany'));
       return;
     }
     createMutation.mutate();
@@ -118,141 +198,243 @@ export default function AnnouncementCreatePage() {
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-6">
       <header className="space-y-1">
-        <h1 className="text-2xl font-bold text-primary">Новое объявление</h1>
+        <h1 className="text-2xl font-bold text-primary">{t('announcements.createTitle')}</h1>
         <p className="text-sm text-secondary">
           {isSuperadmin
-            ? 'Суперадмин: для всего БЦ или для выбранной компании.'
-            : 'Объявление для сотрудников вашей компании.'}
+            ? t('announcements.createSubtitleSA')
+            : t('announcements.createSubtitleCA')}
         </p>
       </header>
 
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-default bg-raised p-5">
-        <label className="block text-sm text-secondary">
-          Заголовок
+      <form onSubmit={handleSubmit} className="space-y-5 rounded-xl border border-default bg-raised p-5">
+        {/* Title */}
+        <div>
+          <label style={labelStyle} htmlFor="ann-title">
+            {t('announcements.fieldTitle')}
+          </label>
           <input
+            id="ann-title"
             value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+            onChange={(e) => setTitle(e.target.value)}
+            style={inputStyle}
+            placeholder={t('announcements.fieldTitlePlaceholder')}
             required
             maxLength={255}
           />
-        </label>
+        </div>
 
-        <label className="block text-sm text-secondary">
-          Текст
+        {/* Text */}
+        <div>
+          <label style={labelStyle} htmlFor="ann-text">
+            {t('announcements.fieldText')}
+          </label>
           <textarea
+            id="ann-text"
             value={text}
-            onChange={(event) => setText(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+            onChange={(e) => setText(e.target.value)}
+            style={{ ...inputStyle, height: 'auto', resize: 'none', minHeight: 80 }}
+            placeholder={t('announcements.fieldTextPlaceholder')}
             rows={6}
             required
           />
-        </label>
+        </div>
 
-        <label className="block text-sm text-secondary">
-          Категория
-          <select
-            value={category}
-            onChange={(event) => setCategory(event.target.value as AnnouncementCategory)}
-            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-          >
-            {Object.values(ANNOUNCEMENT_CATEGORIES).map((value) => (
-              <option key={value} value={value}>
-                {t(ANNOUNCEMENT_CATEGORY_LABEL_KEYS[value])}
-              </option>
-            ))}
-          </select>
-        </label>
+        {/* Category toggle buttons */}
+        <div>
+          <span style={labelStyle}>{t('announcements.categoryLabel')}</span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {(Object.entries(CAT_CONFIG) as Array<[AnnouncementCategory, typeof CAT_CONFIG[AnnouncementCategory]]>).map(
+              ([k, c]) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setCategory(k)}
+                  style={{
+                    flex: 1,
+                    padding: '9px 12px',
+                    borderRadius: 8,
+                    border: `1.5px solid ${category === k ? c.color : 'var(--border)'}`,
+                    background: category === k ? c.bg : 'var(--bg-surface)',
+                    color: category === k ? c.color : 'var(--text-muted)',
+                    fontSize: 12,
+                    fontWeight: category === k ? 600 : 400,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 5,
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {c.emoji} {t(ANNOUNCEMENT_CATEGORY_LABEL_KEYS[k])}
+                </button>
+              ),
+            )}
+          </div>
+        </div>
 
+        {/* Audience toggle (superadmin only) */}
         {isSuperadmin ? (
-          <fieldset className="space-y-2 rounded-lg border border-default p-3">
-            <legend className="px-1 text-xs uppercase tracking-wide text-secondary">Получатели</legend>
-            <label className="flex items-center gap-2 text-sm text-secondary">
-              <input
-                type="radio"
-                name="audience"
-                value="building"
-                checked={audience === 'building'}
-                onChange={() => setAudience('building')}
-              />
-              Весь БЦ (видят все)
-            </label>
-            <label className="flex items-center gap-2 text-sm text-secondary">
-              <input
-                type="radio"
-                name="audience"
-                value="company"
-                checked={audience === 'company'}
-                onChange={() => setAudience('company')}
-              />
-              Конкретная компания
-            </label>
-            {audience === 'company' ? (
-              <select
-                value={companyId === '' ? '' : String(companyId)}
-                onChange={(event) =>
-                  setCompanyId(event.target.value === '' ? '' : Number(event.target.value))
-                }
-                className="mt-2 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-                aria-label="Компания-получатель"
+          <div>
+            <span style={labelStyle}>{t('announcements.audienceLabel')}</span>
+            <div
+              style={{
+                display: 'flex',
+                borderRadius: 8,
+                border: '1px solid var(--border)',
+                overflow: 'hidden',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setAudience('building')}
+                style={{
+                  flex: 1,
+                  padding: '8px 12px',
+                  fontSize: 13,
+                  fontWeight: audience === 'building' ? 600 : 400,
+                  background: audience === 'building' ? 'var(--brand-subtle)' : 'var(--bg-surface)',
+                  color: audience === 'building' ? 'var(--brand-text)' : 'var(--text-muted)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
               >
-                <option value="">— Выберите компанию —</option>
-                {(companiesQuery.data?.results ?? []).map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+                🏢 {t('announcements.audienceBC')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setAudience('company')}
+                style={{
+                  flex: 1,
+                  padding: '8px 12px',
+                  fontSize: 13,
+                  fontWeight: audience === 'company' ? 600 : 400,
+                  background: audience === 'company' ? 'var(--brand-subtle)' : 'var(--bg-surface)',
+                  color: audience === 'company' ? 'var(--brand-text)' : 'var(--text-muted)',
+                  border: 'none',
+                  borderLeft: '1px solid var(--border)',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                🏷 {t('announcements.audienceCompany')}
+              </button>
+            </div>
+
+            {/* Company picker */}
+            {audience === 'company' ? (
+              <div style={{ marginTop: 10 }}>
+                <label style={labelStyle} htmlFor="ann-company">
+                  {t('announcements.recipientLabel')}
+                </label>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>
+                  {t('announcements.recipientHint')}
+                </p>
+                <select
+                  id="ann-company"
+                  value={companyId === '' ? '' : String(companyId)}
+                  onChange={(e) =>
+                    setCompanyId(e.target.value === '' ? '' : Number(e.target.value))
+                  }
+                  style={inputStyle}
+                  aria-label={t('announcements.recipientLabel')}
+                >
+                  <option value="">{t('announcements.recipientSelect')}</option>
+                  {(companiesQuery.data?.results ?? []).map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             ) : null}
-          </fieldset>
+          </div>
         ) : null}
 
-        <label className="block text-sm text-secondary">
-          Изображение (необязательно)
+        {/* Image upload dropzone */}
+        <div>
+          <label htmlFor="img-upload" style={labelStyle}>
+            {t('announcements.imageLabel')}
+          </label>
+          <label
+            htmlFor="img-upload"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              padding: 14,
+              borderRadius: 8,
+              border: '1.5px dashed var(--border-strong)',
+              background: 'var(--bg-raised)',
+              color: 'var(--text-muted)',
+              fontSize: 12,
+              cursor: 'pointer',
+            }}
+          >
+            <Image size={16} aria-hidden="true" />
+            {image ? image.name : t('announcements.imageHint')}
+          </label>
           <input
+            id="img-upload"
             type="file"
             accept="image/*"
-            lang={dateLocale}
-            onChange={(event) => setImage(event.target.files?.[0] ?? null)}
-            className="mt-1 block w-full text-sm text-secondary"
+            className="sr-only"
+            onChange={(e) => setImage(e.target.files?.[0] ?? null)}
           />
-        </label>
+        </div>
 
-        <label className="flex items-center gap-2 text-sm text-secondary">
-          <input
-            type="checkbox"
-            checked={isPinned}
-            onChange={(event) => setIsPinned(event.target.checked)}
-            className="h-4 w-4 rounded border-default bg-surface text-brand"
-          />{t('common.pinToTop')}</label>
+        {/* Pin checkbox */}
+        <DSCheckbox
+          checked={isPinned}
+          onChange={() => setIsPinned((v) => !v)}
+          label={t('announcements.pinLabel')}
+          hint={t('announcements.pinHint')}
+        />
 
-        <label className="flex items-center gap-2 text-sm text-secondary">
-          <input
-            type="checkbox"
-            checked={notifyEmail}
-            onChange={(event) => setNotifyEmail(event.target.checked)}
-            className="h-4 w-4 rounded border-default bg-surface text-brand"
-          />
-          Отправить email-уведомление получателям
-        </label>
+        {/* Email checkbox */}
+        <DSCheckbox
+          checked={notifyEmail}
+          onChange={() => setNotifyEmail((v) => !v)}
+          label={t('announcements.emailLabel')}
+          hint={t('announcements.emailHint')}
+        />
 
+        {/* Error */}
         {formError ? (
-          <div role="alert" className="rounded-lg border border-rose-800 bg-rose-950/30 px-3 py-2 text-sm text-rose-300">
+          <div
+            role="alert"
+            style={{
+              background: 'var(--danger-bg)',
+              color: 'var(--danger-text)',
+              border: '1px solid var(--danger)',
+              borderRadius: 8,
+              padding: '10px 14px',
+              fontSize: 13,
+            }}
+          >
             {formError}
           </div>
         ) : null}
 
+        {/* Actions */}
         <div className="flex justify-end gap-2">
           <Link
             to="/announcements"
-            className="inline-flex items-center rounded-lg border border-default px-4 py-2 text-sm font-medium text-secondary hover:bg-hover"
-          >{t('common.cancel')}</Link>
+            className="h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] text-secondary hover:bg-raised border border-default inline-flex items-center"
+          >
+            {t('common.cancel')}
+          </Link>
           <button
             type="submit"
             disabled={createMutation.isPending}
-            className="inline-flex items-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] text-white bg-[color:var(--brand)] hover:opacity-90 disabled:opacity-50 transition-opacity"
           >
-            {createMutation.isPending ? 'Публикация…' : 'Опубликовать'}
+            {createMutation.isPending
+              ? t('announcements.publishing')
+              : t('announcements.publishBtn')}
           </button>
         </div>
       </form>

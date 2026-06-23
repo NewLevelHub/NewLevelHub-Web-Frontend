@@ -1,13 +1,32 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Building2, Eye, Pin, Trash2 } from 'lucide-react';
+import { CheckCircle, Eye, Mail, Pin, Trash2 } from 'lucide-react';
 
-import { USER_ROLES } from '@/shared/config/constants';
+import { ANNOUNCEMENT_CATEGORY_LABEL_KEYS, USER_ROLES } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
 import { fmtDateTime } from '@/shared/lib/formatDate';
 import type { Announcement } from '@/shared/types';
 
-import { AnnouncementCategoryBadge } from '@/pages/announcements/components/AnnouncementCategoryBadge';
+const CAT_CONFIG: Record<
+  string,
+  { bg: string; color: string; emoji: string }
+> = {
+  info: {
+    bg: 'var(--bg-hover)',
+    color: 'var(--info)',
+    emoji: 'ℹ️',
+  },
+  important: {
+    bg: 'rgba(185,28,28,0.08)',
+    color: 'var(--danger)',
+    emoji: '⚠️',
+  },
+  event: {
+    bg: 'var(--bg-active)',
+    color: 'var(--brand)',
+    emoji: '🎉',
+  },
+};
 
 interface AnnouncementItemProps {
   announcement: Announcement;
@@ -35,84 +54,222 @@ export const AnnouncementItem = memo<AnnouncementItemProps>(function Announcemen
   const isAuthor =
     currentUserId !== undefined &&
     (isSuperadmin || a.author === currentUserId);
+  const cat = CAT_CONFIG[a.category] ?? CAT_CONFIG.info;
 
   return (
     <li
       className={cn(
-        'rounded-xl border bg-surface px-4 py-4 shadow-sm transition-colors',
-        a.is_pinned ? 'border-blue-200 dark:border-default/50' : 'border-default',
-        !a.is_read && 'ring-1 ring-blue-500/30',
+        'rounded-xl border border-default bg-surface px-4 py-4 shadow-sm',
       )}
+      style={{
+        borderLeft: a.is_pinned
+          ? '3px solid var(--brand)'
+          : !a.is_read
+            ? '3px solid var(--info)'
+            : 'none',
+        opacity: a.is_read ? 0.82 : 1,
+        transition: 'opacity 0.2s',
+      }}
     >
       <div className="flex items-start gap-3">
-        <AnnouncementCategoryBadge category={a.category} />
+        {/* Category icon avatar */}
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 9,
+            flexShrink: 0,
+            background: isBuilding ? 'var(--brand-subtle)' : 'var(--bg-raised)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 16,
+          }}
+          aria-hidden="true"
+        >
+          {cat.emoji}
+        </div>
+
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Meta row */}
+          <div
+            className="flex flex-wrap items-center gap-2"
+            style={{ marginBottom: 6 }}
+          >
+            {/* Source badge */}
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                padding: '2px 7px',
+                borderRadius: 4,
+                background: isBuilding ? 'var(--brand-subtle)' : 'var(--bg-raised)',
+                color: isBuilding ? 'var(--brand-text)' : 'var(--text-muted)',
+              }}
+            >
+              {isBuilding ? `🏢 ${t('announcements.filterBC')}` : `🏷 ${t('announcements.filterCompany')}`}
+            </span>
+
+            {/* Category badge */}
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                padding: '2px 7px',
+                borderRadius: 4,
+                background: cat.bg,
+                color: cat.color,
+              }}
+            >
+              {t(ANNOUNCEMENT_CATEGORY_LABEL_KEYS[a.category])}
+            </span>
+
+            {/* Pinned badge */}
             {a.is_pinned ? (
-              <Pin size={14} aria-hidden="true" className="text-brand" />
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 3,
+                  fontSize: 10,
+                  color: 'var(--brand)',
+                  fontWeight: 600,
+                }}
+              >
+                <Pin size={10} aria-hidden="true" />
+                {t('announcements.pinned')}
+              </span>
             ) : null}
+
+            {/* Email badge */}
+            {a.notify_email ? (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 3,
+                  fontSize: 10,
+                  color: 'var(--info)',
+                  fontWeight: 500,
+                }}
+              >
+                <Mail size={10} aria-hidden="true" />
+                {t('announcements.emailSent')}
+              </span>
+            ) : null}
+
+            {/* Unread dot */}
             {!a.is_read ? (
               <span
-                className="inline-block h-2 w-2 shrink-0 rounded-full bg-indigo-400"
+                style={{
+                  display: 'inline-block',
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: 'var(--info)',
+                }}
                 aria-label={t('announcements.unread')}
               />
             ) : null}
-            <h2 className={cn('font-semibold', a.is_read ? 'text-secondary' : 'text-white')}>
-              {a.title}
-            </h2>
-            {isBuilding ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-default px-2 py-0.5 text-xs text-secondary">
-                <Building2 size={12} aria-hidden="true" />
-                {t('announcements.buildingScope')}
-              </span>
-            ) : null}
+
+            {/* Time — pushed to right */}
+            <span
+              style={{
+                marginLeft: 'auto',
+                fontSize: 11,
+                color: 'var(--text-muted)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {fmtDateTime(a.created_at)}
+            </span>
           </div>
-          <p className="mt-2 whitespace-pre-line text-sm text-secondary">{a.text}</p>
+
+          {/* Title */}
+          <p
+            style={{
+              fontSize: 14,
+              fontWeight: a.is_read ? 500 : 700,
+              color: 'var(--text-primary)',
+              marginBottom: 5,
+              lineHeight: 1.3,
+            }}
+          >
+            {a.title}
+          </p>
+
+          {/* Body */}
+          <p
+            className="whitespace-pre-line"
+            style={{
+              fontSize: 12,
+              color: 'var(--text-secondary)',
+              lineHeight: 1.65,
+            }}
+          >
+            {a.text}
+          </p>
+
+          {/* Image */}
           {a.image ? (
             <img
               src={a.image}
               alt=""
-              className="mt-3 max-h-80 w-full rounded-lg border border-default object-cover"
+              className="mt-2 max-h-80 w-full rounded-lg border border-default object-cover"
             />
           ) : null}
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs text-muted">
-              {a.author_name ? `${a.author_name} · ` : ''}
-              {fmtDateTime(a.created_at)}
-            </p>
-            <div className="flex items-center gap-3">
-              {isAuthor ? (
-                <span className="inline-flex items-center gap-1 text-xs text-muted">
-                  <Eye size={12} aria-hidden="true" />
-                  {a.read_count}
-                </span>
-              ) : null}
-              {!a.is_read ? (
-                <button
-                  type="button"
-                  onClick={() => onMarkRead(a)}
-                  disabled={isMarkingRead}
-                  className="text-xs text-brand hover:text-brand disabled:opacity-40"
-                >
-                  {t('announcements.markRead')}
-                </button>
-              ) : (
-                <span className="text-xs text-muted">{t('announcements.read')}</span>
-              )}
-            </div>
+
+          {/* Actions row */}
+          <div
+            className="flex flex-wrap items-center gap-[10px]"
+            style={{ marginTop: 10 }}
+          >
+            {/* Mark read / already read */}
+            {!a.is_read ? (
+              <button
+                type="button"
+                onClick={() => onMarkRead(a)}
+                disabled={isMarkingRead}
+                className="inline-flex items-center gap-1 text-xs font-medium disabled:opacity-40 transition-colors"
+                style={{ color: 'var(--info)' }}
+              >
+                <CheckCircle size={12} aria-hidden="true" />
+                {t('announcements.markRead')}
+              </button>
+            ) : (
+              <span
+                className="inline-flex items-center gap-1 text-xs"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                <CheckCircle size={12} aria-hidden="true" />
+                {t('announcements.alreadyRead')}
+              </span>
+            )}
+
+            {/* Delete */}
+            {canDelete ? (
+              <button
+                type="button"
+                onClick={() => onDelete(a.id)}
+                disabled={isDeleting}
+                className="inline-flex items-center gap-1 text-xs disabled:opacity-40 transition-colors"
+                style={{ color: 'var(--danger)' }}
+                aria-label={t('announcements.deleteAria')}
+              >
+                <Trash2 size={12} aria-hidden="true" />
+                {t('common.delete')}
+              </button>
+            ) : null}
+
+            {/* Read count */}
+            {isAuthor ? (
+              <span className="inline-flex items-center gap-1 text-xs text-muted">
+                <Eye size={12} aria-hidden="true" />
+                {a.read_count}
+              </span>
+            ) : null}
           </div>
         </div>
-        {canDelete ? (
-          <button
-            type="button"
-            onClick={() => onDelete(a.id)}
-            disabled={isDeleting}
-            className="shrink-0 rounded p-1 text-secondary hover:bg-danger-subtle hover:text-danger disabled:opacity-40"
-            aria-label={t('announcements.deleteAria')}
-          >
-            <Trash2 size={16} aria-hidden="true" />
-          </button>
-        ) : null}
       </div>
     </li>
   );

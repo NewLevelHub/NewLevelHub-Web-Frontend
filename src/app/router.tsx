@@ -75,7 +75,6 @@ import ServiceRequestCreatePage from '@/pages/service-requests/ServiceRequestCre
 
 // Announcements
 import AnnouncementListPage from '@/pages/announcements/AnnouncementListPage';
-import AnnouncementCreatePage from '@/pages/announcements/AnnouncementCreatePage';
 
 // Leave
 import LeaveRequestListPage from '@/pages/leave/LeaveRequestListPage';
@@ -279,10 +278,8 @@ export const router = createBrowserRouter([
             element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN]} />,
             children: [
               { path: '/team/manage', element: <TeamManagePage /> },
-              { path: '/announcements/new', element: <AnnouncementCreatePage /> },
               { path: '/analytics', element: <AnalyticsDashboardPage /> },
               { path: '/company/analytics', element: <AnalyticsDashboardPage /> },
-
             ],
           },
 
