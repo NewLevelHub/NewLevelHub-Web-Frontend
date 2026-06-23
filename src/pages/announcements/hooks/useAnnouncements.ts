@@ -8,13 +8,18 @@ import { useUser } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
 import type { Announcement, CursorPaginatedResponse } from '@/shared/types';
 
-import { buildListUrl, type CategoryFilter } from '@/pages/announcements/utils/announcementUtils';
+import {
+  buildListUrl,
+  type CategoryFilter,
+  type ScopeFilter,
+} from '@/pages/announcements/utils/announcementUtils';
 
 export function useAnnouncements() {
   const queryClient = useQueryClient();
   const user = useUser();
 
   const [category, setCategory] = useState<CategoryFilter>('all');
+  const [scope, setScope] = useState<ScopeFilter>('all');
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -27,9 +32,9 @@ export function useAnnouncements() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['announcements', { category }],
+    queryKey: ['announcements', { category, scope }],
     queryFn: ({ pageParam }: { pageParam: string | null }) => {
-      const url = buildListUrl(pageParam, category);
+      const url = buildListUrl(pageParam, category, scope);
       return apiClient
         .get<CursorPaginatedResponse<Announcement>>(url)
         .then((r) => r.data);
@@ -78,6 +83,14 @@ export function useAnnouncements() {
     },
   });
 
+  const readAllMutation = useMutation({
+    mutationFn: () => apiClient.post(API.announcements.readAll),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['announcements'] });
+      await queryClient.invalidateQueries({ queryKey: ['announcements-widget'] });
+    },
+  });
+
   const handleMarkRead = useCallback(
     (a: Announcement) => {
       if (!a.is_read) {
@@ -103,6 +116,8 @@ export function useAnnouncements() {
   return {
     category,
     setCategory,
+    scope,
+    setScope,
     visibleItems,
     isLoading,
     isError,
@@ -113,6 +128,7 @@ export function useAnnouncements() {
     sentinelCallbackRef,
     deleteMutation,
     markReadMutation,
+    readAllMutation,
     handleMarkRead,
     deleteError,
     canDelete,

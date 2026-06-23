@@ -191,6 +191,7 @@ export const API = {
     create: '/services/announcements/',
     detail: (id: string) => `/services/announcements/${id}/`,
     markRead: (id: string) => `/services/announcements/${id}/read/`,
+    readAll: '/services/announcements/read_all/',
   },
   leave: {
     requests: '/hr/leaves/',
