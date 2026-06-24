@@ -195,6 +195,8 @@ export function useFileBrowser() {
       await apiClient.delete(API.storage.folder(String(folderId)));
     },
     onSuccess: (_, folderId) => {
+      // Invalidate trash so the Trash page shows the newly deleted folder immediately.
+      queryClient.invalidateQueries({ queryKey: ['storage', 'trash'] });
       if (currentFolder?.id === folderId) setTrail([]);
       else refreshStorageData();
     },
@@ -267,6 +269,8 @@ export function useFileBrowser() {
       }
       // Refetch usage so trash_bytes and breakdown update; used_bytes stays the same (file is in trash).
       queryClient.invalidateQueries({ queryKey: ['storage', 'usage'] });
+      // Invalidate trash cache so the Trash page shows the newly deleted file immediately.
+      queryClient.invalidateQueries({ queryKey: ['storage', 'trash'] });
     },
   });
 
@@ -335,6 +339,8 @@ export function useFileBrowser() {
       setSelectedFileIds(new Set());
       // Refetch usage so trash_bytes and breakdown update; used_bytes stays the same (files are in trash).
       queryClient.invalidateQueries({ queryKey: ['storage', 'usage'] });
+      // Invalidate trash cache so the Trash page shows the newly deleted files immediately.
+      queryClient.invalidateQueries({ queryKey: ['storage', 'trash'] });
     },
   });
 

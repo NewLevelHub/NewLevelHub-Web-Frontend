@@ -1,9 +1,9 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Folder, RotateCcw, Trash2 } from 'lucide-react';
+import { AlertTriangle, Folder, RotateCcw, Trash2 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import type { TrashItem } from '@/shared/types';
-import { EXT_BADGE_STYLES, formatFileSize, getFileExt, relativeDate } from '@/pages/files/utils/fileBrowserUtils';
+import { EXT_BADGE_STYLES, formatFileSize, getFileExt } from '@/pages/files/utils/fileBrowserUtils';
 import { daysUntilPurge } from '@/pages/files/trash/utils/trashUtils';
 
 interface Props {
@@ -15,6 +15,13 @@ interface Props {
   onRequestPermDelete: (item: TrashItem) => void;
 }
 
+const tdStyle: React.CSSProperties = {
+  padding: '10px 12px',
+  fontSize: 13,
+  color: 'var(--text-primary)',
+  verticalAlign: 'middle',
+};
+
 export const TrashItemRow = memo(function TrashItemRow({
   item,
   lang,
@@ -25,85 +32,164 @@ export const TrashItemRow = memo(function TrashItemRow({
 }: Props) {
   const { t } = useTranslation();
   const days = daysUntilPurge(item.deleted_at);
+  const isUrgent = days <= 3;
 
   const ext = item.item_type === 'file' ? getFileExt(item.name) : '';
   const badgeGradient = EXT_BADGE_STYLES[ext] ?? 'from-slate-400 to-slate-600';
 
-  const purgeLabel =
-    days === 0 ? t('trash.purgeToday') : t('trash.purgeIn', { days });
+  const deletedDate = new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'short', year: 'numeric' }).format(
+    new Date(item.deleted_at),
+  );
 
-  const purgeClass =
+  // Pluralised days label (approximate — i18next plural for Russian)
+  const daysUnit = t('trash.purgeDays', { count: days, defaultValue: 'дн.' });
+  const purgeLabel =
     days === 0
-      ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-      : days <= 7
-        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-        : 'bg-[var(--bg-muted)] text-muted';
+      ? t('trash.purgeUrgent')
+      : t('trash.purgeInFull', { days, unit: daysUnit });
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-default bg-surface px-4 py-3 hover:bg-hover transition-colors">
-      {/* Icon */}
-      <div className="shrink-0">
-        {item.item_type === 'folder' ? (
-          <div className="flex h-8 w-8 items-center justify-center rounded bg-[var(--bg-muted)]">
-            <Folder size={16} className="text-muted" />
-          </div>
-        ) : (
-          <div
-            className={cn(
-              'flex h-8 w-8 items-center justify-center rounded bg-gradient-to-br text-[9px] font-bold uppercase text-white',
-              badgeGradient,
-            )}
-          >
-            {ext || '?'}
-          </div>
-        )}
-      </div>
+    <tr
+      style={{ borderBottom: '1px solid var(--border)' }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLTableRowElement).style.background = 'var(--bg-hover)';
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLTableRowElement).style.background = '';
+      }}
+    >
+      {/* Name + purge hint below */}
+      <td style={tdStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* File type badge */}
+          {item.item_type === 'folder' ? (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 32,
+                height: 32,
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--bg-raised)',
+                flexShrink: 0,
+                opacity: 0.7,
+              }}
+            >
+              <Folder size={16} style={{ color: 'var(--text-muted)' }} />
+            </div>
+          ) : (
+            <div
+              className={cn(
+                'flex items-center justify-center shrink-0 rounded text-[9px] font-bold uppercase text-white bg-gradient-to-br',
+                badgeGradient,
+              )}
+              style={{ width: 32, height: 32, opacity: 0.75 }}
+            >
+              {ext || '?'}
+            </div>
+          )}
 
-      {/* Name + meta */}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-primary" title={item.name}>
-          {item.name}
-        </p>
-        <p className="text-xs text-muted">
-          {item.item_type === 'file' && item.file_size != null
-            ? `${formatFileSize(item.file_size)} · `
-            : ''}
-          {relativeDate(item.deleted_at, lang)}
-        </p>
-      </div>
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 500,
+                color: 'var(--text-muted)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                maxWidth: 320,
+              }}
+              title={item.name}
+            >
+              {item.name}
+            </div>
+            <div
+              style={{
+                fontSize: 10,
+                marginTop: 2,
+                color: isUrgent ? 'var(--danger)' : 'var(--text-subtle)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 3,
+              }}
+            >
+              {isUrgent && <AlertTriangle size={10} />}
+              {purgeLabel}
+            </div>
+          </div>
+        </div>
+      </td>
 
-      {/* Purge countdown */}
-      <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium', purgeClass)}>
-        {purgeLabel}
-      </span>
+      {/* Size */}
+      <td
+        style={{
+          ...tdStyle,
+          fontFamily: 'var(--font-mono, monospace)',
+          color: 'var(--text-muted)',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {item.item_type === 'file' && item.file_size != null
+          ? formatFileSize(item.file_size)
+          : '—'}
+      </td>
+
+      {/* Deleted at */}
+      <td style={{ ...tdStyle, fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+        {deletedDate}
+      </td>
 
       {/* Scope badge */}
-      <span className="shrink-0 rounded border border-default px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted">
-        {item.scope === 'personal' ? t('trash.scopePersonal') : t('trash.scopeCompany')}
-      </span>
+      <td style={tdStyle}>
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 600,
+            padding: '2px 7px',
+            borderRadius: 4,
+            background:
+              item.scope === 'personal'
+                ? 'rgba(3,105,161,0.1)'
+                : 'rgba(5,150,105,0.1)',
+            color:
+              item.scope === 'personal' ? 'var(--info)' : 'var(--brand)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {item.scope === 'personal'
+            ? t('trash.scopePersonal')
+            : t('trash.scopeCompany')}
+        </span>
+      </td>
 
-      {/* Restore */}
-      <button
-        type="button"
-        disabled={isRestorePending || isPermDeletePending}
-        onClick={() => onRestore(item)}
-        className="shrink-0 flex items-center gap-1 rounded border border-default px-2 py-1 text-xs text-secondary hover:bg-hover transition-colors disabled:opacity-50"
-        title={t('trash.restore')}
-      >
-        <RotateCcw size={12} />
-        <span>{t('trash.restore')}</span>
-      </button>
+      {/* Actions */}
+      <td style={{ ...tdStyle, textAlign: 'right', paddingRight: 16 }}>
+        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+          <button
+            type="button"
+            disabled={isRestorePending || isPermDeletePending}
+            onClick={() => onRestore(item)}
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[var(--radius-sm)] border border-[color:var(--border)] text-[12px] font-medium text-secondary hover:bg-[color:var(--bg-hover)] hover:text-primary transition-colors disabled:opacity-50"
+            title={t('trash.restore')}
+          >
+            <RotateCcw size={11} />
+            {t('trash.restore')}
+          </button>
 
-      {/* Permanent delete */}
-      <button
-        type="button"
-        disabled={isRestorePending || isPermDeletePending}
-        onClick={() => onRequestPermDelete(item)}
-        className="shrink-0 flex items-center justify-center h-7 w-7 rounded border border-default text-muted hover:bg-danger-badge/10 hover:text-danger-badge hover:border-danger-badge transition-colors disabled:opacity-50"
-        title={t('trash.deleteForever')}
-      >
-        <Trash2 size={13} />
-      </button>
-    </div>
+          <button
+            type="button"
+            disabled={isRestorePending || isPermDeletePending}
+            onClick={() => onRequestPermDelete(item)}
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[var(--radius-sm)] border border-[color:var(--border)] text-[12px] font-medium hover:border-[color:var(--danger)] hover:text-[color:var(--danger)] hover:bg-[var(--danger-bg)] text-secondary transition-colors disabled:opacity-50"
+            title={t('trash.deleteForever')}
+          >
+            <Trash2 size={11} />
+            {t('trash.deleteForever')}
+          </button>
+        </div>
+      </td>
+    </tr>
   );
 });
