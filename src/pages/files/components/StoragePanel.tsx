@@ -1,5 +1,6 @@
+import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { HardDrive, Trash2, Users, User } from 'lucide-react';
+import { ArrowRight, HardDrive, Trash2, Users, User } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { BREAKDOWN_ITEMS, formatFileSize } from '@/pages/files/utils/fileBrowserUtils';
 import type { StorageScope } from '@/pages/files/types';
@@ -226,6 +227,18 @@ export function StoragePanel({
               </div>
             </>
           )}
+        </div>
+
+        <div className="h-px bg-[var(--border-faint)]" />
+
+        <div className="flex justify-center">
+          <Link
+            to="/storage/trash"
+            className="inline-flex items-center gap-1 text-[12px] text-secondary hover:text-primary transition-colors"
+          >
+            {t('files.openTrash')}
+            <ArrowRight size={11} />
+          </Link>
         </div>
 
       </div>

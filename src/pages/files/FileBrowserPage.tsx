@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { PromptModal } from '@/shared/ui/PromptModal';
-import { ChevronRight, Download, Folder, Plus, X } from 'lucide-react';
+import { ChevronRight, Download, Folder, Plus, Trash2, X } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
+import { Button } from '@/shared/ui/Button';
 import { useFileBrowser } from '@/pages/files/hooks/useFileBrowser';
 import { FolderCard } from '@/pages/files/components/FolderCard';
 import { FolderPermissionPanel } from '@/pages/files/components/FolderPermissionPanel';
@@ -41,30 +43,36 @@ export default function FileBrowserPage() {
           {t('files.title')}
         </h1>
         <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to="/storage/trash"
+            className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium rounded-[var(--radius-sm)] border border-[color:var(--border)] text-secondary hover:bg-[color:var(--bg-hover)] transition-colors"
+          >
+            <Trash2 size={14} />
+            {t('files.trash')}
+          </Link>
           {!fb.isGuest && !fb.isCurrentLocationViewOnly && (
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={() => fb.setShowNewFolderModal(true)}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-sm)] border border-default bg-surface text-sm font-medium text-primary hover:bg-hover transition-colors"
             >
               <Folder size={13} />
               {t('files.newFolder')}
-            </button>
+            </Button>
           )}
           {!fb.isGuest && (
-            <button
+            <Button
               type="button"
+              variant="primary"
+              size="sm"
               onClick={() => fb.uploadInputRef.current?.click()}
               disabled={fb.isUploadPending}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-sm)] bg-[var(--brand)] text-white text-sm font-medium hover:bg-[var(--brand-hover)] transition-colors disabled:opacity-60"
+              loading={fb.isUploadPending}
             >
-              {fb.isUploadPending ? (
-                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden="true" />
-              ) : (
-                <Plus size={14} />
-              )}
+              {!fb.isUploadPending && <Plus size={14} />}
               {t('common.uploadFile')}
-            </button>
+            </Button>
           )}
           <input
             ref={fb.uploadInputRef}

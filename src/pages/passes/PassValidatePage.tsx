@@ -7,6 +7,7 @@ import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useUser } from '@/shared/hooks/useAuth';
 import { cn } from '@/shared/lib/cn';
+import { Button } from '@/shared/ui/Button';
 import type { BookingValidationResponse, PassValidationResponse } from '@/shared/types';
 import {
   CAPSULE_ZONE_LABEL_KEYS,
@@ -378,21 +379,23 @@ export default function PassValidatePage() {
 
             <div className="flex justify-center">
               {isCameraActive ? (
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="md"
                   onClick={stopCamera}
-                  className="rounded-lg border border-amber-700 bg-warning-subtle px-4 py-2 text-sm font-medium text-warning-badge hover:bg-warning-subtle"
                 >
                   {t('passes.stopCamera')}
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
                   type="button"
+                  variant="primary"
+                  size="md"
                   onClick={startCamera}
-                  className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
                 >
                   {t('passes.startCamera')}
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -516,29 +519,32 @@ export default function PassValidatePage() {
             />
           </label>
           <div className="flex flex-wrap gap-2">
-            <button
+            <Button
               type="submit"
+              variant="primary"
+              size="md"
               disabled={isSubmitting}
-              className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-60"
             >
               {isSubmitting ? t('passes.checking') : t('passes.validate')}
-            </button>
+            </Button>
             {isCameraActive ? (
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="md"
                 onClick={stopCamera}
-                className="rounded-lg border border-amber-700 bg-warning-subtle px-4 py-2 text-sm font-medium text-warning-badge"
               >
                 {t('passes.stopCamera')}
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="md"
                 onClick={startCamera}
-                className="rounded-lg border border-default px-4 py-2 text-sm font-medium text-primary hover:bg-hover"
               >
                 {t('passes.scanCamera')}
-              </button>
+              </Button>
             )}
           </div>
         </form>

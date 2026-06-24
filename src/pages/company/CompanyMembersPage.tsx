@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MailPlus, RefreshCw, Ban, Users, Settings2, ListChecks, AlertCircle, UserX } from 'lucide-react';
+import { Button } from '@/shared/ui/Button';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -164,19 +165,20 @@ export default function CompanyMembersPage() {
               : t('companies.membersSubtitle')}
           </p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="primary"
+          size="md"
           disabled={!companyId}
           title={!companyId ? t('companies.selectCompanyFirst') : undefined}
           onClick={() => {
             setInviteOpen((v) => !v);
             setFormError('');
           }}
-          className={btnPrimary}
         >
           <MailPlus className="h-4 w-4" aria-hidden="true" />
           {t('companies.invite')}
-        </button>
+        </Button>
       </div>
 
       {/* Tab navigation */}
@@ -291,16 +293,17 @@ export default function CompanyMembersPage() {
               </select>
             </div>
             <div className="flex gap-3">
-              <button type="submit" disabled={createInvite.isPending} className={btnPrimary}>
+              <Button type="submit" variant="primary" size="sm" disabled={createInvite.isPending} loading={createInvite.isPending}>
                 {createInvite.isPending ? t('common.submitting') : t('companies.sendInvitation')}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => setInviteOpen(false)}
-                className="rounded-lg border border-default px-4 py-2 text-sm text-secondary hover:bg-hover"
               >
                 {t('common.cancel')}
-              </button>
+              </Button>
             </div>
           </form>
         </section>

@@ -19,6 +19,7 @@ import { getApiError } from '@/shared/lib/getApiError';
 import { fmtDate } from '@/shared/lib/formatDate';
 import { cn } from '@/shared/lib/cn';
 import type { LeaveBalance, LeaveRequest, PaginatedResponse, TeamLeaveBalance } from '@/shared/types';
+import { Button } from '@/shared/ui/Button';
 import { useReviewerOptions } from './useReviewerOptions';
 
 
@@ -327,35 +328,38 @@ export default function LeaveRequestListPage() {
                         if (leave.status === LEAVE_STATUSES.PENDING) {
                           return (
                             <div className="flex gap-2">
-                              <button
+                              <Button
                                 type="button"
-                                className="rounded-md border border-emerald-700 bg-success-subtle px-2 py-1 text-xs text-success hover:bg-success-subtle"
+                                variant="secondary"
+                                size="sm"
                                 disabled={reviewMutation.isPending}
                                 onClick={() => openReviewDialog(leave.id, LEAVE_STATUSES.APPROVED, leave.review_comment)}
                               >
                                 Одобрить
-                              </button>
-                              <button
+                              </Button>
+                              <Button
                                 type="button"
-                                className="rounded-md border border-rose-800 bg-rose-900/30 px-2 py-1 text-xs text-rose-300 hover:bg-rose-900/50"
+                                variant="danger"
+                                size="sm"
                                 disabled={reviewMutation.isPending}
                                 onClick={() => openReviewDialog(leave.id, LEAVE_STATUSES.REJECTED, leave.review_comment)}
                               >
                                 Отклонить
-                              </button>
+                              </Button>
                             </div>
                           );
                         }
                         if (leave.status === LEAVE_STATUSES.APPROVED) {
                           return (
-                            <button
+                            <Button
                               type="button"
-                              className="rounded-md border border-amber-200 dark:border-amber-800 bg-warning-subtle px-2 py-1 text-xs text-warning hover:bg-warning-subtle"
+                              variant="secondary"
+                              size="sm"
                               disabled={reviewMutation.isPending}
                               onClick={() => openReviewDialog(leave.id, LEAVE_STATUSES.REJECTED, leave.review_comment)}
                             >
                               Отменить одобрение
-                            </button>
+                            </Button>
                           );
                         }
                         return <span className="text-xs text-muted">—</span>;
@@ -366,21 +370,23 @@ export default function LeaveRequestListPage() {
                     <td className="px-4 py-3">
                       {leave.status === LEAVE_STATUSES.PENDING ? (
                         <div className="flex gap-2">
-                          <button
+                          <Button
                             type="button"
-                            className="rounded-md border border-default bg-surface px-2 py-1 text-xs text-secondary hover:bg-hover"
+                            variant="secondary"
+                            size="sm"
                             onClick={() => navigate(`/hr/leaves/${leave.id}/edit`)}
                           >
                             Редактировать
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             type="button"
-                            className="rounded-md border border-rose-800 bg-rose-900/30 px-2 py-1 text-xs text-rose-300 hover:bg-rose-900/50"
+                            variant="danger"
+                            size="sm"
                             disabled={cancelMutation.isPending}
                             onClick={() => { setMutationError(null); setCancelConfirmId(leave.id); }}
                           >
                             Отменить
-                          </button>
+                          </Button>
                         </div>
                       ) : (
                         <span className="text-xs text-muted">—</span>
@@ -440,14 +446,12 @@ export default function LeaveRequestListPage() {
                               )}
                               disabled={isBalanceLocked || setBalanceMutation.isPending}
                             />
-                            <button
+                            <Button
                               type="button"
-                              className={cn(
-                                'rounded-md bg-brand px-2 py-1 text-xs text-white',
-                                !isBalanceLocked && 'hover:bg-brand-hover',
-                                isBalanceLocked && 'cursor-not-allowed opacity-60',
-                              )}
+                              variant="primary"
+                              size="sm"
                               disabled={isBalanceLocked || setBalanceMutation.isPending}
+                              loading={setBalanceMutation.isPending}
                               onClick={() =>
                                 !isBalanceLocked &&
                                 setBalanceMutation.mutate({
@@ -455,7 +459,9 @@ export default function LeaveRequestListPage() {
                                   totalDays: Number(teamTotals[row.user_id] ?? row.total_days),
                                 })
                               }
-                            >{t('common.save')}</button>
+                            >
+                              {t('common.save')}
+                            </Button>
                             {isBalanceLocked ? (
                               <span className="text-xs text-warning">Лимит уже израсходован</span>
                             ) : null}
@@ -504,29 +510,29 @@ export default function LeaveRequestListPage() {
               </div>
             ) : null}
             <div className="mt-4 flex items-center justify-end gap-2">
-              <button
+              <Button
                 type="button"
-                className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover"
+                variant="ghost"
+                size="sm"
                 onClick={closeReviewDialog}
                 disabled={reviewMutation.isPending}
-              >{t('common.cancel')}</button>
-              <button
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
                 type="button"
-                className={cn(
-                  'rounded-lg px-3 py-2 text-sm font-medium text-primary',
-                  reviewDialog.status === LEAVE_STATUSES.APPROVED
-                    ? 'bg-brand hover:bg-brand-hover'
-                    : 'bg-rose-600 hover:bg-rose-500',
-                )}
+                variant={reviewDialog.status === LEAVE_STATUSES.APPROVED ? 'primary' : 'danger'}
+                size="sm"
                 onClick={submitReview}
                 disabled={reviewMutation.isPending}
+                loading={reviewMutation.isPending}
               >
                 {reviewMutation.isPending
                   ? 'Сохраняем...'
                   : reviewDialog.status === LEAVE_STATUSES.APPROVED
                     ? 'Подтвердить одобрение'
                     : 'Подтвердить отклонение'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -558,22 +564,25 @@ export default function LeaveRequestListPage() {
               </div>
             ) : null}
             <div className="mt-4 flex items-center justify-end gap-2">
-              <button
+              <Button
                 type="button"
-                className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover"
+                variant="ghost"
+                size="sm"
                 onClick={() => { setMutationError(null); setCancelConfirmId(null); }}
                 disabled={cancelMutation.isPending}
               >
                 Назад
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className="rounded-lg bg-rose-600 px-3 py-2 text-sm font-medium text-white hover:bg-rose-500 disabled:opacity-50"
+                variant="danger"
+                size="sm"
                 disabled={cancelMutation.isPending}
+                loading={cancelMutation.isPending}
                 onClick={() => cancelMutation.mutate(cancelConfirmId)}
               >
                 {cancelMutation.isPending ? 'Отмена...' : 'Подтвердить отмену'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

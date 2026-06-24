@@ -13,6 +13,7 @@ import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import type { Booking, BookingResourceDetail, CompanyMember, PaginatedResponse } from '@/shared/types';
 import { BookingQRPanel, shouldShowBookingQrPanel } from '@/pages/bookings/components/BookingQRPanel';
+import { Button } from '@/shared/ui/Button';
 
 
 const STATUS_BADGE_CLASS: Record<string, string> = {
@@ -305,33 +306,39 @@ export default function BookingDetailPage() {
       ) : null}
 
       {canCheckIn ? (
-        <button
+        <Button
           type="button"
+          variant="primary"
+          size="md"
+          className="w-full justify-center"
           disabled={isMutationPending}
+          loading={checkInMutation.isPending}
           onClick={() => {
             setFormError(null);
             setFormSuccess(null);
             checkInMutation.mutate();
           }}
-          className="w-full rounded-lg bg-brand py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
         >
           {checkInMutation.isPending ? t('booking.detail.checkInPending') : t('booking.detail.checkInBtn')}
-        </button>
+        </Button>
       ) : null}
 
       {canCancel ? (
-        <button
+        <Button
           type="button"
+          variant="danger"
+          size="md"
+          className="w-full justify-center"
           disabled={isMutationPending}
+          loading={cancelMutation.isPending}
           onClick={() => {
             setFormError(null);
             setFormSuccess(null);
             cancelMutation.mutate();
           }}
-          className="w-full rounded-lg border border-red-300 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
         >
           {t('booking.detail.cancelBtn')}
-        </button>
+        </Button>
       ) : null}
 
       {canEditTime ? (
@@ -357,9 +364,12 @@ export default function BookingDetailPage() {
               />
             </label>
           </div>
-          <button
+          <Button
             type="button"
+            variant="primary"
+            size="md"
             disabled={isMutationPending}
+            loading={updateTimeMutation.isPending}
             onClick={() => {
               setFormError(null);
               setFormSuccess(null);
@@ -369,10 +379,9 @@ export default function BookingDetailPage() {
               }
               updateTimeMutation.mutate({ startTime: startInput, endTime: endInput });
             }}
-            className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50"
           >
             {t('booking.detail.saveTime')}
-          </button>
+          </Button>
         </section>
       ) : null}
 
@@ -385,16 +394,19 @@ export default function BookingDetailPage() {
                 <li key={participant.id} className="flex items-center justify-between rounded-lg border border-default px-3 py-2">
                   <span className="text-sm text-secondary">{participant.full_name || participant.email}</span>
                   {canManageParticipants ? (
-                    <button
+                    <Button
                       type="button"
+                      variant="danger"
+                      size="sm"
                       disabled={isMutationPending}
                       onClick={() => {
                         setFormError(null);
                         setFormSuccess(null);
                         removeParticipantMutation.mutate({ userId: participant.id });
                       }}
-                      className="rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-                    >{t('common.delete')}</button>
+                    >
+                      {t('common.delete')}
+                    </Button>
                   ) : null}
                 </li>
               ))
@@ -418,18 +430,20 @@ export default function BookingDetailPage() {
                   ))}
                 </select>
               </label>
-              <button
+              <Button
                 type="button"
+                variant="primary"
+                size="md"
                 disabled={isMutationPending || !selectedUserId || Number.isNaN(selectedParticipantUserId)}
+                loading={addParticipantMutation.isPending}
                 onClick={() => {
                   setFormError(null);
                   setFormSuccess(null);
                   addParticipantMutation.mutate({ userId: selectedParticipantUserId });
                 }}
-                className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50"
               >
                 {t('booking.detail.addBtn')}
-              </button>
+              </Button>
             </div>
           ) : (
             <p className="text-sm text-muted">

@@ -11,6 +11,7 @@ import { cn } from '@/shared/lib/cn';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { getApiError } from '@/shared/lib/getApiError';
 import type { Company, CompanySettings, CrmLabel, PaginatedResponse } from '@/shared/types';
+import { Button } from '@/shared/ui/Button';
 
 function normalizeTimeInput(value: string): string {
   return value.trim().slice(0, 5);
@@ -434,14 +435,16 @@ export default function CompanySettingsPage() {
             placeholder="#6366F1"
             className="rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
           />
-          <button
+          <Button
             type="submit"
+            variant="primary"
+            size="sm"
             disabled={!newLabelName.trim() || createLabelMutation.isPending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+            loading={createLabelMutation.isPending}
           >
             <Plus className="h-3.5 w-3.5" aria-hidden="true" />
             {createLabelMutation.isPending ? t('common.creating') : t('companies.addLabel')}
-          </button>
+          </Button>
         </form>
 
         {createLabelMutation.isError && (
@@ -451,18 +454,20 @@ export default function CompanySettingsPage() {
 
       {/* Save button */}
       <div className="flex justify-end">
-        <button
+        <Button
           type="button"
+          variant="primary"
+          size="md"
           onClick={() => {
             setSuccess(null);
             setError(null);
             saveMutation.mutate();
           }}
           disabled={saveMutation.isPending}
-          className="inline-flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+          loading={saveMutation.isPending}
         >
           {saveMutation.isPending ? t('common.savingPlain') : t('companies.saveSettings')}
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -2334,7 +2334,9 @@
     "previewNotSupported": "Предпросмотр недоступен",
     "previewDownloadInstead": "Этот формат нельзя отобразить в браузере. Скачайте файл, чтобы открыть его.",
     "previewOpenNewTab": "Открыть в новой вкладке",
-    "previewPdfLabel": "PDF-документ: {{name}}"
+    "previewPdfLabel": "PDF-документ: {{name}}",
+    "trash": "Корзина",
+    "openTrash": "Открыть корзину →"
   },
   "analytics": {
     "title": "Аналитика",

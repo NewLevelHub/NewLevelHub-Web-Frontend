@@ -2339,7 +2339,9 @@
     "previewNotSupported": "Preview not available",
     "previewDownloadInstead": "This file type cannot be displayed in the browser. Download the file to open it.",
     "previewOpenNewTab": "Open in new tab",
-    "previewPdfLabel": "PDF document: {{name}}"
+    "previewPdfLabel": "PDF document: {{name}}",
+    "trash": "Trash",
+    "openTrash": "Open trash →"
   },
   "analytics": {
     "title": "Analytics",
