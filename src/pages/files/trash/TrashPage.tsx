@@ -1,12 +1,24 @@
 import { useTranslation } from 'react-i18next';
-import { Lock, Trash2, Users } from 'lucide-react';
+import { Lock, RotateCcw, Trash2, Users } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
+import { BulkActionBar } from '@/shared/ui/BulkActionBar';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { useTrash } from '@/pages/files/trash/hooks/useTrash';
 import type { TrashScopeFilter } from '@/pages/files/trash/hooks/useTrash';
 import { TrashEmptyState } from '@/pages/files/trash/components/TrashEmptyState';
 import { TrashItemRow } from '@/pages/files/trash/components/TrashItemRow';
 import { TrashSkeleton } from '@/pages/files/trash/components/TrashSkeleton';
+
+/** Full label: «447 МБ» / «1.2 ГБ» / «512 КБ» */
+function formatTrashSize(bytes: number): string {
+  const KB = 1024;
+  const MB = KB * 1024;
+  const GB = MB * 1024;
+  if (bytes >= GB) return `${(bytes / GB).toFixed(1)} ГБ`;
+  if (bytes >= MB) return `${(bytes / MB).toFixed(1)} МБ`;
+  return `${Math.round(bytes / KB)} КБ`;
+}
+
 
 const SCOPE_TABS: { id: TrashScopeFilter; labelKey: string; Icon?: React.ElementType }[] = [
   { id: 'all', labelKey: 'trash.scopeAll' },
@@ -37,7 +49,7 @@ export default function TrashPage() {
             style={{ display: 'flex', alignItems: 'center', gap: 10 }}
           >
             {t('trash.title')}
-            {tr.items.length > 0 && (
+            {tr.totalSize > 0 && (
               <span
                 style={{
                   fontSize: 11,
@@ -48,14 +60,12 @@ export default function TrashPage() {
                   color: 'var(--danger)',
                 }}
               >
-                {tr.items.length}
+                {formatTrashSize(tr.totalSize)}
               </span>
             )}
           </h1>
           <p className="mt-1 text-xs text-muted">
-            {tr.items.length > 0
-              ? `${t('trash.itemCount', { count: tr.items.length })} · ${t('trash.autoDeleteNote')}`
-              : t('trash.subtitle')}
+            {t('trash.autoDeleteNote')}
           </p>
         </div>
 
@@ -111,42 +121,84 @@ export default function TrashPage() {
       ) : tr.items.length === 0 ? (
         <TrashEmptyState />
       ) : (
-        <div
-          style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)',
-            boxShadow: 'var(--shadow-card)',
-            overflow: 'hidden',
-          }}
-        >
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                <th style={thStyle}>{t('trash.colName')}</th>
-                <th style={{ ...thStyle, width: 80 }}>{t('trash.colSize')}</th>
-                <th style={{ ...thStyle, width: 130 }}>{t('trash.colDeletedAt')}</th>
-                <th style={{ ...thStyle, width: 100 }}>{t('trash.colScope')}</th>
-                <th style={{ ...thStyle, width: 240, textAlign: 'right', paddingRight: 16 }}>
-                  {t('trash.colActions')}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {tr.items.map((item) => (
-                <TrashItemRow
-                  key={`${item.item_type}-${item.id}`}
-                  item={item}
-                  lang={i18n.language}
-                  isRestorePending={tr.isRestorePending}
-                  isPermDeletePending={tr.isPermDeletePending}
-                  onRestore={tr.restore}
-                  onRequestPermDelete={tr.setConfirmPermDelete}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          {/* Bulk action bar */}
+          {tr.selectedIds.size > 0 && (
+            <BulkActionBar
+              selectedCount={tr.selectedIds.size}
+              onClearSelection={tr.clearSelection}
+              actions={[
+                {
+                  label: t('trash.restore'),
+                  icon: <RotateCcw size={13} />,
+                  onClick: tr.handleBulkRestore,
+                  isLoading: tr.isBulkRestorePending,
+                  disabled: tr.isBulkPermDeletePending,
+                },
+                {
+                  label: t('trash.deleteForever'),
+                  icon: <Trash2 size={13} />,
+                  onClick: () => tr.setConfirmBulkDeleteForever(true),
+                  variant: 'danger',
+                  isLoading: tr.isBulkPermDeletePending,
+                  disabled: tr.isBulkRestorePending,
+                },
+              ]}
+            />
+          )}
+
+          <div
+            style={{
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: 'var(--shadow-card)',
+              overflow: 'hidden',
+            }}
+          >
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  {/* Select-all checkbox */}
+                  <th style={{ ...thStyle, width: 36, paddingRight: 0 }}>
+                    <input
+                      type="checkbox"
+                      checked={tr.isAllSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = tr.isIndeterminate;
+                      }}
+                      onChange={tr.toggleSelectAll}
+                      aria-label={t('trash.selectAll')}
+                      style={{ accentColor: 'var(--brand)', width: 15, height: 15, cursor: 'pointer' }}
+                    />
+                  </th>
+                  <th style={thStyle}>{t('trash.colName')}</th>
+                  <th style={{ ...thStyle, width: 80 }}>{t('trash.colSize')}</th>
+                  <th style={{ ...thStyle, width: 130 }}>{t('trash.colDeletedAt')}</th>
+                  <th style={{ ...thStyle, width: 100 }}>{t('trash.colScope')}</th>
+                  <th style={{ ...thStyle, width: 240, textAlign: 'right', paddingRight: 16 }}>
+                    {t('trash.colActions')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {tr.items.map((item) => (
+                  <TrashItemRow
+                    key={`${item.item_type}-${item.id}`}
+                    item={item}
+                    lang={i18n.language}
+                    isRestorePending={tr.isRestorePending}
+                    isPermDeletePending={tr.isPermDeletePending}
+                    onRestore={tr.restore}
+                    onRequestPermDelete={tr.setConfirmPermDelete}
+                    isSelected={tr.selectedIds.has(item.id)}
+                    onToggle={tr.toggleSelectId}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {/* Permanent delete one item */}
@@ -171,6 +223,18 @@ export default function TrashPage() {
         confirmLabel={t('trash.deleteAll')}
         variant="danger"
         isLoading={tr.isEmptyTrashPending}
+      />
+
+      {/* Bulk permanent delete confirmation */}
+      <ConfirmModal
+        isOpen={tr.confirmBulkDeleteForever}
+        onClose={() => !tr.isBulkPermDeletePending && tr.setConfirmBulkDeleteForever(false)}
+        onConfirm={tr.handleBulkPermDelete}
+        title={t('trash.bulkDeleteForeverConfirm', { count: tr.selectedIds.size })}
+        description={t('trash.deleteForeverDesc')}
+        confirmLabel={t('trash.deleteForever')}
+        variant="danger"
+        isLoading={tr.isBulkPermDeletePending}
       />
     </div>
   );

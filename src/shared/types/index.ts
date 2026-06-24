@@ -844,6 +844,7 @@ export interface StorageUsage {
     file_count: number;
     limit_bytes: number | null;
     trash_bytes: number;
+    trash_deletable_bytes: number;
     breakdown: StorageUsageBreakdown;
   };
   company: {
@@ -851,6 +852,7 @@ export interface StorageUsage {
     limit_bytes: number;
     file_count: number;
     trash_bytes: number;
+    trash_deletable_bytes: number;
     breakdown: StorageUsageBreakdown;
   };
 }

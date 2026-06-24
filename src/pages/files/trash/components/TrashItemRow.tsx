@@ -13,6 +13,8 @@ interface Props {
   isPermDeletePending: boolean;
   onRestore: (item: TrashItem) => void;
   onRequestPermDelete: (item: TrashItem) => void;
+  isSelected: boolean;
+  onToggle: (id: number) => void;
 }
 
 const tdStyle: React.CSSProperties = {
@@ -29,6 +31,8 @@ export const TrashItemRow = memo(function TrashItemRow({
   isPermDeletePending,
   onRestore,
   onRequestPermDelete,
+  isSelected,
+  onToggle,
 }: Props) {
   const { t } = useTranslation();
   const days = daysUntilPurge(item.deleted_at);
@@ -58,6 +62,17 @@ export const TrashItemRow = memo(function TrashItemRow({
         (e.currentTarget as HTMLTableRowElement).style.background = '';
       }}
     >
+      {/* Checkbox */}
+      <td style={{ ...tdStyle, width: 36, paddingRight: 0 }}>
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={() => onToggle(item.id)}
+          aria-label={item.name}
+          style={{ accentColor: 'var(--brand)', width: 15, height: 15, cursor: 'pointer' }}
+        />
+      </td>
+
       {/* Name + purge hint below */}
       <td style={tdStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

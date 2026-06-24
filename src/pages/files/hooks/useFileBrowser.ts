@@ -428,6 +428,9 @@ export function useFileBrowser() {
   // Trash bytes come directly from the usage API — accurate regardless of page size.
   const trashPersonalBytes = usageData?.personal?.trash_bytes ?? 0;
   const trashCompanyBytes  = usageData?.company?.trash_bytes  ?? 0;
+  // Deletable trash bytes — only what the current user can actually delete (role-scoped).
+  const trashPersonalDeletableBytes = usageData?.personal?.trash_deletable_bytes ?? 0;
+  const trashCompanyDeletableBytes  = usageData?.company?.trash_deletable_bytes  ?? 0;
 
   // Breakdown bytes come from the usage API. Backend keys → frontend keys used by BREAKDOWN_ITEMS.
   const BACKEND_KEY_MAP: Record<string, string> = {
@@ -625,6 +628,8 @@ export function useFileBrowser() {
     bytesCats,
     trashPersonalBytes,
     trashCompanyBytes,
+    trashPersonalDeletableBytes,
+    trashCompanyDeletableBytes,
     personalBytes,
     companyBytes,
     // pending states

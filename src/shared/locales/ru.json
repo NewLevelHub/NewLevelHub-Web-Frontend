@@ -425,6 +425,10 @@
     "noBoards": "Нет досок",
     "showMore": "Показать ещё ({{count}})",
     "selectedCount": "Выбрано: {{count}}",
+    "bulkActionBar": {
+      "selectedCount": "Выбрано: {{count}}",
+      "clearSelection": "Снять выбор"
+    },
     "openTask": "Открыть задачу",
     "archive": "Архивировать",
     "unarchive": "Разархивировать",
@@ -2651,7 +2655,14 @@
     "itemCount_one": "{{count}} объект",
     "itemCount_few": "{{count}} объекта",
     "itemCount_many": "{{count}} объектов",
-    "autoDeleteNote": "авто-удаление через 30 дней"
+    "autoDeleteNote": "авто-удаление через 30 дней",
+    "selectAll": "Выбрать все",
+    "selectedCount_one": "Выбран {{count}} элемент",
+    "selectedCount_few": "Выбрано {{count}} элемента",
+    "selectedCount_many": "Выбрано {{count}} элементов",
+    "bulkDeleteForeverConfirm_one": "Удалить {{count}} элемент навсегда?",
+    "bulkDeleteForeverConfirm_few": "Удалить {{count}} элемента навсегда?",
+    "bulkDeleteForeverConfirm_many": "Удалить {{count}} элементов навсегда?"
   },
   "recurring": {
     "series": "серия",

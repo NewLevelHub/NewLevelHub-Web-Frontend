@@ -421,6 +421,10 @@
     "noBoards": "No boards",
     "showMore": "Show more ({{count}})",
     "selectedCount": "Selected: {{count}}",
+    "bulkActionBar": {
+      "selectedCount": "{{count}} selected",
+      "clearSelection": "Clear selection"
+    },
     "openTask": "Open task",
     "archive": "Archive",
     "unarchive": "Unarchive",
@@ -2650,7 +2654,12 @@
     "colActions": "Actions",
     "itemCount_one": "{{count}} item",
     "itemCount_other": "{{count}} items",
-    "autoDeleteNote": "auto-delete after 30 days"
+    "autoDeleteNote": "auto-delete after 30 days",
+    "selectAll": "Select all",
+    "selectedCount_one": "{{count}} item selected",
+    "selectedCount_other": "{{count}} items selected",
+    "bulkDeleteForeverConfirm_one": "Delete {{count}} item forever?",
+    "bulkDeleteForeverConfirm_other": "Delete {{count}} items forever?"
   },
   "recurring": {
     "series": "series",
