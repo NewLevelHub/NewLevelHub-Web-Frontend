@@ -2655,6 +2655,7 @@
     "itemCount_one": "{{count}} item",
     "itemCount_other": "{{count}} items",
     "autoDeleteNote": "auto-delete after 30 days",
+    "backToFiles": "Back to Files",
     "selectAll": "Select all",
     "selectedCount_one": "{{count}} item selected",
     "selectedCount_other": "{{count}} items selected",

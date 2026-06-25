@@ -2656,6 +2656,7 @@
     "itemCount_few": "{{count}} объекта",
     "itemCount_many": "{{count}} объектов",
     "autoDeleteNote": "авто-удаление через 30 дней",
+    "backToFiles": "Назад к файлам",
     "selectAll": "Выбрать все",
     "selectedCount_one": "Выбран {{count}} элемент",
     "selectedCount_few": "Выбрано {{count}} элемента",

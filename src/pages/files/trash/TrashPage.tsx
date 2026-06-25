@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import { Lock, RotateCcw, Trash2, Users } from 'lucide-react';
+import { Link } from 'react-router';
+import { ChevronLeft, Lock, RotateCcw, Trash2, Users } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { BulkActionBar } from '@/shared/ui/BulkActionBar';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
@@ -69,24 +70,34 @@ export default function TrashPage() {
           </p>
         </div>
 
-        {tr.items.length > 0 && (
-          <button
-            type="button"
-            onClick={() => tr.setConfirmDeleteAll(true)}
-            disabled={tr.isEmptyTrashPending || tr.isRestorePending || tr.isPermDeletePending}
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-sm)] border border-[color:var(--border)] text-sm font-medium text-secondary hover:border-[color:var(--danger)] hover:text-[color:var(--danger)] hover:bg-[var(--danger-bg)] transition-colors disabled:opacity-50 shrink-0"
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            to="/files"
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-sm)] border border-[color:var(--border)] text-sm font-medium text-secondary hover:bg-[color:var(--bg-hover)] transition-colors"
           >
-            {tr.isEmptyTrashPending ? (
-              <span
-                className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
-                aria-hidden="true"
-              />
-            ) : (
-              <Trash2 size={13} />
-            )}
-            {t('trash.deleteAll')}
-          </button>
-        )}
+            <ChevronLeft size={13} />
+            {t('trash.backToFiles')}
+          </Link>
+
+          {tr.items.length > 0 && (
+            <button
+              type="button"
+              onClick={() => tr.setConfirmDeleteAll(true)}
+              disabled={tr.isEmptyTrashPending || tr.isRestorePending || tr.isPermDeletePending}
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-sm)] border border-[color:var(--danger)] text-sm font-medium text-[color:var(--danger)] hover:bg-[var(--danger-bg)] transition-colors disabled:opacity-50"
+            >
+              {tr.isEmptyTrashPending ? (
+                <span
+                  className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Trash2 size={13} />
+              )}
+              {t('trash.deleteAll')}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Scope filter */}

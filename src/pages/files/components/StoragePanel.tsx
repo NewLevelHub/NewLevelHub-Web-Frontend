@@ -118,7 +118,7 @@ export function StoragePanel({
             </svg>
             <div
               className="absolute"
-              style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
+              style={{ left: '50%', top: '68%', transform: 'translate(-50%, -50%)' }}
             >
               <div className={cn('w-10 h-10 rounded-[11px] grid place-items-center border-2 border-surface shadow-sm', iconBoxClass)}>
                 <HardDrive size={18} style={{ color: iconColor }} />

@@ -197,7 +197,7 @@ export const TrashItemRow = memo(function TrashItemRow({
             type="button"
             disabled={isRestorePending || isPermDeletePending}
             onClick={() => onRequestPermDelete(item)}
-            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[var(--radius-sm)] border border-[color:var(--border)] text-[12px] font-medium hover:border-[color:var(--danger)] hover:text-[color:var(--danger)] hover:bg-[var(--danger-bg)] text-secondary transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 h-7 px-3 rounded-[var(--radius-sm)] border border-[color:var(--border)] text-[12px] font-medium whitespace-nowrap hover:border-[color:var(--danger)] hover:text-[color:var(--danger)] hover:bg-[var(--danger-bg)] text-secondary transition-colors disabled:opacity-50"
             title={t('trash.deleteForever')}
           >
             <Trash2 size={11} />
