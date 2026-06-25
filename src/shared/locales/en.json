@@ -2209,7 +2209,14 @@
     "stepsRatio": "{{completed}} / {{total}}",
     "onboardingCompleted": "Onboarding completed",
     "onboardingNotStarted": "Onboarding has not started yet.",
-    "completedAt": "Completed {{date}}"
+    "completedAt": "Completed {{date}}",
+    "stepDone": "Done",
+    "noTemplateAssigned": "No template assigned",
+    "assignTemplate": "Assign template",
+    "assignTemplateTitle": "Assign onboarding template",
+    "assignTemplateSuccess": "Template assigned successfully",
+    "assignTemplateNote": "Note (optional)",
+    "assignTemplateSelectPlaceholder": "Select a template"
   },
   "building": {
     "mapManage": "Manage map",
@@ -2440,7 +2447,9 @@
     "visitLinkFirst": "First follow the link, then click \"Done\".",
     "systemBadge": "System",
     "systemReadonly": "System (readonly)",
-    "userTemplate": "Custom"
+    "userTemplate": "Custom",
+    "notAssignedTitle": "No onboarding template assigned",
+    "notAssignedDesc": "Your administrator hasn't assigned an onboarding template yet."
   },
   "access": {
     "title": "Access log",

@@ -214,6 +214,9 @@ export const API = {
     templateSetDefault: (templateId: number) => `/hr/onboarding/templates/${templateId}/set-default/`,
     templateSteps: (templateId: number) => `/hr/onboarding/templates/${templateId}/steps/`,
     templateStep: (templateId: number, stepId: number) => `/hr/onboarding/templates/${templateId}/steps/${stepId}/`,
+    assignments: '/hr/onboarding/assignments/',
+    assignmentDetail: (userId: number) => `/hr/onboarding/assignments/${userId}/`,
+    myAssignment: '/hr/onboarding/my-assignment/',
   },
   storage: {
     folders: '/storage/folders/',

@@ -1,19 +1,17 @@
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import {
   ListChecks,
   Settings2,
   Users,
-  Lock,
-  CheckCircle2,
-  Circle,
-  X,
-  UserCircle,
   ClipboardList,
 } from 'lucide-react';
 
-import { cn } from '@/shared/lib/cn';
 import { useTeamOnboarding } from '@/pages/company/hooks/useTeamOnboarding';
+import { useOnboardingAssignments } from '@/pages/company/hooks/useOnboardingAssignments';
+import { useOnboardingTemplates } from '@/pages/company/hooks/useOnboardingTemplates';
+import { AssignTemplateModal } from '@/pages/company/components/AssignTemplateModal';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -23,22 +21,8 @@ function formatDate(iso: string) {
   });
 }
 
-function ProgressBar({ value, max }: { value: number; max: number }) {
-  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
-  return (
-    <div
-      className="h-1.5 w-full overflow-hidden rounded-full bg-raised"
-      role="progressbar"
-      aria-valuenow={pct}
-      aria-valuemin={0}
-      aria-valuemax={100}
-    >
-      <div
-        className={cn('h-full rounded-full transition-all', pct === 100 ? 'bg-success' : 'bg-brand')}
-        style={{ width: `${pct}%` }}
-      />
-    </div>
-  );
+function getInitials(firstName: string, lastName: string): string {
+  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
 
 export default function TeamOnboardingPage() {
@@ -47,270 +31,570 @@ export default function TeamOnboardingPage() {
     companyId,
     selectedUserId,
     members,
-    selectedMember,
     detail,
-    teamQuery,
     detailQuery,
+    teamQuery,
     handleSelectUser,
-    handleDeselectUser,
   } = useTeamOnboarding();
 
+  const { assignments, assignMutation, assignError } =
+    useOnboardingAssignments(companyId || null);
+
+  const { templates } = useOnboardingTemplates();
+
+  const [assignModalUserId, setAssignModalUserId] = useState<number | null>(null);
+
+  // Close modal on successful assignment
+  useEffect(() => {
+    if (assignMutation.isSuccess) {
+      setAssignModalUserId(null);
+    }
+  }, [assignMutation.isSuccess]);
+
+  const selectedMember =
+    selectedUserId != null
+      ? assignments.find((m) => Number(m.user) === selectedUserId) ?? null
+      : null;
+
+  const assignModalUser = assignModalUserId != null
+    ? assignments.find((m) => Number(m.user) === assignModalUserId) ?? null
+    : null;
+
+  const handleAssign = (userId: number, templateId: number, note: string) => {
+    assignMutation.mutate({ user_id: userId, template_id: templateId, note: note.trim() || undefined });
+  };
+
   return (
-    <div className="space-y-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Page header */}
-      <div className="flex items-center gap-3">
-        <ListChecks className="h-6 w-6 text-brand" aria-hidden="true" />
-        <h1 className="text-2xl font-semibold text-primary">{t('companies.teamOnboardingTitle')}</h1>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <ListChecks
+          style={{ width: 24, height: 24, color: 'var(--brand)' }}
+          aria-hidden="true"
+        />
+        <h1
+          style={{ fontSize: 22, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}
+        >
+          {t('companies.teamOnboardingTitle')}
+        </h1>
       </div>
 
       {/* Tab navigation */}
-      <nav className="flex flex-wrap gap-2" aria-label={t('companies.onboardingTitle')}>
+      <nav
+        style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}
+        aria-label={t('companies.onboardingTitle')}
+      >
         <Link
           to={`/company/settings${companyId ? `?company=${companyId}` : ''}`}
-          className="inline-flex items-center gap-1.5 rounded-full border border-default px-4 py-1.5 text-sm text-secondary hover:bg-hover"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            borderRadius: 9999,
+            border: '1px solid var(--border)',
+            padding: '6px 16px',
+            fontSize: 14,
+            color: 'var(--text-secondary)',
+            textDecoration: 'none',
+          }}
         >
-          <Settings2 className="h-3.5 w-3.5" aria-hidden="true" />
+          <Settings2 style={{ width: 14, height: 14 }} aria-hidden="true" />
           {t('companies.generalSettings')}
         </Link>
         <Link
           to={`/company/settings/members${companyId ? `?company=${companyId}` : ''}`}
-          className="inline-flex items-center gap-1.5 rounded-full border border-default px-4 py-1.5 text-sm text-secondary hover:bg-hover"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            borderRadius: 9999,
+            border: '1px solid var(--border)',
+            padding: '6px 16px',
+            fontSize: 14,
+            color: 'var(--text-secondary)',
+            textDecoration: 'none',
+          }}
         >
-          <Users className="h-3.5 w-3.5" aria-hidden="true" />
+          <Users style={{ width: 14, height: 14 }} aria-hidden="true" />
           {t('companies.membersTitle')}
         </Link>
         <Link
           to={`/company/settings/onboarding${companyId ? `?company=${companyId}` : ''}`}
-          className="inline-flex items-center gap-1.5 rounded-full border border-default px-4 py-1.5 text-sm text-secondary hover:bg-hover"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            borderRadius: 9999,
+            border: '1px solid var(--border)',
+            padding: '6px 16px',
+            fontSize: 14,
+            color: 'var(--text-secondary)',
+            textDecoration: 'none',
+          }}
         >
-          <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
+          <ListChecks style={{ width: 14, height: 14 }} aria-hidden="true" />
           {t('companies.onboardingTemplatesLink')}
         </Link>
         <span
-          className="inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            borderRadius: 9999,
+            background: 'var(--brand)',
+            padding: '6px 16px',
+            fontSize: 14,
+            fontWeight: 500,
+            color: '#fff',
+          }}
           aria-current="page"
         >
-          <Users className="h-3.5 w-3.5" aria-hidden="true" />
+          <Users style={{ width: 14, height: 14 }} aria-hidden="true" />
           {t('companies.teamOnboardingTab')}
         </span>
       </nav>
 
-      {/* Main content */}
-      <div className="flex gap-4">
-        {/* Member list */}
+      {/* Main content — two-column grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 14, alignItems: 'start' }}>
+        {/* Left: member list */}
         <section
-          className={cn(
-            'rounded-xl border border-default bg-surface',
-            selectedUserId !== null ? 'hidden md:block md:w-1/2' : 'w-full',
-          )}
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: 0,
+            height: 'fit-content',
+            overflow: 'hidden',
+          }}
+          aria-label={t('companies.teamOnboardingSubtitle')}
         >
-          <div className="border-b border-default px-6 py-4">
-            <h2 className="text-base font-semibold text-primary">
-              {t('companies.teamOnboardingSubtitle')}
-            </h2>
-          </div>
-
+          {/* Skeleton */}
           {teamQuery.isLoading && (
-            <div className="space-y-3 p-6">
+            <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[1, 2, 3].map((i) => (
-                <div key={i} className="animate-pulse rounded-lg border border-default p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-raised" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 w-1/3 rounded bg-raised" />
-                      <div className="h-3 w-1/4 rounded bg-raised" />
-                    </div>
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '10px 0',
+                    animation: 'pulse 1.5s ease-in-out infinite',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: '50%',
+                      background: 'var(--bg-raised)',
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div
+                      style={{ height: 12, width: '55%', borderRadius: 4, background: 'var(--bg-raised)' }}
+                    />
+                    <div
+                      style={{ height: 4, width: '100%', borderRadius: 2, background: 'var(--bg-raised)' }}
+                    />
                   </div>
                 </div>
               ))}
             </div>
           )}
 
+          {/* Error */}
           {teamQuery.isError && (
-            <div className="p-6 text-sm text-danger">{t('companies.teamOnboardingLoadError')}</div>
+            <div style={{ padding: 16, fontSize: 13, color: 'var(--danger)' }}>
+              {t('companies.teamOnboardingLoadError')}
+            </div>
           )}
 
-          {!teamQuery.isLoading && members.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16">
-              <ClipboardList className="mb-3 h-10 w-10 text-muted" aria-hidden="true" />
-              <p className="text-sm font-medium text-secondary">
+          {/* Empty state */}
+          {!teamQuery.isLoading && !teamQuery.isError && members.length === 0 && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '40px 16px',
+              }}
+            >
+              <ClipboardList
+                style={{ width: 36, height: 36, color: 'var(--text-muted)', marginBottom: 10 }}
+                aria-hidden="true"
+              />
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
                 {t('companies.teamOnboardingEmpty')}
               </p>
             </div>
           )}
 
-          <ul className="divide-y divide-default">
-            {members.map((member) => {
-              const name = `${member.first_name} ${member.last_name}`.trim();
-              const isSelected = selectedUserId === member.user;
-              const isDone =
-                member.total_steps > 0 && member.completed_steps === member.total_steps;
-              return (
-                <li key={member.user}>
-                  <button
-                    type="button"
-                    onClick={() => handleSelectUser(member.user)}
-                    className={cn(
-                      'flex w-full items-center gap-4 px-6 py-4 text-left transition-colors hover:bg-hover focus:outline-none focus-visible:bg-hover',
-                      isSelected && 'bg-brand-subtle',
-                      isDone && 'opacity-50',
-                    )}
-                    aria-pressed={isSelected}
-                    aria-label={t('companies.teamMemberAria', { name })}
-                  >
-                    {member.avatar ? (
-                      <img
-                        src={member.avatar}
-                        alt=""
-                        className="h-10 w-10 rounded-full object-cover shrink-0"
-                      />
-                    ) : (
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-raised">
-                        <UserCircle className="h-6 w-6 text-muted" aria-hidden="true" />
-                      </span>
-                    )}
-                    <div className="min-w-0 flex-1 space-y-1.5">
-                      <p className="truncate text-sm font-medium text-primary">{name}</p>
-                      {isDone ? (
-                        <span className="text-xs font-medium text-success">
-                          {t('companies.onboardingCompleted')}
-                        </span>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <ProgressBar value={member.completed_steps} max={member.total_steps} />
-                          <span className="shrink-0 text-xs text-secondary">
-                            {t('companies.stepsRatio', {
-                              completed: member.completed_steps,
-                              total: member.total_steps,
-                            })}
-                          </span>
-                        </div>
-                      )}
+          {/* Member rows */}
+          {members.map((member) => {
+            const name = `${member.first_name} ${member.last_name}`.trim();
+            const isSelected = Number(selectedUserId) === Number(member.user);
+            const assignment = assignments.find((a) => Number(a.user) === Number(member.user));
+            const templateName = assignment?.template_name ?? null;
+            const pct =
+              member.total_steps > 0
+                ? Math.round((member.completed_steps / member.total_steps) * 100)
+                : 0;
+
+            return (
+              <div
+                key={member.user}
+                onClick={() => { if (member.user != null) handleSelectUser(member.user); }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if ((e.key === 'Enter' || e.key === ' ') && member.user != null) handleSelectUser(member.user);
+                }}
+                aria-label={t('companies.teamMemberAria', { name })}
+                style={{
+                  padding: '12px 14px',
+                  cursor: 'pointer',
+                  borderBottom: '1px solid var(--border-faint)',
+                  background: isSelected ? 'var(--bg-active)' : 'transparent',
+                  borderLeft: isSelected
+                    ? '2px solid var(--brand)'
+                    : '2px solid transparent',
+                  transition: 'background 0.1s',
+                  outline: 'none',
+                }}
+              >
+                {/* Top row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                  {member.avatar ? (
+                    <img
+                      src={member.avatar}
+                      alt=""
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        flexShrink: 0,
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        flexShrink: 0,
+                        background: 'var(--brand-subtle)',
+                        color: 'var(--brand-text)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 10,
+                        fontWeight: 700,
+                      }}
+                      aria-hidden="true"
+                    >
+                      {getInitials(member.first_name, member.last_name)}
                     </div>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+                  )}
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: 'var(--text-primary)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {name}
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{member.role}</div>
+                  </div>
+                  <span
+                    style={{
+                      marginLeft: 'auto',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      fontFamily: 'var(--font-mono)',
+                      color: pct === 100 ? 'var(--success)' : 'var(--text-secondary)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {pct}%
+                  </span>
+                </div>
+
+                {/* Template subtitle */}
+                <div style={{ paddingLeft: 38, marginBottom: 6 }}>
+                  {templateName ? (
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                      {templateName}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                      {t('companies.noTemplateAssigned')}
+                    </span>
+                  )}
+                </div>
+
+                {/* Progress bar */}
+                <div
+                  style={{
+                    height: 4,
+                    borderRadius: 2,
+                    background: 'var(--bg-raised)',
+                    overflow: 'hidden',
+                  }}
+                  role="progressbar"
+                  aria-valuenow={pct}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                >
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${pct}%`,
+                      borderRadius: 2,
+                      background: pct === 100 ? 'var(--success)' : 'var(--brand)',
+                      transition: 'width 0.3s',
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </section>
 
-        {/* Detail panel */}
-        {selectedUserId !== null && (
-          <section className="w-full rounded-xl border border-default bg-surface md:w-1/2">
-            <div className="flex items-center justify-between border-b border-default px-6 py-4">
-              <div className="flex items-center gap-3">
-                {selectedMember?.avatar ? (
-                  <img
-                    src={selectedMember.avatar}
-                    alt=""
-                    className="h-8 w-8 rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-raised">
-                    <UserCircle className="h-5 w-5 text-muted" aria-hidden="true" />
-                  </span>
-                )}
-                <h2 className="text-base font-semibold text-primary">
-                  {selectedMember
-                    ? `${selectedMember.first_name} ${selectedMember.last_name}`.trim()
-                    : ''}
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={handleDeselectUser}
-                className="rounded-lg p-1.5 text-muted hover:bg-hover"
-                aria-label={t('common.close')}
-              >
-                <X className="h-4 w-4" aria-hidden="true" />
-              </button>
-            </div>
+        {/* Right: detail panel */}
+        {selectedUserId != null ? (
+          <section
+            style={{
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '16px 18px',
+            }}
+          >
+            {/* Detail header */}
+            {(() => {
+              const firstName = selectedMember?.first_name ?? detail?.user?.first_name ?? '';
+              const lastName = selectedMember?.last_name ?? detail?.user?.last_name ?? '';
+              const detailName = `${firstName} ${lastName}`.trim();
+              const done = detail?.completed_steps ?? selectedMember?.completed_steps ?? 0;
+              const total = detail?.total_steps ?? selectedMember?.total_steps ?? 0;
+              const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
-            {detail && (
-              <div className="px-6 py-4 border-b border-default">
-                {detail.total_steps > 0 && detail.completed_steps === detail.total_steps ? (
-                  <span className="text-sm font-medium text-success">
-                    {t('companies.onboardingCompleted')}
-                  </span>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <ProgressBar value={detail.completed_steps} max={detail.total_steps} />
-                    <span className="shrink-0 text-sm font-medium text-secondary">
-                      {t('companies.stepsRatio', {
-                        completed: detail.completed_steps,
-                        total: detail.total_steps,
-                      })}
+              return (
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    paddingBottom: 14,
+                    borderBottom: '1px solid var(--border-faint)',
+                    marginBottom: 14,
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}
+                    >
+                      {detailName}
+                    </div>
+                    <div
+                      style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}
+                    >
+                      {t('companies.stepsRatio', { completed: done, total })}
+                      {' '}{t('companies.onboardingCompleted').toLowerCase()}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <button
+                      type="button"
+                      onClick={() => setAssignModalUserId(selectedUserId)}
+                      style={{
+                        padding: '4px 10px', fontSize: 12, fontWeight: 500, borderRadius: 6,
+                        border: '1px solid var(--border)', background: 'var(--bg-raised)',
+                        color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'inherit',
+                      }}
+                    >
+                      {t('companies.assignTemplate')}
+                    </button>
+                    <span
+                      style={{
+                        fontSize: 20,
+                        fontWeight: 800,
+                        fontFamily: 'var(--font-mono)',
+                        letterSpacing: '-0.025em',
+                        color: pct === 100 ? 'var(--success)' : 'var(--text-primary)',
+                      }}
+                    >
+                      {pct}%
                     </span>
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              );
+            })()}
 
+            {/* Detail loading */}
             {detailQuery.isLoading && (
-              <div className="space-y-3 p-6">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="animate-pulse flex items-center gap-3 py-2">
-                    <div className="h-5 w-5 rounded-full bg-raised" />
-                    <div className="h-4 flex-1 rounded bg-raised" />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      padding: '10px 14px',
+                      borderRadius: 8,
+                      border: '1px solid var(--border-faint)',
+                      background: 'var(--bg-surface)',
+                      animation: 'pulse 1.5s ease-in-out infinite',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        background: 'var(--bg-raised)',
+                        flexShrink: 0,
+                      }}
+                    />
+                    <div
+                      style={{ height: 13, flex: 1, borderRadius: 4, background: 'var(--bg-raised)' }}
+                    />
                   </div>
                 ))}
               </div>
             )}
 
+            {/* Detail error */}
             {detailQuery.isError && (
-              <div className="p-6 text-sm text-danger">
+              <div style={{ fontSize: 13, color: 'var(--danger)' }}>
                 {t('companies.teamOnboardingLoadError')}
               </div>
             )}
 
+            {/* Empty steps */}
             {detail && detail.steps.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12">
-                <ClipboardList className="mb-3 h-8 w-8 text-muted" aria-hidden="true" />
-                <p className="text-sm text-secondary">{t('companies.onboardingNotStarted')}</p>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '32px 16px',
+                }}
+              >
+                <ClipboardList
+                  style={{ width: 32, height: 32, color: 'var(--text-muted)', marginBottom: 8 }}
+                  aria-hidden="true"
+                />
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
+                  {t('companies.onboardingNotStarted')}
+                </p>
               </div>
             )}
 
+            {/* Step cards */}
             {detail && detail.steps.length > 0 && (
-              <ul className="divide-y divide-default">
-                {detail.steps.map((step) => (
-                  <li
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {detail.steps.map((step, stepIndex) => (
+                  <div
                     key={step.id}
-                    className={cn(
-                      'flex items-start gap-3 px-6 py-4',
-                      !step.is_completed && 'opacity-60',
-                    )}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      padding: '10px 14px',
+                      borderRadius: 8,
+                      border: '1px solid var(--border-faint)',
+                      background: step.is_completed ? 'var(--bg-active)' : 'var(--bg-surface)',
+                    }}
                   >
-                    {step.is_completed ? (
-                      <CheckCircle2
-                        className="mt-0.5 h-5 w-5 shrink-0 text-success"
-                        aria-hidden="true"
-                      />
-                    ) : (
-                      <Circle className="mt-0.5 h-5 w-5 shrink-0 text-muted" aria-hidden="true" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <p className="text-sm font-medium text-primary">{step.title}</p>
-                        {step.is_system && (
-                          <span className="inline-flex items-center gap-0.5 rounded-full bg-muted/20 px-1.5 py-0.5 text-xs text-muted">
-                            <Lock className="h-3 w-3" aria-hidden="true" />
-                            {t('companies.systemStep')}
-                          </span>
-                        )}
-                      </div>
-                      {step.completed_at && (
-                        <p className="mt-0.5 text-xs text-muted">
-                          {t('companies.completedAt', { date: formatDate(step.completed_at) })}
-                        </p>
+                    {/* Step indicator */}
+                    <div
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        flexShrink: 0,
+                        background: step.is_completed ? 'var(--brand)' : 'var(--bg-raised)',
+                        border: step.is_completed ? 'none' : '1.5px solid var(--border-strong)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      aria-hidden="true"
+                    >
+                      {step.is_completed ? (
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#fff"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M5 12l5 5L20 7" />
+                        </svg>
+                      ) : (
+                        <span
+                          style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}
+                        >
+                          {stepIndex + 1}
+                        </span>
                       )}
                     </div>
-                  </li>
+
+                    {/* Step title */}
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: step.is_completed ? 500 : 400,
+                        color: step.is_completed ? 'var(--text-primary)' : 'var(--text-secondary)',
+                      }}
+                    >
+                      {step.title}
+                    </span>
+
+                    {/* Completed label */}
+                    {step.is_completed && (
+                      <span
+                        style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--text-subtle)', whiteSpace: 'nowrap' }}
+                      >
+                        {step.completed_at ? formatDate(step.completed_at) : t('companies.stepDone')}
+                      </span>
+                    )}
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           </section>
+        ) : (
+          <div />
         )}
       </div>
+
+      {/* Assign Template Modal */}
+      <AssignTemplateModal
+        isOpen={assignModalUserId !== null}
+        onClose={() => setAssignModalUserId(null)}
+        userId={assignModalUserId ?? 0}
+        userName={assignModalUser ? `${assignModalUser.first_name} ${assignModalUser.last_name}`.trim() : ''}
+        templates={templates}
+        isPending={assignMutation.isPending}
+        error={assignError}
+        onAssign={handleAssign}
+      />
     </div>
   );
 }

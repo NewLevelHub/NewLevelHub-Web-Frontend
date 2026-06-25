@@ -2204,7 +2204,14 @@
     "stepsRatio": "{{completed}} / {{total}}",
     "onboardingCompleted": "Онбординг завершён",
     "onboardingNotStarted": "Онбординг ещё не начат.",
-    "completedAt": "Выполнено {{date}}"
+    "completedAt": "Выполнено {{date}}",
+    "stepDone": "Выполнено",
+    "noTemplateAssigned": "Шаблон не назначен",
+    "assignTemplate": "Назначить шаблон",
+    "assignTemplateTitle": "Назначение шаблона",
+    "assignTemplateSuccess": "Шаблон успешно назначен",
+    "assignTemplateNote": "Примечание (необязательно)",
+    "assignTemplateSelectPlaceholder": "Выберите шаблон"
   },
   "building": {
     "mapManage": "Управление картой",
@@ -2435,7 +2442,9 @@
     "visitLinkFirst": "Сначала перейдите по ссылке, затем нажмите «Выполнено».",
     "systemBadge": "Системный",
     "systemReadonly": "Системный (readonly)",
-    "userTemplate": "Пользовательский"
+    "userTemplate": "Пользовательский",
+    "notAssignedTitle": "Шаблон онбординга не назначен",
+    "notAssignedDesc": "Администратор ещё не назначил вам шаблон онбординга."
   },
   "access": {
     "title": "Лог доступа",
