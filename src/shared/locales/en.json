@@ -2758,5 +2758,24 @@
       "confirmDeleteTitle": "Delete staff members",
       "confirmDeleteBody": "Delete {{count}} staff member(s)? This action cannot be undone."
     }
+  },
+  "invites": {
+    "formTitle": "Invite employee",
+    "sendBtn": "Send invitation",
+    "filterAll": "All",
+    "filterPending": "Pending",
+    "filterExpired": "Expired",
+    "colEmail": "Email",
+    "colRole": "Role",
+    "colSent": "Expires",
+    "colStatus": "Status",
+    "statusPending": "Pending",
+    "statusUsed": "Accepted",
+    "statusExpired": "Expired",
+    "resend": "Resend",
+    "revoke": "Revoke",
+    "revokeTitle": "Revoke invitation?",
+    "revokeDesc": "Invitation for {{email}} will be revoked.",
+    "empty": "No invitations"
   }
 }
