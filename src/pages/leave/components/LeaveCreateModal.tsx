@@ -172,7 +172,7 @@ export default function LeaveCreateModal({ open, onClose }: LeaveCreateModalProp
       role="dialog"
       aria-modal="true"
     >
-      <div className="relative w-full max-w-[560px] rounded-2xl border border-default bg-surface shadow-xl overflow-y-auto max-h-[90vh]">
+      <div className="relative w-full max-w-[560px] rounded-2xl border border-default bg-surface shadow-xl overflow-hidden max-h-[90vh]">
         {/* Header */}
         <div className="flex items-start justify-between px-[22px] pt-[18px] pb-[14px]">
           <div className="min-w-0 pr-4">
@@ -300,7 +300,7 @@ export default function LeaveCreateModal({ open, onClose }: LeaveCreateModalProp
                   id="leave-reviewer"
                   value={assignedReviewer}
                   onChange={(e) => setAssignedReviewer(e.target.value)}
-                  style={inputStyle}
+                  style={{ ...inputStyle, paddingRight: 32 }}
                   disabled={reviewerOptions.length === 0 && !reviewersLoading}
                 >
                   <option value="">

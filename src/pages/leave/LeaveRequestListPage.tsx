@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, Plus } from 'lucide-react';
 
@@ -113,6 +112,48 @@ function getInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
+// ─── UserAvatar ───────────────────────────────────────────────────────────────
+
+interface UserAvatarProps {
+  avatar: string | null;
+  fullName: string;
+  size?: number;
+}
+
+function UserAvatar({ avatar, fullName, size = 24 }: UserAvatarProps) {
+  const [imgError, setImgError] = useState(false);
+  const showImg = avatar && !imgError;
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        overflow: 'hidden',
+        flexShrink: 0,
+        background: showImg ? 'transparent' : 'var(--brand-subtle)',
+        color: 'var(--brand-text)',
+        fontSize: Math.round(size * 0.42),
+        fontWeight: 700,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      {showImg ? (
+        <img
+          src={avatar}
+          alt={fullName}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        getInitials(fullName)
+      )}
+    </div>
+  );
+}
+
 // ─── TeamBalanceRow ───────────────────────────────────────────────────────────
 
 interface TeamBalanceRowProps {
@@ -138,7 +179,7 @@ function TeamBalanceRow({ row, year: _year, onSave, isSaving }: TeamBalanceRowPr
         : 'var(--brand)';
 
   const handleSave = () => {
-    onSave(row.user_id, Number(value));
+    onSave(row.user.id, Number(value));
     setEditing(false);
   };
 
@@ -160,24 +201,8 @@ function TeamBalanceRow({ row, year: _year, onSave, isSaving }: TeamBalanceRowPr
       {/* Employee */}
       <td style={tdStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div
-            style={{
-              width: 24,
-              height: 24,
-              borderRadius: '50%',
-              background: 'var(--brand-subtle)',
-              color: 'var(--brand-text)',
-              fontSize: 10,
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
-            {getInitials(row.user_name)}
-          </div>
-          <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{row.user_name}</span>
+          <UserAvatar avatar={row.user.avatar} fullName={row.user.full_name} />
+          <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{row.user.full_name}</span>
         </div>
       </td>
       {/* Total */}
@@ -319,7 +344,6 @@ function TeamBalanceRow({ row, year: _year, onSave, isSaving }: TeamBalanceRowPr
 export default function LeaveRequestListPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [statusFilter, setStatusFilter] = useState<LeaveStatus | ''>('');
@@ -403,6 +427,7 @@ export default function LeaveRequestListPage() {
   });
 
   const rows = data?.results ?? [];
+  console.log('LeaveRequestListPage rows:', rows);
   const pendingCount = rows.filter((r) => r.status === LEAVE_STATUSES.PENDING).length;
 
   const totalDays = balance?.total_days ?? 0;
@@ -418,7 +443,9 @@ export default function LeaveRequestListPage() {
   };
 
   const showUserColumn = isAdmin;
-  const columnCount = showUserColumn ? 8 : 7;
+  const isEmployee = user?.role === USER_ROLES.EMPLOYEE;
+  const showActionsColumn = !isEmployee;
+  const columnCount = (showUserColumn ? 1 : 0) + (showActionsColumn ? 1 : 0) + 6;
 
   return (
     <main className="mx-auto max-w-6xl space-y-5 p-6">
@@ -700,15 +727,15 @@ export default function LeaveRequestListPage() {
                 <th style={thStyle}>{t('leave.table.status')}</th>
                 <th style={thStyle}>{t('leave.table.submitted')}</th>
                 <th style={thStyle}>{t('leave.table.comment')}</th>
-                <th style={thStyle}>{t('leave.table.actions')}</th>
+                {showActionsColumn && <th style={thStyle}>{t('leave.table.actions')}</th>}
               </tr>
             </thead>
             <tbody>
               {rows.map((leave) => {
                 const isExpanded = expandedId === leave.id;
-                const isOwnLeave = leave.user === user?.id;
+                const isOwnLeave = leave.user.id === user?.id;
                 const isAssignedToOther =
-                  leave.assigned_reviewer != null && leave.assigned_reviewer !== user?.id;
+                  leave.assigned_reviewer != null && leave.assigned_reviewer.id !== user?.id;
                 const canReview =
                   isAdmin &&
                   !isOwnLeave &&
@@ -735,25 +762,9 @@ export default function LeaveRequestListPage() {
                       {showUserColumn && (
                         <td style={tdStyle}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <div
-                              style={{
-                                width: 24,
-                                height: 24,
-                                borderRadius: '50%',
-                                background: 'var(--brand-subtle)',
-                                color: 'var(--brand-text)',
-                                fontSize: 10,
-                                fontWeight: 700,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0,
-                              }}
-                            >
-                              {getInitials(leave.user_name?.trim() || 'U')}
-                            </div>
+                            <UserAvatar avatar={leave.user.avatar} fullName={leave.user.full_name?.trim() || 'U'} />
                             <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>
-                              {leave.user_name?.trim() || `ID ${leave.user}`}
+                              {leave.user.full_name?.trim() || `ID ${leave.user.id}`}
                             </span>
                           </div>
                         </td>
@@ -813,6 +824,7 @@ export default function LeaveRequestListPage() {
                             borderRadius: 20,
                             fontSize: 12,
                             fontWeight: 500,
+                            whiteSpace: 'nowrap',
                             ...statusStyle,
                           }}
                         >
@@ -870,28 +882,74 @@ export default function LeaveRequestListPage() {
                       </td>
 
                       {/* Actions */}
-                      <td
-                        style={tdStyle}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          {/* Admin actions */}
-                          {isAdmin && (
-                            <>
-                              {canReview && leave.status === LEAVE_STATUSES.PENDING && (
-                                <>
+                      {showActionsColumn && (
+                        <td
+                          style={tdStyle}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            {/* Admin actions */}
+                            {isAdmin && (
+                              <>
+                                {canReview && leave.status === LEAVE_STATUSES.PENDING && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setActionModal({ type: 'approve', leaveId: leave.id })
+                                      }
+                                      style={{
+                                        height: 26,
+                                        padding: '0 8px',
+                                        borderRadius: 'var(--radius-sm)',
+                                        border: '1px solid var(--success)',
+                                        background: 'var(--success-bg)',
+                                        color: 'var(--success)',
+                                        fontSize: 11,
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                        fontFamily: 'inherit',
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                    >
+                                      {t('leave.action.approve')}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setActionModal({ type: 'reject', leaveId: leave.id })
+                                      }
+                                      style={{
+                                        height: 26,
+                                        padding: '0 8px',
+                                        borderRadius: 'var(--radius-sm)',
+                                        border: '1px solid var(--danger)',
+                                        background: 'var(--danger-bg)',
+                                        color: 'var(--danger)',
+                                        fontSize: 11,
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                        fontFamily: 'inherit',
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                    >
+                                      {t('leave.action.reject')}
+                                    </button>
+                                  </>
+                                )}
+                                {canReview && leave.status === LEAVE_STATUSES.APPROVED && (
                                   <button
                                     type="button"
                                     onClick={() =>
-                                      setActionModal({ type: 'approve', leaveId: leave.id })
+                                      setActionModal({ type: 'cancel_approval', leaveId: leave.id })
                                     }
                                     style={{
                                       height: 26,
                                       padding: '0 8px',
                                       borderRadius: 'var(--radius-sm)',
-                                      border: '1px solid var(--success)',
-                                      background: 'var(--success-bg)',
-                                      color: 'var(--success)',
+                                      border: '1px solid var(--warning)',
+                                      background: 'var(--warning-bg)',
+                                      color: 'var(--warning)',
                                       fontSize: 11,
                                       fontWeight: 500,
                                       cursor: 'pointer',
@@ -899,139 +957,43 @@ export default function LeaveRequestListPage() {
                                       whiteSpace: 'nowrap',
                                     }}
                                   >
-                                    {t('leave.action.approve')}
+                                    {t('leave.action.cancelApproval')}
                                   </button>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setActionModal({ type: 'reject', leaveId: leave.id })
-                                    }
-                                    style={{
-                                      height: 26,
-                                      padding: '0 8px',
-                                      borderRadius: 'var(--radius-sm)',
-                                      border: '1px solid var(--danger)',
-                                      background: 'var(--danger-bg)',
-                                      color: 'var(--danger)',
-                                      fontSize: 11,
-                                      fontWeight: 500,
-                                      cursor: 'pointer',
-                                      fontFamily: 'inherit',
-                                      whiteSpace: 'nowrap',
-                                    }}
-                                  >
-                                    {t('leave.action.reject')}
-                                  </button>
-                                </>
-                              )}
-                              {canReview && leave.status === LEAVE_STATUSES.APPROVED && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setActionModal({ type: 'cancel_approval', leaveId: leave.id })
-                                  }
-                                  style={{
-                                    height: 26,
-                                    padding: '0 8px',
-                                    borderRadius: 'var(--radius-sm)',
-                                    border: '1px solid var(--warning)',
-                                    background: 'var(--warning-bg)',
-                                    color: 'var(--warning)',
-                                    fontSize: 11,
-                                    fontWeight: 500,
-                                    cursor: 'pointer',
-                                    fontFamily: 'inherit',
-                                    whiteSpace: 'nowrap',
-                                  }}
-                                >
-                                  {t('leave.action.cancelApproval')}
-                                </button>
-                              )}
-                              {(!canReview ||
-                                (leave.status !== LEAVE_STATUSES.PENDING &&
-                                  leave.status !== LEAVE_STATUSES.APPROVED)) && (
-                                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>—</span>
-                              )}
-                            </>
-                          )}
+                                )}
+                                {(!canReview ||
+                                  (leave.status !== LEAVE_STATUSES.PENDING &&
+                                    leave.status !== LEAVE_STATUSES.APPROVED)) && (
+                                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>—</span>
+                                )}
+                              </>
+                            )}
 
-                          {/* Employee actions */}
-                          {!isAdmin && (
-                            <>
-                              {leave.status === LEAVE_STATUSES.PENDING ? (
-                                <>
-                                  <button
-                                    type="button"
-                                    onClick={() => navigate(`/hr/leaves/${leave.id}/edit`)}
-                                    style={{
-                                      height: 26,
-                                      padding: '0 8px',
-                                      borderRadius: 'var(--radius-sm)',
-                                      border: '1px solid var(--border)',
-                                      background: 'transparent',
-                                      color: 'var(--text-secondary)',
-                                      fontSize: 11,
-                                      fontWeight: 500,
-                                      cursor: 'pointer',
-                                      fontFamily: 'inherit',
-                                      whiteSpace: 'nowrap',
-                                    }}
-                                  >
-                                    {t('leave.action.edit')}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setActionModal({ type: 'cancel', leaveId: leave.id })
-                                    }
-                                    style={{
-                                      height: 26,
-                                      padding: '0 8px',
-                                      borderRadius: 'var(--radius-sm)',
-                                      border: '1px solid var(--danger)',
-                                      background: 'var(--danger-bg)',
-                                      color: 'var(--danger)',
-                                      fontSize: 11,
-                                      fontWeight: 500,
-                                      cursor: 'pointer',
-                                      fontFamily: 'inherit',
-                                      whiteSpace: 'nowrap',
-                                    }}
-                                  >
-                                    {t('leave.action.cancel')}
-                                  </button>
-                                </>
-                              ) : (
-                                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>—</span>
-                              )}
-                            </>
-                          )}
-
-                          {/* Expand chevron */}
-                          <button
-                            type="button"
-                            onClick={() => setExpandedId(isExpanded ? null : leave.id)}
-                            style={{
-                              width: 24,
-                              height: 24,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              borderRadius: 'var(--radius-sm)',
-                              border: 'none',
-                              background: 'transparent',
-                              color: 'var(--text-muted)',
-                              cursor: 'pointer',
-                              transition: 'transform 0.15s ease',
-                              transform: isExpanded ? 'rotate(90deg)' : 'none',
-                              flexShrink: 0,
-                            }}
-                            aria-label={isExpanded ? t('common.close') : 'Expand'}
-                          >
-                            <ChevronRight size={14} />
-                          </button>
-                        </div>
-                      </td>
+                            {/* Expand chevron */}
+                            <button
+                              type="button"
+                              onClick={() => setExpandedId(isExpanded ? null : leave.id)}
+                              style={{
+                                width: 24,
+                                height: 24,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderRadius: 'var(--radius-sm)',
+                                border: 'none',
+                                background: 'transparent',
+                                color: 'var(--text-muted)',
+                                cursor: 'pointer',
+                                transition: 'transform 0.15s ease',
+                                transform: isExpanded ? 'rotate(90deg)' : 'none',
+                                flexShrink: 0,
+                              }}
+                              aria-label={isExpanded ? t('common.close') : 'Expand'}
+                            >
+                              <ChevronRight size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
 
                     {/* Detail row */}
@@ -1144,15 +1106,18 @@ export default function LeaveRequestListPage() {
                               >
                                 {t('leave.table.reviewedBy')}
                               </div>
-                              <div
-                                style={{
-                                  fontSize: 13,
-                                  fontWeight: 500,
-                                  color: 'var(--text-primary)',
-                                }}
-                              >
-                                {leave.assigned_reviewer_name ?? '—'}
-                              </div>
+                              {(() => {
+                                const reviewer = leave.reviewed_by ?? leave.assigned_reviewer;
+                                if (!reviewer) return <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>—</span>;
+                                return (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <UserAvatar avatar={reviewer.avatar} fullName={reviewer.full_name} />
+                                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>
+                                      {reviewer.full_name}
+                                    </span>
+                                  </div>
+                                );
+                              })()}
                             </div>
 
                             {/* Employee comment — full width if present */}
@@ -1175,6 +1140,9 @@ export default function LeaveRequestListPage() {
                                     fontSize: 13,
                                     fontWeight: 500,
                                     color: 'var(--text-primary)',
+                                    wordBreak: 'break-word',
+                                    whiteSpace: 'pre-wrap',
+                                    overflowWrap: 'break-word',
                                   }}
                                 >
                                   {leave.comment}
@@ -1202,6 +1170,9 @@ export default function LeaveRequestListPage() {
                                     fontSize: 13,
                                     fontWeight: 500,
                                     color: 'var(--brand-text)',
+                                    wordBreak: 'break-word',
+                                    whiteSpace: 'pre-wrap',
+                                    overflowWrap: 'break-word',
                                   }}
                                 >
                                   {leave.review_comment}
@@ -1275,7 +1246,7 @@ export default function LeaveRequestListPage() {
                 <tbody>
                   {teamBalances.map((row) => (
                     <TeamBalanceRow
-                      key={row.user_id}
+                      key={row.user.id}
                       row={row}
                       year={year}
                       onSave={(userId, totalDays) => {
