@@ -2747,6 +2747,8 @@
     "impersonateConfirm": "Войти",
     "deleteTitle": "Удалить пользователя",
     "deleteDesc": "Удалить {{name}}? Это действие нельзя отменить.",
+    "roleReceptionDesc": "Доступ к проверке QR и выдаче пропусков",
+    "roleServiceManagerDesc": "Управление заявками и техническим персоналом",
     "bulk": {
       "selectedCount": "Выбрано: {{count}}",
       "deselectAll": "Снять выделение",

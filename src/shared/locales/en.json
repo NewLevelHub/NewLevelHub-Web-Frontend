@@ -2748,6 +2748,8 @@
     "impersonateConfirm": "Log in",
     "deleteTitle": "Delete user",
     "deleteDesc": "Delete {{name}}? This action cannot be undone.",
+    "roleReceptionDesc": "QR check and pass issuance access",
+    "roleServiceManagerDesc": "Service request and maintenance management",
     "bulk": {
       "selectedCount": "{{count}} selected",
       "deselectAll": "Deselect all",

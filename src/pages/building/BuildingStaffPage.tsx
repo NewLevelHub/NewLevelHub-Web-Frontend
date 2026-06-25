@@ -37,7 +37,7 @@ const inputClass =
   'mt-1 w-full rounded-lg border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2 text-sm text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20';
 const labelClass = 'block text-sm font-medium text-[color:var(--text-secondary)]';
 const btnPrimary =
-  'inline-flex items-center justify-center gap-2 rounded-lg bg-[color:var(--brand)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50 transition-opacity';
+  'inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity disabled:opacity-50';
 const btnGhost =
   'inline-flex items-center justify-center w-7 h-7 rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] disabled:opacity-40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand)]/50';
 
@@ -113,8 +113,10 @@ export default function BuildingStaffPage() {
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const [bulkActionPending, setBulkActionPending] = useState(false);
 
+  // ── Tab state ──────────────────────────────────────────────────────────────
+  const [tab, setTab] = useState<'staff' | 'invites'>('staff');
+
   // ── Invite form state ──────────────────────────────────────────────────────
-  const [inviteOpen, setInviteOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<UserRole>(USER_ROLES.SERVICE_MANAGER);
   const [formError, setFormError] = useState('');
@@ -177,7 +179,6 @@ export default function BuildingStaffPage() {
     onSuccess: () => {
       setEmail('');
       setInviteRole(USER_ROLES.SERVICE_MANAGER);
-      setInviteOpen(false);
       setFormError('');
       void queryClient.invalidateQueries({ queryKey: ['building-invitations'] });
     },
@@ -314,7 +315,7 @@ export default function BuildingStaffPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-5xl space-y-8 p-6">
+    <div className="space-y-5 p-6">
 
       {/* Page header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -329,7 +330,7 @@ export default function BuildingStaffPage() {
         <button
           type="button"
           onClick={() => {
-            setInviteOpen((v) => !v);
+            setTab('invites');
             setFormError('');
           }}
           className={btnPrimary}
@@ -338,66 +339,6 @@ export default function BuildingStaffPage() {
           {t('buildingStaff.invite')}
         </button>
       </div>
-
-      {/* Invite form */}
-      {inviteOpen && (
-        <section className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-6 shadow-[var(--shadow-card)]">
-          <h2 className="text-base font-semibold text-[color:var(--text-primary)]">
-            {t('buildingStaff.newInvite')}
-          </h2>
-          <form onSubmit={onInviteSubmit} className="mt-4 max-w-md space-y-4">
-            {formError && (
-              <div className="rounded-lg border border-red-200 dark:border-red-900/40 bg-[color:var(--status-busy-bg)] px-3 py-2 text-sm text-[color:var(--danger)]">
-                {formError}
-              </div>
-            )}
-            <div>
-              <label htmlFor="bs-email" className={labelClass}>
-                {t('buildingStaff.colEmail')}
-              </label>
-              <input
-                id="bs-email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={inputClass}
-                placeholder={t('buildingStaff.emailPlaceholder')}
-                autoComplete="off"
-              />
-            </div>
-            <div>
-              <label htmlFor="bs-role" className={labelClass}>
-                {t('buildingStaff.colRole')}
-              </label>
-              <select
-                id="bs-role"
-                value={inviteRole}
-                onChange={(e) => setInviteRole(e.target.value as UserRole)}
-                className={inputClass}
-              >
-                {buildingInviteRoles.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {t(o.labelKey)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-3">
-              <button type="submit" disabled={createInvite.isPending} className={btnPrimary}>
-                {createInvite.isPending ? t('buildingStaff.sending') : t('buildingStaff.sendInvite')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setInviteOpen(false)}
-                className="rounded-lg border border-[color:var(--border)] px-4 py-2 text-sm text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors"
-              >
-                {t('common.cancel')}
-              </button>
-            </div>
-          </form>
-        </section>
-      )}
 
       {/* Action error banner */}
       {actionError && (
@@ -409,12 +350,48 @@ export default function BuildingStaffPage() {
         </div>
       )}
 
-      {/* ── Staff section ──────────────────────────────────────────────── */}
-      <section>
-        <h2 className="mb-3 text-base font-semibold text-[color:var(--text-primary)]">
-          {t('buildingStaff.staffSection')}
-        </h2>
+      {/* Tabs */}
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 0 }}>
+        {[
+          { id: 'staff' as const,   label: t('buildingStaff.staffSection'),   count: staffQuery.data?.count ?? staff.length },
+          { id: 'invites' as const, label: t('buildingStaff.invitesSection'), count: invitesQuery.data?.count ?? invites.length },
+        ].map((tb) => (
+          <button
+            key={tb.id}
+            type="button"
+            onClick={() => setTab(tb.id)}
+            style={{
+              padding: '8px 16px',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontSize: 13,
+              fontWeight: tab === tb.id ? 600 : 400,
+              color: tab === tb.id ? 'var(--text-primary)' : 'var(--text-muted)',
+              borderBottom: tab === tb.id ? '2px solid var(--brand)' : '2px solid transparent',
+              marginBottom: -1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            {tb.label}
+            {tb.count > 0 && (
+              <span style={{
+                fontSize: 11, fontWeight: 600, padding: '1px 6px', borderRadius: 4,
+                background: 'var(--bg-raised)', color: 'var(--text-secondary)',
+              }}>
+                {tb.count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
 
+      {/* ── Staff section ──────────────────────────────────────────────── */}
+      {tab === 'staff' && (
+      <section className="pt-4">
         <div className="bg-[color:var(--bg-surface)] border border-[color:var(--border)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
 
           {/* Filter bar */}
@@ -726,118 +703,208 @@ export default function BuildingStaffPage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ── Invites section ────────────────────────────────────────────── */}
-      <section>
-        <h2 className="mb-3 text-base font-semibold text-[color:var(--text-primary)]">
-          {t('buildingStaff.invitesSection')}
-        </h2>
-
-        <div className="bg-[color:var(--bg-surface)] border border-[color:var(--border)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
-          <div className="overflow-x-auto">
-            <table
-              className="w-full min-w-[600px] border-collapse text-[13px]"
-              role="table"
-              aria-label={t('buildingStaff.invitesSection')}
-            >
-              <thead>
-                <tr className="border-b border-[color:var(--border)]">
-                  <th scope="col" className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
-                    {t('buildingStaff.colEmail')}
-                  </th>
-                  <th scope="col" className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
-                    {t('buildingStaff.colRole')}
-                  </th>
-                  <th scope="col" className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
-                    {t('buildingStaff.colInviteStatus')}
-                  </th>
-                  <th scope="col" className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
-                    {t('buildingStaff.colExpires')}
-                  </th>
-                  <th scope="col" className="px-3 py-2 w-20">
-                    <span className="sr-only">{t('common.actions')}</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {invitesQuery.isLoading ? (
-                  Array.from({ length: 3 }).map((_, i) => <InviteSkeletonRow key={i} />)
-                ) : invites.length === 0 ? (
-                  <tr>
-                    <td colSpan={inviteColCount} className="py-16 text-center">
-                      <div className="flex flex-col items-center gap-2">
-                        <MailPlus className="h-8 w-8 text-[color:var(--text-muted)]" aria-hidden="true" />
-                        <p className="text-[13px] text-[color:var(--text-secondary)]">
-                          {t('buildingStaff.noInvites')}
-                        </p>
+      {tab === 'invites' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 16, alignItems: 'start', paddingTop: 16 }}>
+          {/* ── Invite form panel ── */}
+          <div style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 14,
+          }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>
+              {t('buildingStaff.newInvite')}
+            </div>
+            <form onSubmit={onInviteSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {formError && (
+                <div role="alert" style={{
+                  padding: '8px 12px', borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--danger)', background: 'var(--danger-bg)',
+                  color: 'var(--danger)', fontSize: 13,
+                }}>
+                  {formError}
+                </div>
+              )}
+              {/* Email */}
+              <div>
+                <label htmlFor="bs-email" style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>
+                  {t('buildingStaff.colEmail')}
+                </label>
+                <input
+                  id="bs-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t('buildingStaff.emailPlaceholder')}
+                  autoComplete="off"
+                  style={{
+                    width: '100%', boxSizing: 'border-box', height: 36, padding: '0 12px',
+                    borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
+                    background: 'var(--bg-surface)', color: 'var(--text-primary)',
+                    fontSize: 13, outline: 'none', fontFamily: 'inherit',
+                  }}
+                />
+              </div>
+              {/* Role radio cards */}
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>
+                  {t('buildingStaff.colRole')}
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {buildingInviteRoles.map((opt) => (
+                    <label
+                      key={opt.value}
+                      style={{
+                        display: 'flex', alignItems: 'flex-start', gap: 10,
+                        padding: '8px 10px', borderRadius: 8, cursor: 'pointer',
+                        border: inviteRole === opt.value ? '1.5px solid var(--brand)' : '1px solid var(--border)',
+                        background: inviteRole === opt.value ? 'var(--brand-subtle)' : 'var(--bg-surface)',
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="invite-role"
+                        value={opt.value}
+                        checked={inviteRole === opt.value}
+                        onChange={() => setInviteRole(opt.value)}
+                        style={{ marginTop: 3, accentColor: 'var(--brand)' }}
+                      />
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
+                          {t(opt.labelKey)}
+                        </div>
+                        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+                          {opt.value === USER_ROLES.RECEPTION
+                            ? t('buildingStaff.roleReceptionDesc')
+                            : t('buildingStaff.roleServiceManagerDesc')}
+                        </div>
                       </div>
-                    </td>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={createInvite.isPending}
+                style={{
+                  width: '100%', height: 34, borderRadius: 'var(--radius-sm)',
+                  border: 'none', background: 'var(--brand)', color: 'var(--text-on-brand)',
+                  fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+                  opacity: createInvite.isPending ? 0.6 : 1,
+                }}
+              >
+                {createInvite.isPending ? t('buildingStaff.sending') : t('buildingStaff.sendInvite')}
+              </button>
+            </form>
+          </div>
+
+          {/* ── Invites table ── */}
+          <div style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            boxShadow: 'var(--shadow-card)',
+            overflow: 'hidden',
+          }}>
+            {/* toolbar */}
+            <div style={{
+              padding: '10px 14px',
+              borderBottom: '1px solid var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+            }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+                {t('buildingStaff.invitesSection')}
+              </span>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    {['buildingStaff.colEmail', 'buildingStaff.colRole', 'buildingStaff.colInviteStatus', 'buildingStaff.colExpires'].map((k) => (
+                      <th key={k} style={{ textAlign: 'left', fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', padding: '8px 12px', whiteSpace: 'nowrap' }}>
+                        {t(k)}
+                      </th>
+                    ))}
+                    <th style={{ width: 80 }}><span className="sr-only">{t('common.actions')}</span></th>
                   </tr>
-                ) : (
-                  invites.map((inv) => {
-                    const roleLabelKey = USER_ROLE_LABEL_KEYS[inv.role as UserRole];
-                    return (
-                      <tr
-                        key={inv.id}
-                        className="border-b border-[color:var(--border)] hover:bg-[color:var(--bg-hover)] transition-colors"
-                      >
-                        {/* Email */}
-                        <td className="px-3 py-2.5 align-middle font-medium text-[color:var(--text-primary)]">
-                          {inv.email}
-                        </td>
-
-                        {/* Role badge */}
-                        <td className="px-3 py-2.5 align-middle">
-                          <RoleBadge role={inv.role as UserRole} labelKey={roleLabelKey} />
-                        </td>
-
-                        {/* Invite status badge */}
-                        <td className="px-3 py-2.5 align-middle">
-                          <InviteStatusBadge invite={inv} />
-                        </td>
-
-                        {/* Expires at */}
-                        <td className="px-3 py-2.5 align-middle text-[12px] text-[color:var(--text-muted)]">
-                          {fmtDateTime(inv.expires_at)}
-                        </td>
-
-                        {/* Actions */}
-                        <td className="px-3 py-2.5 align-middle">
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              disabled={inv.is_used || resendInvite.isPending}
-                              onClick={() => resendInvite.mutate(inv.id)}
-                              title={t('buildingStaff.resendInvite')}
-                              className={btnGhost}
-                            >
-                              <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
-                              <span className="sr-only">{t('buildingStaff.resendInvite')}</span>
-                            </button>
-                            <button
-                              type="button"
-                              disabled={inv.is_used || revokeInvite.isPending}
-                              onClick={() => revokeInvite.mutate(inv.id)}
-                              title={t('buildingStaff.revokeInvite')}
-                              className={cn(
-                                btnGhost,
-                                'hover:text-[color:var(--danger)] hover:bg-[color:var(--status-busy-bg)]',
-                              )}
-                            >
-                              <Ban className="h-3.5 w-3.5" aria-hidden="true" />
-                              <span className="sr-only">{t('buildingStaff.revokeInvite')}</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {invitesQuery.isLoading ? (
+                    Array.from({ length: 3 }).map((_, i) => <InviteSkeletonRow key={i} />)
+                  ) : invites.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)' }}>
+                        <div style={{ fontSize: 28, marginBottom: 8 }}>✉️</div>
+                        <div style={{ fontSize: 13, fontWeight: 500 }}>{t('buildingStaff.noInvites')}</div>
+                      </td>
+                    </tr>
+                  ) : (
+                    invites.map((inv) => {
+                      const roleLabelKey = USER_ROLE_LABEL_KEYS[inv.role as UserRole];
+                      return (
+                        <tr
+                          key={inv.id}
+                          style={{ borderBottom: '1px solid var(--border)' }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--bg-hover)'; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = ''; }}
+                        >
+                          <td style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', verticalAlign: 'middle' }}>
+                            {inv.email}
+                          </td>
+                          <td style={{ padding: '10px 12px', verticalAlign: 'middle' }}>
+                            <RoleBadge role={inv.role as UserRole} labelKey={roleLabelKey} />
+                          </td>
+                          <td style={{ padding: '10px 12px', verticalAlign: 'middle' }}>
+                            <InviteStatusBadge invite={inv} />
+                          </td>
+                          <td style={{ padding: '10px 12px', fontSize: 12, color: inv.is_expired ? 'var(--danger)' : 'var(--text-muted)', verticalAlign: 'middle' }}>
+                            {fmtDateTime(inv.expires_at)}
+                          </td>
+                          <td style={{ padding: '10px 12px', verticalAlign: 'middle' }}>
+                            <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                              <button
+                                type="button"
+                                disabled={inv.is_used || resendInvite.isPending}
+                                onClick={() => resendInvite.mutate(inv.id)}
+                                title={t('buildingStaff.resendInvite')}
+                                className={btnGhost}
+                              >
+                                <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+                                <span className="sr-only">{t('buildingStaff.resendInvite')}</span>
+                              </button>
+                              <button
+                                type="button"
+                                disabled={inv.is_used || revokeInvite.isPending}
+                                onClick={() => revokeInvite.mutate(inv.id)}
+                                title={t('buildingStaff.revokeInvite')}
+                                className={cn(btnGhost, 'hover:text-[color:var(--danger)] hover:bg-[color:var(--status-busy-bg)]')}
+                              >
+                                <Ban className="h-3.5 w-3.5" aria-hidden="true" />
+                                <span className="sr-only">{t('buildingStaff.revokeInvite')}</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </section>
+      )}
 
       {/* ── Confirm modals ─────────────────────────────────────────────── */}
 
