@@ -1124,6 +1124,7 @@ export interface OnboardingTemplate {
   name: string;
   is_active: boolean;
   is_default: boolean;
+  is_system: boolean;
   steps: OnboardingTemplateStep[];
   created_at: string;
 }

@@ -249,6 +249,11 @@ export function useOnboardingTemplates() {
     });
   };
 
+  const cancelEditingStep = () => {
+    setEditingStepId(null);
+    setEditingStepState({ title: '', description: '', url: '' });
+  };
+
   const handleCreateTemplate = () => {
     setError(null);
     createTemplateMutation.mutate();
@@ -331,6 +336,7 @@ export function useOnboardingTemplates() {
     startEditingTemplate,
     cancelEditingTemplate,
     startEditingStep,
+    cancelEditingStep,
     handleCreateTemplate,
     handleSaveTemplateName,
     handleAddStep,

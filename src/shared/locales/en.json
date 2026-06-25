@@ -2437,7 +2437,10 @@
     "markDoneAria": "Mark step as done: {{title}}",
     "saveError": "Failed to save step. Please try again.",
     "goToLink": "Go",
-    "visitLinkFirst": "First follow the link, then click \"Done\"."
+    "visitLinkFirst": "First follow the link, then click \"Done\".",
+    "systemBadge": "System",
+    "systemReadonly": "System (readonly)",
+    "userTemplate": "Custom"
   },
   "access": {
     "title": "Access log",
