@@ -2816,7 +2816,7 @@
     "colStatus": "Статус",
     "colJoined": "Дата добавления",
     "colEmail": "Email",
-    "colExpires": "Истекает",
+    "colExpires": "Действует до",
     "colInviteStatus": "Статус",
     "statusActive": "Активен",
     "statusBlocked": "Заблокирован",

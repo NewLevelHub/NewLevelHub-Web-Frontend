@@ -2817,7 +2817,7 @@
     "colStatus": "Status",
     "colJoined": "Date Joined",
     "colEmail": "Email",
-    "colExpires": "Expires",
+    "colExpires": "Valid until",
     "colInviteStatus": "Status",
     "statusActive": "Active",
     "statusBlocked": "Blocked",
