@@ -54,7 +54,7 @@ export default function LeaveRequestEditPage() {
       setStartDate(leave.start_date);
       setEndDate(leave.end_date);
       setComment(leave.comment ?? '');
-      setAssignedReviewer(leave.assigned_reviewer != null ? String(leave.assigned_reviewer) : '');
+      setAssignedReviewer(leave.assigned_reviewer != null ? String(leave.assigned_reviewer.id) : '');
       setInitialized(true);
     }
   }, [leave, initialized]);
