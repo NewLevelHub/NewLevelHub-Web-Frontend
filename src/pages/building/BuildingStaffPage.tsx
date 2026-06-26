@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import { BulkActionBar } from '@/shared/ui/BulkActionBar';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -484,41 +485,27 @@ export default function BuildingStaffPage() {
 
           {/* Bulk action bar */}
           {isSuperadmin && selectedIds.size > 0 && (
-            <div className="flex items-center gap-3 rounded-xl border border-[var(--brand)] bg-brand-subtle px-4 py-2.5 mx-4 my-2 text-sm">
-              <span className="font-medium text-[color:var(--brand-text)]">
-                {t('buildingStaff.bulk.selectedCount', { count: selectedIds.size })}
-              </span>
-              <div className="ml-auto flex items-center gap-2">
-                {/* Deselect all */}
-                <button
-                  type="button"
-                  onClick={() => setSelectedIds(new Set())}
-                  className="inline-flex items-center gap-1.5 h-7 px-3 rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] text-[12px] font-medium text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors"
-                >
-                  <X size={12} aria-hidden="true" />
-                  {t('buildingStaff.bulk.deselectAll')}
-                </button>
-                {/* Block selected */}
-                <button
-                  type="button"
-                  onClick={() => setConfirmBulkBlock(true)}
-                  disabled={bulkActionPending}
-                  className="inline-flex items-center gap-1.5 h-7 px-3 rounded-[var(--radius-sm)] bg-[color:var(--status-busy-bg)] border border-[var(--danger)] text-[12px] font-medium text-[color:var(--danger)] hover:bg-[var(--danger)] hover:text-white disabled:opacity-50 transition-colors"
-                >
-                  <Shield size={12} aria-hidden="true" />
-                  {t('buildingStaff.bulk.blockSelected')}
-                </button>
-                {/* Delete selected */}
-                <button
-                  type="button"
-                  onClick={() => setConfirmBulkDelete(true)}
-                  disabled={bulkActionPending}
-                  className="inline-flex items-center gap-1.5 h-7 px-3 rounded-[var(--radius-sm)] bg-[color:var(--status-busy-bg)] border border-[var(--danger)] text-[12px] font-medium text-[color:var(--danger)] hover:bg-[var(--danger)] hover:text-white disabled:opacity-50 transition-colors"
-                >
-                  <Trash2 size={12} aria-hidden="true" />
-                  {t('buildingStaff.bulk.deleteSelected')}
-                </button>
-              </div>
+            <div className="mx-4 my-2">
+              <BulkActionBar
+                selectedCount={selectedIds.size}
+                onClearSelection={() => setSelectedIds(new Set())}
+                actions={[
+                  {
+                    label: t('buildingStaff.bulk.blockSelected'),
+                    icon: <Shield size={12} aria-hidden="true" />,
+                    onClick: () => setConfirmBulkBlock(true),
+                    variant: 'danger',
+                    disabled: bulkActionPending,
+                  },
+                  {
+                    label: t('buildingStaff.bulk.deleteSelected'),
+                    icon: <Trash2 size={12} aria-hidden="true" />,
+                    onClick: () => setConfirmBulkDelete(true),
+                    variant: 'danger',
+                    disabled: bulkActionPending,
+                  },
+                ]}
+              />
             </div>
           )}
 

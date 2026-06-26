@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Archive } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import type { CrmBoard } from '@/shared/types';
+import { Button } from '@/shared/ui/Button';
 
 export interface ArchiveBoardConfirmProps {
   board: CrmBoard;
@@ -38,17 +39,18 @@ export function ArchiveBoardConfirm({ board, onCancel, onConfirm, isPending }: A
           сможете найти её через фильтр.
         </p>
         <div className="flex items-center justify-end gap-3">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={onCancel}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-secondary hover:text-primary hover:bg-hover transition-colors"
-          >{t('common.cancel')}</button>
+          >{t('common.cancel')}</Button>
           <button
             type="button"
             onClick={onConfirm}
             disabled={isPending}
             className={cn(
-              'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+              'inline-flex items-center gap-1.5 h-8 px-4 rounded-[var(--radius-sm)] text-sm font-medium transition-colors',
               'bg-amber-600 text-primary hover:bg-amber-500',
               'disabled:opacity-50 disabled:cursor-not-allowed',
             )}

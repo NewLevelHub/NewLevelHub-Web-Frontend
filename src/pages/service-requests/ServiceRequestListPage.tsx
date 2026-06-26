@@ -16,6 +16,7 @@ import {
 import { useAuth } from '@/shared/hooks/useAuth';
 import { fmtDate } from '@/shared/lib/formatDate';
 import type { Company, PaginatedResponse, ServiceFloor } from '@/shared/types';
+import { Button } from '@/shared/ui/Button';
 import ServiceRequestCreateModal from '@/pages/service-requests/components/ServiceRequestCreateModal';
 import ServiceRequestDrawer from '@/pages/service-requests/components/ServiceRequestDrawer';
 import { AvatarCircle } from '@/pages/service-requests/components/ServiceRequestAvatar';
@@ -147,23 +148,14 @@ export default function ServiceRequestListPage() {
           </div>
         </div>
         {user?.role !== USER_ROLES.SERVICE_MANAGER && (
-          <button
+          <Button
             type="button"
+            variant="primary"
+            size="md"
             onClick={() => setShowCreate(true)}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              height: 32, padding: '0 12px',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              background: 'var(--brand)',
-              color: 'var(--text-onbrand)',
-              fontSize: 13, fontWeight: 500,
-              cursor: 'pointer', whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
           >
             + {t('serviceRequests.createBtn')}
-          </button>
+          </Button>
         )}
       </div>
 

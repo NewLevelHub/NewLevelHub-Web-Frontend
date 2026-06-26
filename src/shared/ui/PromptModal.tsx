@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, MessageSquare } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
+import { Button } from '@/shared/ui/Button';
 
 export interface PromptModalProps {
   isOpen: boolean;
@@ -157,27 +158,24 @@ export function PromptModal({
           </div>
 
           <div className="flex justify-end gap-3 px-6 pb-6 pt-2">
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={onClose}
               disabled={isLoading}
-              className="rounded-lg border border-default bg-surface px-4 py-2 text-sm font-medium text-secondary transition-colors hover:bg-hover disabled:pointer-events-none disabled:opacity-50"
             >
               {resolvedCancelLabel}
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
+              variant="primary"
+              size="sm"
               disabled={isLoading}
-              className="inline-flex items-center gap-2 rounded-lg bg-[var(--brand)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--brand-hover)] disabled:pointer-events-none disabled:opacity-50"
+              loading={isLoading}
             >
-              {isLoading && (
-                <span
-                  className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
-                  aria-hidden="true"
-                />
-              )}
               {resolvedConfirmLabel}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

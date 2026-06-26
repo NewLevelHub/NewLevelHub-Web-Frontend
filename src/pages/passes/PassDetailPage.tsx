@@ -10,6 +10,7 @@ import { useUser } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
 import { fmtDateTime } from '@/shared/lib/formatDate';
 import type { GuestPass } from '@/shared/types';
+import { Button } from '@/shared/ui/Button';
 import { PassStatusBadge } from '@/pages/passes/components/PassStatusBadge';
 import { PassValidationsList } from '@/pages/passes/components/PassValidationsList';
 import { QRCodeView } from '@/pages/passes/components/QRCodeView';
@@ -193,28 +194,30 @@ export default function PassDetailPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 border-t border-[color:var(--border-faint)] px-6 pt-4 pb-5">
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={() => {
                 clearMessage();
                 resendMutation.mutate();
               }}
               disabled={resendMutation.isPending}
-              className="h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] border border-[color:var(--border)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {resendMutation.isPending ? t('common.submittingPlain') : t('passes.resendQr')}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="danger"
+              size="sm"
               onClick={() => {
                 clearMessage();
                 revokeMutation.mutate();
               }}
               disabled={!canRevoke || revokeMutation.isPending}
-              className="h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
               {revokeMutation.isPending ? t('passes.revoking') : t('passes.revoke')}
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}
