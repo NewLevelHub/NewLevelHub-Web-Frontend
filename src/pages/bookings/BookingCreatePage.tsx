@@ -6,6 +6,7 @@ import { ArrowLeft } from 'lucide-react';
 import { RESOURCE_TYPE_LABEL_KEYS } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
+import { Button } from '@/shared/ui/Button';
 import { useBookingCreate } from './hooks/useBookingCreate';
 
 const fieldClass =
@@ -289,13 +290,16 @@ export default function BookingCreatePage() {
           />
         </div>
         <p className="text-xs leading-relaxed text-secondary">{t('booking.create.timezoneHint')}</p>
-        <button
+        <Button
           type="submit"
+          variant="primary"
+          size="md"
+          className="w-full justify-center"
           disabled={isPending}
-          className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          loading={isPending}
         >
           {isPending ? t('common.submitting') : t('catalog.book')}
-        </button>
+        </Button>
       </form>
     </div>
   );

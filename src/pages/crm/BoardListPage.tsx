@@ -6,6 +6,7 @@ import { BoardListCard } from '@/pages/crm/components/BoardListCard';
 import { CreateCrmBoardModal } from '@/pages/crm/components/CreateCrmBoardModal';
 import { ArchiveBoardConfirm } from '@/pages/crm/components/ArchiveBoardConfirm';
 import { UnarchiveBoardConfirm } from '@/pages/crm/components/UnarchiveBoardConfirm';
+import { Button } from '@/shared/ui/Button';
 
 export default function BoardListPage() {
   const { t } = useTranslation();
@@ -80,12 +81,14 @@ export default function BoardListPage() {
                 {showArchived ? t('common.hideArchive') : t('crm.archiveLabel')}
               </button>
             )}
-            <button
+            <Button
               type="button"
+              variant="primary"
+              size="md"
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity"
             >
-              <Plus size={16} />{t('common.createBoard')}</button>
+              <Plus size={16} />{t('common.createBoard')}
+            </Button>
           </div>
         </div>
 
@@ -103,12 +106,14 @@ export default function BoardListPage() {
               </p>
             </div>
             {!showArchived && (
-              <button
+              <Button
                 type="button"
+                variant="primary"
+                size="md"
                 onClick={() => setShowCreateModal(true)}
-                className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity"
               >
-                <Plus size={16} />{t('common.createBoard')}</button>
+                <Plus size={16} />{t('common.createBoard')}
+              </Button>
             )}
           </div>
         )}

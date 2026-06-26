@@ -421,6 +421,10 @@
     "noBoards": "No boards",
     "showMore": "Show more ({{count}})",
     "selectedCount": "Selected: {{count}}",
+    "bulkActionBar": {
+      "selectedCount": "{{count}} selected",
+      "clearSelection": "Clear selection"
+    },
     "openTask": "Open task",
     "archive": "Archive",
     "unarchive": "Unarchive",
@@ -2430,7 +2434,9 @@
     "previewNotSupported": "Preview not available",
     "previewDownloadInstead": "This file type cannot be displayed in the browser. Download the file to open it.",
     "previewOpenNewTab": "Open in new tab",
-    "previewPdfLabel": "PDF document: {{name}}"
+    "previewPdfLabel": "PDF document: {{name}}",
+    "trash": "Trash",
+    "openTrash": "Open trash →"
   },
   "analytics": {
     "title": "Analytics",
@@ -2720,13 +2726,32 @@
     "deleteForeverConfirm": "Delete «{{name}}» forever?",
     "deleteForeverDesc": "This action cannot be undone.",
     "purgeIn": "Deletes in {{days}} d",
+    "purgeInFull": "Auto-delete in {{days}} {{unit}}",
     "purgeToday": "Deletes today",
+    "purgeUrgent": "Auto-delete today",
+    "purgeDays_one": "day",
+    "purgeDays_other": "days",
     "restoreSuccess": "«{{name}}» restored",
     "deleteForeverSuccess": "«{{name}}» permanently deleted",
+    "scopeAll": "All",
     "scopePersonal": "Personal",
     "scopeCompany": "Company",
-    "deleteAll": "Delete all",
-    "deleteAllDesc": "All trash items will be permanently deleted. This action cannot be undone."
+    "deleteAll": "Empty trash",
+    "deleteAllDesc": "All trash items will be permanently deleted. This action cannot be undone.",
+    "colName": "Name",
+    "colSize": "Size",
+    "colDeletedAt": "Deleted",
+    "colScope": "Scope",
+    "colActions": "Actions",
+    "itemCount_one": "{{count}} item",
+    "itemCount_other": "{{count}} items",
+    "autoDeleteNote": "auto-delete after 30 days",
+    "backToFiles": "Back to Files",
+    "selectAll": "Select all",
+    "selectedCount_one": "{{count}} item selected",
+    "selectedCount_other": "{{count}} items selected",
+    "bulkDeleteForeverConfirm_one": "Delete {{count}} item forever?",
+    "bulkDeleteForeverConfirm_other": "Delete {{count}} items forever?"
   },
   "recurring": {
     "series": "series",

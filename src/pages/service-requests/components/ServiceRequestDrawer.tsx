@@ -18,6 +18,7 @@ import type {
   PaginatedResponse,
   ServiceRequest,
 } from '@/shared/types';
+import { Button } from '@/shared/ui/Button';
 import { AvatarCircle } from '@/pages/service-requests/components/ServiceRequestAvatar';
 import { StatusBadge, UrgBadge, getTypeConfig, getStatusConfig } from '@/pages/service-requests/components/ServiceRequestBadges';
 import { useServiceRequestMutations } from '@/pages/service-requests/hooks/useServiceRequestMutations';
@@ -443,20 +444,16 @@ export default function ServiceRequestDrawer({
                   </div>
                   {canRate && (
                     <div style={{ marginTop: 14 }}>
-                      <button
+                      <Button
                         type="button"
+                        variant="primary"
+                        size="md"
                         onClick={handleSubmitRating}
                         disabled={rateMutation.isPending}
-                        className="bg-brand hover:bg-brand-hover text-on-brand"
-                        style={{
-                          height: 32, padding: '0 12px', borderRadius: 'var(--radius-sm)',
-                          border: 'none', fontSize: 13, fontWeight: 500,
-                          cursor: 'pointer', opacity: rateMutation.isPending ? 0.5 : 1,
-                          transition: 'background 0.15s',
-                        }}
+                        loading={rateMutation.isPending}
                       >
                         {rateMutation.isPending ? t('common.submittingPlain') : t('serviceRequests.rateSubmit')}
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -485,17 +482,14 @@ export default function ServiceRequestDrawer({
           display: 'flex', gap: 8, justifyContent: 'flex-end', flexShrink: 0,
           background: 'var(--bg-raised)',
         }}>
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="md"
             onClick={onClose}
-            style={{
-              height: 32, padding: '0 12px', borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--border)', background: 'transparent',
-              color: 'var(--text-secondary)', fontSize: 13, fontWeight: 500, cursor: 'pointer',
-            }}
           >
             {t('serviceRequests.drawerClose')}
-          </button>
+          </Button>
 
           {/* ── status === 'new' ── */}
           {request?.status === SERVICE_REQUEST_STATUSES.NEW && (

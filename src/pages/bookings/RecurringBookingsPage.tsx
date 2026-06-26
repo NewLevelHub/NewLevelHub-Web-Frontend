@@ -25,6 +25,7 @@ import { RecurringTable } from '@/features/bookings/recurring/components/Recurri
 import { RecurringForm } from '@/features/bookings/recurring/components/RecurringForm';
 import { RecurringScopeModal } from '@/features/bookings/recurring/components/RecurringScopeModal';
 import type { ScopeModalState } from '@/features/bookings/recurring/types';
+import { Button } from '@/shared/ui/Button';
 
 const WEEKDAY_KEYS = [
   'booking.recurring.monday',
@@ -246,22 +247,14 @@ export default function RecurringBookingsPage() {
             })}
           </p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="primary"
+          size="md"
           onClick={() => setTab('create')}
-          style={{
-            padding: '8px 16px',
-            borderRadius: 8,
-            border: 'none',
-            background: 'var(--brand)',
-            color: 'var(--text-on-brand)',
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
         >
           + {t('booking.recurring.createBtn')}
-        </button>
+        </Button>
       </div>
 
       {/* Error banner */}
