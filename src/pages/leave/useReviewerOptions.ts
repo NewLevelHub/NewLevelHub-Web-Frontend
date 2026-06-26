@@ -12,20 +12,22 @@ export interface ReviewerOption {
 }
 
 /**
- * Lists other active company_admins of the current user's company — i.e. the people
+ * Lists active company_admins of the current user's company — i.e. the people
  * eligible to be set as `assigned_reviewer` on a leave request.
  *
- * Only enabled for company_admin authors; for other roles the field is optional
- * and the picker is not rendered, so we skip the network call.
+ * Enabled for both company_admin and employee authors. CAs have themselves
+ * filtered out (they cannot approve their own leave); employees are never CAs
+ * so no self-exclusion is needed for them.
  */
 export function useReviewerOptions() {
   const { user } = useAuth();
   const isCompanyAdmin = user?.role === USER_ROLES.COMPANY_ADMIN;
+  const isEmployee = user?.role === USER_ROLES.EMPLOYEE;
   const companyId = user?.company?.id ?? null;
 
   const query = useQuery({
     queryKey: ['leave', 'reviewer-options', companyId],
-    enabled: isCompanyAdmin && companyId != null,
+    enabled: (isCompanyAdmin || isEmployee) && companyId != null,
     queryFn: async () => {
       const { data } = await apiClient.get<PaginatedResponse<CompanyMember> | CompanyMember[]>(
         API.companies.members(String(companyId)),
@@ -33,13 +35,14 @@ export function useReviewerOptions() {
       );
       const rows = Array.isArray(data) ? data : data.results ?? [];
       return rows
-        .filter((m) => m.is_active && m.role === USER_ROLES.COMPANY_ADMIN && m.id !== user?.id)
+        .filter((m) => m.is_active && m.role === USER_ROLES.COMPANY_ADMIN && (isEmployee || m.id !== user?.id))
         .map<ReviewerOption>((m) => ({ id: m.id, full_name: m.full_name }));
     },
   });
 
   return {
     isCompanyAdmin,
+    isEmployee,
     options: query.data ?? [],
     isLoading: query.isLoading,
     error: query.error,

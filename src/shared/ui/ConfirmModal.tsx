@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, AlertTriangle, AlertCircle } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
+import { Button } from '@/shared/ui/Button';
 
 export interface ConfirmModalProps {
   isOpen: boolean;
@@ -148,35 +149,48 @@ export function ConfirmModal({
 
         {/* Footer */}
         <div className="flex justify-end gap-3 px-6 pb-6 pt-2">
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={onClose}
             disabled={isLoading}
-            className="rounded-lg border border-default bg-surface px-4 py-2 text-sm font-medium text-secondary transition-colors hover:bg-hover disabled:pointer-events-none disabled:opacity-50"
           >
             {resolvedCancelLabel}
-          </button>
+          </Button>
 
-          <button
-            ref={confirmBtnRef}
-            type="button"
-            onClick={onConfirm}
-            disabled={isLoading}
-            className={cn(
-              'inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50',
-              isDanger
-                ? 'bg-[var(--danger)] hover:opacity-90'
-                : 'bg-amber-500 hover:bg-amber-600',
-            )}
-          >
-            {isLoading && (
-              <span
-                className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
-                aria-hidden="true"
-              />
-            )}
-            {resolvedConfirmLabel}
-          </button>
+          {isDanger ? (
+            <Button
+              ref={confirmBtnRef}
+              type="button"
+              variant="danger"
+              size="sm"
+              onClick={onConfirm}
+              disabled={isLoading}
+              loading={isLoading}
+            >
+              {resolvedConfirmLabel}
+            </Button>
+          ) : (
+            <button
+              ref={confirmBtnRef}
+              type="button"
+              onClick={onConfirm}
+              disabled={isLoading}
+              className={cn(
+                'inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50',
+                'bg-amber-500 hover:bg-amber-600',
+              )}
+            >
+              {isLoading && (
+                <span
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
+                  aria-hidden="true"
+                />
+              )}
+              {resolvedConfirmLabel}
+            </button>
+          )}
         </div>
       </div>
     </div>

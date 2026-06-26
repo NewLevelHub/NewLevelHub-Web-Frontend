@@ -6,6 +6,7 @@ import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
+import { Button } from '@/shared/ui/Button';
 
 // ---------------------------------------------------------------------------
 // Shared styles (mirrors personal data section in ProfilePage)
@@ -353,27 +354,14 @@ export function ChangePasswordSection() {
             )}
           </div>
 
-          <button
+          <Button
             type="submit"
-            disabled={mutation.isPending}
-            className={cn(
-              'inline-flex items-center gap-2 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)]',
-              'text-white bg-[color:var(--brand)] hover:opacity-90 transition-opacity',
-              'disabled:opacity-60 disabled:cursor-not-allowed',
-            )}
+            variant="primary"
+            size="sm"
+            loading={mutation.isPending}
           >
-            {mutation.isPending ? (
-              <>
-                <span
-                  className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
-                  aria-hidden="true"
-                />
-                {t('profile.changingPassword')}
-              </>
-            ) : (
-              t('profile.changePasswordBtn')
-            )}
-          </button>
+            {mutation.isPending ? t('profile.changingPassword') : t('profile.changePasswordBtn')}
+          </Button>
         </form>
       )}
     </section>
