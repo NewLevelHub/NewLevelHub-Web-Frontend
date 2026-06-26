@@ -2,7 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { MailPlus, RefreshCw, Ban, Users, Settings2, ListChecks, AlertCircle, UserX } from 'lucide-react';
+import { MailPlus, RefreshCw, Ban, Users, Settings2, ListChecks, AlertCircle, UserX, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -49,12 +49,15 @@ export default function CompanyMembersPage() {
       ? String(user.company_id)
       : null;
 
+  const INV_PAGE_SIZE = 10;
+
   const [inviteOpen, setInviteOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<UserRole>(USER_ROLES.EMPLOYEE);
   const [formError, setFormError] = useState('');
   const [filterUsed, setFilterUsed] = useState<boolean | undefined>(undefined);
   const [filterExpired, setFilterExpired] = useState<boolean | undefined>(undefined);
+  const [invPage, setInvPage] = useState(1);
 
   const { data: companiesData } = useQuery({
     queryKey: [...companiesCacheRoot(user?.id), 'list'],
@@ -77,7 +80,7 @@ export default function CompanyMembersPage() {
   });
 
   const invitationsQuery = useQuery({
-    queryKey: ['company-invitations', companyId, filterUsed, filterExpired],
+    queryKey: ['company-invitations', companyId, filterUsed, filterExpired, invPage],
     enabled: Boolean(companyId),
     queryFn: () =>
       apiClient
@@ -85,6 +88,8 @@ export default function CompanyMembersPage() {
           params: {
             ...(filterUsed !== undefined ? { is_used: filterUsed } : {}),
             ...(filterExpired !== undefined ? { is_expired: filterExpired } : {}),
+            page: invPage,
+            page_size: INV_PAGE_SIZE,
           },
         })
         .then((r) => r.data),
@@ -373,6 +378,7 @@ export default function CompanyMembersPage() {
                   onChange={(e) => {
                     const v = e.target.value;
                     setFilterUsed(v === '' ? undefined : v === 'true');
+                    setInvPage(1);
                   }}
                   className="rounded-md border border-default bg-surface px-2 py-1 text-sm text-primary focus:outline-none"
                 >
@@ -388,6 +394,7 @@ export default function CompanyMembersPage() {
                   onChange={(e) => {
                     const v = e.target.value;
                     setFilterExpired(v === '' ? undefined : v === 'true');
+                    setInvPage(1);
                   }}
                   className="rounded-md border border-default bg-surface px-2 py-1 text-sm text-primary focus:outline-none"
                 >
@@ -402,6 +409,7 @@ export default function CompanyMembersPage() {
                   onClick={() => {
                     setFilterUsed(undefined);
                     setFilterExpired(undefined);
+                    setInvPage(1);
                   }}
                   className="rounded-md border border-default px-3 py-1 text-sm text-secondary hover:bg-hover"
                 >
@@ -492,6 +500,44 @@ export default function CompanyMembersPage() {
               ) : null}
             </ul>
           )}
+
+          {/* Pagination */}
+          {(() => {
+            const total = invitationsQuery.data?.count ?? 0;
+            const totalPages = Math.ceil(total / INV_PAGE_SIZE);
+            if (totalPages <= 1) return null;
+            return (
+              <div className="flex items-center justify-between pt-2 text-sm text-secondary">
+                <span>
+                  {t('companies.invitationsPageOf', {
+                    page: invPage,
+                    total: totalPages,
+                    count: total,
+                  })}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={invPage <= 1}
+                    onClick={() => setInvPage((p) => p - 1)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-default px-3 py-1.5 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 hover:bg-hover text-primary"
+                  >
+                    <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                    {t('common.back')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={invPage >= totalPages}
+                    onClick={() => setInvPage((p) => p + 1)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-default px-3 py-1.5 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 hover:bg-hover text-primary"
+                  >
+                    {t('common.next')}
+                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
         </section>
       ) : null}
     </div>

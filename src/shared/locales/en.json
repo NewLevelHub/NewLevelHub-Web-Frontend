@@ -375,7 +375,9 @@
     "pagination": "Pagination",
     "previousPage": "Previous page",
     "nextPage": "Next page",
+    "of": "of",
     "pageOf": "Page {{page}} of {{total}}",
+    "pageRangeOf": "{{from}}–{{to}} of {{total}}",
     "selectCompany": "Select company",
     "selectEmployee": "Select employee",
     "active": "Active",
@@ -2300,7 +2302,8 @@
     "stepsRatio": "{{completed}} / {{total}}",
     "onboardingCompleted": "Onboarding completed",
     "onboardingNotStarted": "Onboarding has not started yet.",
-    "completedAt": "Completed {{date}}"
+    "completedAt": "Completed {{date}}",
+    "invitationsPageOf": "Page {{page}} of {{total}} ({{count}} records)"
   },
   "building": {
     "mapManage": "Manage map",
@@ -2558,7 +2561,7 @@
     "companySubtitle": "Announcement for your company employees.",
     "titleLabel": "Title",
     "textLabel": "Text",
-    "categoryLabel": "Category",
+    "categoryLabel": "Category:",
     "recipients": "Recipients",
     "allBuilding": "Entire BC (visible to all)",
     "specificCompany": "Specific company",
@@ -2580,7 +2583,6 @@
     "filterBC": "Building",
     "filterCompany": "Company",
     "sourceLabel": "Source:",
-    "categoryLabel": "Category:",
     "markAllRead": "Mark all read",
     "pinned": "Pinned",
     "newCount": "{{count}} new",

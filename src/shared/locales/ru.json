@@ -379,7 +379,9 @@
     "pagination": "Пагинация",
     "previousPage": "Предыдущая страница",
     "nextPage": "Следующая страница",
+    "of": "из",
     "pageOf": "Страница {{page}} из {{total}}",
+    "pageRangeOf": "{{from}}–{{to}} из {{total}}",
     "selectCompany": "Выберите компанию",
     "selectEmployee": "Выберите сотрудника",
     "active": "Активен",
@@ -2295,7 +2297,8 @@
     "stepsRatio": "{{completed}} / {{total}}",
     "onboardingCompleted": "Онбординг завершён",
     "onboardingNotStarted": "Онбординг ещё не начат.",
-    "completedAt": "Выполнено {{date}}"
+    "completedAt": "Выполнено {{date}}",
+    "invitationsPageOf": "Страница {{page}} из {{total}} ({{count}} записей)"
   },
   "building": {
     "mapManage": "Управление картой",
@@ -2553,7 +2556,7 @@
     "companySubtitle": "Объявление для сотрудников вашей компании.",
     "titleLabel": "Заголовок",
     "textLabel": "Текст",
-    "categoryLabel": "Категория",
+    "categoryLabel": "Категория:",
     "recipients": "Получатели",
     "allBuilding": "Весь БЦ (видят все)",
     "specificCompany": "Конкретная компания",
@@ -2575,7 +2578,6 @@
     "filterBC": "БЦ",
     "filterCompany": "Компания",
     "sourceLabel": "Источник:",
-    "categoryLabel": "Категория:",
     "markAllRead": "Прочитать все",
     "pinned": "Закреплённые",
     "newCount": "{{count}} новых",

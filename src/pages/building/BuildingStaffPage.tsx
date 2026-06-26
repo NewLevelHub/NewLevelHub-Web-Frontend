@@ -13,6 +13,8 @@ import {
   Check,
   Minus,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
@@ -27,6 +29,9 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import type { CompanyInvitation, CompanyMember, PaginatedResponse } from '@/shared/types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
+
+const STAFF_PAGE_SIZE = 20;
+const INV_PAGE_SIZE = 10;
 
 const AVATAR_COLORS = [
   '#10b981', '#6366f1', '#f59e0b', '#84cc16', '#0ea5e9',
@@ -100,6 +105,8 @@ export default function BuildingStaffPage() {
 
   const [roleFilter, setRoleFilter] = useState<UserRole | ''>('');
   const [search, setSearch] = useState('');
+  const [staffPage, setStaffPage] = useState(1);
+  const [invPage, setInvPage] = useState(1);
 
   // ── Per-row action targets ─────────────────────────────────────────────────
   const [blockTarget, setBlockTarget] = useState<CompanyMember | null>(null);
@@ -124,28 +131,37 @@ export default function BuildingStaffPage() {
   // ── Queries ────────────────────────────────────────────────────────────────
 
   const staffQuery = useQuery({
-    queryKey: ['building-staff', { role: roleFilter, search }],
+    queryKey: ['building-staff', { role: roleFilter, search, page: staffPage }],
     queryFn: () =>
       apiClient
         .get<PaginatedResponse<CompanyMember>>(API.companies.buildingStaff, {
           params: {
             ...(roleFilter ? { role: roleFilter } : {}),
             ...(search.trim() ? { search: search.trim() } : {}),
+            page: staffPage,
+            page_size: STAFF_PAGE_SIZE,
           },
         })
         .then((r) => r.data),
+    placeholderData: (prev) => prev,
   });
 
   const invitesQuery = useQuery({
-    queryKey: ['building-invitations'],
+    queryKey: ['building-invitations', invPage],
     queryFn: () =>
       apiClient
-        .get<PaginatedResponse<CompanyInvitation>>(API.companies.buildingInvitations)
+        .get<PaginatedResponse<CompanyInvitation>>(API.companies.buildingInvitations, {
+          params: { page: invPage, page_size: INV_PAGE_SIZE },
+        })
         .then((r) => r.data),
+    placeholderData: (prev) => prev,
   });
 
   const staff = staffQuery.data?.results ?? [];
   const invites = invitesQuery.data?.results ?? [];
+
+  // Reset staffPage when filters change
+  useEffect(() => { setStaffPage(1); }, [roleFilter, search]);
 
   // Reset selection when staff list changes (filter / search change)
   useEffect(() => {
@@ -434,12 +450,36 @@ export default function BuildingStaffPage() {
               ))}
             </div>
 
-            {/* Pagination / count (right) */}
-            {!staffQuery.isLoading && (staffQuery.data?.count ?? 0) > 0 && (
-              <div className="ml-auto text-[12px] text-[color:var(--text-muted)]">
-                {staffQuery.data?.count ?? 0}
-              </div>
-            )}
+            {/* Pagination — pushed to right */}
+            {(staffQuery.data?.count ?? 0) > 0 && (() => {
+              const total = staffQuery.data?.count ?? 0;
+              const totalPages = Math.max(1, Math.ceil(total / STAFF_PAGE_SIZE));
+              const rangeStart = (staffPage - 1) * STAFF_PAGE_SIZE + 1;
+              const rangeEnd = Math.min(staffPage * STAFF_PAGE_SIZE, total);
+              return (
+                <div className="ml-auto flex items-center gap-1.5 text-[12px] text-[color:var(--text-muted)]">
+                  <span>{rangeStart}–{rangeEnd} {t('common.of')} {total}</span>
+                  <button
+                    type="button"
+                    disabled={staffPage <= 1}
+                    onClick={() => setStaffPage((p) => Math.max(1, p - 1))}
+                    aria-label={t('common.previousPage')}
+                    className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={staffPage >= totalPages}
+                    onClick={() => setStaffPage((p) => Math.min(totalPages, p + 1))}
+                    aria-label={t('common.nextPage')}
+                    className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Bulk action bar */}
@@ -483,7 +523,7 @@ export default function BuildingStaffPage() {
           )}
 
           {/* Table */}
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" aria-live="polite" aria-busy={staffQuery.isFetching}>
             <table
               className="w-full min-w-[700px] border-collapse text-[13px]"
               role="table"
@@ -701,6 +741,7 @@ export default function BuildingStaffPage() {
               </tbody>
             </table>
           </div>
+
         </div>
       </section>
       )}
@@ -820,14 +861,43 @@ export default function BuildingStaffPage() {
               borderBottom: '1px solid var(--border)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
               gap: 8,
             }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
                 {t('buildingStaff.invitesSection')}
               </span>
+              {/* Pagination — pushed to right */}
+              {(invitesQuery.data?.count ?? 0) > 0 && (() => {
+                const total = invitesQuery.data?.count ?? 0;
+                const totalPages = Math.max(1, Math.ceil(total / INV_PAGE_SIZE));
+                const rangeStart = (invPage - 1) * INV_PAGE_SIZE + 1;
+                const rangeEnd = Math.min(invPage * INV_PAGE_SIZE, total);
+                return (
+                  <div className="ml-auto flex items-center gap-1.5 text-[12px] text-[color:var(--text-muted)]">
+                    <span>{rangeStart}–{rangeEnd} {t('common.of')} {total}</span>
+                    <button
+                      type="button"
+                      disabled={invPage <= 1}
+                      onClick={() => setInvPage((p) => Math.max(1, p - 1))}
+                      aria-label={t('common.previousPage')}
+                      className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={invPage >= totalPages}
+                      onClick={() => setInvPage((p) => Math.min(totalPages, p + 1))}
+                      aria-label={t('common.nextPage')}
+                      className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
-            <div style={{ overflowX: 'auto' }}>
+            <div style={{ overflowX: 'auto' }} aria-live="polite" aria-busy={invitesQuery.isFetching}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
@@ -902,6 +972,7 @@ export default function BuildingStaffPage() {
                 </tbody>
               </table>
             </div>
+
           </div>
         </div>
       )}
