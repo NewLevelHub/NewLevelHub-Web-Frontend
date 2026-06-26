@@ -1,21 +1,31 @@
-import { useState, type FormEvent } from 'react';
+import React, { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Send } from 'lucide-react';
+import { Send, ChevronLeft, ChevronRight, RefreshCw, Ban } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { getApiError } from '@/shared/lib/getApiError';
+import { cn } from '@/shared/lib/cn';
 import { fmtDateTime } from '@/shared/lib/formatDate';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import type { CompanyInvitation, PaginatedResponse } from '@/shared/types';
 
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const INV_PAGE_SIZE = 10;
+
+const btnGhost =
+  'inline-flex items-center justify-center w-7 h-7 rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] disabled:opacity-40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand)]/50';
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type InviteFilter = 'all' | 'pending' | 'expired';
+type InviteFilter = 'all' | 'pending' | 'accepted' | 'expired' | 'revoked';
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -23,70 +33,51 @@ type InviteFilter = 'all' | 'pending' | 'expired';
 
 function InviteStatusBadge({ inv }: { inv: CompanyInvitation }) {
   const { t } = useTranslation();
-  if (inv.is_used) {
-    return (
-      <span
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 4,
-          fontSize: 11,
-          fontWeight: 600,
-          padding: '2px 8px',
-          borderRadius: 20,
-          background: 'var(--success-bg)',
-          color: 'var(--success-text)',
-        }}
-      >
-        {t('invites.statusUsed')}
-      </span>
-    );
-  }
-  if (inv.is_expired) {
-    return (
-      <span
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 4,
-          fontSize: 11,
-          fontWeight: 600,
-          padding: '2px 8px',
-          borderRadius: 20,
-          background: 'var(--bg-raised)',
-          color: 'var(--text-muted)',
-        }}
-      >
-        {t('invites.statusExpired')}
-      </span>
-    );
-  }
-  return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 4,
-        fontSize: 11,
-        fontWeight: 600,
-        padding: '2px 8px',
-        borderRadius: 20,
-        background: 'rgba(245,158,11,0.12)',
-        color: '#d97706',
-      }}
-    >
-      <span
-        style={{
-          width: 6,
-          height: 6,
-          borderRadius: '50%',
-          background: '#d97706',
-          flexShrink: 0,
-        }}
-      />
-      {t('invites.statusPending')}
-    </span>
+
+  const dot = (
+    <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', flexShrink: 0, opacity: 0.85 }} />
   );
+
+  const base: React.CSSProperties = {
+    display: 'inline-flex', alignItems: 'center', gap: 4,
+    fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
+    whiteSpace: 'nowrap',
+  };
+
+  switch (inv.status) {
+    case 'pending':
+      return (
+        <span style={{ ...base, background: 'rgba(245,158,11,0.12)', color: '#d97706' }}>
+          {dot}
+          {t('invites.statusPending')}
+        </span>
+      );
+    case 'accepted':
+      return (
+        <span style={{ ...base, background: 'var(--brand-subtle)', color: 'var(--brand-text)' }}>
+          {dot}
+          {t('invites.statusAccepted')}
+        </span>
+      );
+    case 'expired':
+      return (
+        <span style={{ ...base, background: 'var(--status-na-bg)', color: 'var(--status-na-text)' }}>
+          {t('invites.statusExpired')}
+        </span>
+      );
+    case 'revoked':
+      return (
+        <span style={{ ...base, background: 'var(--danger-bg)', color: 'var(--danger)' }}>
+          {t('invites.statusRevoked')}
+        </span>
+      );
+    default:
+      return (
+        <span style={{ ...base, background: 'var(--bg-raised)', color: 'var(--text-muted)' }}>
+          {inv.status}
+        </span>
+      );
+  }
 }
 
 function InviteRoleBadge({ role }: { role: string }) {
@@ -121,29 +112,35 @@ export default function InvitesPanel({ companyId }: InvitesPanelProps) {
   const queryClient = useQueryClient();
 
   const [filter, setFilter] = useState<InviteFilter>('all');
+  const [invPage, setInvPage] = useState(1);
   const [revokeTarget, setRevokeTarget] = useState<CompanyInvitation | null>(null);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<string>(USER_ROLES.EMPLOYEE);
   const [formError, setFormError] = useState('');
 
-  const queryParams = (
-    {
-      all: {},
-      pending: { is_used: 'false', is_expired: 'false' },
-      expired: { is_expired: 'true' },
-    } as const
-  )[filter];
+  function handleFilterChange(f: InviteFilter) {
+    setFilter(f);
+    setInvPage(1);
+  }
+
+  const filterParam = filter !== 'all' ? { status: filter } : {};
 
   const { data: invitesData, isLoading } = useQuery({
-    queryKey: ['company-invitations', companyId, filter],
+    queryKey: ['company-invitations', companyId, filter, invPage],
     enabled: Boolean(companyId),
+    placeholderData: (prev) => prev,
     queryFn: () =>
       apiClient
         .get<PaginatedResponse<CompanyInvitation>>(API.companies.invitations(companyId), {
-          params: queryParams,
+          params: { ...filterParam, page: invPage, page_size: INV_PAGE_SIZE },
         })
         .then((r) => r.data),
   });
+
+  const total = invitesData?.count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / INV_PAGE_SIZE));
+  const rangeStart = (invPage - 1) * INV_PAGE_SIZE + 1;
+  const rangeEnd = Math.min(invPage * INV_PAGE_SIZE, total);
 
   const invitations = invitesData?.results ?? [];
 
@@ -183,12 +180,15 @@ export default function InvitesPanel({ companyId }: InvitesPanelProps) {
     createInvite.mutate({ email: email.trim().toLowerCase(), role });
   }
 
-  const filters: InviteFilter[] = ['all', 'pending', 'expired'];
+  const filters: InviteFilter[] = ['all', 'pending', 'accepted', 'expired', 'revoked'];
 
   function filterLabel(f: InviteFilter): string {
-    if (f === 'all') return t('invites.filterAll');
-    if (f === 'pending') return t('invites.filterPending');
-    return t('invites.filterExpired');
+    if (f === 'all')      return t('invites.filterAll');
+    if (f === 'pending')  return t('invites.filterPending');
+    if (f === 'accepted') return t('invites.filterAccepted');
+    if (f === 'expired')  return t('invites.filterExpired');
+    if (f === 'revoked')  return t('invites.filterRevoked');
+    return f;
   }
 
   return (
@@ -315,7 +315,7 @@ export default function InvitesPanel({ companyId }: InvitesPanelProps) {
               <button
                 key={f}
                 type="button"
-                onClick={() => setFilter(f)}
+                onClick={() => handleFilterChange(f)}
                 style={{
                   padding: '3px 10px',
                   borderRadius: 20,
@@ -335,6 +335,29 @@ export default function InvitesPanel({ companyId }: InvitesPanelProps) {
                 {filterLabel(f)}
               </button>
             ))}
+            {total > 0 && (
+              <div className="ml-auto flex items-center gap-1.5 text-[12px] text-[color:var(--text-muted)]">
+                <span>{rangeStart}–{rangeEnd} {t('common.of')} {total}</span>
+                <button
+                  type="button"
+                  disabled={invPage <= 1}
+                  onClick={() => setInvPage((p) => Math.max(1, p - 1))}
+                  aria-label={t('common.previousPage')}
+                  className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  disabled={invPage >= totalPages}
+                  onClick={() => setInvPage((p) => Math.min(totalPages, p + 1))}
+                  aria-label={t('common.nextPage')}
+                  className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Table */}
@@ -403,48 +426,28 @@ export default function InvitesPanel({ companyId }: InvitesPanelProps) {
                     <td style={{ padding: '10px 14px' }}>
                       <InviteStatusBadge inv={inv} />
                     </td>
-                    <td style={{ padding: '10px 14px' }}>
-                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                        {!inv.is_used && (
-                          <button
-                            type="button"
-                            disabled={resendInvite.isPending}
-                            onClick={() => resendInvite.mutate(inv.id)}
-                            style={{
-                              padding: '4px 10px',
-                              fontSize: 12,
-                              fontWeight: 500,
-                              borderRadius: 6,
-                              border: '1px solid var(--border)',
-                              background: 'var(--bg-raised)',
-                              color: 'var(--text-secondary)',
-                              cursor: 'pointer',
-                              fontFamily: 'inherit',
-                            }}
-                          >
-                            {t('invites.resend')}
-                          </button>
-                        )}
-                        {!inv.is_used && (
-                          <button
-                            type="button"
-                            disabled={revokeInvite.isPending}
-                            onClick={() => setRevokeTarget(inv)}
-                            style={{
-                              padding: '4px 10px',
-                              fontSize: 12,
-                              fontWeight: 500,
-                              borderRadius: 6,
-                              border: '1px solid var(--border)',
-                              background: 'transparent',
-                              color: 'var(--danger)',
-                              cursor: 'pointer',
-                              fontFamily: 'inherit',
-                            }}
-                          >
-                            {t('invites.revoke')}
-                          </button>
-                        )}
+                    <td className="px-3 py-2.5 align-middle">
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          disabled={inv.status !== 'pending' || resendInvite.isPending}
+                          onClick={() => resendInvite.mutate(inv.id)}
+                          title={t('invites.resend')}
+                          className={btnGhost}
+                        >
+                          <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+                          <span className="sr-only">{t('invites.resend')}</span>
+                        </button>
+                        <button
+                          type="button"
+                          disabled={inv.status !== 'pending' || revokeInvite.isPending}
+                          onClick={() => setRevokeTarget(inv)}
+                          title={t('invites.revoke')}
+                          className={cn(btnGhost, 'hover:text-[color:var(--danger)] hover:bg-[color:var(--status-busy-bg)]')}
+                        >
+                          <Ban className="h-3.5 w-3.5" aria-hidden="true" />
+                          <span className="sr-only">{t('invites.revoke')}</span>
+                        </button>
                       </div>
                     </td>
                   </tr>
