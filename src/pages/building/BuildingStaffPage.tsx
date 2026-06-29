@@ -124,6 +124,10 @@ export default function BuildingStaffPage() {
   // ── Tab state ──────────────────────────────────────────────────────────────
   const [tab, setTab] = useState<'staff' | 'invites'>('staff');
 
+  // ── Invite filter state ────────────────────────────────────────────────────
+  type InviteFilter = 'all' | 'pending' | 'accepted' | 'expired' | 'revoked';
+  const [invFilter, setInvFilter] = useState<InviteFilter>('all');
+
   // ── Invite form state ──────────────────────────────────────────────────────
   const [email, setEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<UserRole>(USER_ROLES.SERVICE_MANAGER);
@@ -148,11 +152,15 @@ export default function BuildingStaffPage() {
   });
 
   const invitesQuery = useQuery({
-    queryKey: ['building-invitations', invPage],
+    queryKey: ['building-invitations', { page: invPage, filter: invFilter }],
     queryFn: () =>
       apiClient
         .get<PaginatedResponse<CompanyInvitation>>(API.companies.buildingInvitations, {
-          params: { page: invPage, page_size: INV_PAGE_SIZE },
+          params: {
+            ...(invFilter !== 'all' ? { status: invFilter } : {}),
+            page: invPage,
+            page_size: INV_PAGE_SIZE,
+          },
         })
         .then((r) => r.data),
     placeholderData: (prev) => prev,
@@ -310,6 +318,11 @@ export default function BuildingStaffPage() {
     e.preventDefault();
     setFormError('');
     createInvite.mutate({ email: email.trim().toLowerCase(), role: inviteRole });
+  }
+
+  function handleInvFilterChange(f: InviteFilter) {
+    setInvFilter(f);
+    setInvPage(1);
   }
 
   // ── Role filter chips ──────────────────────────────────────────────────────
@@ -849,10 +862,33 @@ export default function BuildingStaffPage() {
               display: 'flex',
               alignItems: 'center',
               gap: 8,
+              flexWrap: 'wrap',
             }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
                 {t('buildingStaff.invitesSection')}
               </span>
+              {/* Filter chips */}
+              {([
+                { value: 'all', labelKey: 'buildingStaff.filterAll' },
+                { value: 'pending', labelKey: 'buildingStaff.filterPending' },
+                { value: 'accepted', labelKey: 'buildingStaff.filterAccepted' },
+                { value: 'expired', labelKey: 'buildingStaff.filterExpired' },
+                { value: 'revoked', labelKey: 'buildingStaff.filterRevoked' },
+              ] as { value: InviteFilter; labelKey: string }[]).map((chip) => (
+                <button
+                  key={chip.value}
+                  type="button"
+                  onClick={() => handleInvFilterChange(chip.value)}
+                  className={cn(
+                    'inline-flex items-center px-2.5 py-1 text-[12px] rounded-full transition-colors cursor-pointer',
+                    invFilter === chip.value
+                      ? 'border-transparent bg-[color:var(--brand-subtle)] text-[color:var(--brand-text)]'
+                      : 'border border-[color:var(--border)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)]',
+                  )}
+                >
+                  {t(chip.labelKey)}
+                </button>
+              ))}
               {/* Pagination — pushed to right */}
               {(invitesQuery.data?.count ?? 0) > 0 && (() => {
                 const total = invitesQuery.data?.count ?? 0;
@@ -925,14 +961,14 @@ export default function BuildingStaffPage() {
                           <td style={{ padding: '10px 12px', verticalAlign: 'middle' }}>
                             <InviteStatusBadge invite={inv} />
                           </td>
-                          <td style={{ padding: '10px 12px', fontSize: 12, color: inv.is_expired ? 'var(--danger)' : 'var(--text-muted)', verticalAlign: 'middle' }}>
+                          <td style={{ padding: '10px 12px', fontSize: 12, color: inv.status === 'expired' ? 'var(--danger)' : 'var(--text-muted)', verticalAlign: 'middle' }}>
                             {fmtDateTime(inv.expires_at)}
                           </td>
                           <td style={{ padding: '10px 12px', verticalAlign: 'middle' }}>
                             <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                               <button
                                 type="button"
-                                disabled={inv.is_used || resendInvite.isPending}
+                                disabled={inv.status !== 'pending' || resendInvite.isPending}
                                 onClick={() => resendInvite.mutate(inv.id)}
                                 title={t('buildingStaff.resendInvite')}
                                 className={btnGhost}
@@ -942,7 +978,7 @@ export default function BuildingStaffPage() {
                               </button>
                               <button
                                 type="button"
-                                disabled={inv.is_used || revokeInvite.isPending}
+                                disabled={inv.status !== 'pending' || revokeInvite.isPending}
                                 onClick={() => revokeInvite.mutate(inv.id)}
                                 title={t('buildingStaff.revokeInvite')}
                                 className={cn(btnGhost, 'hover:text-[color:var(--danger)] hover:bg-[color:var(--status-busy-bg)]')}
@@ -1069,27 +1105,39 @@ function RoleBadge({ role, labelKey }: { role: UserRole; labelKey?: string }) {
 
 function InviteStatusBadge({ invite }: { invite: CompanyInvitation }) {
   const { t } = useTranslation();
-
-  if (invite.is_used) {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[color:var(--status-na-bg)] text-[color:var(--status-na-text)]">
-        <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" aria-hidden="true" />
-        {t('buildingStaff.statusUsed')}
-      </span>
-    );
+  switch (invite.status) {
+    case 'pending':
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+          <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" aria-hidden="true" />
+          {t('buildingStaff.statusPending')}
+        </span>
+      );
+    case 'accepted':
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[color:var(--brand-subtle)] text-[color:var(--brand-text)]">
+          <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" aria-hidden="true" />
+          {t('buildingStaff.statusAccepted')}
+        </span>
+      );
+    case 'expired':
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[color:var(--status-na-bg)] text-[color:var(--status-na-text)]">
+          {t('buildingStaff.statusExpired')}
+        </span>
+      );
+    case 'revoked':
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[color:var(--status-busy-bg)] text-[color:var(--status-busy-text)]">
+          {t('buildingStaff.statusRevoked')}
+        </span>
+      );
+    default:
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[color:var(--status-free-bg)] text-[color:var(--status-free-text)]">
+          <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" aria-hidden="true" />
+          {t('buildingStaff.statusValid')}
+        </span>
+      );
   }
-  if (invite.is_expired) {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[color:var(--status-busy-bg)] text-[color:var(--status-busy-text)]">
-        <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" aria-hidden="true" />
-        {t('buildingStaff.statusExpired')}
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[color:var(--status-free-bg)] text-[color:var(--status-free-text)]">
-      <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" aria-hidden="true" />
-      {t('buildingStaff.statusValid')}
-    </span>
-  );
 }
