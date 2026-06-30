@@ -273,12 +273,12 @@ export interface CompanyInvitation {
   role: string;
   token: string;
   invited_by_name: string;
+  status: 'pending' | 'accepted' | 'expired' | 'revoked';
   is_used: boolean;
   is_expired: boolean;
   is_valid: boolean;
   expires_at: string;
   created_at: string;
-  status: 'pending' | 'accepted' | 'expired' | 'revoked';
 }
 
 export interface InviteRegistrationPreview {
