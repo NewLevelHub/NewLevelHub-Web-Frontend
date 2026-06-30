@@ -433,7 +433,7 @@ export default function InvitesPanel({ companyId }: InvitesPanelProps) {
                           disabled={inv.status !== 'pending' || resendInvite.isPending}
                           onClick={() => resendInvite.mutate(inv.id)}
                           title={t('invites.resend')}
-                          className={btnGhost}
+                          className={cn(btnGhost, 'hover:text-[color:var(--brand)]')}
                         >
                           <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
                           <span className="sr-only">{t('invites.resend')}</span>
