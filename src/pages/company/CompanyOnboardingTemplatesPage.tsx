@@ -1,18 +1,16 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
 import {
   Plus,
   Save,
-  ListChecks,
   Pencil,
   Trash2,
-  Star,
-  Settings2,
-  Users,
+  Building,
+  ChevronDown,
+  ChevronRight,
   AlertCircle,
   CheckCircle2,
   ClipboardList,
-  Lock,
   X,
   Check,
 } from 'lucide-react';
@@ -21,12 +19,11 @@ import { cn } from '@/shared/lib/cn';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { useOnboardingTemplates } from '@/pages/company/hooks/useOnboardingTemplates';
 
-const inputClass =
-  'mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand';
-const labelClass = 'block text-sm font-medium text-secondary';
-
 export default function CompanyOnboardingTemplatesPage() {
   const { t } = useTranslation();
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+
   const {
     isSuperadmin,
     companyId,
@@ -51,7 +48,6 @@ export default function CompanyOnboardingTemplatesPage() {
     saveTemplateNameMutation,
     addStepMutation,
     saveStepMutation,
-    setDefaultMutation,
     setSelectedCompanyId,
     setForm,
     setEditingTemplateName,
@@ -61,80 +57,88 @@ export default function CompanyOnboardingTemplatesPage() {
     startEditingTemplate,
     cancelEditingTemplate,
     startEditingStep,
+    cancelEditingStep,
     handleCreateTemplate,
     handleSaveTemplateName,
     handleAddStep,
     handleSaveStep,
     handleDeleteTemplate,
-    handleSetDefault,
     handleDeleteStep,
   } = useOnboardingTemplates();
-
-  const companySelector = isSuperadmin ? (
-    <section className="rounded-xl border border-default bg-surface p-4">
-      <label className={labelClass} htmlFor="company-select-onboarding">
-        {t('common.company')}
-      </label>
-      <select
-        id="company-select-onboarding"
-        value={selectedCompanyId}
-        onChange={(e) => setSelectedCompanyId(e.target.value)}
-        className={inputClass}
-      >
-        <option value="">{t('common.selectCompany')}</option>
-        {(companiesData?.results ?? []).map((company) => (
-          <option key={company.id} value={String(company.id)}>
-            {company.name}
-          </option>
-        ))}
-      </select>
-    </section>
-  ) : null;
 
   return (
     <div className="space-y-4">
       {/* Page header */}
-      <div>
-        <div className="flex items-center gap-3">
-          <ListChecks className="h-6 w-6 text-brand" aria-hidden="true" />
-          <h1 className="text-2xl font-semibold text-primary">{t('companies.onboardingTitle')}</h1>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          marginBottom: 20,
+        }}
+      >
+        <div>
+          <h1
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: 'var(--text-primary)',
+              margin: 0,
+            }}
+          >
+            {t('companies.onboardingTitle')}
+          </h1>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {isSuperadmin && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '6px 12px',
+                borderRadius: 8,
+                border: '1px solid var(--border)',
+                background: 'var(--bg-raised)',
+                cursor: 'pointer',
+              }}
+            >
+              <Building size={13} style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
+              <select
+                value={selectedCompanyId}
+                onChange={(e) => setSelectedCompanyId(e.target.value)}
+                aria-label={t('common.selectCompany')}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  outline: 'none',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: 'var(--text-primary)',
+                  fontFamily: 'inherit',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="">{t('common.selectCompany')}</option>
+                {(companiesData?.results ?? []).map((c) => (
+                  <option key={c.id} value={String(c.id)}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} aria-hidden="true" />
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => setShowCreateForm((v) => !v)}
+            className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity"
+          >
+            <Plus size={13} aria-hidden="true" />
+            {t('companies.createTemplateBtn')}
+          </button>
         </div>
       </div>
-
-      {/* Tab navigation */}
-      <nav className="flex flex-wrap gap-2" aria-label={t('companies.onboardingTitle')}>
-        <Link
-          to={`/company/settings${companyId ? `?company=${companyId}` : ''}`}
-          className="inline-flex items-center gap-1.5 rounded-full border border-default px-4 py-1.5 text-sm text-secondary hover:bg-hover"
-        >
-          <Settings2 className="h-3.5 w-3.5" aria-hidden="true" />
-          {t('companies.generalSettings')}
-        </Link>
-        <Link
-          to={`/company/settings/members${companyId ? `?company=${companyId}` : ''}`}
-          className="inline-flex items-center gap-1.5 rounded-full border border-default px-4 py-1.5 text-sm text-secondary hover:bg-hover"
-        >
-          <Users className="h-3.5 w-3.5" aria-hidden="true" />
-          {t('companies.membersTitle')}
-        </Link>
-        <span
-          className="inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white"
-          aria-current="page"
-        >
-          <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
-          {t('companies.onboardingTemplatesLink')}
-        </span>
-        <Link
-          to={`/company/settings/onboarding/team${companyId ? `?company=${companyId}` : ''}`}
-          className="inline-flex items-center gap-1.5 rounded-full border border-default px-4 py-1.5 text-sm text-secondary hover:bg-hover"
-        >
-          <Users className="h-3.5 w-3.5" aria-hidden="true" />
-          {t('companies.teamOnboardingTab')}
-        </Link>
-      </nav>
-
-      {/* Superadmin company selector */}
-      {companySelector}
 
       {/* Alert banners */}
       {error && (
@@ -156,96 +160,227 @@ export default function CompanyOnboardingTemplatesPage() {
         </div>
       )}
 
+      {/* Inline create form */}
+      {showCreateForm && (
+        <div
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '18px 20px',
+            marginBottom: 16,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: 'var(--text-primary)',
+              marginBottom: 12,
+            }}
+          >
+            {t('companies.createTemplateTitle')}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <label className="sr-only" htmlFor="template-name-inline">
+              {t('companies.templateName')}
+            </label>
+            <input
+              id="template-name-inline"
+              type="text"
+              value={form.name}
+              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && form.name.trim()) {
+                  handleCreateTemplate();
+                  setShowCreateForm(false);
+                }
+              }}
+              placeholder={t('companies.templateNamePlaceholder')}
+              style={{
+                flex: 1,
+                padding: '9px 12px',
+                borderRadius: 8,
+                border: '1px solid var(--border)',
+                background: 'var(--bg-raised)',
+                color: 'var(--text-primary)',
+                fontSize: 13,
+                fontFamily: 'inherit',
+                outline: 'none',
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                handleCreateTemplate();
+                setShowCreateForm(false);
+              }}
+              disabled={createTemplateMutation.isPending || !form.name.trim()}
+              className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              <Plus size={13} aria-hidden="true" />
+              {t('companies.createTemplateBtn')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(false)}
+              style={{
+                padding: '0 12px',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--border)',
+                background: 'transparent',
+                color: 'var(--text-secondary)',
+                fontSize: 13,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              {t('common.cancel')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Guard: SA without selected company */}
       {isSuperadmin && !companyId ? (
         <section className="rounded-xl border border-default bg-surface p-6">
           <p className="text-sm text-secondary">{t('companies.selectCompanyForTemplates')}</p>
         </section>
       ) : editingTemplateId !== null ? (
-        /* ── Edit mode: template name + step management via nested endpoint ── */
-        <section className="rounded-xl border border-default bg-surface p-6 space-y-6">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-primary">{t('companies.editTemplate')}</h2>
+        /* ── Edit mode ── */
+        <div
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '14px 16px',
+              borderBottom: '1px solid var(--border-faint)',
+            }}
+          >
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
+              {t('companies.editTemplate')}
+            </span>
             <button
               type="button"
               onClick={cancelEditingTemplate}
-              className="rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:bg-hover"
+              style={{
+                padding: '4px 10px',
+                fontSize: 12,
+                fontWeight: 500,
+                borderRadius: 6,
+                border: '1px solid var(--border)',
+                background: 'var(--bg-raised)',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+              }}
             >
+              <X size={12} aria-hidden="true" />
               {t('common.cancel')}
             </button>
           </div>
 
-          {/* Template name */}
-          <div>
-            <label className={labelClass} htmlFor="edit-template-name">
+          {/* Template name field */}
+          <div
+            style={{
+              padding: '12px 16px',
+              borderBottom: '1px solid var(--border-faint)',
+            }}
+          >
+            <label
+              htmlFor="edit-template-name"
+              style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}
+            >
               {t('companies.templateName')}
             </label>
-            <div className="mt-1 flex gap-2">
+            <div style={{ display: 'flex', gap: 8 }}>
               <input
                 id="edit-template-name"
                 type="text"
                 value={editingTemplateName}
                 onChange={(e) => setEditingTemplateName(e.target.value)}
-                className="flex-1 rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                 placeholder={t('companies.templateNamePlaceholder')}
+                style={{
+                  flex: 1,
+                  padding: '9px 12px',
+                  borderRadius: 8,
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-raised)',
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                }}
               />
               <button
                 type="button"
                 onClick={handleSaveTemplateName}
                 disabled={saveTemplateNameMutation.isPending}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                style={{
+                  padding: '0 14px',
+                  height: 36,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  borderRadius: 6,
+                  border: 'none',
+                  background: 'var(--brand)',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  opacity: saveTemplateNameMutation.isPending ? 0.6 : 1,
+                }}
               >
-                <Save className="h-4 w-4" aria-hidden="true" />
+                <Save size={13} aria-hidden="true" />
                 {saveTemplateNameMutation.isPending ? t('common.savingPlain') : t('common.save')}
               </button>
             </div>
           </div>
 
-          {/* Steps */}
-          <div>
-            <h3 className="mb-3 text-sm font-medium text-secondary">{t('companies.stepsTitle')}</h3>
+          {/* Steps section */}
+          <div style={{ padding: '12px 16px 16px' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
+              {t('companies.stepsTitle')}
+            </div>
 
             {templateStepsQuery.isLoading && (
-              <p className="text-sm text-muted">{t('companies.stepsLoading')}</p>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t('companies.stepsLoading')}</p>
             )}
 
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {editedSteps
                 .slice()
                 .sort((a, b) => a.order - b.order)
-                .map((step) => {
+                .map((step, i) => {
                   const isEditing = editingStepId === step.id;
-
-                  if (step.is_system) {
-                    return (
-                      <div
-                        key={step.id}
-                        className="flex items-start gap-3 rounded-lg border border-default bg-raised/50 px-4 py-3 opacity-70"
-                        aria-label={t('companies.systemStepAria', { title: step.title })}
-                      >
-                        <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden="true" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-secondary">{step.title}</p>
-                          {step.description && (
-                            <p className="mt-0.5 text-xs text-muted">{step.description}</p>
-                          )}
-                          {step.url && (
-                            <p className="mt-0.5 text-xs text-muted truncate">
-                              {t('companies.stepLinkUrl')}: {step.url}
-                            </p>
-                          )}
-                        </div>
-                        <span className="shrink-0 rounded-full bg-muted/20 px-2 py-0.5 text-xs text-muted">
-                          {t('companies.systemStep')}
-                        </span>
-                      </div>
-                    );
-                  }
 
                   if (isEditing) {
                     return (
                       <div
                         key={step.id}
-                        className="rounded-lg border border-brand/30 bg-surface p-4 space-y-3"
+                        style={{
+                          background: 'var(--bg-raised)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 7,
+                          padding: '10px 12px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 8,
+                        }}
                       >
                         <input
                           type="text"
@@ -253,8 +388,19 @@ export default function CompanyOnboardingTemplatesPage() {
                           onChange={(e) =>
                             setEditingStepState((prev) => ({ ...prev, title: e.target.value }))
                           }
-                          className="w-full rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                           placeholder={t('companies.stepTitle')}
+                          style={{
+                            width: '100%',
+                            boxSizing: 'border-box',
+                            padding: '7px 10px',
+                            borderRadius: 6,
+                            border: '1px solid var(--border)',
+                            background: 'var(--bg-surface)',
+                            color: 'var(--text-primary)',
+                            fontSize: 13,
+                            fontFamily: 'inherit',
+                            outline: 'none',
+                          }}
                         />
                         <textarea
                           value={editingStepState.description}
@@ -265,8 +411,20 @@ export default function CompanyOnboardingTemplatesPage() {
                             }))
                           }
                           rows={2}
-                          className="w-full rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                           placeholder={t('companies.stepDescription')}
+                          style={{
+                            width: '100%',
+                            boxSizing: 'border-box',
+                            padding: '7px 10px',
+                            borderRadius: 6,
+                            border: '1px solid var(--border)',
+                            background: 'var(--bg-surface)',
+                            color: 'var(--text-primary)',
+                            fontSize: 13,
+                            fontFamily: 'inherit',
+                            outline: 'none',
+                            resize: 'none',
+                          }}
                         />
                         <input
                           type="url"
@@ -274,25 +432,63 @@ export default function CompanyOnboardingTemplatesPage() {
                           onChange={(e) =>
                             setEditingStepState((prev) => ({ ...prev, url: e.target.value }))
                           }
-                          className="w-full rounded-lg border border-default bg-raised px-3 py-2 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                           placeholder={t('companies.stepLinkUrlPlaceholder')}
+                          style={{
+                            width: '100%',
+                            boxSizing: 'border-box',
+                            padding: '7px 10px',
+                            borderRadius: 6,
+                            border: '1px solid var(--border)',
+                            background: 'var(--bg-surface)',
+                            color: 'var(--text-primary)',
+                            fontSize: 13,
+                            fontFamily: 'inherit',
+                            outline: 'none',
+                          }}
                         />
-                        <div className="flex gap-2">
+                        <div style={{ display: 'flex', gap: 6 }}>
                           <button
                             type="button"
                             onClick={() => handleSaveStep(step.id)}
                             disabled={saveStepMutation.isPending}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
+                            style={{
+                              padding: '4px 10px',
+                              fontSize: 12,
+                              fontWeight: 500,
+                              borderRadius: 6,
+                              border: 'none',
+                              background: 'var(--brand)',
+                              color: '#fff',
+                              cursor: 'pointer',
+                              fontFamily: 'inherit',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              opacity: saveStepMutation.isPending ? 0.6 : 1,
+                            }}
                           >
-                            <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                            <Check size={11} aria-hidden="true" />
                             {t('common.save')}
                           </button>
                           <button
                             type="button"
-                            onClick={() => setEditingStepState({ title: '', description: '', url: '' })}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:bg-hover"
+                            onClick={cancelEditingStep}
+                            style={{
+                              padding: '4px 10px',
+                              fontSize: 12,
+                              fontWeight: 500,
+                              borderRadius: 6,
+                              border: '1px solid var(--border)',
+                              background: 'transparent',
+                              color: 'var(--text-secondary)',
+                              cursor: 'pointer',
+                              fontFamily: 'inherit',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
                           >
-                            <X className="h-3.5 w-3.5" aria-hidden="true" />
+                            <X size={11} aria-hidden="true" />
                             {t('common.cancel')}
                           </button>
                         </div>
@@ -303,34 +499,83 @@ export default function CompanyOnboardingTemplatesPage() {
                   return (
                     <div
                       key={step.id}
-                      className="flex items-start gap-3 rounded-lg border border-default bg-surface px-4 py-3"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '8px 12px',
+                        borderRadius: 7,
+                        background: 'var(--bg-raised)',
+                        border: '1px solid var(--border-faint)',
+                      }}
                     >
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-primary">{step.title}</p>
-                        {step.description && (
-                          <p className="mt-0.5 text-xs text-secondary">{step.description}</p>
-                        )}
+                      {/* Step number circle */}
+                      <div
+                        style={{
+                          width: 22,
+                          height: 22,
+                          borderRadius: '50%',
+                          flexShrink: 0,
+                          background: 'var(--brand-subtle)',
+                          color: 'var(--brand-text)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 11,
+                          fontWeight: 700,
+                        }}
+                        aria-hidden="true"
+                      >
+                        {i + 1}
                       </div>
-                      <div className="flex shrink-0 gap-1.5">
+                      <span style={{ fontSize: 13, color: 'var(--text-secondary)', flex: 1 }}>
+                        {step.title}
+                      </span>
+                      {step.description && (
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)', flex: 2 }}>
+                          {step.description}
+                        </span>
+                      )}
+                      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
                         <button
                           type="button"
                           onClick={() => startEditingStep(step)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-default px-2.5 py-1.5 text-xs text-secondary hover:bg-hover"
                           aria-label={t('companies.editStepAria', { title: step.title })}
+                          style={{
+                            width: 26,
+                            height: 26,
+                            borderRadius: 5,
+                            border: '1px solid var(--border)',
+                            background: 'transparent',
+                            color: 'var(--text-muted)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
                         >
-                          <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                          {t('companies.editTemplateBtn')}
+                          <Pencil size={11} aria-hidden="true" />
                         </button>
                         <button
                           type="button"
-                          onClick={() =>
-                            setStepPendingDelete({ id: step.id, title: step.title })
-                          }
-                          className="inline-flex items-center gap-1 rounded-lg border border-default bg-danger-subtle px-2.5 py-1.5 text-xs text-danger hover:opacity-80"
+                          onClick={() => setStepPendingDelete({ id: step.id, title: step.title })}
                           aria-label={t('companies.deleteStepAria', { title: step.title })}
+                          style={{
+                            width: 26,
+                            height: 26,
+                            borderRadius: 5,
+                            border: '1px solid var(--border)',
+                            background: 'transparent',
+                            color: 'var(--text-muted)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--danger)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
                         >
-                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                          {t('common.delete')}
+                          <Trash2 size={11} aria-hidden="true" />
                         </button>
                       </div>
                     </div>
@@ -338,153 +583,344 @@ export default function CompanyOnboardingTemplatesPage() {
                 })}
             </div>
 
+            {/* Add step */}
             <button
               type="button"
               onClick={handleAddStep}
               disabled={addStepMutation.isPending}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover disabled:opacity-50"
+              style={{
+                alignSelf: 'flex-start',
+                marginTop: 8,
+                padding: '5px 12px',
+                fontSize: 12,
+                fontWeight: 500,
+                borderRadius: 6,
+                border: '1px solid var(--border)',
+                background: 'transparent',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                opacity: addStepMutation.isPending ? 0.5 : 1,
+              }}
             >
-              <Plus className="h-4 w-4" aria-hidden="true" />
+              <Plus size={12} aria-hidden="true" />
               {t('companies.addStep')}
             </button>
           </div>
-        </section>
+        </div>
       ) : (
-        <>
-          {/* Create template form */}
-          <section className="rounded-xl border border-default bg-surface p-6">
-            <div className="mb-5">
-              <h2 className="text-base font-semibold text-primary">
-                {t('companies.createTemplateTitle')}
-              </h2>
-              <p className="mt-1 text-sm text-secondary">{t('companies.createTemplateHint')}</p>
+        /* ── Accordion list ── */
+        <div>
+          {templatesQuery.isLoading && (
+            <p className="text-sm text-muted">{t('companies.templatesLoading')}</p>
+          )}
+          {templatesQuery.isError && (
+            <div className="rounded-lg border border-default bg-danger-subtle px-4 py-3 text-sm text-danger">
+              {t('companies.templatesError')}
             </div>
-
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <label className="sr-only" htmlFor="template-name">
-                  {t('companies.templateName')}
-                </label>
-                <input
-                  id="template-name"
-                  type="text"
-                  value={form.name}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, name: event.target.value }))
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleCreateTemplate();
-                  }}
-                  className={inputClass}
-                  placeholder={t('companies.templateNamePlaceholder')}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={handleCreateTemplate}
-                disabled={createTemplateMutation.isPending}
-                className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-              >
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                {createTemplateMutation.isPending
-                  ? t('common.savingPlain')
-                  : t('companies.createTemplateBtn')}
-              </button>
+          )}
+          {!templatesQuery.isLoading && !templates.length && (
+            <div className="flex flex-col items-center justify-center py-12">
+              <ClipboardList className="mb-3 h-10 w-10 text-muted" aria-hidden="true" />
+              <p className="text-sm font-medium text-secondary">{t('companies.noTemplates')}</p>
             </div>
-          </section>
+          )}
 
-          {/* Existing templates */}
-          <section className="rounded-xl border border-default bg-surface p-6">
-            <h2 className="mb-5 text-base font-semibold text-primary">
-              {t('companies.existingTemplates')}
-            </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {templates.map((template) => {
+              const isExpanded = expandedId === template.id;
 
-            {templatesQuery.isLoading && (
-              <p className="text-sm text-muted">{t('companies.templatesLoading')}</p>
-            )}
-            {templatesQuery.isError && (
-              <div className="rounded-lg border border-default bg-danger-subtle px-4 py-3 text-sm text-danger">
-                {t('companies.templatesError')}
-              </div>
-            )}
-            {!templatesQuery.isLoading && !templates.length && (
-              <div className="flex flex-col items-center justify-center py-12">
-                <ClipboardList className="mb-3 h-10 w-10 text-muted" aria-hidden="true" />
-                <p className="text-sm font-medium text-secondary">{t('companies.noTemplates')}</p>
-              </div>
-            )}
-
-            <div className="space-y-3">
-              {templates.map((template) => (
+              return (
                 <div
                   key={template.id}
-                  className={cn(
-                    'rounded-lg border bg-surface p-4',
-                    template.is_default
-                      ? 'border-brand/50 border-l-2 border-l-brand'
-                      : 'border-default',
-                  )}
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-lg)',
+                    overflow: 'hidden',
+                  }}
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium text-primary">{template.name}</p>
+                  {/* Card header — clickable to expand */}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={isExpanded}
+                    onClick={() => setExpandedId(isExpanded ? null : template.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setExpandedId(isExpanded ? null : template.id);
+                      }
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      padding: '14px 16px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: 'var(--text-primary)',
+                        }}
+                      >
+                        {template.name}
                         {template.is_default && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-brand-subtle px-2 py-0.5 text-xs font-medium text-brand">
-                            <Star className="h-3 w-3" aria-hidden="true" />
+                          <span
+                            style={{
+                              marginLeft: 8,
+                              fontSize: 10,
+                              fontWeight: 600,
+                              padding: '2px 7px',
+                              borderRadius: 4,
+                              background: 'var(--brand-subtle)',
+                              color: 'var(--brand-text)',
+                            }}
+                          >
                             {t('companies.templateDefault')}
                           </span>
                         )}
                       </div>
-                      <p className="mt-1 text-xs text-secondary">
+                      <div
+                        style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}
+                      >
                         {template.steps.length === 1
                           ? t('companies.stepsCount', { count: template.steps.length })
                           : t('companies.stepsCountMany', { count: template.steps.length })}
-                        {' · '}
-                        {template.is_active
-                          ? t('companies.templateActive')
-                          : t('companies.templateInactive')}
-                      </p>
+                      </div>
                     </div>
-                    <div className="flex shrink-0 flex-wrap items-center gap-2">
-                      {template.is_active && !template.is_default && (
+
+                    {/* Edit button */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        startEditingTemplate(template);
+                      }}
+                      style={{
+                        padding: '4px 10px',
+                        fontSize: 12,
+                        fontWeight: 500,
+                        borderRadius: 6,
+                        border: '1px solid var(--border)',
+                        background: 'var(--bg-raised)',
+                        color: 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 5,
+                      }}
+                    >
+                      <Pencil size={12} aria-hidden="true" />
+                      {t('companies.editTemplateBtn')}
+                    </button>
+
+                    {/* Delete button */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTemplatePendingDelete({ id: template.id, name: template.name });
+                      }}
+                      disabled={deleteMutation.isPending}
+                      aria-label={t('companies.deleteTemplateModal')}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 6,
+                        border: '1px solid var(--border)',
+                        background: 'transparent',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.color = 'var(--danger)')
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.color = 'var(--text-muted)')
+                      }
+                    >
+                      <Trash2 size={13} aria-hidden="true" />
+                    </button>
+
+                    {/* Chevron */}
+                    <ChevronRight
+                      size={14}
+                      aria-hidden="true"
+                      style={{
+                        color: 'var(--text-muted)',
+                        flexShrink: 0,
+                        transform: isExpanded ? 'rotate(90deg)' : 'none',
+                        transition: 'transform 0.15s',
+                      }}
+                    />
+                  </div>
+
+                  {/* Expanded steps */}
+                  {isExpanded && (
+                    <div
+                      style={{
+                        padding: '0 16px 16px',
+                        borderTop: '1px solid var(--border-faint)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 6,
+                          marginTop: 12,
+                        }}
+                      >
+                        {template.steps.length === 0 && (
+                          <p
+                            className={cn('text-sm text-muted')}
+                            style={{ padding: '8px 0' }}
+                          >
+                            {t('companies.noTemplates')}
+                          </p>
+                        )}
+                        {template.steps
+                          .slice()
+                          .sort((a, b) => a.order - b.order)
+                          .map((step, i) => (
+                            <div
+                              key={step.id}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 10,
+                                padding: '8px 12px',
+                                borderRadius: 7,
+                                background: 'var(--bg-raised)',
+                                border: '1px solid var(--border-faint)',
+                              }}
+                            >
+                              {/* Step number circle */}
+                              <div
+                                style={{
+                                  width: 22,
+                                  height: 22,
+                                  borderRadius: '50%',
+                                  flexShrink: 0,
+                                  background: 'var(--brand-subtle)',
+                                  color: 'var(--brand-text)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                }}
+                                aria-hidden="true"
+                              >
+                                {i + 1}
+                              </div>
+                              <span
+                                style={{
+                                  fontSize: 13,
+                                  color: 'var(--text-secondary)',
+                                  flex: 1,
+                                }}
+                              >
+                                {step.title}
+                              </span>
+                              {/* Step actions */}
+                              <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEditingTemplate(template);
+                                    startEditingStep(step);
+                                  }}
+                                  aria-label={t('companies.editStepAria', { title: step.title })}
+                                  style={{
+                                    width: 26,
+                                    height: 26,
+                                    borderRadius: 5,
+                                    border: '1px solid var(--border)',
+                                    background: 'transparent',
+                                    color: 'var(--text-muted)',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                  }}
+                                >
+                                  <Pencil size={11} aria-hidden="true" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEditingTemplate(template);
+                                    setStepPendingDelete({ id: step.id, title: step.title });
+                                  }}
+                                  aria-label={t('companies.deleteStepAria', { title: step.title })}
+                                  style={{
+                                    width: 26,
+                                    height: 26,
+                                    borderRadius: 5,
+                                    border: '1px solid var(--border)',
+                                    background: 'transparent',
+                                    color: 'var(--text-muted)',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                  }}
+                                >
+                                  <Trash2 size={11} aria-hidden="true" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+
+                        {/* Add step */}
                         <button
                           type="button"
-                          disabled={setDefaultMutation.isPending}
-                          onClick={() => handleSetDefault(template.id)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:border-brand/50 hover:bg-brand-subtle hover:text-brand disabled:opacity-50"
-                          aria-label={t('companies.setDefaultAria', { name: template.name })}
+                          onClick={() => {
+                            startEditingTemplate(template);
+                          }}
+                          style={{
+                            alignSelf: 'flex-start',
+                            marginTop: 4,
+                            padding: '5px 12px',
+                            fontSize: 12,
+                            fontWeight: 500,
+                            borderRadius: 6,
+                            border: '1px solid var(--border)',
+                            background: 'transparent',
+                            color: 'var(--text-secondary)',
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 5,
+                          }}
                         >
-                          <Star className="h-3.5 w-3.5" aria-hidden="true" />
-                          {t('companies.setDefault')}
+                          <Plus size={12} aria-hidden="true" />
+                          {t('companies.addStep')}
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => startEditingTemplate(template)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-default px-3 py-1.5 text-xs text-secondary hover:bg-hover"
-                      >
-                        <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                        {t('companies.editTemplateBtn')}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={deleteMutation.isPending || templates.length <= 1}
-                        onClick={() =>
-                          setTemplatePendingDelete({ id: template.id, name: template.name })
-                        }
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-default bg-danger-subtle px-3 py-1.5 text-xs text-danger hover:opacity-80 disabled:opacity-50"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                        {t('common.delete')}
-                      </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          </section>
-        </>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {/* Delete template modal */}

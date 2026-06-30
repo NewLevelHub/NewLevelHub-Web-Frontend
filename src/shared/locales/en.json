@@ -2307,7 +2307,13 @@
     "onboardingCompleted": "Onboarding completed",
     "onboardingNotStarted": "Onboarding has not started yet.",
     "completedAt": "Completed {{date}}",
-    "invitationsPageOf": "Page {{page}} of {{total}} ({{count}} records)"
+    "stepDone": "Done",
+    "noTemplateAssigned": "No template assigned",
+    "assignTemplate": "Assign template",
+    "assignTemplateTitle": "Assign onboarding template",
+    "assignTemplateSuccess": "Template assigned successfully",
+    "assignTemplateNote": "Note (optional)",
+    "assignTemplateSelectPlaceholder": "Select a template"
   },
   "building": {
     "mapManage": "Manage map",
@@ -2537,7 +2543,12 @@
     "markDoneAria": "Mark step as done: {{title}}",
     "saveError": "Failed to save step. Please try again.",
     "goToLink": "Go",
-    "visitLinkFirst": "First follow the link, then click \"Done\"."
+    "visitLinkFirst": "First follow the link, then click \"Done\".",
+    "systemBadge": "System",
+    "systemReadonly": "System (readonly)",
+    "userTemplate": "Custom",
+    "notAssignedTitle": "No onboarding template assigned",
+    "notAssignedDesc": "Your administrator hasn't assigned an onboarding template yet."
   },
   "access": {
     "title": "Access log",
@@ -2886,5 +2897,24 @@
       "confirmDeleteTitle": "Delete staff members",
       "confirmDeleteBody": "Delete {{count}} staff member(s)? This action cannot be undone."
     }
+  },
+  "invites": {
+    "formTitle": "Invite employee",
+    "sendBtn": "Send invitation",
+    "filterAll": "All",
+    "filterPending": "Pending",
+    "filterExpired": "Expired",
+    "colEmail": "Email",
+    "colRole": "Role",
+    "colSent": "Expires",
+    "colStatus": "Status",
+    "statusPending": "Pending",
+    "statusUsed": "Accepted",
+    "statusExpired": "Expired",
+    "resend": "Resend",
+    "revoke": "Revoke",
+    "revokeTitle": "Revoke invitation?",
+    "revokeDesc": "Invitation for {{email}} will be revoked.",
+    "empty": "No invitations"
   }
 }

@@ -2302,7 +2302,13 @@
     "onboardingCompleted": "Онбординг завершён",
     "onboardingNotStarted": "Онбординг ещё не начат.",
     "completedAt": "Выполнено {{date}}",
-    "invitationsPageOf": "Страница {{page}} из {{total}} ({{count}} записей)"
+    "stepDone": "Выполнено",
+    "noTemplateAssigned": "Шаблон не назначен",
+    "assignTemplate": "Назначить шаблон",
+    "assignTemplateTitle": "Назначение шаблона",
+    "assignTemplateSuccess": "Шаблон успешно назначен",
+    "assignTemplateNote": "Примечание (необязательно)",
+    "assignTemplateSelectPlaceholder": "Выберите шаблон"
   },
   "building": {
     "mapManage": "Управление картой",
@@ -2532,7 +2538,12 @@
     "markDoneAria": "Отметить шаг выполненным: {{title}}",
     "saveError": "Не удалось сохранить шаг. Попробуйте снова.",
     "goToLink": "Перейти",
-    "visitLinkFirst": "Сначала перейдите по ссылке, затем нажмите «Выполнено»."
+    "visitLinkFirst": "Сначала перейдите по ссылке, затем нажмите «Выполнено».",
+    "systemBadge": "Системный",
+    "systemReadonly": "Системный (readonly)",
+    "userTemplate": "Пользовательский",
+    "notAssignedTitle": "Шаблон онбординга не назначен",
+    "notAssignedDesc": "Администратор ещё не назначил вам шаблон онбординга."
   },
   "access": {
     "title": "Лог доступа",
@@ -2889,5 +2900,24 @@
       "confirmDeleteTitle": "Удалить сотрудников",
       "confirmDeleteBody": "Удалить {{count}} сотрудника(ов)? Это действие нельзя отменить."
     }
+  },
+  "invites": {
+    "formTitle": "Пригласить сотрудника",
+    "sendBtn": "Отправить приглашение",
+    "filterAll": "Все",
+    "filterPending": "Ожидают",
+    "filterExpired": "Истекли",
+    "colEmail": "Email",
+    "colRole": "Роль",
+    "colSent": "Истекает",
+    "colStatus": "Статус",
+    "statusPending": "Ожидает",
+    "statusUsed": "Принято",
+    "statusExpired": "Истёк",
+    "resend": "Повторить",
+    "revoke": "Отозвать",
+    "revokeTitle": "Отозвать приглашение?",
+    "revokeDesc": "Приглашение для {{email}} будет аннулировано.",
+    "empty": "Нет приглашений"
   }
 }

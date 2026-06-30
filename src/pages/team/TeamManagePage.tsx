@@ -43,6 +43,7 @@ import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
+import InvitesPanel from '@/pages/company/components/InvitesPanel';
 import type {
   Company,
   CompanyMember,
@@ -996,7 +997,7 @@ function ReassignMemberModal({
 
 const DEBOUNCE_MS = 350;
 
-type ViewTab = 'manage' | 'directory';
+type ViewTab = 'manage' | 'directory' | 'invites';
 
 export default function TeamManagePage() {
   const { t } = useTranslation();
@@ -1004,7 +1005,9 @@ export default function TeamManagePage() {
   const queryClient = useQueryClient();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
   const isCompanyAdmin = user?.role === USER_ROLES.COMPANY_ADMIN;
-  const showTabs = isCompanyAdmin;
+  const isEmployee = user?.role === USER_ROLES.EMPLOYEE;
+  const showTabs = isCompanyAdmin || isSuperadmin;
+  const canInvite = !isEmployee;
   const [view, setView] = useState<ViewTab>('manage');
 
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
@@ -1282,18 +1285,29 @@ export default function TeamManagePage() {
   return (
     <div className="space-y-6 p-6">
       {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold text-primary">Сотрудники</h1>
-        <p className="mt-1 text-sm text-secondary">
-          {companyId && data && view === 'manage'
-            ? `Всего: ${data.count} сотрудников`
-            : isSuperadmin && !companyId
-              ? 'Выберите компанию для просмотра сотрудников'
-              : ' '}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-primary">Сотрудники</h1>
+          <p className="mt-1 text-sm text-secondary">
+            {companyId && data && view === 'manage'
+              ? `Всего: ${data.count} сотрудников`
+              : isSuperadmin && !companyId
+                ? 'Выберите компанию для просмотра сотрудников'
+                : ' '}
+          </p>
+        </div>
+        {canInvite && companyId && (
+          <button
+            type="button"
+            onClick={() => setView('invites')}
+            className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+          >
+            {t('companies.invite')}
+          </button>
+        )}
       </div>
 
-      {/* Tab bar — company admin only */}
+      {/* Tab bar — company admin / superadmin */}
       {showTabs && (
         <div className="flex gap-1 rounded-xl border border-default bg-raised p-1 w-fit">
           <button
@@ -1321,6 +1335,18 @@ export default function TeamManagePage() {
           >
             <LayoutGrid className="h-4 w-4" aria-hidden="true" />
             Карточки
+          </button>
+          <button
+            type="button"
+            onClick={() => setView('invites')}
+            className={cn(
+              'inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+              view === 'invites'
+                ? 'bg-surface text-primary shadow-sm'
+                : 'text-secondary hover:text-primary',
+            )}
+          >
+            {t('companies.invitationsTitle')}
           </button>
         </div>
       )}
@@ -1355,6 +1381,9 @@ export default function TeamManagePage() {
 
       {/* Directory card view */}
       {view === 'directory' && companyId && <DirectoryTab companyId={companyId} />}
+
+      {/* Invites panel */}
+      {view === 'invites' && companyId && <InvitesPanel companyId={companyId} />}
 
       {/* Filters, table and pagination — only shown once a company is available */}
       {view === 'manage' && companyId && <><div className="rounded-xl border border-default bg-raised p-4">

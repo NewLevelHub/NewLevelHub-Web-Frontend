@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2, PartyPopper, ExternalLink } from 'lucide-react';
+import { CheckCircle2, PartyPopper, ExternalLink, ClipboardList } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { useOnboardingWizard } from '@/pages/onboarding/hooks/useOnboardingWizard';
 
@@ -56,6 +56,18 @@ export default function OnboardingWizardPage() {
           <p className="mt-2 text-secondary">{t('onboarding.completedDesc')}</p>
         </div>
         <p className="text-sm text-muted">{t('onboarding.redirecting')}</p>
+      </div>
+    );
+  }
+
+  const isNotAssigned = data?.assigned === false;
+
+  if (isNotAssigned) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', gap: 12, textAlign: 'center' }}>
+        <ClipboardList size={40} style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
+        <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{t('onboarding.notAssignedTitle')}</p>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>{t('onboarding.notAssignedDesc')}</p>
       </div>
     );
   }
