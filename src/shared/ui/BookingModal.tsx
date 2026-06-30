@@ -3,6 +3,7 @@ import { dateLocaleTag } from '@/shared/lib/localeFormat';
 import { Calendar, Clock, Plus, X } from 'lucide-react';
 
 import { cn } from '@/shared/lib/cn';
+import { Button } from '@/shared/ui/Button';
 import type { BookingResourceListItem, ParticipantPickerUser } from '@/shared/types';
 import { useBookingModal } from './hooks/useBookingModal';
 
@@ -352,26 +353,25 @@ export function BookingModal({ resource, open, onClose }: BookingModalProps) {
 
         {/* Footer */}
         <div className="flex justify-end gap-2 border-t border-[color:var(--border-faint)] px-[22px] pt-[14px] pb-[18px] mt-3">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={onClose}
-            className="h-8 px-4 text-sm font-medium text-secondary hover:bg-raised rounded-[var(--radius-sm)] transition-colors"
           >
             {t('common.cancel')}
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
             form="booking-modal-form"
+            variant="primary"
+            size="sm"
             disabled={isPending || successMsg !== null}
-            className={cn(
-              'inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)]',
-              'text-white bg-[color:var(--brand)] hover:opacity-90 transition-opacity',
-              'disabled:opacity-60 disabled:cursor-not-allowed',
-            )}
+            loading={isPending}
           >
             <Calendar size={14} />
             {isPending ? t('common.submitting') : t('catalog.book')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

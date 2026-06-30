@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { ArchiveRestore, AlertCircle } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import type { CrmBoard } from '@/shared/types';
+import { Button } from '@/shared/ui/Button';
 
 export interface UnarchiveBoardConfirmProps {
   board: CrmBoard;
@@ -51,23 +52,22 @@ export function UnarchiveBoardConfirm({
           </div>
         )}
         <div className="flex items-center justify-end gap-3">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={onCancel}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-secondary hover:text-primary hover:bg-hover transition-colors"
-          >{t('common.cancel')}</button>
-          <button
+          >{t('common.cancel')}</Button>
+          <Button
             type="button"
+            variant="primary"
+            size="sm"
             onClick={onConfirm}
             disabled={isPending}
-            className={cn(
-              'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-              'bg-blue-600 text-white hover:bg-blue-500',
-              'disabled:opacity-50 disabled:cursor-not-allowed',
-            )}
+            loading={isPending}
           >
             {isPending ? t('common.unarchivingPlain') : t('common.unarchive')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

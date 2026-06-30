@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/shared/ui/Button';
 import {
   Search,
   ChevronDown,
@@ -967,23 +968,23 @@ function ReassignMemberModal({
 
         {/* Footer */}
         <div className="flex justify-end gap-3 px-6 pb-6">
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={onClose}
             disabled={isLoading}
-            className="rounded-lg border border-default bg-surface px-4 py-2 text-sm font-medium text-secondary hover:bg-raised disabled:pointer-events-none disabled:opacity-50"
-          >{t('common.cancel')}</button>
-          <button
+          >{t('common.cancel')}</Button>
+          <Button
             type="button"
+            variant="danger"
+            size="sm"
             disabled={isLoading}
+            loading={isLoading}
             onClick={() => onConfirm(selectedId || undefined)}
-            className="inline-flex items-center gap-2 rounded-lg bg-danger px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:pointer-events-none disabled:opacity-50"
           >
-            {isLoading && (
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden="true" />
-            )}
             Удалить из компании
-          </button>
+          </Button>
         </div>
       </div>
     </div>
