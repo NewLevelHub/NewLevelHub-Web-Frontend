@@ -1770,19 +1770,27 @@
     }
   },
   "auth": {
+    "backToHome": "Back to home",
+    "brandHeadline": "Your business center — in one window",
+    "brandSubtitle": "Booking, analytics, guest passes, and team management — all here.",
+    "feature1": "Booking in 3 clicks",
+    "feature2": "Real-time analytics",
+    "feature3": "QR passes for guests",
+    "feature4": "Role-based access control",
+    "demoAccess": "Demo access",
     "login": {
       "title": "Sign in",
-      "subtitle": "NewLevelHub — backend test",
+      "subtitle": "Welcome to NewLevelHub",
       "forgotPassword": "Forgot password?",
       "noAccount": "No account — register",
       "emailConfirmedNotice": "Email confirmed, please sign in"
     },
     "register": {
       "title": "Register",
-      "subtitle": "Guest account (guest role)",
+      "subtitle": "Create a guest account",
       "passwordAgain": "Password again",
       "phoneOptional": "(optional)",
-      "afterRegister": "After registration a confirmation link will be sent to your email (check backend logs for console email in dev).",
+      "afterRegister": "A confirmation link will be sent to your email after registration.",
       "submit": "Register",
       "submitting": "Registering…",
       "hasAccount": "Already have an account — sign in",
@@ -2039,11 +2047,175 @@
     }
   },
   "home": {
-    "badge": "Workspace operations platform",
-    "heroTitle": "Office management without manual routine",
-    "heroSubtitle": "Desk booking, office map, CRM, passes, and notifications — all in one panel for your team.",
-    "openPlatform": "Open platform",
-    "createAccount": "Create account",
+    "badge": "Version 2.0 · June 2026",
+    "heroTitle": "Management platform",
+    "heroWords": [
+      "business center",
+      "tenants",
+      "workspace",
+      "team"
+    ],
+    "heroSubtitle": "A single control point for your business center: desk booking, analytics, guest passes, and CRM tasks — all in one product.",
+    "openPlatform": "Sign in to platform",
+    "createAccount": "See features",
+    "statCompanies": "tenant companies",
+    "statUsers": "users",
+    "statBookings": "bookings per month",
+    "nav": {
+      "features": "Features",
+      "tariffs": "Pricing",
+      "about": "About",
+      "signIn": "Sign in"
+    },
+    "features": {
+      "title": "Everything for your business center",
+      "subtitle": "From desk booking to full analytics — the platform handles all tasks for management teams and tenants.",
+      "tabs": {
+        "booking": "Booking",
+        "analytics": "Analytics",
+        "guests": "Guest access",
+        "crm": "CRM & tasks"
+      },
+      "booking": {
+        "title": "Manage your space with one click",
+        "desc": "Meeting rooms, hot desks, parking, focus pods — the full resource catalog with live statuses. Book in 3 clicks, cancel anytime.",
+        "points": {
+          "0": "Building map with occupancy",
+          "1": "Recurring bookings",
+          "2": "Conflict checking",
+          "3": "Push notifications"
+        }
+      },
+      "analytics": {
+        "title": "Data that drives decisions",
+        "desc": "Real-time superadmin dashboard: resource occupancy, peak hours, top 5 companies, underused resources.",
+        "points": {
+          "0": "Peak hour heat map",
+          "1": "Filters by period and company",
+          "2": "Activity tables",
+          "3": "Tariff-based analytics"
+        }
+      },
+      "guests": {
+        "title": "Contactless entry for guests",
+        "desc": "An employee creates a pass in two clicks — the guest receives a QR code by email. Reception scans and sees status instantly.",
+        "points": {
+          "0": "QR code sent to guest email",
+          "1": "Instant reception check",
+          "2": "Visit history",
+          "3": "Guest flow analytics"
+        }
+      },
+      "crm": {
+        "title": "Service requests under control",
+        "desc": "Kanban board for managing requests: cleaning, repairs, supplies. The team sees the queue, management sees statuses and deadlines.",
+        "points": {
+          "0": "Kanban with priorities",
+          "1": "Assignee management",
+          "2": "Statuses and deadlines",
+          "3": "Analytics integration"
+        }
+      }
+    },
+    "tariffs": {
+      "title": "Choose your plan",
+      "subtitle": "A company tariff determines which analytics capabilities and tools are available to employees.",
+      "popular": "Most popular",
+      "basic": {
+        "name": "Basic",
+        "desc": "For small teams that need booking and basic tracking.",
+        "cta": "Get started"
+      },
+      "standard": {
+        "name": "Standard",
+        "desc": "For companies that value analytics, files and service tasks.",
+        "cta": "Choose"
+      },
+      "premium": {
+        "name": "Premium",
+        "desc": "Full access to all platform features without restrictions.",
+        "cta": "Choose"
+      },
+      "features": {
+        "booking": "Desk booking",
+        "catalog": "Resource catalog",
+        "map": "Building map",
+        "dashboard": "Basic dashboard",
+        "email": "Email notifications",
+        "allBasic": "Everything in Basic",
+        "storage50": "50 GB storage",
+        "crmBoards": "CRM boards",
+        "analyticsCompany": "Company analytics",
+        "csvExport": "CSV export",
+        "guestPasses": "Guest passes",
+        "allStandard": "Everything in Standard",
+        "guestAnalytics": "Guest analytics",
+        "unlimitedStorage": "Unlimited storage",
+        "employeeExport": "Employee export",
+        "pdfReports": "PDF reports",
+        "slaSupport": "SLA support"
+      },
+      "locked": {
+        "storage": "Storage",
+        "crm": "CRM tasks",
+        "guests": "Guest visits",
+        "analytics": "Company analytics",
+        "export": "Report export",
+        "guestAnalytics": "Guest visits (analytics)",
+        "employeeExport": "Employee list export"
+      }
+    },
+    "mock": {
+      "analytics": {
+        "title": "BC Analytics",
+        "companies": "Companies",
+        "users": "Users",
+        "bookingsToday": "Bookings today",
+        "requests": "Requests",
+        "loadByDay": "Load by day",
+        "days": ["Mo","Tu","We","Th","Fr","Sa","Su"]
+      },
+      "guest": {
+        "title": "Guest Passes",
+        "todayCount": "3 guests today",
+        "inside": "Inside",
+        "waiting": "Waiting",
+        "scheduled": "Scheduled",
+        "qrPass": "QR Pass #G-2847",
+        "qrValid": "Valid until 18:00 · June 15"
+      },
+      "booking": {
+        "title": "Resource Catalog",
+        "tabs": ["All","Desks","Rooms"],
+        "typeRoom": "Meeting Room",
+        "typeDesk": "Workspace",
+        "typeParking": "Parking Spot",
+        "typeCapsule": "Focus Pod",
+        "free": "Free",
+        "busy": "Busy",
+        "soon": "Soon"
+      },
+      "crm": {
+        "title": "CRM · Service Tasks",
+        "new": "New",
+        "inProgress": "In Progress",
+        "done": "Done",
+        "items0": ["Meeting Rooms A-wing","Elevator maintenance"],
+        "items1": ["Floor 3 cleaning","Filter replacement"],
+        "items2": ["Chair repair","Internet room 12"]
+      }
+    },
+    "cta": {
+      "title": "Ready to digitize your business center?",
+      "subtitle": "Sign in or leave a request — we will connect you within one business day.",
+      "btn": "Sign in to platform →"
+    },
+    "footer": {
+      "rights": "© 2026 New Level Hub · All rights reserved",
+      "policy": "Privacy",
+      "terms": "Terms",
+      "support": "Support"
+    },
     "slides": [
       {
         "title": "Office in one interface",
