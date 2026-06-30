@@ -13,6 +13,8 @@ import {
   Check,
   Minus,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { BulkActionBar } from '@/shared/ui/BulkActionBar';
 
@@ -29,6 +31,9 @@ import type { CompanyInvitation, CompanyMember, PaginatedResponse } from '@/shar
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
+const STAFF_PAGE_SIZE = 20;
+const INV_PAGE_SIZE = 10;
+
 const AVATAR_COLORS = [
   '#10b981', '#6366f1', '#f59e0b', '#84cc16', '#0ea5e9',
   '#ec4899', '#475569', '#7c3aed', '#0e7490', '#dc2626',
@@ -38,7 +43,7 @@ const inputClass =
   'mt-1 w-full rounded-lg border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2 text-sm text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20';
 const labelClass = 'block text-sm font-medium text-[color:var(--text-secondary)]';
 const btnPrimary =
-  'inline-flex items-center justify-center gap-2 rounded-lg bg-[color:var(--brand)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50 transition-opacity';
+  'inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity disabled:opacity-50';
 const btnGhost =
   'inline-flex items-center justify-center w-7 h-7 rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] disabled:opacity-40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand)]/50';
 
@@ -101,6 +106,8 @@ export default function BuildingStaffPage() {
 
   const [roleFilter, setRoleFilter] = useState<UserRole | ''>('');
   const [search, setSearch] = useState('');
+  const [staffPage, setStaffPage] = useState(1);
+  const [invPage, setInvPage] = useState(1);
 
   // ── Per-row action targets ─────────────────────────────────────────────────
   const [blockTarget, setBlockTarget] = useState<CompanyMember | null>(null);
@@ -114,8 +121,14 @@ export default function BuildingStaffPage() {
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const [bulkActionPending, setBulkActionPending] = useState(false);
 
+  // ── Tab state ──────────────────────────────────────────────────────────────
+  const [tab, setTab] = useState<'staff' | 'invites'>('staff');
+
+  // ── Invite filter state ────────────────────────────────────────────────────
+  type InviteFilter = 'all' | 'pending' | 'accepted' | 'expired' | 'revoked';
+  const [invFilter, setInvFilter] = useState<InviteFilter>('all');
+
   // ── Invite form state ──────────────────────────────────────────────────────
-  const [inviteOpen, setInviteOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<UserRole>(USER_ROLES.SERVICE_MANAGER);
   const [formError, setFormError] = useState('');
@@ -123,28 +136,41 @@ export default function BuildingStaffPage() {
   // ── Queries ────────────────────────────────────────────────────────────────
 
   const staffQuery = useQuery({
-    queryKey: ['building-staff', { role: roleFilter, search }],
+    queryKey: ['building-staff', { role: roleFilter, search, page: staffPage }],
     queryFn: () =>
       apiClient
         .get<PaginatedResponse<CompanyMember>>(API.companies.buildingStaff, {
           params: {
             ...(roleFilter ? { role: roleFilter } : {}),
             ...(search.trim() ? { search: search.trim() } : {}),
+            page: staffPage,
+            page_size: STAFF_PAGE_SIZE,
           },
         })
         .then((r) => r.data),
+    placeholderData: (prev) => prev,
   });
 
   const invitesQuery = useQuery({
-    queryKey: ['building-invitations'],
+    queryKey: ['building-invitations', { page: invPage, filter: invFilter }],
     queryFn: () =>
       apiClient
-        .get<PaginatedResponse<CompanyInvitation>>(API.companies.buildingInvitations)
+        .get<PaginatedResponse<CompanyInvitation>>(API.companies.buildingInvitations, {
+          params: {
+            ...(invFilter !== 'all' ? { status: invFilter } : {}),
+            page: invPage,
+            page_size: INV_PAGE_SIZE,
+          },
+        })
         .then((r) => r.data),
+    placeholderData: (prev) => prev,
   });
 
   const staff = staffQuery.data?.results ?? [];
   const invites = invitesQuery.data?.results ?? [];
+
+  // Reset staffPage when filters change
+  useEffect(() => { setStaffPage(1); }, [roleFilter, search]);
 
   // Reset selection when staff list changes (filter / search change)
   useEffect(() => {
@@ -178,7 +204,6 @@ export default function BuildingStaffPage() {
     onSuccess: () => {
       setEmail('');
       setInviteRole(USER_ROLES.SERVICE_MANAGER);
-      setInviteOpen(false);
       setFormError('');
       void queryClient.invalidateQueries({ queryKey: ['building-invitations'] });
     },
@@ -295,6 +320,11 @@ export default function BuildingStaffPage() {
     createInvite.mutate({ email: email.trim().toLowerCase(), role: inviteRole });
   }
 
+  function handleInvFilterChange(f: InviteFilter) {
+    setInvFilter(f);
+    setInvPage(1);
+  }
+
   // ── Role filter chips ──────────────────────────────────────────────────────
 
   const roleChips: { value: UserRole | ''; labelKey: string }[] = [
@@ -315,7 +345,7 @@ export default function BuildingStaffPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-5xl space-y-8 p-6">
+    <div className="space-y-5 p-6">
 
       {/* Page header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -330,7 +360,7 @@ export default function BuildingStaffPage() {
         <button
           type="button"
           onClick={() => {
-            setInviteOpen((v) => !v);
+            setTab('invites');
             setFormError('');
           }}
           className={btnPrimary}
@@ -339,66 +369,6 @@ export default function BuildingStaffPage() {
           {t('buildingStaff.invite')}
         </button>
       </div>
-
-      {/* Invite form */}
-      {inviteOpen && (
-        <section className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-6 shadow-[var(--shadow-card)]">
-          <h2 className="text-base font-semibold text-[color:var(--text-primary)]">
-            {t('buildingStaff.newInvite')}
-          </h2>
-          <form onSubmit={onInviteSubmit} className="mt-4 max-w-md space-y-4">
-            {formError && (
-              <div className="rounded-lg border border-red-200 dark:border-red-900/40 bg-[color:var(--status-busy-bg)] px-3 py-2 text-sm text-[color:var(--danger)]">
-                {formError}
-              </div>
-            )}
-            <div>
-              <label htmlFor="bs-email" className={labelClass}>
-                {t('buildingStaff.colEmail')}
-              </label>
-              <input
-                id="bs-email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={inputClass}
-                placeholder={t('buildingStaff.emailPlaceholder')}
-                autoComplete="off"
-              />
-            </div>
-            <div>
-              <label htmlFor="bs-role" className={labelClass}>
-                {t('buildingStaff.colRole')}
-              </label>
-              <select
-                id="bs-role"
-                value={inviteRole}
-                onChange={(e) => setInviteRole(e.target.value as UserRole)}
-                className={inputClass}
-              >
-                {buildingInviteRoles.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {t(o.labelKey)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-3">
-              <button type="submit" disabled={createInvite.isPending} className={btnPrimary}>
-                {createInvite.isPending ? t('buildingStaff.sending') : t('buildingStaff.sendInvite')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setInviteOpen(false)}
-                className="rounded-lg border border-[color:var(--border)] px-4 py-2 text-sm text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors"
-              >
-                {t('common.cancel')}
-              </button>
-            </div>
-          </form>
-        </section>
-      )}
 
       {/* Action error banner */}
       {actionError && (
@@ -410,12 +380,48 @@ export default function BuildingStaffPage() {
         </div>
       )}
 
-      {/* ── Staff section ──────────────────────────────────────────────── */}
-      <section>
-        <h2 className="mb-3 text-base font-semibold text-[color:var(--text-primary)]">
-          {t('buildingStaff.staffSection')}
-        </h2>
+      {/* Tabs */}
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 0 }}>
+        {[
+          { id: 'staff' as const,   label: t('buildingStaff.staffSection'),   count: staffQuery.data?.count ?? staff.length },
+          { id: 'invites' as const, label: t('buildingStaff.invitesSection'), count: invitesQuery.data?.count ?? invites.length },
+        ].map((tb) => (
+          <button
+            key={tb.id}
+            type="button"
+            onClick={() => setTab(tb.id)}
+            style={{
+              padding: '8px 16px',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontSize: 13,
+              fontWeight: tab === tb.id ? 600 : 400,
+              color: tab === tb.id ? 'var(--text-primary)' : 'var(--text-muted)',
+              borderBottom: tab === tb.id ? '2px solid var(--brand)' : '2px solid transparent',
+              marginBottom: -1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            {tb.label}
+            {tb.count > 0 && (
+              <span style={{
+                fontSize: 11, fontWeight: 600, padding: '1px 6px', borderRadius: 4,
+                background: 'var(--bg-raised)', color: 'var(--text-secondary)',
+              }}>
+                {tb.count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
 
+      {/* ── Staff section ──────────────────────────────────────────────── */}
+      {tab === 'staff' && (
+      <section className="pt-4">
         <div className="bg-[color:var(--bg-surface)] border border-[color:var(--border)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
 
           {/* Filter bar */}
@@ -458,12 +464,36 @@ export default function BuildingStaffPage() {
               ))}
             </div>
 
-            {/* Pagination / count (right) */}
-            {!staffQuery.isLoading && (staffQuery.data?.count ?? 0) > 0 && (
-              <div className="ml-auto text-[12px] text-[color:var(--text-muted)]">
-                {staffQuery.data?.count ?? 0}
-              </div>
-            )}
+            {/* Pagination — pushed to right */}
+            {(staffQuery.data?.count ?? 0) > 0 && (() => {
+              const total = staffQuery.data?.count ?? 0;
+              const totalPages = Math.max(1, Math.ceil(total / STAFF_PAGE_SIZE));
+              const rangeStart = (staffPage - 1) * STAFF_PAGE_SIZE + 1;
+              const rangeEnd = Math.min(staffPage * STAFF_PAGE_SIZE, total);
+              return (
+                <div className="ml-auto flex items-center gap-1.5 text-[12px] text-[color:var(--text-muted)]">
+                  <span>{rangeStart}–{rangeEnd} {t('common.of')} {total}</span>
+                  <button
+                    type="button"
+                    disabled={staffPage <= 1}
+                    onClick={() => setStaffPage((p) => Math.max(1, p - 1))}
+                    aria-label={t('common.previousPage')}
+                    className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={staffPage >= totalPages}
+                    onClick={() => setStaffPage((p) => Math.min(totalPages, p + 1))}
+                    aria-label={t('common.nextPage')}
+                    className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Bulk action bar */}
@@ -493,7 +523,7 @@ export default function BuildingStaffPage() {
           )}
 
           {/* Table */}
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" aria-live="polite" aria-busy={staffQuery.isFetching}>
             <table
               className="w-full min-w-[700px] border-collapse text-[13px]"
               role="table"
@@ -711,120 +741,264 @@ export default function BuildingStaffPage() {
               </tbody>
             </table>
           </div>
+
         </div>
       </section>
+      )}
 
       {/* ── Invites section ────────────────────────────────────────────── */}
-      <section>
-        <h2 className="mb-3 text-base font-semibold text-[color:var(--text-primary)]">
-          {t('buildingStaff.invitesSection')}
-        </h2>
-
-        <div className="bg-[color:var(--bg-surface)] border border-[color:var(--border)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] overflow-hidden">
-          <div className="overflow-x-auto">
-            <table
-              className="w-full min-w-[600px] border-collapse text-[13px]"
-              role="table"
-              aria-label={t('buildingStaff.invitesSection')}
-            >
-              <thead>
-                <tr className="border-b border-[color:var(--border)]">
-                  <th scope="col" className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
-                    {t('buildingStaff.colEmail')}
-                  </th>
-                  <th scope="col" className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
-                    {t('buildingStaff.colRole')}
-                  </th>
-                  <th scope="col" className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
-                    {t('buildingStaff.colInviteStatus')}
-                  </th>
-                  <th scope="col" className="px-3 py-2 text-left text-[11px] font-medium text-[color:var(--text-muted)] whitespace-nowrap">
-                    {t('buildingStaff.colExpires')}
-                  </th>
-                  <th scope="col" className="px-3 py-2 w-20">
-                    <span className="sr-only">{t('common.actions')}</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {invitesQuery.isLoading ? (
-                  Array.from({ length: 3 }).map((_, i) => <InviteSkeletonRow key={i} />)
-                ) : invites.length === 0 ? (
-                  <tr>
-                    <td colSpan={inviteColCount} className="py-16 text-center">
-                      <div className="flex flex-col items-center gap-2">
-                        <MailPlus className="h-8 w-8 text-[color:var(--text-muted)]" aria-hidden="true" />
-                        <p className="text-[13px] text-[color:var(--text-secondary)]">
-                          {t('buildingStaff.noInvites')}
-                        </p>
+      {tab === 'invites' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 16, alignItems: 'start', paddingTop: 16 }}>
+          {/* ── Invite form panel ── */}
+          <div style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 14,
+          }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>
+              {t('buildingStaff.newInvite')}
+            </div>
+            <form onSubmit={onInviteSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {formError && (
+                <div role="alert" style={{
+                  padding: '8px 12px', borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--danger)', background: 'var(--danger-bg)',
+                  color: 'var(--danger)', fontSize: 13,
+                }}>
+                  {formError}
+                </div>
+              )}
+              {/* Email */}
+              <div>
+                <label htmlFor="bs-email" style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>
+                  {t('buildingStaff.colEmail')}
+                </label>
+                <input
+                  id="bs-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t('buildingStaff.emailPlaceholder')}
+                  autoComplete="off"
+                  style={{
+                    width: '100%', boxSizing: 'border-box', height: 36, padding: '0 12px',
+                    borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
+                    background: 'var(--bg-surface)', color: 'var(--text-primary)',
+                    fontSize: 13, outline: 'none', fontFamily: 'inherit',
+                  }}
+                />
+              </div>
+              {/* Role radio cards */}
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>
+                  {t('buildingStaff.colRole')}
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {buildingInviteRoles.map((opt) => (
+                    <label
+                      key={opt.value}
+                      style={{
+                        display: 'flex', alignItems: 'flex-start', gap: 10,
+                        padding: '8px 10px', borderRadius: 8, cursor: 'pointer',
+                        border: inviteRole === opt.value ? '1.5px solid var(--brand)' : '1px solid var(--border)',
+                        background: inviteRole === opt.value ? 'var(--brand-subtle)' : 'var(--bg-surface)',
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="invite-role"
+                        value={opt.value}
+                        checked={inviteRole === opt.value}
+                        onChange={() => setInviteRole(opt.value)}
+                        style={{ marginTop: 3, accentColor: 'var(--brand)' }}
+                      />
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
+                          {t(opt.labelKey)}
+                        </div>
+                        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+                          {opt.value === USER_ROLES.RECEPTION
+                            ? t('buildingStaff.roleReceptionDesc')
+                            : t('buildingStaff.roleServiceManagerDesc')}
+                        </div>
                       </div>
-                    </td>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={createInvite.isPending}
+                style={{
+                  width: '100%', height: 34, borderRadius: 'var(--radius-sm)',
+                  border: 'none', background: 'var(--brand)', color: 'var(--text-on-brand)',
+                  fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+                  opacity: createInvite.isPending ? 0.6 : 1,
+                }}
+              >
+                {createInvite.isPending ? t('buildingStaff.sending') : t('buildingStaff.sendInvite')}
+              </button>
+            </form>
+          </div>
+
+          {/* ── Invites table ── */}
+          <div style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            boxShadow: 'var(--shadow-card)',
+            overflow: 'hidden',
+          }}>
+            {/* toolbar */}
+            <div style={{
+              padding: '10px 14px',
+              borderBottom: '1px solid var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              flexWrap: 'wrap',
+            }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+                {t('buildingStaff.invitesSection')}
+              </span>
+              {/* Filter chips */}
+              {([
+                { value: 'all', labelKey: 'buildingStaff.filterAll' },
+                { value: 'pending', labelKey: 'buildingStaff.filterPending' },
+                { value: 'accepted', labelKey: 'buildingStaff.filterAccepted' },
+                { value: 'expired', labelKey: 'buildingStaff.filterExpired' },
+                { value: 'revoked', labelKey: 'buildingStaff.filterRevoked' },
+              ] as { value: InviteFilter; labelKey: string }[]).map((chip) => (
+                <button
+                  key={chip.value}
+                  type="button"
+                  onClick={() => handleInvFilterChange(chip.value)}
+                  className={cn(
+                    'inline-flex items-center px-2.5 py-1 text-[12px] rounded-full transition-colors cursor-pointer',
+                    invFilter === chip.value
+                      ? 'border-transparent bg-[color:var(--brand-subtle)] text-[color:var(--brand-text)]'
+                      : 'border border-[color:var(--border)] text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)]',
+                  )}
+                >
+                  {t(chip.labelKey)}
+                </button>
+              ))}
+              {/* Pagination — pushed to right */}
+              {(invitesQuery.data?.count ?? 0) > 0 && (() => {
+                const total = invitesQuery.data?.count ?? 0;
+                const totalPages = Math.max(1, Math.ceil(total / INV_PAGE_SIZE));
+                const rangeStart = (invPage - 1) * INV_PAGE_SIZE + 1;
+                const rangeEnd = Math.min(invPage * INV_PAGE_SIZE, total);
+                return (
+                  <div className="ml-auto flex items-center gap-1.5 text-[12px] text-[color:var(--text-muted)]">
+                    <span>{rangeStart}–{rangeEnd} {t('common.of')} {total}</span>
+                    <button
+                      type="button"
+                      disabled={invPage <= 1}
+                      onClick={() => setInvPage((p) => Math.max(1, p - 1))}
+                      aria-label={t('common.previousPage')}
+                      className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={invPage >= totalPages}
+                      onClick={() => setInvPage((p) => Math.min(totalPages, p + 1))}
+                      aria-label={t('common.nextPage')}
+                      className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                );
+              })()}
+            </div>
+            <div style={{ overflowX: 'auto' }} aria-live="polite" aria-busy={invitesQuery.isFetching}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    {['buildingStaff.colEmail', 'buildingStaff.colRole', 'buildingStaff.colInviteStatus', 'buildingStaff.colExpires'].map((k) => (
+                      <th key={k} style={{ textAlign: 'left', fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', padding: '8px 12px', whiteSpace: 'nowrap' }}>
+                        {t(k)}
+                      </th>
+                    ))}
+                    <th style={{ width: 80 }}><span className="sr-only">{t('common.actions')}</span></th>
                   </tr>
-                ) : (
-                  invites.map((inv) => {
-                    const roleLabelKey = USER_ROLE_LABEL_KEYS[inv.role as UserRole];
-                    return (
-                      <tr
-                        key={inv.id}
-                        className="border-b border-[color:var(--border)] hover:bg-[color:var(--bg-hover)] transition-colors"
-                      >
-                        {/* Email */}
-                        <td className="px-3 py-2.5 align-middle font-medium text-[color:var(--text-primary)]">
-                          {inv.email}
-                        </td>
+                </thead>
+                <tbody>
+                  {invitesQuery.isLoading ? (
+                    Array.from({ length: 3 }).map((_, i) => <InviteSkeletonRow key={i} />)
+                  ) : invites.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)' }}>
+                        <div style={{ fontSize: 28, marginBottom: 8 }}>✉️</div>
+                        <div style={{ fontSize: 13, fontWeight: 500 }}>{t('buildingStaff.noInvites')}</div>
+                      </td>
+                    </tr>
+                  ) : (
+                    invites.map((inv) => {
+                      const roleLabelKey = USER_ROLE_LABEL_KEYS[inv.role as UserRole];
+                      return (
+                        <tr
+                          key={inv.id}
+                          style={{ borderBottom: '1px solid var(--border)' }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--bg-hover)'; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = ''; }}
+                        >
+                          <td style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', verticalAlign: 'middle' }}>
+                            {inv.email}
+                          </td>
+                          <td style={{ padding: '10px 12px', verticalAlign: 'middle' }}>
+                            <RoleBadge role={inv.role as UserRole} labelKey={roleLabelKey} />
+                          </td>
+                          <td style={{ padding: '10px 12px', verticalAlign: 'middle' }}>
+                            <InviteStatusBadge invite={inv} />
+                          </td>
+                          <td style={{ padding: '10px 12px', fontSize: 12, color: inv.status === 'expired' ? 'var(--danger)' : 'var(--text-muted)', verticalAlign: 'middle' }}>
+                            {fmtDateTime(inv.expires_at)}
+                          </td>
+                          <td style={{ padding: '10px 12px', verticalAlign: 'middle' }}>
+                            <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                              <button
+                                type="button"
+                                disabled={inv.status !== 'pending' || resendInvite.isPending}
+                                onClick={() => resendInvite.mutate(inv.id)}
+                                title={t('buildingStaff.resendInvite')}
+                                className={btnGhost}
+                              >
+                                <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+                                <span className="sr-only">{t('buildingStaff.resendInvite')}</span>
+                              </button>
+                              <button
+                                type="button"
+                                disabled={inv.status !== 'pending' || revokeInvite.isPending}
+                                onClick={() => revokeInvite.mutate(inv.id)}
+                                title={t('buildingStaff.revokeInvite')}
+                                className={cn(btnGhost, 'hover:text-[color:var(--danger)] hover:bg-[color:var(--status-busy-bg)]')}
+                              >
+                                <Ban className="h-3.5 w-3.5" aria-hidden="true" />
+                                <span className="sr-only">{t('buildingStaff.revokeInvite')}</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-                        {/* Role badge */}
-                        <td className="px-3 py-2.5 align-middle">
-                          <RoleBadge role={inv.role as UserRole} labelKey={roleLabelKey} />
-                        </td>
-
-                        {/* Invite status badge */}
-                        <td className="px-3 py-2.5 align-middle">
-                          <InviteStatusBadge invite={inv} />
-                        </td>
-
-                        {/* Expires at */}
-                        <td className="px-3 py-2.5 align-middle text-[12px] text-[color:var(--text-muted)]">
-                          {fmtDateTime(inv.expires_at)}
-                        </td>
-
-                        {/* Actions */}
-                        <td className="px-3 py-2.5 align-middle">
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              disabled={inv.is_used || resendInvite.isPending}
-                              onClick={() => resendInvite.mutate(inv.id)}
-                              title={t('buildingStaff.resendInvite')}
-                              className={btnGhost}
-                            >
-                              <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
-                              <span className="sr-only">{t('buildingStaff.resendInvite')}</span>
-                            </button>
-                            <button
-                              type="button"
-                              disabled={inv.is_used || revokeInvite.isPending}
-                              onClick={() => revokeInvite.mutate(inv.id)}
-                              title={t('buildingStaff.revokeInvite')}
-                              className={cn(
-                                btnGhost,
-                                'hover:text-[color:var(--danger)] hover:bg-[color:var(--status-busy-bg)]',
-                              )}
-                            >
-                              <Ban className="h-3.5 w-3.5" aria-hidden="true" />
-                              <span className="sr-only">{t('buildingStaff.revokeInvite')}</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
           </div>
         </div>
-      </section>
+      )}
 
       {/* ── Confirm modals ─────────────────────────────────────────────── */}
 
@@ -931,27 +1105,39 @@ function RoleBadge({ role, labelKey }: { role: UserRole; labelKey?: string }) {
 
 function InviteStatusBadge({ invite }: { invite: CompanyInvitation }) {
   const { t } = useTranslation();
-
-  if (invite.is_used) {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[color:var(--status-na-bg)] text-[color:var(--status-na-text)]">
-        <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" aria-hidden="true" />
-        {t('buildingStaff.statusUsed')}
-      </span>
-    );
+  switch (invite.status) {
+    case 'pending':
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+          <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" aria-hidden="true" />
+          {t('buildingStaff.statusPending')}
+        </span>
+      );
+    case 'accepted':
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[color:var(--brand-subtle)] text-[color:var(--brand-text)]">
+          <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" aria-hidden="true" />
+          {t('buildingStaff.statusAccepted')}
+        </span>
+      );
+    case 'expired':
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[color:var(--status-na-bg)] text-[color:var(--status-na-text)]">
+          {t('buildingStaff.statusExpired')}
+        </span>
+      );
+    case 'revoked':
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[color:var(--status-busy-bg)] text-[color:var(--status-busy-text)]">
+          {t('buildingStaff.statusRevoked')}
+        </span>
+      );
+    default:
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[color:var(--status-free-bg)] text-[color:var(--status-free-text)]">
+          <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" aria-hidden="true" />
+          {t('buildingStaff.statusValid')}
+        </span>
+      );
   }
-  if (invite.is_expired) {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[color:var(--status-busy-bg)] text-[color:var(--status-busy-text)]">
-        <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" aria-hidden="true" />
-        {t('buildingStaff.statusExpired')}
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[color:var(--status-free-bg)] text-[color:var(--status-free-text)]">
-      <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" aria-hidden="true" />
-      {t('buildingStaff.statusValid')}
-    </span>
-  );
 }
