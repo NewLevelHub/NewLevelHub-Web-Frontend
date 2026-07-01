@@ -145,12 +145,6 @@ export default function CompanyResourcesPage() {
           )}
           {t('companyHub.resourceStatusFree')}
         </button>
-
-        {totalCount > 0 && (
-          <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)' }}>
-            {totalCount}
-          </span>
-        )}
       </div>
 
       {/* Cards grid */}
