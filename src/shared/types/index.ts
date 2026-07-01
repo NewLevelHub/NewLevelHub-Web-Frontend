@@ -278,6 +278,7 @@ export interface CompanyInvitation {
   is_valid: boolean;
   expires_at: string;
   created_at: string;
+  status: 'pending' | 'accepted' | 'expired' | 'revoked';
 }
 
 export interface InviteRegistrationPreview {
