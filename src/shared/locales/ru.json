@@ -2251,7 +2251,7 @@
     "templatesLoading": "Загрузка шаблонов...",
     "templatesError": "Не удалось загрузить шаблоны онбординга.",
     "noTemplates": "Шаблоны пока не созданы.",
-    "templateDefault": "По умолчанию",
+    "templateDefault": "По умолч.",
     "stepsCount": "{{count}} шаг",
     "stepsCountMany": "{{count}} шагов",
     "templateActive": "активный",
@@ -2310,7 +2310,8 @@
     "assignTemplateTitle": "Назначение шаблона",
     "assignTemplateSuccess": "Шаблон успешно назначен",
     "assignTemplateNote": "Примечание (необязательно)",
-    "assignTemplateSelectPlaceholder": "Выберите шаблон"
+    "assignTemplateSelectPlaceholder": "Выберите шаблон",
+    "reassignTemplate": "Переназначить"
   },
   "building": {
     "mapManage": "Управление картой",
