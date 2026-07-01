@@ -6,10 +6,13 @@ import { fmtDayMonth, fmtDateTime, fmtTime } from '@/shared/lib/formatDate';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ban, BookMarked, Calendar, CheckCircle2, ChevronLeft, ChevronRight, Info, MoreHorizontal, Repeat, X } from 'lucide-react';
+import { BulkActionBar } from '@/shared/ui/BulkActionBar';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { FilterSearchSelect } from '@/shared/ui/FilterSearchSelect';
+import { CancelBookingModal } from '@/pages/bookings/components/CancelBookingModal';
+import { BulkCancelModal } from '@/pages/bookings/components/BulkCancelModal';
 import {
   BOOKING_STATUSES,
   BOOKING_STATUS_LABEL_KEYS,
@@ -741,30 +744,19 @@ export default function ManageBookingsPage() {
 
         {/* Bulk action bar */}
         {selectedIds.size > 0 && (
-          <div className="flex items-center gap-3 mx-4 my-3 rounded-xl border border-[var(--brand)] bg-brand-subtle px-4 py-2.5 text-sm">
-            <span className="font-medium text-[var(--brand-text)]">
-              {t('resources.bulk.selectedCount', { count: selectedIds.size })}
-            </span>
-            <div className="ml-auto flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setSelectedIds(new Set())}
-                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-[var(--radius-sm)] border border-default bg-surface text-[12px] font-medium text-secondary hover:bg-hover transition-colors"
-              >
-                <X size={12} />
-                {t('resources.bulk.deselectAll')}
-              </button>
-              <button
-                type="button"
-                onClick={() => { setBulkCancelOpen(true); setBulkReason(''); setBulkCancelError(null); }}
-                className={cn(
-                  'inline-flex items-center gap-1.5 h-7 px-3 rounded-[var(--radius-sm)] bg-danger-subtle border border-[var(--danger)] text-[12px] font-medium text-danger hover:bg-[var(--danger)] hover:text-white transition-colors disabled:opacity-50',
-                )}
-              >
-                <Ban className="w-3 h-3 flex-shrink-0" />
-                {t('booking.manage.bulkCancelWithCount', { count: selectedIds.size })}
-              </button>
-            </div>
+          <div className="mx-4 my-3">
+            <BulkActionBar
+              selectedCount={selectedIds.size}
+              onClearSelection={() => setSelectedIds(new Set())}
+              actions={[
+                {
+                  label: t('booking.manage.bulkCancelWithCount', { count: selectedIds.size }),
+                  icon: <Ban className="w-3 h-3 flex-shrink-0" />,
+                  onClick: () => { setBulkCancelOpen(true); setBulkReason(''); setBulkCancelError(null); },
+                  variant: 'danger',
+                },
+              ]}
+            />
           </div>
         )}
 
@@ -934,67 +926,18 @@ export default function ManageBookingsPage() {
       </div>
 
       {/* Cancel Modal */}
-      {cancelTarget && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label={t('booking.manage.adminCancelTitle')}
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) closeCancelModal();
-          }}
-        >
-          <div
-            className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-4 sm:p-5 shadow-xl"
-          >
-            <h2 className="text-lg font-semibold text-[color:var(--text-primary)]">
-              {t('booking.manage.adminCancelTitle')}
-            </h2>
-            <p className="mt-1 text-sm text-[color:var(--text-muted)]">
-              #{cancelTarget.id} ({cancelTarget.resource_name}, {cancelTarget.booked_by?.full_name ?? cancelTarget.user_name})
-            </p>
-
-            <label className="mt-4 block text-sm text-[color:var(--text-secondary)]">
-              {t('booking.manage.cancelReasonLabel')}
-              <textarea
-                rows={3}
-                value={cancelReason}
-                onChange={(event) => {
-                  setCancelReason(event.target.value);
-                  if (cancelFormError) setCancelFormError(null);
-                }}
-                placeholder={t('booking.manage.cancelReasonPlaceholder')}
-                className="mt-1 w-full resize-none rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2 text-sm text-[color:var(--text-primary)]"
-              />
-            </label>
-
-            {cancelFormError && (
-              <p className="mt-2 text-sm text-[color:var(--status-busy-text)]" role="alert">
-                {cancelFormError}
-              </p>
-            )}
-
-            <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={closeCancelModal}
-                disabled={adminCancelMutation.isPending}
-                className="rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-4 py-2 text-sm font-medium text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-raised)] disabled:opacity-50"
-              >
-                {t('common.close')}
-              </button>
-              <button
-                type="button"
-                onClick={submitAdminCancel}
-                disabled={adminCancelMutation.isPending}
-                className="rounded-[var(--radius-sm)] bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
-              >
-                {adminCancelMutation.isPending ? t('common.saving') : t('booking.manage.confirmCancel')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CancelBookingModal
+        booking={cancelTarget}
+        reason={cancelReason}
+        error={cancelFormError}
+        isLoading={adminCancelMutation.isPending}
+        onClose={closeCancelModal}
+        onReasonChange={(value) => {
+          setCancelReason(value);
+          if (cancelFormError) setCancelFormError(null);
+        }}
+        onConfirm={submitAdminCancel}
+      />
 
       {/* Edit Modal */}
       {editTarget && (
@@ -1142,126 +1085,22 @@ export default function ManageBookingsPage() {
       )}
 
       {/* Bulk Cancel Modal */}
-      {bulkCancelOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="bulk-cancel-title"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget && !bulkCancelMutation.isPending) setBulkCancelOpen(false);
-          }}
-        >
-          <div className="w-full max-w-md rounded-2xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] shadow-xl overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center gap-3 px-5 pt-5 pb-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center">
-                <Ban className="w-5 h-5 text-rose-600" aria-hidden="true" />
-              </div>
-              <h2
-                id="bulk-cancel-title"
-                className="flex-1 text-[15px] font-semibold text-[color:var(--text-primary)] leading-tight"
-              >
-                {t('booking.manage.bulkCancelTitle', { count: selectedIds.size })}
-              </h2>
-              <button
-                type="button"
-                onClick={() => { if (!bulkCancelMutation.isPending) setBulkCancelOpen(false); }}
-                disabled={bulkCancelMutation.isPending}
-                className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)] transition-colors disabled:opacity-50"
-                aria-label={t('common.close')}
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="px-5 pb-5 space-y-4">
-              {/* Amber warning callout */}
-              <div
-                className={cn(
-                  'flex items-start gap-2 px-3 py-2.5 rounded-[var(--radius-sm)]',
-                  'bg-[color:var(--status-soon-bg)] border border-[color:var(--status-soon-text)]/20',
-                )}
-                role="note"
-              >
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="flex-shrink-0 mt-px text-[color:var(--status-soon-text)]" aria-hidden="true">
-                  <path d="M7 1.5L12.5 11.5H1.5L7 1.5Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round"/>
-                  <path d="M7 5.5V8" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
-                  <circle cx="7" cy="9.75" r="0.5" fill="currentColor"/>
-                </svg>
-                <p className="text-[12px] text-[color:var(--status-soon-text)] leading-relaxed">
-                  {t('booking.manage.bulkCancelWarning')}
-                </p>
-              </div>
-
-              {/* Reason textarea */}
-              <label className="block">
-                <span className="block text-[13px] font-medium text-[color:var(--text-secondary)] mb-1.5">
-                  {t('booking.manage.cancelReasonRequired2')}
-                </span>
-                <textarea
-                  rows={3}
-                  value={bulkReason}
-                  onChange={(e) => { setBulkReason(e.target.value); if (bulkCancelError) setBulkCancelError(null); }}
-                  placeholder={t('booking.manage.cancelReasonPlaceholder')}
-                  autoFocus
-                  className={cn(
-                    'w-full resize-none rounded-[var(--radius-sm)] border px-3 py-2 text-[13px]',
-                    'bg-[color:var(--bg-surface)] text-[color:var(--text-primary)]',
-                    'focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)]/25 focus:border-[color:var(--brand)]',
-                    'transition-colors',
-                    bulkCancelError ? 'border-rose-400' : 'border-[color:var(--border)]',
-                  )}
-                />
-              </label>
-
-              {bulkCancelError && (
-                <p className="text-[12px] text-[color:var(--status-busy-text)]" role="alert">{bulkCancelError}</p>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-[color:var(--border)] bg-[color:var(--bg-raised)]">
-              <button
-                type="button"
-                onClick={() => setBulkCancelOpen(false)}
-                disabled={bulkCancelMutation.isPending}
-                className={cn(
-                  'inline-flex items-center h-8 px-3.5 text-[13px] font-medium rounded-[var(--radius-sm)]',
-                  'border border-[color:var(--border)] bg-[color:var(--bg-surface)]',
-                  'text-[color:var(--text-secondary)] hover:bg-[color:var(--bg-hover)] transition-colors',
-                  'disabled:opacity-50 disabled:cursor-not-allowed',
-                )}
-              >
-                {t('common.close')}
-              </button>
-              <button
-                type="button"
-                disabled={bulkCancelMutation.isPending || !bulkReason.trim()}
-                onClick={() => {
-                  if (!bulkReason.trim()) { setBulkCancelError(t('booking.manage.cancelReasonRequired')); return; }
-                  bulkCancelMutation.mutate({ bookingIds: Array.from(selectedIds), reason: bulkReason.trim() });
-                }}
-                className={cn(
-                  'inline-flex items-center gap-1.5 h-8 px-3.5 text-[13px] font-medium rounded-[var(--radius-sm)]',
-                  'bg-rose-600 text-white hover:bg-rose-700 transition-colors',
-                  'disabled:opacity-50 disabled:cursor-not-allowed',
-                )}
-              >
-                {bulkCancelMutation.isPending ? (
-                  <span className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" aria-hidden="true" />
-                ) : (
-                  <Ban className="w-3.5 h-3.5" aria-hidden="true" />
-                )}
-                {bulkCancelMutation.isPending
-                  ? t('common.saving')
-                  : t('booking.manage.bulkCancelWithCount', { count: selectedIds.size })}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <BulkCancelModal
+        open={bulkCancelOpen}
+        count={selectedIds.size}
+        reason={bulkReason}
+        error={bulkCancelError}
+        isLoading={bulkCancelMutation.isPending}
+        onClose={() => { if (!bulkCancelMutation.isPending) setBulkCancelOpen(false); }}
+        onReasonChange={(value) => {
+          setBulkReason(value);
+          if (bulkCancelError) setBulkCancelError(null);
+        }}
+        onConfirm={() => {
+          if (!bulkReason.trim()) { setBulkCancelError(t('booking.manage.cancelReasonRequired')); return; }
+          bulkCancelMutation.mutate({ bookingIds: Array.from(selectedIds), reason: bulkReason.trim() });
+        }}
+      />
 
       {openActionsId !== null && dropdownCoords && (() => {
         const booking = rows.find((b) => b.id === openActionsId);

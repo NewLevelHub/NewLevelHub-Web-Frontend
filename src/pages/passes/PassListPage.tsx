@@ -1,17 +1,19 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { useNavigate } from 'react-router';
 
 import { PASS_STATUSES, PASS_STATUS_LABEL_KEYS } from '@/shared/config/constants';
 import { fmtDate } from '@/shared/lib/formatDate';
 import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
+import { Button } from '@/shared/ui/Button';
 import { PassQRPanel } from '@/pages/passes/components/PassQRPanel';
 import { PassStatusBadge } from '@/pages/passes/components/PassStatusBadge';
 import { useAccessLogs } from '@/pages/passes/hooks/useAccessLogs';
 
 export default function PassListPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [selectedPassId, setSelectedPassId] = useState<number | null>(null);
 
   const {
@@ -51,21 +53,25 @@ export default function PassListPage() {
         </div>
         <div className="flex items-center gap-2">
           {isAdminView && (
-            <button
+            <Button
               type="button"
+              variant="primary"
+              size="md"
               onClick={handleExport}
               disabled={isExporting}
-              className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
+              loading={isExporting}
             >
               {isExporting ? t('common.exportingPlain') : t('common.exportCsv')}
-            </button>
+            </Button>
           )}
-          <Link
-            to="/passes/new"
-            className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
+          <Button
+            type="button"
+            variant="primary"
+            size="md"
+            onClick={() => navigate('/passes/new')}
           >
             {t('passes.create')}
-          </Link>
+          </Button>
         </div>
       </div>
 
@@ -145,26 +151,26 @@ export default function PassListPage() {
         <div className="space-y-4">
           <div className="overflow-hidden rounded-xl border border-default bg-raised">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[700px] divide-y divide-[color:var(--border)] text-sm">
-                <thead className="bg-surface text-left text-secondary">
-                  <tr>
-                    <th className="px-4 py-3">{t('passes.columnGuest')}</th>
-                    <th className="px-4 py-3">{t('common.company')}</th>
-                    <th className="px-4 py-3">{t('passes.columnCreatedBy')}</th>
-                    <th className="px-4 py-3">{t('passes.columnPeriod')}</th>
-                    <th className="px-4 py-3">{t('common.status')}</th>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <th style={{ textAlign: 'left', fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', padding: '8px 12px', whiteSpace: 'nowrap' }}>{t('passes.columnGuest')}</th>
+                    <th style={{ textAlign: 'left', fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', padding: '8px 12px', whiteSpace: 'nowrap' }}>{t('common.company')}</th>
+                    <th style={{ textAlign: 'left', fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', padding: '8px 12px', whiteSpace: 'nowrap' }}>{t('passes.columnCreatedBy')}</th>
+                    <th style={{ textAlign: 'left', fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', padding: '8px 12px', whiteSpace: 'nowrap' }}>{t('passes.columnPeriod')}</th>
+                    <th style={{ textAlign: 'left', fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', padding: '8px 12px', whiteSpace: 'nowrap' }}>{t('common.status')}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[color:var(--border)]">
+                <tbody>
                   {isLoading ? (
                     <tr>
-                      <td className="px-4 py-6 text-center text-secondary" colSpan={5}>
+                      <td style={{ padding: '24px 12px', fontSize: 13, color: 'var(--text-primary)', verticalAlign: 'middle', textAlign: 'center' }} colSpan={5}>
                         {t('access.loadingLog')}
                       </td>
                     </tr>
                   ) : passes.length === 0 ? (
                     <tr>
-                      <td className="px-4 py-6 text-center text-secondary" colSpan={5}>
+                      <td style={{ padding: '24px 12px', fontSize: 13, color: 'var(--text-primary)', verticalAlign: 'middle', textAlign: 'center' }} colSpan={5}>
                         {t('access.noResults')}
                       </td>
                     </tr>
@@ -175,23 +181,30 @@ export default function PassListPage() {
                         <tr
                           key={pass.id}
                           onClick={() => setSelectedPassId(isSelected ? null : pass.id)}
-                          className={cn(
-                            'cursor-pointer text-secondary transition-colors hover:bg-hover/40',
-                            isSelected && 'bg-[color:var(--bg-active)]',
-                          )}
+                          style={{
+                            borderBottom: '1px solid var(--border)',
+                            background: isSelected ? 'var(--bg-active)' : undefined,
+                            cursor: 'pointer',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSelected) (e.currentTarget as HTMLTableRowElement).style.background = 'var(--bg-hover)';
+                          }}
+                          onMouseLeave={(e) => {
+                            (e.currentTarget as HTMLTableRowElement).style.background = isSelected ? 'var(--bg-active)' : '';
+                          }}
                         >
-                          <td className="px-4 py-3 align-top">
-                            <div className="font-medium text-primary">{pass.guest_name}</div>
-                            <div className="text-xs text-secondary">{pass.guest_email}</div>
+                          <td style={{ padding: '10px 12px', fontSize: 13, color: 'var(--text-primary)', verticalAlign: 'middle' }}>
+                            <div style={{ fontWeight: 500 }}>{pass.guest_name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{pass.guest_email}</div>
                           </td>
-                          <td className="px-4 py-3 align-top">
+                          <td style={{ padding: '10px 12px', fontSize: 13, color: 'var(--text-primary)', verticalAlign: 'middle' }}>
                             {pass.created_by_company_name ?? '—'}
                           </td>
-                          <td className="px-4 py-3 align-top">{pass.created_by_name}</td>
-                          <td className="px-4 py-3 align-top whitespace-nowrap">
+                          <td style={{ padding: '10px 12px', fontSize: 13, color: 'var(--text-primary)', verticalAlign: 'middle' }}>{pass.created_by_name}</td>
+                          <td style={{ padding: '10px 12px', fontSize: 13, color: 'var(--text-primary)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                             {fmtDate(pass.valid_from)} — {fmtDate(pass.valid_until)}
                           </td>
-                          <td className="px-4 py-3 align-top">
+                          <td style={{ padding: '10px 12px', fontSize: 13, color: 'var(--text-primary)', verticalAlign: 'middle' }}>
                             <PassStatusBadge status={pass.status} />
                           </td>
                         </tr>
@@ -206,23 +219,25 @@ export default function PassListPage() {
           <div className="flex flex-col gap-3 text-sm text-secondary sm:flex-row sm:items-center sm:justify-between">
             <span>{t('access.totalRecords', { count: totalCount })}</span>
             <div className="flex items-center gap-2">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="md"
                 disabled={page <= 1 || isLoading}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="rounded-lg border border-default px-3 py-2 text-secondary hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {t('common.back')}
-              </button>
+              </Button>
               <span>{t('access.pageOf', { page, total: totalPages })}</span>
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="md"
                 disabled={page >= totalPages || isLoading}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="rounded-lg border border-default px-3 py-2 text-secondary hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {t('access.forward')}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -278,6 +278,7 @@ export interface CompanyInvitation {
   is_valid: boolean;
   expires_at: string;
   created_at: string;
+  status: 'pending' | 'accepted' | 'expired' | 'revoked';
 }
 
 export interface InviteRegistrationPreview {
@@ -712,10 +713,20 @@ export interface Announcement {
   created_at: string;
 }
 
+export interface LeaveRequestUser {
+  id: number;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  email: string;
+  avatar: string | null;
+  position: string;
+  role: string;
+}
+
 export interface LeaveRequest {
   id: number;
-  user: number;
-  user_name?: string;
+  user: LeaveRequestUser;
   company: number;
   leave_type: LeaveType;
   start_date: string;
@@ -723,10 +734,8 @@ export interface LeaveRequest {
   duration_days?: number;
   comment: string;
   status: LeaveStatus;
-  assigned_reviewer: number | null;
-  assigned_reviewer_name?: string | null;
-  reviewed_by: number | null;
-  reviewer?: number | null;
+  assigned_reviewer: LeaveRequestUser | null;
+  reviewed_by: LeaveRequestUser | null;
   review_comment: string;
   reviewed_at: string | null;
   created_at: string;
@@ -740,8 +749,16 @@ export interface LeaveBalance {
 }
 
 export interface TeamLeaveBalance extends LeaveBalance {
-  user_id: number;
-  user_name: string;
+  user:{
+    avatar: string | null;
+    email: string;
+    first_name: string;
+    full_name: string;
+    id: number;
+    last_name: string;
+    position: string;
+    role: string;
+  }
 }
 
 export interface CalendarEvent {
@@ -844,6 +861,7 @@ export interface StorageUsage {
     file_count: number;
     limit_bytes: number | null;
     trash_bytes: number;
+    trash_deletable_bytes: number;
     breakdown: StorageUsageBreakdown;
   };
   company: {
@@ -851,6 +869,7 @@ export interface StorageUsage {
     limit_bytes: number;
     file_count: number;
     trash_bytes: number;
+    trash_deletable_bytes: number;
     breakdown: StorageUsageBreakdown;
   };
 }

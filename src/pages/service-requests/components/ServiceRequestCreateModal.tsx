@@ -14,6 +14,7 @@ import {
 import { getApiError } from '@/shared/lib/getApiError';
 import type { BookingResourceListItem, PaginatedResponse, ServiceFloor, ServiceRequest } from '@/shared/types';
 import { getTypeConfig } from '@/pages/service-requests/components/ServiceRequestBadges';
+import { Button } from '@/shared/ui/Button';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -408,26 +409,25 @@ export default function ServiceRequestCreateModal({ open, onClose, onSuccess }: 
 
         {/* Footer */}
         <div className="flex justify-end gap-2 border-t border-[color:var(--border-faint)] px-[22px] pt-[14px] pb-[18px] mt-3">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={handleClose}
             disabled={mutation.isPending}
-            className="h-8 px-4 text-sm font-medium text-secondary hover:bg-raised rounded-[var(--radius-sm)] transition-colors disabled:opacity-50"
           >
             {t('serviceRequests.cancelBtn')}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="primary"
+            size="sm"
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className={cn(
-              'inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)]',
-              'text-white bg-[color:var(--brand)] hover:opacity-90 transition-opacity',
-              'disabled:opacity-60 disabled:cursor-not-allowed',
-            )}
+            loading={mutation.isPending}
           >
             {mutation.isPending ? t('common.submittingPlain') : t('serviceRequests.submitBtn')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

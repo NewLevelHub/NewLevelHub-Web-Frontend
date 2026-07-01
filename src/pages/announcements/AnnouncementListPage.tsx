@@ -5,6 +5,7 @@ import { Pin, Plus } from 'lucide-react';
 import { USER_ROLES } from '@/shared/config/constants';
 import { useUser } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
+import { Button } from '@/shared/ui/Button';
 
 import { AnnouncementCreateModal } from '@/pages/announcements/components/AnnouncementCreateModal';
 import { AnnouncementEmptyState } from '@/pages/announcements/components/AnnouncementEmptyState';
@@ -83,23 +84,25 @@ export default function AnnouncementListPage() {
           ) : null}
         </div>
         {isSuperadmin ? (
-          <button
+          <Button
             type="button"
+            variant="primary"
+            size="md"
             onClick={() => { setCreateLevel('company'); setCreateOpen(true); }}
-            className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity"
           >
             <Plus size={14} aria-hidden="true" />
             {t('announcements.createBtnCompany')}
-          </button>
+          </Button>
         ) : isAdmin ? (
-          <button
+          <Button
             type="button"
+            variant="primary"
+            size="md"
             onClick={() => { setCreateLevel('company'); setCreateOpen(true); }}
-            className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity"
           >
             <Plus size={14} aria-hidden="true" />
             {t('announcements.createButton')}
-          </button>
+          </Button>
         ) : null}
       </header>
 

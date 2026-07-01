@@ -20,6 +20,7 @@ import { mapApiUser } from '@/shared/lib/mapUser';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
 import { useAuth } from '@/shared/hooks/useAuth';
 import type { User as UserType } from '@/shared/types';
+import { Button } from '@/shared/ui/Button';
 import { ChangePasswordSection } from './ChangePasswordSection';
 import ProfileActivitySection from './ProfileActivitySection';
 
@@ -731,42 +732,26 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="flex items-center gap-3 pt-1" style={{ justifyContent: 'flex-end' }}>
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={cancelEditing}
                     disabled={updateMutation.isPending}
-                    className="h-8 px-4 text-sm font-medium text-secondary hover:bg-raised rounded-[var(--radius-sm)] transition-colors"
                   >
-                    <span className="inline-flex items-center gap-1.5">
-                      <X size={14} aria-hidden="true" />
-                      {t('common.cancel')}
-                    </span>
-                  </button>
+                    <X size={14} aria-hidden="true" />
+                    {t('common.cancel')}
+                  </Button>
 
-                  <button
+                  <Button
                     type="submit"
-                    disabled={updateMutation.isPending}
-                    className={cn(
-                      'inline-flex items-center gap-2 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)]',
-                      'text-white bg-[color:var(--brand)] hover:opacity-90 transition-opacity',
-                      'disabled:opacity-60 disabled:cursor-not-allowed',
-                    )}
+                    variant="primary"
+                    size="sm"
+                    loading={updateMutation.isPending}
                   >
-                    {updateMutation.isPending ? (
-                      <>
-                        <span
-                          className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
-                          aria-hidden="true"
-                        />
-                        {t('profile.saving')}
-                      </>
-                    ) : (
-                      <>
-                        <Check size={14} aria-hidden="true" />
-                        {t('common.save')}
-                      </>
-                    )}
-                  </button>
+                    {!updateMutation.isPending && <Check size={14} aria-hidden="true" />}
+                    {updateMutation.isPending ? t('profile.saving') : t('common.save')}
+                  </Button>
                 </div>
               </form>
             ) : (

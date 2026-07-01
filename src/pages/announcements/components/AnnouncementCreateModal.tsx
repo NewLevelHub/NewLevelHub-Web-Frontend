@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, Image, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/shared/ui/Button';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -484,26 +485,25 @@ export function AnnouncementCreateModal({
 
           {/* Footer */}
           <div className="flex justify-end gap-2 border-t border-[color:var(--border-faint)] px-[22px] pt-[14px] pb-[18px] mt-3">
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={onClose}
-              className="h-8 px-4 text-sm font-medium text-secondary hover:bg-raised rounded-[var(--radius-sm)] transition-colors"
             >
               {t('common.cancel')}
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
+              variant="primary"
+              size="sm"
               disabled={createMutation.isPending}
-              className={cn(
-                'inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)]',
-                'text-white bg-[color:var(--brand)] hover:opacity-90 transition-opacity',
-                'disabled:opacity-60 disabled:cursor-not-allowed',
-              )}
+              loading={createMutation.isPending}
             >
               {createMutation.isPending
                 ? t('announcements.publishing')
                 : t('announcements.publishBtn')}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

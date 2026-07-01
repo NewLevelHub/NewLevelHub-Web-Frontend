@@ -231,6 +231,8 @@ export const API = {
     fileShares: (id: string) => `/storage/files/${id}/shares/`,
     usage: '/storage/usage/',
     trash: '/storage/trash/',
+    trashBulkRestore: '/storage/trash/restore/',
+    trashBulkDelete: '/storage/trash/delete/',
     fileRestore: (id: string) => `/storage/files/${id}/restore/`,
     folderRestore: (id: string) => `/storage/folders/${id}/restore/`,
     filePermDelete: (id: string) => `/storage/files/${id}/permanent/`,

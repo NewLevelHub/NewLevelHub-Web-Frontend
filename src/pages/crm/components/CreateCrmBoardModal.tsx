@@ -7,6 +7,7 @@ import { API } from '@/shared/api/endpoints';
 import { apiClient } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
 import type { CrmBoard } from '@/shared/types';
+import { Button } from '@/shared/ui/Button';
 
 interface BoardTemplate {
   id: string;
@@ -182,22 +183,21 @@ export function CreateCrmBoardModal({ onClose, companyId }: CreateCrmBoardModalP
           )}
 
           <div className="flex items-center justify-end gap-3 pt-1">
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-secondary hover:text-primary hover:bg-hover transition-colors"
-            >{t('common.cancel')}</button>
-            <button
+            >{t('common.cancel')}</Button>
+            <Button
               type="submit"
+              variant="primary"
+              size="sm"
               disabled={!name.trim() || mutation.isPending}
-              className={cn(
-                'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-                'bg-blue-600 text-white hover:bg-blue-500',
-                'disabled:opacity-50 disabled:cursor-not-allowed',
-              )}
+              loading={mutation.isPending}
             >
               {mutation.isPending ? t('common.creatingPlain') : t('common.create')}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

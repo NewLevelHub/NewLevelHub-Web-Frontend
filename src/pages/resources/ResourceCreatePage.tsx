@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import { Plus } from 'lucide-react';
 
 import { cn } from '@/shared/lib/cn';
+import { Button } from '@/shared/ui/Button';
 import { RESOURCE_TYPES } from '@/shared/config/constants';
 import type { ResourceType } from '@/shared/config/constants';
 import { RESOURCE_TYPE_LABEL_KEYS } from '@/shared/config/constants';
@@ -463,21 +464,20 @@ export default function ResourceCreatePage() {
 
           {/* Footer */}
           <div className="flex justify-end gap-2 border-t border-[color:var(--border-faint)] px-6 pt-4 pb-5 mt-0">
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => navigate('/resources')}
-              className="h-8 px-4 text-sm font-medium text-secondary hover:bg-raised rounded-[var(--radius-sm)] transition-colors"
             >
               {t('common.cancel')}
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
+              variant="primary"
+              size="sm"
               disabled={isPending}
-              className={cn(
-                'inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)]',
-                'text-white bg-[color:var(--brand)] hover:opacity-90 transition-opacity',
-                'disabled:opacity-60 disabled:cursor-not-allowed',
-              )}
+              loading={isPending}
             >
               <Plus size={14} />
               {isPending
@@ -485,7 +485,7 @@ export default function ResourceCreatePage() {
                 : isBulkMode
                   ? t('resources.create.submitBulk')
                   : t('resources.create.submit')}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
