@@ -3,23 +3,22 @@ import { Link, useSearchParams } from 'react-router';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import {
   Bookmark,
-  Building2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  DoorOpen,
   Map,
   Search,
   X,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { dateLocaleTag } from '@/shared/lib/localeFormat';
-import { fmtDateTime } from '@/shared/lib/formatDate';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
 
 import { BookingModal } from '@/shared/ui/BookingModal';
+import { CompanyResourceDetailModal } from '@/shared/ui/ResourceDetailModal';
+import { ResourceCard } from '@/shared/ui/ResourceCard';
 import { ResourceDayTimeline } from '@/pages/bookings/components/ResourceDayTimeline';
 
 dayjs.extend(utc);
@@ -66,16 +65,6 @@ function emptyEquipmentFilters(): Record<ResourceEquipmentKey, boolean> {
   ) as Record<ResourceEquipmentKey, boolean>;
 }
 
-function formatAvailableAt(iso: string | null): string | null {
-  if (!iso) return null;
-  try {
-    const d = new Date(iso);
-    return fmtDateTime(d, { dateStyle: 'short', timeStyle: 'short' } as Intl.DateTimeFormatOptions);
-  } catch {
-    return null;
-  }
-}
-
 export default function BookingCatalogPage() {
   const { t, i18n } = useTranslation();
   const dateLocale = dateLocaleTag(i18n.language);
@@ -85,6 +74,7 @@ export default function BookingCatalogPage() {
   const [page, setPage] = useState(1);
   const [selectedResource, setSelectedResource] = useState<BookingResourceListItem | null>(null);
   const [panelResource, setPanelResource] = useState<BookingResourceListItem | null>(null);
+  const [detailResource, setDetailResource] = useState<BookingResourceListItem | null>(null);
   const [photoIdx, setPhotoIdx] = useState(0);
   const [panelDay, setPanelDay] = useState(() => localIsoDate(new Date()));
   const autoOpenedForRef = useRef<number | null>(null);
@@ -573,160 +563,27 @@ export default function BookingCatalogPage() {
         <div className="py-20 text-center text-sm text-secondary">{t('catalog.noResults')}</div>
       ) : (
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {sortedResults.map((r) => {
-            const firstPhotoSrc = r.photos?.[0]?.image_url ?? r.photos?.[0]?.image ?? null;
-            const imgSrc =
-              firstPhotoSrc ??
-              resolveMediaUrl(r.photo_url ?? r.photo ?? '') ??
-              r.photo_url ??
-              r.photo ??
-              '';
-            const isMyCompany = myCompanyId !== null && r.assigned_company === myCompanyId;
-            const whenFree = formatAvailableAt(r.available_at);
-
-            return (
-              <li key={r.id}>
-                <article
-                  className={cn(
-                    'flex flex-col overflow-hidden rounded-2xl border bg-surface shadow-sm transition-all cursor-pointer',
-                    'hover:-translate-y-0.5 hover:shadow-md',
-                    isMyCompany ? 'border-indigo-500/40' : 'border-default',
-                    !r.is_active && 'opacity-60',
-                  )}
-                >
-                  {/* Image area */}
-                  <div
-                    className="relative aspect-[16/10] overflow-hidden bg-raised"
-                    onClick={() => setPanelResource(r)}
-                  >
-                    {imgSrc ? (
-                      <img
-                        src={imgSrc}
-                        alt={r.name}
-                        className="absolute inset-0 h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center">
-                        <DoorOpen size={32} className="text-muted" />
-                      </div>
-                    )}
-
-                    {/* Resource type badge — top left */}
-                    <span className="absolute left-2 top-2 rounded-full border border-white/15 bg-black/50 px-2 py-0.5 text-[11px] font-medium text-white">
-                      {t(RESOURCE_TYPE_LABEL_KEYS[r.type])}
-                    </span>
-
-                    {/* Status badge — top right */}
-                    <span
-                      className="absolute right-2 top-2 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold text-white"
-                      style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
-                    >
-                      <span className={cn('h-2 w-2 rounded-full', statusDotClass[r.status] ?? 'bg-slate-400')} />
-                      {t(`catalog.status.${r.status}`, { defaultValue: r.status })}
-                    </span>
-                  </div>
-
-                  {/* Card body */}
-                  <div
-                    className="flex flex-col gap-2 p-4 h-[156px] overflow-hidden"
-                    onClick={() => setPanelResource(r)}
-                  >
-                    <h2 className="text-sm font-semibold text-primary leading-snug">{r.name}</h2>
-
-                    {isMyCompany && (
-                      <span className="inline-flex w-fit items-center gap-1 rounded-full border border-indigo-500/30 bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-300">
-                        <Building2 size={10} />
-                        {t('catalog.assignedToCompany')}
-                      </span>
-                    )}
-
-                    <div className="flex flex-col gap-1">
-                      <span className="flex items-center gap-1.5 text-xs text-muted">
-                        <DoorOpen size={12} />
-                        {t(RESOURCE_TYPE_LABEL_KEYS[r.type])}
-                        {r.capacity ? ` · ${r.capacity} ${t('catalog.people')}` : ''}
-                      </span>
-                      <span className="flex items-center gap-1.5 text-xs text-muted">
-                        <Building2 size={12} />
-                        {t('catalog.floor')} {r.floor_number}
-                        {r.zone ? ` · ${r.zone}` : ''}
-                        {r.parking_type ? ` · ${r.parking_type === 'vip' ? 'VIP' : 'Regular'}` : ''}
-                        {r.capsule_zone ? ` · ${r.capsule_zone === 'quiet' ? 'Quiet' : 'Regular'}` : ''}
-                      </span>
-                    </div>
-
-                    {r.is_hot_desk && r.type === RESOURCE_TYPES.DESK && (
-                      <span className="text-xs font-medium text-blue-400">{t('catalog.hotDesk')}</span>
-                    )}
-
-                    {whenFree && r.status === BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE && (
-                      <p className="text-xs text-warning">{t('catalog.freeAt', { time: whenFree })}</p>
-                    )}
-
-                    {r.status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED && r.reason && (
-                      <p className="text-xs text-muted">{t('catalog.blockReason', { reason: r.reason })}</p>
-                    )}
-
-                    {/* Equipment chips — meeting rooms only, max 3 */}
-                    {r.type === RESOURCE_TYPES.MEETING_ROOM && r.equipment && (
-                      <div className="flex flex-wrap gap-1 mt-auto">
-                        {Object.entries(r.equipment)
-                          .filter(([, v]) => v)
-                          .slice(0, 3)
-                          .map(([key]) => (
-                            <span
-                              key={key}
-                              className="rounded border border-default bg-raised px-1.5 py-0.5 text-[10px] text-muted"
-                            >
-                              {t(RESOURCE_EQUIPMENT_LABEL_KEYS[key as ResourceEquipmentKey]) ?? key}
-                            </span>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div
-                    className="flex flex-col gap-2 px-4 pb-4 pt-0 sm:flex-row"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {r.status === BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED ? (
-                      <button
-                        type="button"
-                        disabled
-                        className="w-full sm:flex-1 rounded-lg bg-raised px-3 py-2 text-sm font-medium text-muted cursor-not-allowed"
-                      >
-                        {t('catalog.occupied')}
-                      </button>
-                    ) : r.status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED ? (
-                      <button
-                        type="button"
-                        disabled
-                        className="w-full sm:flex-1 rounded-lg bg-raised px-3 py-2 text-sm font-medium text-muted cursor-not-allowed"
-                      >
-                        {t('catalog.blocked')}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedResource(r)}
-                        className="w-full sm:flex-1 rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-hover transition-colors"
-                      >
-                        {t('catalog.book')}
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setPanelResource(r)}
-                      className="w-full sm:w-auto rounded-lg border border-default px-3 py-2 text-sm font-medium text-secondary hover:bg-hover transition-colors"
-                    >
-                      {t('catalog.details')}
-                    </button>
-                  </div>
-                </article>
-              </li>
-            );
-          })}
+          {sortedResults.map((r) => (
+            <li key={r.id}>
+              <ResourceCard
+                resource={r}
+                onCardClick={() => setPanelResource(r)}
+                onBook={
+                  r.status !== BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED &&
+                  r.status !== BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED
+                    ? () => setSelectedResource(r)
+                    : undefined
+                }
+                onDetails={() => setDetailResource(r)}
+                isOccupied={
+                  r.status === BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED ||
+                  r.status === BOOKING_RESOURCE_CATALOG_STATUS.BLOCKED
+                }
+                isMyCompany={myCompanyId !== null && r.assigned_company === myCompanyId}
+                showEquipment
+              />
+            </li>
+          ))}
         </ul>
       )}
 
@@ -992,6 +849,13 @@ export default function BookingCatalogPage() {
           </div>
         </div>
       )}
+
+      {/* ── Resource detail modal ── */}
+      <CompanyResourceDetailModal
+        resource={detailResource}
+        onClose={() => setDetailResource(null)}
+        onBook={() => { setSelectedResource(detailResource); setDetailResource(null); }}
+      />
 
       {/* ── Booking modal ── */}
       {selectedResource !== null && (selectedResource as Partial<BookingResourceListItem>).id !== undefined && (

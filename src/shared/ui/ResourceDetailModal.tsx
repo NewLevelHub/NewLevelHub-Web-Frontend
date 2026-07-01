@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Bookmark, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Bookmark, Building2, ChevronLeft, ChevronRight, Clock, Users, X } from 'lucide-react';
+import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 
 import { apiClient } from '@/shared/api/client';
@@ -231,6 +232,335 @@ export function ResourceDetailModal({ resource, open, onClose, onBook }: Resourc
               {t('catalog.book')}
             </button>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── CompanyResourceDetailModal ────────────────────────────────────────────────
+// Follows CLAUDE.md modal standard. Used in the company hub Resources tab.
+
+interface CompanyResourceDetailModalProps {
+  /** null = modal closed */
+  resource: BookingResourceListItem | null;
+  onClose: () => void;
+  /** If provided, show brand Book button; else render Link to /bookings/new?resource={id} */
+  onBook?: () => void;
+}
+
+const infoRow: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  fontSize: 13,
+  color: 'var(--text-secondary)',
+};
+
+export function CompanyResourceDetailModal({
+  resource,
+  onClose,
+  onBook,
+}: CompanyResourceDetailModalProps) {
+  const { t } = useTranslation();
+
+  const { data: detail, isLoading } = useQuery({
+    queryKey: ['resource-detail-modal', resource?.id],
+    queryFn: () =>
+      apiClient
+        .get<BookingResourceDetail>(API.bookings.resources.detail(String(resource!.id)))
+        .then((r) => r.data),
+    enabled: resource != null,
+    staleTime: 60_000,
+  });
+
+  if (resource == null) return null;
+
+  // Resolve photo: prefer full detail photos, then list-item photos/photo field
+  const photoSrc =
+    detail?.photos?.[0]?.image_url ??
+    detail?.photos?.[0]?.image ??
+    resource.photos?.[0]?.image_url ??
+    resource.photos?.[0]?.image ??
+    (resource.photo ? resolveMediaUrl(resource.photo) ?? resource.photo : null);
+
+  // Equipment entries where value is true
+  const equipmentSource = detail?.equipment ?? resource.equipment;
+  const equipmentEntries =
+    equipmentSource != null
+      ? (Object.entries(equipmentSource) as [string, boolean][]).filter(([, v]) => v)
+      : [];
+  const showEquipment = resource.type === RESOURCE_TYPES.MEETING_ROOM && equipmentEntries.length > 0;
+
+  // Format available_at time
+  const availableAt = resource.available_at ?? detail?.available_at;
+  const formattedAvailableAt = availableAt
+    ? new Date(availableAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="company-resource-detail-title"
+    >
+      <div className="relative w-full max-w-[560px] rounded-2xl border border-default bg-surface shadow-xl overflow-y-auto max-h-[90vh]">
+
+        {/* Header */}
+        <div className="flex items-start justify-between px-[22px] pt-[18px] pb-[14px]">
+          <div className="min-w-0 pr-4">
+            <h2
+              id="company-resource-detail-title"
+              className="text-base font-semibold text-primary tracking-[-0.015em]"
+            >
+              {resource.name}
+            </h2>
+            <div className="mt-1">
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '3px 9px',
+                  borderRadius: 20,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  background:
+                    resource.status === BOOKING_RESOURCE_CATALOG_STATUS.FREE
+                      ? 'var(--status-free-bg, rgba(52,211,153,0.12))'
+                      : resource.status === BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED
+                        ? 'var(--status-busy-bg, rgba(239,68,68,0.12))'
+                        : resource.status === BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE
+                          ? 'var(--status-soon-bg, rgba(245,158,11,0.12))'
+                          : 'var(--bg-raised)',
+                  color:
+                    resource.status === BOOKING_RESOURCE_CATALOG_STATUS.FREE
+                      ? 'var(--status-free-text, var(--success))'
+                      : resource.status === BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED
+                        ? 'var(--status-busy-text, var(--danger))'
+                        : resource.status === BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE
+                          ? 'var(--status-soon-text, #f59e0b)'
+                          : 'var(--text-muted)',
+                }}
+              >
+                <span
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background:
+                      resource.status === BOOKING_RESOURCE_CATALOG_STATUS.FREE
+                        ? 'var(--success)'
+                        : resource.status === BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED
+                          ? 'var(--danger)'
+                          : resource.status === BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE
+                            ? '#f59e0b'
+                            : 'var(--text-muted)',
+                    display: 'inline-block',
+                    flexShrink: 0,
+                  }}
+                />
+                {t(
+                  resource.status === BOOKING_RESOURCE_CATALOG_STATUS.FREE
+                    ? 'companyHub.resourceStatusFree'
+                    : resource.status === BOOKING_RESOURCE_CATALOG_STATUS.OCCUPIED
+                      ? 'companyHub.resourceStatusOccupied'
+                      : resource.status === BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE
+                        ? 'companyHub.resourceStatusSoon'
+                        : 'companyHub.resourceStatusInactive',
+                )}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg text-secondary hover:bg-raised hover:text-primary focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)]"
+            aria-label={t('common.close')}
+          >
+            <X size={14} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-[22px] pb-0 flex flex-col gap-4">
+
+          {/* Photo */}
+          <div
+            style={{
+              borderRadius: 'var(--radius-lg)',
+              overflow: 'hidden',
+              height: 200,
+              background: 'var(--bg-raised)',
+              flexShrink: 0,
+            }}
+          >
+            {photoSrc ? (
+              <img
+                src={photoSrc}
+                alt={resource.name}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundImage:
+                    'repeating-linear-gradient(45deg, var(--border-faint) 0, var(--border-faint) 1px, transparent 0, transparent 50%)',
+                  backgroundSize: '12px 12px',
+                }}
+              >
+                <span style={{ fontSize: 11, color: 'var(--text-subtle)' }}>
+                  {t('companyHub.resourceNoPhoto')}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Description */}
+          {isLoading ? (
+            <div
+              style={{
+                height: 13,
+                width: '80%',
+                borderRadius: 4,
+                background: 'var(--bg-raised)',
+              }}
+            />
+          ) : detail?.description ? (
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+              {detail.description}
+            </p>
+          ) : null}
+
+          {/* Info grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {/* Type chip */}
+            <div style={infoRow}>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 500,
+                  padding: '2px 7px',
+                  borderRadius: 20,
+                  background: 'var(--bg-raised)',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                {t(RESOURCE_TYPE_LABEL_KEYS[resource.type] ?? resource.type)}
+              </span>
+            </div>
+
+            {/* Capacity */}
+            {resource.capacity > 0 && (
+              <div style={infoRow}>
+                <Users size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                <span>
+                  {resource.capacity} {t('common.peopleShort')}
+                </span>
+              </div>
+            )}
+
+            {/* Floor + zone */}
+            {(resource.floor_number != null || resource.zone) && (
+              <div style={infoRow}>
+                <Building2 size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                <span>
+                  {resource.floor_number != null
+                    ? `${t('companyHub.resourceDetailFloor')} ${resource.floor_number}`
+                    : ''}
+                  {resource.floor_number != null && resource.zone ? ' · ' : ''}
+                  {resource.zone ?? ''}
+                </span>
+              </div>
+            )}
+
+            {/* Soon available time */}
+            {resource.status === BOOKING_RESOURCE_CATALOG_STATUS.SOON_AVAILABLE &&
+              formattedAvailableAt && (
+                <div style={infoRow}>
+                  <Clock size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                  <span>{formattedAvailableAt}</span>
+                </div>
+              )}
+          </div>
+
+          {/* Equipment */}
+          {showEquipment && (
+            <div>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 500,
+                  color: 'var(--text-muted)',
+                  marginBottom: 6,
+                }}
+              >
+                {t('catalog.equipment')}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {equipmentEntries.map(([key]) => (
+                  <span
+                    key={key}
+                    style={{
+                      fontSize: 11,
+                      padding: '3px 8px',
+                      borderRadius: 20,
+                      border: '1px solid var(--border)',
+                      background: 'var(--bg-raised)',
+                      color: 'var(--text-secondary)',
+                    }}
+                  >
+                    {t(RESOURCE_EQUIPMENT_LABEL_KEYS[key as ResourceEquipmentKey])}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-between items-center gap-2 border-t border-[color:var(--border-faint)] px-[22px] pt-[14px] pb-[18px] mt-3">
+          <Link
+            to={`/bookings/resources/${resource.id}`}
+            style={{ fontSize: 12, color: 'var(--text-muted)', textDecoration: 'none' }}
+          >
+            {t('companyHub.resourceSchedule')} →
+          </Link>
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-8 px-4 text-sm font-medium text-secondary hover:bg-raised rounded-[var(--radius-sm)] transition-colors"
+            >
+              {t('common.close')}
+            </button>
+
+            {onBook ? (
+              <button
+                type="button"
+                onClick={onBook}
+                className="inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] text-white bg-[color:var(--brand)] hover:opacity-90 transition-opacity"
+              >
+                {t('companyHub.resourceBook')}
+              </button>
+            ) : (
+              <Link
+                to={`/bookings/new?resource=${resource.id}`}
+                className="inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium rounded-[var(--radius-sm)] text-white bg-[color:var(--brand)] hover:opacity-90 transition-opacity"
+                style={{ textDecoration: 'none' }}
+              >
+                {t('companyHub.resourceBook')}
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -1000,7 +1000,12 @@ const DEBOUNCE_MS = 350;
 
 type ViewTab = 'manage' | 'directory' | 'invites';
 
-export default function TeamManagePage() {
+interface TeamManagePageProps {
+  hideNav?: boolean;
+  initialView?: 'manage' | 'directory' | 'invites';
+}
+
+export default function TeamManagePage({ hideNav = false, initialView }: TeamManagePageProps) {
   const { t } = useTranslation();
   const { user, isImpersonating, startImpersonation } = useAuth();
   const queryClient = useQueryClient();
@@ -1009,7 +1014,7 @@ export default function TeamManagePage() {
   const isEmployee = user?.role === USER_ROLES.EMPLOYEE;
   const showTabs = isCompanyAdmin || isSuperadmin;
   const canInvite = !isEmployee;
-  const [view, setView] = useState<ViewTab>('manage');
+  const [view, setView] = useState<ViewTab>(initialView ?? 'manage');
 
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [filters, setFilters] = useState<Filters>({
@@ -1284,21 +1289,23 @@ export default function TeamManagePage() {
   // Render
   // ---------------------------------------------------------------------------
   return (
-    <div className="space-y-6 p-6">
+    <div className={cn('space-y-6', hideNav ? 'pt-0' : 'p-6')}>
       {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold text-primary">{t('team.employeesTitle')}</h1>
-        <p className="mt-1 text-sm text-secondary">
-          {companyId && data && view === 'manage'
-            ? t('common.totalEmployees', { count: data.count })
-            : isSuperadmin && !companyId
-              ? t('common.selectCompanyToView')
-              : ' '}
-        </p>
-      </div>
+      {!hideNav && (
+        <div>
+          <h1 className="text-2xl font-bold text-primary">{t('team.employeesTitle')}</h1>
+          <p className="mt-1 text-sm text-secondary">
+            {companyId && data && view === 'manage'
+              ? t('common.totalEmployees', { count: data.count })
+              : isSuperadmin && !companyId
+                ? t('common.selectCompanyToView')
+                : ' '}
+          </p>
+        </div>
+      )}
 
       {/* Tab bar — company admin / superadmin */}
-      {showTabs && (
+      {showTabs && !hideNav && (
         <div className="flex gap-1 rounded-xl border border-default bg-raised p-1 w-fit">
           <button
             type="button"
