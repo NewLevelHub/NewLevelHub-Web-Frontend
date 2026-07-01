@@ -2889,5 +2889,29 @@
       "confirmDeleteTitle": "Удалить сотрудников",
       "confirmDeleteBody": "Удалить {{count}} сотрудника(ов)? Это действие нельзя отменить."
     }
+  },
+  "invites": {
+    "formTitle": "Пригласить сотрудника",
+    "sendBtn": "Отправить приглашение",
+    "filterAll": "Все",
+    "filterPending": "Ожидают",
+    "filterExpired": "Истекли",
+    "colEmail": "Email",
+    "colRole": "Роль",
+    "colSent": "Действует до",
+    "colStatus": "Статус",
+    "statusActive": "Активно",
+    "statusAccepted": "Принято",
+    "statusPending": "Ожидает",
+    "statusUsed": "Принято",
+    "statusExpired": "Истёк",
+    "statusRevoked": "Отозвано",
+    "filterAccepted": "Принятые",
+    "filterRevoked": "Отозванные",
+    "resend": "Повторить",
+    "revoke": "Отозвать",
+    "revokeTitle": "Отозвать приглашение?",
+    "revokeDesc": "Приглашение для {{email}} будет аннулировано.",
+    "empty": "Нет приглашений"
   }
 }
