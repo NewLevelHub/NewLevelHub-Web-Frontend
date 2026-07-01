@@ -2313,7 +2313,8 @@
     "assignTemplateTitle": "Assign onboarding template",
     "assignTemplateSuccess": "Template assigned successfully",
     "assignTemplateNote": "Note (optional)",
-    "assignTemplateSelectPlaceholder": "Select a template"
+    "assignTemplateSelectPlaceholder": "Select a template",
+    "reassignTemplate": "Reassign"
   },
   "building": {
     "mapManage": "Manage map",

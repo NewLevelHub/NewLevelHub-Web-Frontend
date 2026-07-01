@@ -237,7 +237,8 @@ export default function TeamOnboardingPage() {
             const name = `${member.first_name} ${member.last_name}`.trim();
             const isSelected = Number(selectedUserId) === Number(member.user);
             const assignment = assignments.find((a) => Number(a.user) === Number(member.user));
-            const templateName = assignment?.template_name ?? null;
+            const templateName = member.template_name ?? assignment?.template_name ?? null;
+            const isDefaultTemplate = templateName !== null && (assignment?.assigned_at == null);
             const pct =
               member.total_steps > 0
                 ? Math.round((member.completed_steps / member.total_steps) * 100)
@@ -329,13 +330,29 @@ export default function TeamOnboardingPage() {
                 </div>
 
                 {/* Template subtitle */}
-                <div style={{ paddingLeft: 38, marginBottom: 6 }}>
-                  {templateName ? (
-                    <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
-                      {templateName}
-                    </span>
+                <div style={{ paddingLeft: 38, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {templateName && !isDefaultTemplate ? (
+                    <>
+                      <span style={{
+                        width: 5, height: 5, borderRadius: '50%',
+                        background: 'var(--brand)', display: 'inline-block', flexShrink: 0,
+                      }} />
+                      <span style={{ fontSize: 10, color: 'var(--brand-text, var(--brand))', fontWeight: 500 }}>
+                        {templateName}
+                      </span>
+                    </>
+                  ) : templateName && isDefaultTemplate ? (
+                    <>
+                      <span style={{
+                        width: 5, height: 5, borderRadius: '50%',
+                        background: 'var(--text-muted)', display: 'inline-block', flexShrink: 0,
+                      }} />
+                      <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                        {templateName}
+                      </span>
+                    </>
                   ) : (
-                    <span style={{ fontSize: 10, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                    <span style={{ fontSize: 10, color: 'var(--text-subtle)', fontStyle: 'italic' }}>
                       {t('companies.noTemplateAssigned')}
                     </span>
                   )}
@@ -422,7 +439,11 @@ export default function TeamOnboardingPage() {
                         color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'inherit',
                       }}
                     >
-                      {t('companies.assignTemplate')}
+                      {(() => {
+                        const curAssignment = assignments.find((a) => Number(a.user) === Number(selectedUserId));
+                        const hasTemplate = selectedMember?.template_name ?? curAssignment?.template_name ?? null;
+                        return hasTemplate ? t('companies.reassignTemplate') : t('companies.assignTemplate');
+                      })()}
                     </button>
                     <span
                       style={{
