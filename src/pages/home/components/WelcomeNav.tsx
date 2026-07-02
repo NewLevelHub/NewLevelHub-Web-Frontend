@@ -82,29 +82,38 @@ export function WelcomeNav() {
   }, []);
 
   return (
-    <nav
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 100,
-        padding: '0 48px',
-        height: 60,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        background: scrolled ? 'rgba(5,26,13,0.92)' : 'transparent',
-        backdropFilter: scrolled ? 'blur(16px)' : 'none',
-        WebkitBackdropFilter: scrolled ? 'blur(16px)' : 'none',
-        backgroundClip: 'padding-box',
-        boxShadow: scrolled ? '0 1px 0 rgba(5,150,105,0.18), 0 4px 24px rgba(0,0,0,0.3)' : 'none',
-        transition: 'all 0.3s',
-      }}
-    >
-      <Logo />
+    <>
+      <style>{`
+        @media (max-width: 767px) {
+          .wn-nav { padding: 0 16px !important; }
+          .wn-links { display: none !important; }
+          .wn-lang span { display: none; }
+        }
+      `}</style>
+      <nav
+        className="wn-nav"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 100,
+          padding: '0 48px',
+          height: 60,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: scrolled ? 'rgba(5,26,13,0.92)' : 'transparent',
+          backdropFilter: scrolled ? 'blur(16px)' : 'none',
+          WebkitBackdropFilter: scrolled ? 'blur(16px)' : 'none',
+          backgroundClip: 'padding-box',
+          boxShadow: scrolled ? '0 1px 0 rgba(5,150,105,0.18), 0 4px 24px rgba(0,0,0,0.3)' : 'none',
+          transition: 'all 0.3s',
+        }}
+      >
+        <Logo />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+        <div className="wn-links" style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
         <button
           type="button"
           onClick={() => scrollToSection('features')}
@@ -195,6 +204,7 @@ export function WelcomeNav() {
         {t('home.nav.signIn')}
         </Link>
       </div>
-    </nav>
+      </nav>
+    </>
   );
 }

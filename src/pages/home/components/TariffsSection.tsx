@@ -99,10 +99,18 @@ export function TariffsSection() {
   const { t } = useTranslation();
 
   return (
-    <section
-      id="tariffs"
-      style={{ padding: '100px 48px', background: C.bg, borderTop: `1px solid ${C.border}` }}
-    >
+    <>
+      <style>{`
+        @media (max-width: 767px) {
+          .tar-section { padding: 60px 20px !important; }
+          .tar-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+        }
+      `}</style>
+      <section
+        id="tariffs"
+        className="tar-section"
+        style={{ padding: '100px 48px', background: C.bg, borderTop: `1px solid ${C.border}` }}
+      >
       <div style={{ maxWidth: 1240, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 56 }}>
           <div
@@ -125,7 +133,7 @@ export function TariffsSection() {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }}>
+        <div className="tar-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }}>
           {PLANS.map((plan) => (
             <div
               key={plan.nameKey}
@@ -246,6 +254,7 @@ export function TariffsSection() {
           ))}
         </div>
       </div>
-    </section>
+      </section>
+    </>
   );
 }

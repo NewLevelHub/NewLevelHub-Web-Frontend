@@ -36,18 +36,26 @@ export function WelcomeFooter() {
   const { t } = useTranslation();
 
   return (
-    <footer
-      style={{
-        padding: '28px 48px',
-        borderTop: `1px solid ${C.border}`,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-      }}
-    >
-      <Logo />
-      <span style={{ fontSize: 11, color: C.textMut }}>{t('home.footer.rights')}</span>
-      <div style={{ display: 'flex', gap: 20 }}>
+    <>
+      <style>{`
+        @media (max-width: 767px) {
+          .wf-footer { flex-direction: column !important; align-items: center !important; gap: 16px !important; padding: 28px 20px !important; text-align: center !important; }
+          .wf-links { flex-wrap: wrap !important; justify-content: center !important; gap: 16px !important; }
+        }
+      `}</style>
+      <footer
+        className="wf-footer"
+        style={{
+          padding: '28px 48px',
+          borderTop: `1px solid ${C.border}`,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <Logo />
+        <span style={{ fontSize: 11, color: C.textMut }}>{t('home.footer.rights')}</span>
+        <div className="wf-links" style={{ display: 'flex', gap: 20 }}>
         {[
           { key: 'home.footer.policy' },
           { key: 'home.footer.terms' },
@@ -63,7 +71,8 @@ export function WelcomeFooter() {
             {t(key)}
           </a>
         ))}
-      </div>
-    </footer>
+        </div>
+      </footer>
+    </>
   );
 }

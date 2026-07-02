@@ -149,10 +149,21 @@ export function FeaturesSection() {
   const MockComp = active.MockComponent;
 
   return (
-    <section
-      id="features"
-      style={{ padding: '100px 48px', background: C.bgS, borderTop: `1px solid ${C.border}` }}
-    >
+    <>
+      <style>{`
+        @media (max-width: 767px) {
+          .feat-section { padding: 60px 20px !important; }
+          .feat-tabs { flex-wrap: wrap !important; gap: 6px !important; justify-content: flex-start !important; overflow-x: auto !important; }
+          .feat-tabs button { font-size: 12px !important; padding: 7px 12px !important; }
+          .feat-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+          .feat-mockup { order: -1; }
+        }
+      `}</style>
+      <section
+        id="features"
+        className="feat-section"
+        style={{ padding: '100px 48px', background: C.bgS, borderTop: `1px solid ${C.border}` }}
+      >
       <div style={{ maxWidth: 1240, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 56 }}>
           <div
@@ -176,7 +187,7 @@ export function FeaturesSection() {
         </div>
 
         {/* tab strip */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 4, marginBottom: 48 }}>
+        <div className="feat-tabs" style={{ display: 'flex', justifyContent: 'center', gap: 4, marginBottom: 48 }}>
           {FEATURES.map((feat, i) => {
             const isActive = i === activeIndex;
             const Icon = feat.Icon;
@@ -210,6 +221,7 @@ export function FeaturesSection() {
         {/* content */}
         <div
           key={activeIndex}
+          className="feat-grid"
           style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 56, alignItems: 'center' }}
         >
           <div>
@@ -251,11 +263,12 @@ export function FeaturesSection() {
               ))}
             </div>
           </div>
-          <div>
+          <div className="feat-mockup">
             <MockComp />
           </div>
         </div>
       </div>
-    </section>
+      </section>
+    </>
   );
 }

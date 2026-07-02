@@ -69,9 +69,18 @@ export function HeroSection() {
           50%  { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
+        @media (max-width: 767px) {
+          .hero-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+          .hero-section { padding: 88px 20px 60px !important; }
+          .hero-mockups { display: none !important; }
+          .hero-stats { gap: 20px !important; }
+          .hero-btns { flex-direction: column !important; }
+          .hero-btns a, .hero-btns button { width: 100% !important; justify-content: center !important; }
+        }
       `}</style>
 
       <section
+        className="hero-section"
         style={{
           minHeight: '100vh',
           display: 'flex',
@@ -97,6 +106,7 @@ export function HeroSection() {
         />
 
         <div
+          className="hero-grid"
           style={{
             maxWidth: 1240,
             margin: '0 auto',
@@ -175,7 +185,7 @@ export function HeroSection() {
               {t('home.heroSubtitle')}
             </p>
 
-            <div style={{ display: 'flex', gap: 12, marginBottom: 44, flexWrap: 'wrap' }}>
+            <div className="hero-btns" style={{ display: 'flex', gap: 12, marginBottom: 44, flexWrap: 'wrap' }}>
               <Link
                 to="/login"
                 style={{
@@ -240,7 +250,7 @@ export function HeroSection() {
             </div>
 
             {/* stats row */}
-            <div style={{ display: 'flex', gap: 32 }}>
+            <div className="hero-stats" style={{ display: 'flex', gap: 32 }}>
               {STATS.map(({ value, labelKey }) => (
                 <div key={labelKey}>
                   <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: '-0.03em' }}>{value}</div>
@@ -251,7 +261,7 @@ export function HeroSection() {
           </div>
 
           {/* right: stacked mockups */}
-          <div style={{ position: 'relative', height: 420 }}>
+          <div className="hero-mockups" style={{ position: 'relative', height: 420 }}>
             <div
               style={{
                 position: 'absolute',

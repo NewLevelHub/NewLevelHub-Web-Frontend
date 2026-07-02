@@ -11,14 +11,23 @@ export function CtaSection() {
   const { t } = useTranslation();
 
   return (
-    <section
-      style={{
-        padding: '80px 48px',
-        textAlign: 'center',
-        background: 'linear-gradient(135deg, rgba(5,150,105,0.14) 0%, rgba(16,185,129,0.08) 100%)',
-        borderTop: `1px solid ${C.border}`,
-      }}
-    >
+    <>
+      <style>{`
+        @media (max-width: 767px) {
+          .cta-section { padding: 60px 20px !important; }
+          .cta-section h2 { font-size: 24px !important; }
+          .cta-section a { width: 100% !important; display: block !important; box-sizing: border-box !important; }
+        }
+      `}</style>
+      <section
+        className="cta-section"
+        style={{
+          padding: '80px 48px',
+          textAlign: 'center',
+          background: 'linear-gradient(135deg, rgba(5,150,105,0.14) 0%, rgba(16,185,129,0.08) 100%)',
+          borderTop: `1px solid ${C.border}`,
+        }}
+      >
       <h2 style={{ fontSize: 30, fontWeight: 800, color: '#fff', letterSpacing: '-0.025em', marginBottom: 12 }}>
         {t('home.cta.title')}
       </h2>
@@ -45,6 +54,7 @@ export function CtaSection() {
       >
         {t('home.cta.btn')}
       </Link>
-    </section>
+      </section>
+    </>
   );
 }
