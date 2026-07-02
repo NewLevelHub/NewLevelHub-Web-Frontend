@@ -2307,7 +2307,14 @@
     "onboardingCompleted": "Onboarding completed",
     "onboardingNotStarted": "Onboarding has not started yet.",
     "completedAt": "Completed {{date}}",
-    "invitationsPageOf": "Page {{page}} of {{total}} ({{count}} records)"
+    "stepDone": "Done",
+    "noTemplateAssigned": "No template assigned",
+    "assignTemplate": "Assign template",
+    "assignTemplateTitle": "Assign onboarding template",
+    "assignTemplateSuccess": "Template assigned successfully",
+    "assignTemplateNote": "Note (optional)",
+    "assignTemplateSelectPlaceholder": "Select a template",
+    "reassignTemplate": "Reassign"
   },
   "building": {
     "mapManage": "Manage map",
@@ -2540,7 +2547,9 @@
     "visitLinkFirst": "First follow the link, then click \"Done\".",
     "systemBadge": "System",
     "systemReadonly": "System (readonly)",
-    "userTemplate": "Custom"
+    "userTemplate": "Custom",
+    "notAssignedTitle": "No onboarding template assigned",
+    "notAssignedDesc": "Your administrator hasn't assigned an onboarding template yet."
   },
   "access": {
     "title": "Access log",
@@ -2898,11 +2907,16 @@
     "filterExpired": "Expired",
     "colEmail": "Email",
     "colRole": "Role",
-    "colSent": "Expires",
+    "colSent": "Valid until",
     "colStatus": "Status",
+    "statusActive": "Active",
+    "statusAccepted": "Accepted",
     "statusPending": "Pending",
     "statusUsed": "Accepted",
     "statusExpired": "Expired",
+    "statusRevoked": "Revoked",
+    "filterAccepted": "Accepted",
+    "filterRevoked": "Revoked",
     "resend": "Resend",
     "revoke": "Revoke",
     "revokeTitle": "Revoke invitation?",
