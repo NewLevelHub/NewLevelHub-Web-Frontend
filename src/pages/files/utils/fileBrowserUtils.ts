@@ -100,11 +100,11 @@ export function getOwnerInitials(ownerName: string): string {
     .toUpperCase();
 }
 
-const CX = 100, CY = 16, R = 76;
+const CX = 100, CY = 96, R = 76;
 
 function arcPt(p: number): [number, number] {
   const a = Math.PI * p;
-  return [CX - R * Math.cos(a), CY + R * Math.sin(a)];
+  return [CX - R * Math.cos(a), CY - R * Math.sin(a)];
 }
 
 export function buildGaugePaths(gaugePct: number): { arcUsed: string; arcAll: string } {
@@ -112,8 +112,8 @@ export function buildGaugePaths(gaugePct: number): { arcUsed: string; arcAll: st
   const [ex, ey] = arcPt(Math.min(gaugePct, 0.9999));
   const [fx, fy] = arcPt(0.9999);
   return {
-    arcUsed: `M ${sx} ${sy} A ${R} ${R} 0 0 0 ${ex} ${ey}`,
-    arcAll:  `M ${sx} ${sy} A ${R} ${R} 0 0 0 ${fx} ${fy}`,
+    arcUsed: `M ${sx} ${sy} A ${R} ${R} 0 0 1 ${ex} ${ey}`,
+    arcAll:  `M ${sx} ${sy} A ${R} ${R} 0 0 1 ${fx} ${fy}`,
   };
 }
 

@@ -7,6 +7,7 @@ import { apiClient } from '@/shared/api/client';
 import { cn } from '@/shared/lib/cn';
 import { checkWipLimit } from '@/shared/lib/crm-wip-limit';
 import type { CrmColumn } from '@/shared/types';
+import { Button } from '@/shared/ui/Button';
 
 export interface DeleteColumnDialogProps {
   boardId: string;
@@ -137,23 +138,22 @@ export function DeleteColumnDialog({
         )}
 
         <div className="flex items-center justify-end gap-3">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-secondary hover:text-primary hover:bg-hover transition-colors"
-          >{t('common.cancel')}</button>
-          <button
+          >{t('common.cancel')}</Button>
+          <Button
             type="button"
+            variant="danger"
+            size="sm"
             onClick={handleConfirm}
             disabled={!moveToId || mutation.isPending || otherColumns.length === 0 || wipViolation}
-            className={cn(
-              'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-              'bg-red-600 text-white hover:bg-red-500',
-              'disabled:opacity-50 disabled:cursor-not-allowed',
-            )}
+            loading={mutation.isPending}
           >
             {mutation.isPending ? t('common.deletingPlain') : t('common.delete')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

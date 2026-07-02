@@ -8,6 +8,7 @@ import { fmtDateTime } from '@/shared/lib/formatDate';
 import { API } from '@/shared/api/endpoints';
 import { PASS_STATUSES } from '@/shared/config/constants';
 import { cn } from '@/shared/lib/cn';
+import { Button } from '@/shared/ui/Button';
 import type { GuestPass } from '@/shared/types';
 import { usePassCountdown } from '@/pages/passes/hooks/usePassCountdown';
 
@@ -154,16 +155,12 @@ function PassQRContent({ pass }: { pass: GuestPass }) {
 
       {/* Action buttons */}
       <div className="flex gap-2 w-full">
-        <button
+        <Button
           type="button"
+          variant="secondary"
           onClick={handleDownload}
           disabled={!pass.qr_image || isDownloading}
-          className={cn(
-            'h-[32px] px-3 text-[12px] font-medium rounded-[var(--radius-sm)]',
-            'inline-flex items-center justify-center gap-1.5 transition-colors flex-1',
-            'border border-[color:var(--border)] text-[color:var(--text-secondary)]',
-            'hover:bg-[color:var(--bg-hover)] disabled:cursor-not-allowed disabled:opacity-50',
-          )}
+          className="h-[32px] px-3 text-[12px] font-medium flex-1 justify-center"
         >
           {isDownloading ? (
             <>
@@ -176,18 +173,15 @@ function PassQRContent({ pass }: { pass: GuestPass }) {
               {t('passes.qrPanel.download')}
             </>
           )}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant={sendState === 'sent' ? 'ghost' : 'primary'}
           onClick={handleSendEmail}
           disabled={sendState === 'sending' || sendState === 'sent'}
           className={cn(
-            'h-[32px] px-3 text-[12px] font-medium rounded-[var(--radius-sm)]',
-            'inline-flex items-center justify-center gap-1.5 transition-colors flex-1',
-            sendState === 'sent'
-              ? 'bg-[color:var(--success)] text-white opacity-90'
-              : 'bg-[color:var(--brand)] text-white hover:opacity-90',
-            (sendState === 'sending' || sendState === 'sent') && 'cursor-not-allowed',
+            'h-[32px] px-3 text-[12px] font-medium flex-1 justify-center',
+            sendState === 'sent' && 'bg-[color:var(--success)] text-white opacity-90',
           )}
         >
           {sendState === 'sending' ? (
@@ -203,7 +197,7 @@ function PassQRContent({ pass }: { pass: GuestPass }) {
               {t('passes.qrPanel.sendEmail')}
             </>
           )}
-        </button>
+        </Button>
       </div>
 
       {/* Countdown banner */}

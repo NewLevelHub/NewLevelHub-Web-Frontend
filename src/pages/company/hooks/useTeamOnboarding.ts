@@ -24,7 +24,7 @@ export function useTeamOnboarding() {
 
   const detailQuery = useQuery({
     queryKey: ['onboarding-team-progress-detail', selectedUserId],
-    enabled: selectedUserId !== null,
+    enabled: selectedUserId != null,
     queryFn: () =>
       apiClient
         .get<TeamMemberProgressDetail>(API.onboarding.teamProgressDetail(selectedUserId!))
@@ -38,7 +38,7 @@ export function useTeamOnboarding() {
   });
 
   const selectedMember =
-    selectedUserId !== null ? members.find((m) => m.user === selectedUserId) ?? null : null;
+    selectedUserId != null ? members.find((m) => m.user === selectedUserId) ?? null : null;
 
   const detail = detailQuery.data ?? null;
 

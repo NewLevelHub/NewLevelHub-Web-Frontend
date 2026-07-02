@@ -273,6 +273,7 @@ export interface CompanyInvitation {
   role: string;
   token: string;
   invited_by_name: string;
+  status: 'pending' | 'accepted' | 'expired' | 'revoked';
   is_used: boolean;
   is_expired: boolean;
   is_valid: boolean;
@@ -712,10 +713,20 @@ export interface Announcement {
   created_at: string;
 }
 
+export interface LeaveRequestUser {
+  id: number;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  email: string;
+  avatar: string | null;
+  position: string;
+  role: string;
+}
+
 export interface LeaveRequest {
   id: number;
-  user: number;
-  user_name?: string;
+  user: LeaveRequestUser;
   company: number;
   leave_type: LeaveType;
   start_date: string;
@@ -723,10 +734,8 @@ export interface LeaveRequest {
   duration_days?: number;
   comment: string;
   status: LeaveStatus;
-  assigned_reviewer: number | null;
-  assigned_reviewer_name?: string | null;
-  reviewed_by: number | null;
-  reviewer?: number | null;
+  assigned_reviewer: LeaveRequestUser | null;
+  reviewed_by: LeaveRequestUser | null;
   review_comment: string;
   reviewed_at: string | null;
   created_at: string;
@@ -740,8 +749,16 @@ export interface LeaveBalance {
 }
 
 export interface TeamLeaveBalance extends LeaveBalance {
-  user_id: number;
-  user_name: string;
+  user:{
+    avatar: string | null;
+    email: string;
+    first_name: string;
+    full_name: string;
+    id: number;
+    last_name: string;
+    position: string;
+    role: string;
+  }
 }
 
 export interface CalendarEvent {
@@ -844,6 +861,7 @@ export interface StorageUsage {
     file_count: number;
     limit_bytes: number | null;
     trash_bytes: number;
+    trash_deletable_bytes: number;
     breakdown: StorageUsageBreakdown;
   };
   company: {
@@ -851,6 +869,7 @@ export interface StorageUsage {
     limit_bytes: number;
     file_count: number;
     trash_bytes: number;
+    trash_deletable_bytes: number;
     breakdown: StorageUsageBreakdown;
   };
 }
@@ -1100,6 +1119,7 @@ export interface OnboardingStep {
 
 export interface OnboardingStatus {
   completed: boolean;
+  assigned: boolean;
   steps: OnboardingStep[];
 }
 
@@ -1124,6 +1144,7 @@ export interface OnboardingTemplate {
   name: string;
   is_active: boolean;
   is_default: boolean;
+  is_system: boolean;
   steps: OnboardingTemplateStep[];
   created_at: string;
 }
@@ -1136,6 +1157,8 @@ export interface TeamMemberProgress {
   role: string;
   completed_steps: number;
   total_steps: number;
+  template_id: number | null;
+  template_name: string | null;
 }
 
 export interface TeamMemberProgressStep {
@@ -1156,6 +1179,35 @@ export interface TeamMemberProgressDetail {
   completed_steps: number;
   total_steps: number;
   steps: TeamMemberProgressStep[];
+}
+
+export interface OnboardingAssignment {
+  id: number;
+  user: number;
+  first_name: string;
+  last_name: string;
+  avatar: string | null;
+  role: string;
+  template_id: number | null;
+  template_name: string | null;
+  completed_steps: number;
+  total_steps: number;
+  assigned_at: string | null;
+  note: string | null;
+}
+
+export interface OnboardingAssignmentCreatePayload {
+  user_id: number;
+  template_id: number;
+  note?: string;
+}
+
+export interface MyOnboardingAssignment {
+  id: number;
+  template_id: number;
+  template_name: string;
+  assigned_at: string;
+  note: string | null;
 }
 
 export interface CrmAttachmentUploader {

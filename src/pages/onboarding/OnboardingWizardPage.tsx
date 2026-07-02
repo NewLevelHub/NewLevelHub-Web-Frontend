@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2, PartyPopper, ExternalLink } from 'lucide-react';
+import { CheckCircle2, PartyPopper, ExternalLink, ClipboardList } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { useOnboardingWizard } from '@/pages/onboarding/hooks/useOnboardingWizard';
 
@@ -60,6 +60,18 @@ export default function OnboardingWizardPage() {
     );
   }
 
+  const isNotAssigned = data?.assigned === false;
+
+  if (isNotAssigned) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', gap: 12, textAlign: 'center' }}>
+        <ClipboardList size={40} style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
+        <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{t('onboarding.notAssignedTitle')}</p>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>{t('onboarding.notAssignedDesc')}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-page px-4 py-12">
       <div className="mx-auto max-w-2xl">
@@ -103,7 +115,7 @@ export default function OnboardingWizardPage() {
                     ? 'border-green-800/50 bg-success-subtle'
                     : isCurrent
                       ? 'border-blue-500/60 bg-surface'
-                      : 'border-default bg-surface opacity-60',
+                      : 'border-default bg-surface',
                 )}
               >
                 {/* No-link layout: icon + title + Done button on the right */}
@@ -134,7 +146,7 @@ export default function OnboardingWizardPage() {
                         {step.title}
                       </p>
                     </div>
-                    {isCurrent && (
+                    {!step.is_completed && (
                       <button
                         type="button"
                         disabled={completeStepMutation.isPending}
@@ -176,7 +188,7 @@ export default function OnboardingWizardPage() {
                         </a>
                         <button
                           type="button"
-                          disabled={!linkVisited || completeStepMutation.isPending}
+                          disabled={completeStepMutation.isPending}
                           onClick={() => completeStepMutation.mutate(step.id)}
                           className="inline-flex items-center gap-1.5 rounded-lg border border-default px-4 py-2 text-sm font-medium text-secondary transition-colors hover:bg-hover disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
                           aria-label={t('onboarding.markDoneAria', { title: step.title })}
@@ -186,9 +198,6 @@ export default function OnboardingWizardPage() {
                             : t('onboarding.markDone')}
                         </button>
                       </div>
-                      {!linkVisited && (
-                        <p className="mt-2 text-xs text-muted">{t('onboarding.visitLinkFirst')}</p>
-                      )}
                     </div>
                   </div>
                 )}

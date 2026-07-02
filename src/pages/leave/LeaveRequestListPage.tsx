@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ChevronRight, Plus } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -17,37 +17,344 @@ import {
 import { useAuth } from '@/shared/hooks/useAuth';
 import { getApiError } from '@/shared/lib/getApiError';
 import { fmtDate } from '@/shared/lib/formatDate';
-import { cn } from '@/shared/lib/cn';
 import type { LeaveBalance, LeaveRequest, PaginatedResponse, TeamLeaveBalance } from '@/shared/types';
-import { useReviewerOptions } from './useReviewerOptions';
+import LeaveCreateModal from './components/LeaveCreateModal';
+import LeaveActionModal from './components/LeaveActionModal';
 
-
-const STATUS_BADGE_CLASS: Record<LeaveStatus, string> = {
-  [LEAVE_STATUSES.PENDING]: 'bg-warning-subtle text-warning',
-  [LEAVE_STATUSES.APPROVED]: 'bg-success-subtle text-success',
-  [LEAVE_STATUSES.REJECTED]: 'bg-rose-900/60 text-rose-300',
-  [LEAVE_STATUSES.CANCELLED]: 'bg-[color:var(--bg-hover)] text-muted',
-};
 const LIVE_REFETCH_MS = 15000;
-type ReviewStatus = Extract<LeaveStatus, 'approved' | 'rejected'>;
-type ReviewDialogState = {
-  leaveId: number;
-  status: ReviewStatus;
+
+// Table standards from CLAUDE.md
+const thStyle: React.CSSProperties = {
+  textAlign: 'left',
+  fontSize: 11,
+  fontWeight: 500,
+  color: 'var(--text-muted)',
+  padding: '8px 12px',
+  whiteSpace: 'nowrap',
 };
+
+const tdStyle: React.CSSProperties = {
+  padding: '10px 12px',
+  fontSize: 13,
+  color: 'var(--text-primary)',
+  verticalAlign: 'middle',
+};
+
+const selStyle: React.CSSProperties = {
+  padding: '5px 10px',
+  borderRadius: 7,
+  border: '1px solid var(--border)',
+  background: 'var(--bg-raised)',
+  color: 'var(--text-primary)',
+  fontSize: 12,
+  fontFamily: 'inherit',
+  outline: 'none',
+  cursor: 'pointer',
+};
+
+// Type badge colors (semantically fixed per spec)
+function getTypeStyle(leaveType: LeaveType): React.CSSProperties {
+  switch (leaveType) {
+    case LEAVE_TYPES.VACATION:
+      return {
+        color: 'var(--info)',
+        background: 'color-mix(in srgb, var(--info) 12%, transparent)',
+      };
+    case LEAVE_TYPES.DAY_OFF:
+      return {
+        color: 'var(--brand-text)',
+        background: 'var(--brand-subtle)',
+      };
+    case LEAVE_TYPES.SICK_LEAVE:
+      return {
+        color: 'var(--danger)',
+        background: 'var(--danger-bg)',
+      };
+    case LEAVE_TYPES.REMOTE:
+      return {
+        color: 'var(--success)',
+        background: 'var(--success-bg)',
+      };
+    default:
+      return {
+        color: 'var(--text-muted)',
+        background: 'var(--bg-raised)',
+      };
+  }
+}
+
+// Status badge colors
+function getStatusStyle(status: LeaveStatus): React.CSSProperties {
+  switch (status) {
+    case LEAVE_STATUSES.PENDING:
+      return { color: 'var(--warning)', background: 'var(--warning-bg)' };
+    case LEAVE_STATUSES.APPROVED:
+      return { color: 'var(--success)', background: 'var(--success-bg)' };
+    case LEAVE_STATUSES.REJECTED:
+      return { color: 'var(--danger)', background: 'var(--danger-bg)' };
+    case LEAVE_STATUSES.CANCELLED:
+      return { color: 'var(--text-muted)', background: 'var(--bg-raised)' };
+    default:
+      return { color: 'var(--text-muted)', background: 'var(--bg-raised)' };
+  }
+}
+
+// Period formatting: "dd.mm — dd.mm"
+function fmtPeriod(startDate: string, endDate: string): string {
+  const s = startDate.slice(5).replace('-', '.');
+  const e = endDate.slice(5).replace('-', '.');
+  return `${s} — ${e}`;
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(' ');
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+// ─── UserAvatar ───────────────────────────────────────────────────────────────
+
+interface UserAvatarProps {
+  avatar: string | null;
+  fullName: string;
+  size?: number;
+}
+
+function UserAvatar({ avatar, fullName, size = 24 }: UserAvatarProps) {
+  const [imgError, setImgError] = useState(false);
+  const showImg = avatar && !imgError;
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        overflow: 'hidden',
+        flexShrink: 0,
+        background: showImg ? 'transparent' : 'var(--brand-subtle)',
+        color: 'var(--brand-text)',
+        fontSize: Math.round(size * 0.42),
+        fontWeight: 700,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      {showImg ? (
+        <img
+          src={avatar}
+          alt={fullName}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        getInitials(fullName)
+      )}
+    </div>
+  );
+}
+
+// ─── TeamBalanceRow ───────────────────────────────────────────────────────────
+
+interface TeamBalanceRowProps {
+  row: TeamLeaveBalance;
+  year: number;
+  onSave: (userId: number, totalDays: number) => void;
+  isSaving: boolean;
+}
+
+function TeamBalanceRow({ row, year: _year, onSave, isSaving }: TeamBalanceRowProps) {
+  const { t } = useTranslation();
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(String(row.total_days));
+
+  const pct = row.total_days > 0 ? Math.round((row.used_days / row.total_days) * 100) : 0;
+  const isLocked = row.total_days > 0 && row.used_days >= row.total_days;
+
+  const barColor =
+    pct > 80
+      ? 'var(--danger)'
+      : pct > 50
+        ? 'var(--warning)'
+        : 'var(--brand)';
+
+  const handleSave = () => {
+    onSave(row.user.id, Number(value));
+    setEditing(false);
+  };
+
+  const handleCancel = () => {
+    setValue(String(row.total_days));
+    setEditing(false);
+  };
+
+  return (
+    <tr
+      style={{ borderBottom: '1px solid var(--border)' }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLTableRowElement).style.background = 'var(--bg-hover)';
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLTableRowElement).style.background = '';
+      }}
+    >
+      {/* Employee */}
+      <td style={tdStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <UserAvatar avatar={row.user.avatar} fullName={row.user.full_name} />
+          <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{row.user.full_name}</span>
+        </div>
+      </td>
+      {/* Total */}
+      <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+        {row.total_days}
+      </td>
+      {/* Used */}
+      <td style={{ ...tdStyle, color: 'var(--warning)', fontFamily: 'var(--font-mono)' }}>
+        {row.used_days}
+      </td>
+      {/* Remaining */}
+      <td
+        style={{
+          ...tdStyle,
+          color: 'var(--success)',
+          fontFamily: 'var(--font-mono)',
+          fontWeight: 600,
+        }}
+      >
+        {row.remaining_days}
+      </td>
+      {/* Usage progress */}
+      <td style={tdStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div
+            style={{
+              flex: 1,
+              height: 5,
+              borderRadius: 3,
+              background: 'var(--bg-raised)',
+              overflow: 'hidden',
+              minWidth: 60,
+            }}
+          >
+            <div
+              style={{
+                height: '100%',
+                borderRadius: 3,
+                width: `${Math.min(pct, 100)}%`,
+                background: barColor,
+                transition: 'width 0.3s ease',
+              }}
+            />
+          </div>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', minWidth: 30 }}>
+            {pct}%
+          </span>
+        </div>
+        {isLocked && (
+          <div style={{ fontSize: 11, color: 'var(--danger)', marginTop: 2 }}>
+            {t('leave.teamBalance.limitReached')}
+          </div>
+        )}
+      </td>
+      {/* Set balance */}
+      <td style={tdStyle}>
+        {editing ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <input
+              type="number"
+              min={0}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              style={{
+                width: 64,
+                height: 28,
+                padding: '0 8px',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--border)',
+                background: 'var(--bg-surface)',
+                color: 'var(--text-primary)',
+                fontSize: 12,
+                outline: 'none',
+                fontFamily: 'inherit',
+              }}
+              disabled={isSaving}
+            />
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={isSaving}
+              style={{
+                height: 28,
+                padding: '0 8px',
+                borderRadius: 'var(--radius-sm)',
+                border: 'none',
+                background: 'var(--brand)',
+                color: 'var(--text-on-brand)',
+                fontSize: 12,
+                cursor: 'pointer',
+              }}
+            >
+              ✓
+            </button>
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={isSaving}
+              style={{
+                height: 28,
+                padding: '0 8px',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--border)',
+                background: 'transparent',
+                color: 'var(--text-secondary)',
+                fontSize: 12,
+                cursor: 'pointer',
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => { setValue(String(row.total_days)); setEditing(true); }}
+            style={{
+              height: 26,
+              padding: '0 10px',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border)',
+              background: 'transparent',
+              color: 'var(--text-secondary)',
+              fontSize: 12,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            {t('leave.teamBalance.edit')}
+          </button>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function LeaveRequestListPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
+
   const [statusFilter, setStatusFilter] = useState<LeaveStatus | ''>('');
   const [typeFilter, setTypeFilter] = useState<LeaveType | ''>('');
-  const [year, setYear] = useState<number>(new Date().getFullYear());
-  const [teamTotals, setTeamTotals] = useState<Record<number, string>>({});
-  const [mutationError, setMutationError] = useState<string | null>(null);
-  const [reviewDialog, setReviewDialog] = useState<ReviewDialogState | null>(null);
-  const [reviewCommentInput, setReviewCommentInput] = useState('');
-  const [cancelConfirmId, setCancelConfirmId] = useState<number | null>(null);
+  const year = new Date().getFullYear();
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [actionModal, setActionModal] = useState<{
+    type: 'approve' | 'reject' | 'cancel_approval' | 'cancel';
+    leaveId: number;
+  } | null>(null);
 
   const statusOptions = useMemo(
     () => [
@@ -82,502 +389,890 @@ export default function LeaveRequestListPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['leave-requests', queryParams],
     queryFn: () =>
-      apiClient.get<PaginatedResponse<LeaveRequest>>(API.leave.requests, { params: queryParams }).then(r => r.data),
+      apiClient
+        .get<PaginatedResponse<LeaveRequest>>(API.leave.requests, { params: queryParams })
+        .then((r) => r.data),
     refetchInterval: LIVE_REFETCH_MS,
     refetchIntervalInBackground: true,
   });
 
   const { data: balance } = useQuery({
     queryKey: ['leave-balance', year],
-    queryFn: () => apiClient.get<LeaveBalance>(API.leave.balance, { params: { year } }).then(r => r.data),
+    queryFn: () =>
+      apiClient.get<LeaveBalance>(API.leave.balance, { params: { year } }).then((r) => r.data),
     refetchInterval: LIVE_REFETCH_MS,
     refetchIntervalInBackground: true,
   });
 
   const isAdmin = user?.role === USER_ROLES.COMPANY_ADMIN || user?.role === USER_ROLES.SUPERADMIN;
-  const { isCompanyAdmin, options: reviewerOptions, isLoading: reviewersLoading } = useReviewerOptions();
-  const lonelyCompanyAdmin = isCompanyAdmin && !reviewersLoading && reviewerOptions.length === 0;
+
   const { data: teamBalances, isLoading: isTeamBalancesLoading } = useQuery({
     queryKey: ['leave-team-balance', year],
-    queryFn: () => apiClient.get<TeamLeaveBalance[]>(API.leave.balanceTeam, { params: { year } }).then(r => r.data),
+    queryFn: () =>
+      apiClient
+        .get<TeamLeaveBalance[]>(API.leave.balanceTeam, { params: { year } })
+        .then((r) => r.data),
     enabled: isAdmin,
     refetchInterval: LIVE_REFETCH_MS,
     refetchIntervalInBackground: true,
-  });
-
-  useEffect(() => {
-    if (!teamBalances) return;
-    const totals: Record<number, string> = {};
-    for (const row of teamBalances) {
-      totals[row.user_id] = String(row.total_days);
-    }
-    setTeamTotals(totals);
-  }, [teamBalances]);
-
-  const reviewMutation = useMutation({
-    mutationFn: ({ id, status, reviewComment }: { id: number; status: ReviewStatus; reviewComment: string }) =>
-      apiClient.post(API.leave.review(String(id)), { status, review_comment: reviewComment }),
-    onSuccess: async () => {
-      setMutationError(null);
-      setReviewDialog(null);
-      setReviewCommentInput('');
-      await queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
-      await queryClient.invalidateQueries({ queryKey: ['leave-balance'] });
-      await queryClient.invalidateQueries({ queryKey: ['leave-team-balance'] });
-    },
-    onError: (err) => {
-      setMutationError(getApiError(err).message);
-    },
   });
 
   const setBalanceMutation = useMutation({
     mutationFn: ({ userId, totalDays }: { userId: number; totalDays: number }) =>
       apiClient.post(API.leave.balanceSet, { user_id: userId, year, total_days: totalDays }),
     onSuccess: async () => {
-      setMutationError(null);
       await queryClient.invalidateQueries({ queryKey: ['leave-team-balance', year] });
       await queryClient.invalidateQueries({ queryKey: ['leave-balance', year] });
-    },
-    onError: (err) => {
-      setMutationError(getApiError(err).message);
-    },
-  });
-
-  const cancelMutation = useMutation({
-    mutationFn: (id: number) => apiClient.post(API.leave.cancel(String(id))),
-    onSuccess: async () => {
-      setMutationError(null);
-      setCancelConfirmId(null);
-      await queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
-      await queryClient.invalidateQueries({ queryKey: ['leave-balance'] });
-    },
-    onError: (err) => {
-      setMutationError(getApiError(err).message);
-      setCancelConfirmId(null);
     },
   });
 
   const rows = data?.results ?? [];
+  console.log('LeaveRequestListPage rows:', rows);
+  const pendingCount = rows.filter((r) => r.status === LEAVE_STATUSES.PENDING).length;
+
+  const totalDays = balance?.total_days ?? 0;
+  const usedDays = balance?.used_days ?? 0;
+  const remainingDays = balance?.remaining_days ?? 0;
+  const usedPct = totalDays > 0 ? Math.round((usedDays / totalDays) * 100) : 0;
+  const remainingPct = totalDays > 0 ? Math.round((remainingDays / totalDays) * 100) : 0;
+
+  const handleActionSuccess = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
+    await queryClient.invalidateQueries({ queryKey: ['leave-balance'] });
+    await queryClient.invalidateQueries({ queryKey: ['leave-team-balance'] });
+  };
+
   const showUserColumn = isAdmin;
-
-  const openReviewDialog = (leaveId: number, status: ReviewStatus, currentComment = '') => {
-    setMutationError(null);
-    setReviewDialog({ leaveId, status });
-    setReviewCommentInput(currentComment);
-  };
-
-  const closeReviewDialog = () => {
-    if (reviewMutation.isPending) return;
-    setMutationError(null);
-    setReviewDialog(null);
-    setReviewCommentInput('');
-  };
-
-  const submitReview = () => {
-    if (!reviewDialog || reviewMutation.isPending) return;
-    reviewMutation.mutate({
-      id: reviewDialog.leaveId,
-      status: reviewDialog.status,
-      reviewComment: reviewCommentInput.trim(),
-    });
-  };
+  const isEmployee = user?.role === USER_ROLES.EMPLOYEE;
+  const showActionsColumn = !isEmployee;
+  const columnCount = (showUserColumn ? 1 : 0) + (showActionsColumn ? 1 : 0) + 6;
 
   return (
-    <main className="mx-auto max-w-6xl space-y-6 p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-primary">Заявки на отсутствие</h1>
-        {lonelyCompanyAdmin ? null : (
-          <Link
-            to="/leave/new"
-            className="inline-flex items-center justify-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
-          >{t('common.submitRequest')}</Link>
-        )}
+    <main className="mx-auto max-w-6xl space-y-5 p-6">
+      {/* Page header */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1
+            style={{
+              fontSize: 20,
+              fontWeight: 700,
+              color: 'var(--text-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            {t('leave.pageTitle')}
+            {isAdmin && pendingCount > 0 && (
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  padding: '2px 8px',
+                  borderRadius: 20,
+                  background: 'var(--warning-bg)',
+                  color: 'var(--warning)',
+                }}
+              >
+                {t('leave.pendingCount', { count: pendingCount })}
+              </span>
+            )}
+          </h1>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
+            {isAdmin ? t('leave.subtitleCA') : t('leave.subtitleEmployee')}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setCreateOpen(true)}
+          className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity"
+        >
+          <Plus size={14} />
+          {t('leave.newRequest')}
+        </button>
       </div>
 
-      <section className="grid gap-3 rounded-xl border border-default bg-raised p-4 sm:grid-cols-2">
-        <label className="text-sm text-secondary">{t('common.status')}<select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value as LeaveStatus | '')}
-            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+      {/* KPI balance cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+        {/* Total */}
+        <div
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '14px 16px',
+          }}
+        >
+          <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', marginBottom: 6 }}>
+            {t('leave.balance.total')}
+          </div>
+          <div
+            style={{
+              fontSize: 22,
+              fontWeight: 700,
+              fontFamily: 'var(--font-mono)',
+              color: 'var(--text-primary)',
+            }}
           >
-            {statusOptions.map(option => (
-              <option key={option.value || 'all'} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-sm text-secondary">
-          Тип отсутствия
-          <select
-            value={typeFilter}
-            onChange={(event) => setTypeFilter(event.target.value as LeaveType | '')}
-            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
+            {totalDays}
+          </div>
+          <div
+            style={{
+              marginTop: 8,
+              height: 4,
+              borderRadius: 2,
+              background: 'var(--bg-raised)',
+              overflow: 'hidden',
+            }}
           >
-            {typeOptions.map(option => (
-              <option key={option.value || 'all'} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </section>
+            <div
+              style={{ height: '100%', borderRadius: 2, width: '100%', background: 'var(--border)' }}
+            />
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 5 }}>
+            {t('leave.balance.totalSub')}
+          </div>
+        </div>
 
-      <section className="grid gap-3 rounded-xl border border-default bg-raised p-4 sm:grid-cols-4">
-        <label className="text-sm text-secondary">
-          Год
-          <input
-            type="number"
-            min={1900}
-            max={3000}
-            value={year}
-            onChange={(event) => setYear(Number(event.target.value))}
-            className="mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary"
-          />
-        </label>
-        <div className="rounded-lg border border-default bg-surface p-3">
-          <div className="text-xs text-secondary">Всего дней</div>
-          <div className="text-lg font-semibold text-primary">{balance?.total_days ?? 0}</div>
+        {/* Used */}
+        <div
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '14px 16px',
+          }}
+        >
+          <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', marginBottom: 6 }}>
+            {t('leave.balance.used')}
+          </div>
+          <div
+            style={{
+              fontSize: 22,
+              fontWeight: 700,
+              fontFamily: 'var(--font-mono)',
+              color: 'var(--warning)',
+            }}
+          >
+            {usedDays}
+          </div>
+          <div
+            style={{
+              marginTop: 8,
+              height: 4,
+              borderRadius: 2,
+              background: 'var(--bg-raised)',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                height: '100%',
+                borderRadius: 2,
+                width: `${Math.min(usedPct, 100)}%`,
+                background: 'var(--warning)',
+                transition: 'width 0.3s ease',
+              }}
+            />
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 5 }}>
+            {t('leave.balance.usedSub')}
+          </div>
         </div>
-        <div className="rounded-lg border border-default bg-surface p-3">
-          <div className="text-xs text-secondary">Использовано</div>
-          <div className="text-lg font-semibold text-primary">{balance?.used_days ?? 0}</div>
-        </div>
-        <div className="rounded-lg border border-default bg-surface p-3">
-          <div className="text-xs text-secondary">Осталось</div>
-          <div className="text-lg font-semibold text-emerald-400">{balance?.remaining_days ?? 0}</div>
-        </div>
-      </section>
 
-      {mutationError && !reviewDialog && cancelConfirmId === null ? (
-        <div className="rounded-lg border border-rose-800 bg-rose-950/30 px-3 py-2 text-sm text-rose-300" role="alert">
-          {mutationError}
+        {/* Remaining */}
+        <div
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '14px 16px',
+          }}
+        >
+          <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', marginBottom: 6 }}>
+            {t('leave.balance.remaining')}
+          </div>
+          <div
+            style={{
+              fontSize: 22,
+              fontWeight: 700,
+              fontFamily: 'var(--font-mono)',
+              color: 'var(--success)',
+            }}
+          >
+            {remainingDays}
+          </div>
+          <div
+            style={{
+              marginTop: 8,
+              height: 4,
+              borderRadius: 2,
+              background: 'var(--bg-raised)',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                height: '100%',
+                borderRadius: 2,
+                width: `${Math.min(remainingPct, 100)}%`,
+                background: 'var(--success)',
+                transition: 'width 0.3s ease',
+              }}
+            />
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 5 }}>
+            {t('leave.balance.remainingSub')}
+          </div>
         </div>
-      ) : null}
+      </div>
 
-      {error ? (
-        <div className="rounded-lg border border-rose-800 bg-rose-950/30 px-3 py-2 text-sm text-rose-300" role="alert">
+      {/* Filters row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as LeaveStatus | '')}
+          style={selStyle}
+          aria-label={t('leave.filters.allStatuses')}
+        >
+          {statusOptions.map((opt) => (
+            <option key={opt.value || 'all-status'} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value as LeaveType | '')}
+          style={selStyle}
+          aria-label={t('leave.filters.allTypes')}
+        >
+          {typeOptions.map((opt) => (
+            <option key={opt.value || 'all-type'} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 4 }}>
+          {t('leave.requestsCount', { count: rows.length })}
+        </span>
+      </div>
+
+      {/* Error banner */}
+      {error && (
+        <div
+          role="alert"
+          style={{
+            padding: '8px 12px',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--danger)',
+            background: 'var(--danger-bg)',
+            color: 'var(--danger)',
+            fontSize: 13,
+          }}
+        >
           {getApiError(error).message}
         </div>
-      ) : null}
+      )}
 
+      {/* Main table */}
       {isLoading ? (
-        <p className="text-sm text-secondary">{t('common.loading')}</p>
+        <div
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            boxShadow: 'var(--shadow-card)',
+            padding: '48px 0',
+            textAlign: 'center',
+            color: 'var(--text-muted)',
+            fontSize: 13,
+          }}
+        >
+          {t('common.loading')}
+        </div>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-secondary">Заявок пока нет.</p>
+        <div
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            boxShadow: 'var(--shadow-card)',
+            overflow: 'hidden',
+          }}
+        >
+          <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)' }}>
+            <div style={{ fontSize: 28, marginBottom: 8 }}>📋</div>
+            <div style={{ fontSize: 13, fontWeight: 500 }}>{t('leave.empty')}</div>
+            <div style={{ fontSize: 11, marginTop: 4 }}>{t('leave.emptyHint')}</div>
+          </div>
+        </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-default bg-raised">
-          <table className="min-w-full divide-y divide-[color:var(--border)]/60">
-            <thead className="bg-surface/60">
-              <tr>
-                {showUserColumn ? <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('team.roleEmployee')}</th> : null}
-                <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Тип</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Период</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('common.status')}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('common.comment')}</th>
-                {isAdmin ? <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Действия</th> : null}
-                {!isAdmin ? <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Действия</th> : null}
+        <div
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            boxShadow: 'var(--shadow-card)',
+            overflow: 'hidden',
+          }}
+        >
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                {showUserColumn && <th style={thStyle}>{t('leave.table.employee')}</th>}
+                <th style={thStyle}>{t('leave.table.type')}</th>
+                <th style={thStyle}>{t('leave.table.period')}</th>
+                <th style={{ ...thStyle, textAlign: 'center' }}>{t('leave.table.days')}</th>
+                <th style={thStyle}>{t('leave.table.status')}</th>
+                <th style={thStyle}>{t('leave.table.submitted')}</th>
+                <th style={thStyle}>{t('leave.table.comment')}</th>
+                {showActionsColumn && <th style={thStyle}>{t('leave.table.actions')}</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[color:var(--border)]/60">
-              {rows.map((leave) => (
-                <tr key={leave.id} className="text-sm text-secondary">
-                  {showUserColumn ? (
-                    <td className="px-4 py-3">
-                      {leave.user_name?.trim() || `ID ${leave.user}`}
-                    </td>
-                  ) : null}
-                  <td className="px-4 py-3">
-                    {t(LEAVE_TYPE_LABEL_KEYS[leave.leave_type]) ?? leave.leave_type}
-                  </td>
-                  <td className="px-4 py-3">
-                    {fmtDate(leave.start_date)}
-                    {' - '}
-                    {fmtDate(leave.end_date)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE_CLASS[leave.status])}>
-                      {t(LEAVE_STATUS_LABEL_KEYS[leave.status]) ?? leave.status}
-                    </span>
-                    {leave.assigned_reviewer_name ? (
-                      <div className="mt-1 text-xs text-muted">
-                        Согласующий: {leave.assigned_reviewer_name}
-                      </div>
-                    ) : null}
-                  </td>
-                  <td className="px-4 py-3 text-secondary">
-                    <div>{leave.comment || '-'}</div>
-                    {leave.review_comment ? (
-                      <div className="mt-1 text-xs text-muted">
-                        Комментарий администратора: {leave.review_comment}
-                      </div>
-                    ) : null}
-                  </td>
-                  {isAdmin ? (
-                    <td className="px-4 py-3">
-                      {(() => {
-                        const isOwnLeave = leave.user === user?.id;
-                        const isAssignedToOther =
-                          leave.assigned_reviewer != null && leave.assigned_reviewer !== user?.id;
-                        const canReview =
-                          !isOwnLeave && (user?.role === USER_ROLES.SUPERADMIN || !isAssignedToOther);
-                        if (!canReview) {
-                          return <span className="text-xs text-muted">—</span>;
-                        }
-                        if (leave.status === LEAVE_STATUSES.PENDING) {
-                          return (
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                className="rounded-md border border-emerald-700 bg-success-subtle px-2 py-1 text-xs text-success hover:bg-success-subtle"
-                                disabled={reviewMutation.isPending}
-                                onClick={() => openReviewDialog(leave.id, LEAVE_STATUSES.APPROVED, leave.review_comment)}
-                              >
-                                Одобрить
-                              </button>
-                              <button
-                                type="button"
-                                className="rounded-md border border-rose-800 bg-rose-900/30 px-2 py-1 text-xs text-rose-300 hover:bg-rose-900/50"
-                                disabled={reviewMutation.isPending}
-                                onClick={() => openReviewDialog(leave.id, LEAVE_STATUSES.REJECTED, leave.review_comment)}
-                              >
-                                Отклонить
-                              </button>
-                            </div>
-                          );
-                        }
-                        if (leave.status === LEAVE_STATUSES.APPROVED) {
-                          return (
+            <tbody>
+              {rows.map((leave) => {
+                const isExpanded = expandedId === leave.id;
+                const isOwnLeave = leave.user.id === user?.id;
+                const isAssignedToOther =
+                  leave.assigned_reviewer != null && leave.assigned_reviewer.id !== user?.id;
+                const canReview =
+                  isAdmin &&
+                  !isOwnLeave &&
+                  (user?.role === USER_ROLES.SUPERADMIN || !isAssignedToOther);
+
+                const typeStyle = getTypeStyle(leave.leave_type);
+                const statusStyle = getStatusStyle(leave.status);
+
+                return (
+                  <>
+                    <tr
+                      key={leave.id}
+                      style={{ borderBottom: isExpanded ? 'none' : '1px solid var(--border)', cursor: 'pointer' }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLTableRowElement).style.background =
+                          'var(--bg-hover)';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLTableRowElement).style.background = '';
+                      }}
+                      onClick={() => setExpandedId(isExpanded ? null : leave.id)}
+                    >
+                      {/* Employee */}
+                      {showUserColumn && (
+                        <td style={tdStyle}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <UserAvatar avatar={leave.user.avatar} fullName={leave.user.full_name?.trim() || 'U'} />
+                            <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>
+                              {leave.user.full_name?.trim() || `ID ${leave.user.id}`}
+                            </span>
+                          </div>
+                        </td>
+                      )}
+
+                      {/* Type */}
+                      <td style={tdStyle}>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            padding: '2px 8px',
+                            borderRadius: 20,
+                            fontSize: 12,
+                            fontWeight: 500,
+                            ...typeStyle,
+                          }}
+                        >
+                          {t(LEAVE_TYPE_LABEL_KEYS[leave.leave_type]) ?? leave.leave_type}
+                        </span>
+                      </td>
+
+                      {/* Period */}
+                      <td style={tdStyle}>
+                        <span
+                          style={{
+                            fontSize: 12,
+                            fontFamily: 'var(--font-mono)',
+                            color: 'var(--text-secondary)',
+                          }}
+                        >
+                          {fmtPeriod(leave.start_date, leave.end_date)}
+                        </span>
+                      </td>
+
+                      {/* Days */}
+                      <td style={{ ...tdStyle, textAlign: 'center' }}>
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontWeight: 700,
+                            fontSize: 13,
+                            color: 'var(--text-primary)',
+                          }}
+                        >
+                          {leave.duration_days ?? '—'}
+                        </span>
+                      </td>
+
+                      {/* Status */}
+                      <td style={tdStyle}>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            padding: '2px 8px',
+                            borderRadius: 20,
+                            fontSize: 12,
+                            fontWeight: 500,
+                            whiteSpace: 'nowrap',
+                            ...statusStyle,
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: '50%',
+                              background: statusStyle.color,
+                              flexShrink: 0,
+                            }}
+                          />
+                          {t(LEAVE_STATUS_LABEL_KEYS[leave.status]) ?? leave.status}
+                        </span>
+                      </td>
+
+                      {/* Submitted */}
+                      <td style={tdStyle}>
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                          {fmtDate(leave.created_at)}
+                        </span>
+                      </td>
+
+                      {/* Comment */}
+                      <td style={{ ...tdStyle, maxWidth: 160 }}>
+                        {leave.comment ? (
+                          <div
+                            style={{
+                              fontSize: 12,
+                              color: 'var(--text-secondary)',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {leave.comment}
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>—</span>
+                        )}
+                        {leave.review_comment ? (
+                          <div
+                            style={{
+                              fontSize: 11,
+                              color: 'var(--brand-text)',
+                              marginTop: 2,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {leave.review_comment}
+                          </div>
+                        ) : null}
+                      </td>
+
+                      {/* Actions */}
+                      {showActionsColumn && (
+                        <td
+                          style={tdStyle}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            {/* Admin actions */}
+                            {isAdmin && (
+                              <>
+                                {canReview && leave.status === LEAVE_STATUSES.PENDING && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setActionModal({ type: 'approve', leaveId: leave.id })
+                                      }
+                                      style={{
+                                        height: 26,
+                                        padding: '0 8px',
+                                        borderRadius: 'var(--radius-sm)',
+                                        border: '1px solid var(--success)',
+                                        background: 'var(--success-bg)',
+                                        color: 'var(--success)',
+                                        fontSize: 11,
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                        fontFamily: 'inherit',
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                    >
+                                      {t('leave.action.approve')}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setActionModal({ type: 'reject', leaveId: leave.id })
+                                      }
+                                      style={{
+                                        height: 26,
+                                        padding: '0 8px',
+                                        borderRadius: 'var(--radius-sm)',
+                                        border: '1px solid var(--danger)',
+                                        background: 'var(--danger-bg)',
+                                        color: 'var(--danger)',
+                                        fontSize: 11,
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                        fontFamily: 'inherit',
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                    >
+                                      {t('leave.action.reject')}
+                                    </button>
+                                  </>
+                                )}
+                                {canReview && leave.status === LEAVE_STATUSES.APPROVED && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setActionModal({ type: 'cancel_approval', leaveId: leave.id })
+                                    }
+                                    style={{
+                                      height: 26,
+                                      padding: '0 8px',
+                                      borderRadius: 'var(--radius-sm)',
+                                      border: '1px solid var(--warning)',
+                                      background: 'var(--warning-bg)',
+                                      color: 'var(--warning)',
+                                      fontSize: 11,
+                                      fontWeight: 500,
+                                      cursor: 'pointer',
+                                      fontFamily: 'inherit',
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    {t('leave.action.cancelApproval')}
+                                  </button>
+                                )}
+                                {(!canReview ||
+                                  (leave.status !== LEAVE_STATUSES.PENDING &&
+                                    leave.status !== LEAVE_STATUSES.APPROVED)) && (
+                                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>—</span>
+                                )}
+                              </>
+                            )}
+
+                            {/* Expand chevron */}
                             <button
                               type="button"
-                              className="rounded-md border border-amber-200 dark:border-amber-800 bg-warning-subtle px-2 py-1 text-xs text-warning hover:bg-warning-subtle"
-                              disabled={reviewMutation.isPending}
-                              onClick={() => openReviewDialog(leave.id, LEAVE_STATUSES.REJECTED, leave.review_comment)}
+                              onClick={() => setExpandedId(isExpanded ? null : leave.id)}
+                              style={{
+                                width: 24,
+                                height: 24,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderRadius: 'var(--radius-sm)',
+                                border: 'none',
+                                background: 'transparent',
+                                color: 'var(--text-muted)',
+                                cursor: 'pointer',
+                                transition: 'transform 0.15s ease',
+                                transform: isExpanded ? 'rotate(90deg)' : 'none',
+                                flexShrink: 0,
+                              }}
+                              aria-label={isExpanded ? t('common.close') : 'Expand'}
                             >
-                              Отменить одобрение
+                              <ChevronRight size={14} />
                             </button>
-                          );
-                        }
-                        return <span className="text-xs text-muted">—</span>;
-                      })()}
-                    </td>
-                  ) : null}
-                  {!isAdmin ? (
-                    <td className="px-4 py-3">
-                      {leave.status === LEAVE_STATUSES.PENDING ? (
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            className="rounded-md border border-default bg-surface px-2 py-1 text-xs text-secondary hover:bg-hover"
-                            onClick={() => navigate(`/hr/leaves/${leave.id}/edit`)}
-                          >
-                            Редактировать
-                          </button>
-                          <button
-                            type="button"
-                            className="rounded-md border border-rose-800 bg-rose-900/30 px-2 py-1 text-xs text-rose-300 hover:bg-rose-900/50"
-                            disabled={cancelMutation.isPending}
-                            onClick={() => { setMutationError(null); setCancelConfirmId(leave.id); }}
-                          >
-                            Отменить
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted">—</span>
+                          </div>
+                        </td>
                       )}
-                    </td>
-                  ) : null}
-                </tr>
-              ))}
+                    </tr>
+
+                    {/* Detail row */}
+                    {isExpanded && (
+                      <tr
+                        key={`${leave.id}-detail`}
+                        style={{ borderBottom: '1px solid var(--border)' }}
+                      >
+                        <td colSpan={columnCount} style={{ padding: 0 }}>
+                          <div
+                            style={{
+                              padding: '16px 20px',
+                              background: 'var(--bg-raised)',
+                              borderTop: '1px solid var(--border-faint)',
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(4,1fr)',
+                              gap: 20,
+                            }}
+                          >
+                            {/* Duration */}
+                            <div>
+                              <div
+                                style={{
+                                  fontSize: 10,
+                                  fontWeight: 600,
+                                  color: 'var(--text-muted)',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.06em',
+                                  marginBottom: 4,
+                                }}
+                              >
+                                {t('leave.table.duration')}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: 500,
+                                  color: 'var(--text-primary)',
+                                }}
+                              >
+                                {leave.duration_days
+                                  ? t('leave.createModal.daysPreview', {
+                                      count: leave.duration_days,
+                                    })
+                                  : '—'}
+                              </div>
+                            </div>
+
+                            {/* Submitted */}
+                            <div>
+                              <div
+                                style={{
+                                  fontSize: 10,
+                                  fontWeight: 600,
+                                  color: 'var(--text-muted)',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.06em',
+                                  marginBottom: 4,
+                                }}
+                              >
+                                {t('leave.table.submitted')}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: 500,
+                                  color: 'var(--text-primary)',
+                                }}
+                              >
+                                {fmtDate(leave.created_at)}
+                              </div>
+                            </div>
+
+                            {/* Reviewed at */}
+                            <div>
+                              <div
+                                style={{
+                                  fontSize: 10,
+                                  fontWeight: 600,
+                                  color: 'var(--text-muted)',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.06em',
+                                  marginBottom: 4,
+                                }}
+                              >
+                                {t('leave.table.reviewedAt')}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: 500,
+                                  color: 'var(--text-primary)',
+                                }}
+                              >
+                                {leave.reviewed_at ? fmtDate(leave.reviewed_at) : '—'}
+                              </div>
+                            </div>
+
+                            {/* Reviewed by */}
+                            <div>
+                              <div
+                                style={{
+                                  fontSize: 10,
+                                  fontWeight: 600,
+                                  color: 'var(--text-muted)',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.06em',
+                                  marginBottom: 4,
+                                }}
+                              >
+                                {t('leave.table.reviewedBy')}
+                              </div>
+                              {(() => {
+                                const reviewer = leave.reviewed_by ?? leave.assigned_reviewer;
+                                if (!reviewer) return <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>—</span>;
+                                return (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <UserAvatar avatar={reviewer.avatar} fullName={reviewer.full_name} />
+                                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>
+                                      {reviewer.full_name}
+                                    </span>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+
+                            {/* Employee comment — full width if present */}
+                            {leave.comment && (
+                              <div style={{ gridColumn: '1 / -1' }}>
+                                <div
+                                  style={{
+                                    fontSize: 10,
+                                    fontWeight: 600,
+                                    color: 'var(--text-muted)',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.06em',
+                                    marginBottom: 4,
+                                  }}
+                                >
+                                  {t('leave.table.employeeComment')}
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: 13,
+                                    fontWeight: 500,
+                                    color: 'var(--text-primary)',
+                                    wordBreak: 'break-word',
+                                    whiteSpace: 'pre-wrap',
+                                    overflowWrap: 'break-word',
+                                  }}
+                                >
+                                  {leave.comment}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Admin comment — full width if present */}
+                            {leave.review_comment && (
+                              <div style={{ gridColumn: '1 / -1' }}>
+                                <div
+                                  style={{
+                                    fontSize: 10,
+                                    fontWeight: 600,
+                                    color: 'var(--text-muted)',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.06em',
+                                    marginBottom: 4,
+                                  }}
+                                >
+                                  {t('leave.table.adminComment')}
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: 13,
+                                    fontWeight: 500,
+                                    color: 'var(--brand-text)',
+                                    wordBreak: 'break-word',
+                                    whiteSpace: 'pre-wrap',
+                                    overflowWrap: 'break-word',
+                                  }}
+                                >
+                                  {leave.review_comment}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
 
-      {isAdmin ? (
-        <section className="overflow-hidden rounded-2xl border border-default bg-raised">
-          <div className="border-b border-default px-4 py-3 text-sm font-semibold text-primary">
-            Балансы команды
+      {/* Team balance table (admin only) */}
+      {isAdmin && (
+        <div
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            boxShadow: 'var(--shadow-card)',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Section header */}
+          <div
+            style={{
+              padding: '12px 16px',
+              borderBottom: '1px solid var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
+              {t('leave.teamBalance.title')}
+            </span>
+            {teamBalances && (
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                {t('leave.teamBalance.employees', { count: teamBalances.length })}
+              </span>
+            )}
           </div>
+
           {isTeamBalancesLoading ? (
-            <p className="px-4 py-4 text-sm text-secondary">Загрузка балансов...</p>
+            <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+              {t('leave.loadingBalances')}
+            </div>
           ) : !teamBalances?.length ? (
-            <p className="px-4 py-4 text-sm text-secondary">Сотрудники не найдены.</p>
+            <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+              {t('leave.noEmployees')}
+            </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-[color:var(--border)]/60">
-                <thead className="bg-surface/60">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">{t('team.roleEmployee')}</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Всего</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Использовано</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Осталось</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-secondary">Установить</th>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <th style={thStyle}>{t('leave.table.employee')}</th>
+                    <th style={thStyle}>{t('leave.teamBalance.total')}</th>
+                    <th style={thStyle}>{t('leave.teamBalance.used')}</th>
+                    <th style={thStyle}>{t('leave.teamBalance.remaining')}</th>
+                    <th style={{ ...thStyle, minWidth: 100 }}>{t('leave.teamBalance.usage')}</th>
+                    <th style={thStyle}>{t('leave.teamBalance.setBalance')}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[color:var(--border)]/60">
-                  {teamBalances.map((row) => {
-                    const isBalanceLocked = row.total_days > 0 && row.used_days >= row.total_days;
-
-                    return (
-                      <tr key={row.user_id} className="text-sm text-secondary">
-                        <td className="px-4 py-3">{row.user_name}</td>
-                        <td className="px-4 py-3">{row.total_days}</td>
-                        <td className="px-4 py-3">{row.used_days}</td>
-                        <td className="px-4 py-3">{row.remaining_days}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              min={0}
-                              value={teamTotals[row.user_id] ?? String(row.total_days)}
-                              onChange={(event) =>
-                                setTeamTotals((prev) => ({ ...prev, [row.user_id]: event.target.value }))
-                              }
-                              className={cn(
-                                'w-20 rounded-md border border-default bg-surface px-2 py-1 text-xs text-primary',
-                                isBalanceLocked && 'cursor-not-allowed opacity-60',
-                              )}
-                              disabled={isBalanceLocked || setBalanceMutation.isPending}
-                            />
-                            <button
-                              type="button"
-                              className={cn(
-                                'rounded-md bg-brand px-2 py-1 text-xs text-white',
-                                !isBalanceLocked && 'hover:bg-brand-hover',
-                                isBalanceLocked && 'cursor-not-allowed opacity-60',
-                              )}
-                              disabled={isBalanceLocked || setBalanceMutation.isPending}
-                              onClick={() =>
-                                !isBalanceLocked &&
-                                setBalanceMutation.mutate({
-                                  userId: row.user_id,
-                                  totalDays: Number(teamTotals[row.user_id] ?? row.total_days),
-                                })
-                              }
-                            >{t('common.save')}</button>
-                            {isBalanceLocked ? (
-                              <span className="text-xs text-warning">Лимит уже израсходован</span>
-                            ) : null}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                <tbody>
+                  {teamBalances.map((row) => (
+                    <TeamBalanceRow
+                      key={row.user.id}
+                      row={row}
+                      year={year}
+                      onSave={(userId, totalDays) => {
+                        setBalanceMutation.mutate({ userId, totalDays });
+                      }}
+                      isSaving={setBalanceMutation.isPending}
+                    />
+                  ))}
                 </tbody>
               </table>
             </div>
           )}
-        </section>
-      ) : null}
-
-      {reviewDialog ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-          role="dialog"
-          aria-modal="true"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) closeReviewDialog();
-          }}
-        >
-          <div
-            className="w-full max-w-lg rounded-xl border border-default bg-raised p-5"
-          >
-            <h2 className="text-lg font-semibold text-primary">
-              {reviewDialog.status === LEAVE_STATUSES.APPROVED ? 'Одобрить заявку' : 'Отклонить заявку'}
-            </h2>
-            <p className="mt-2 text-sm text-secondary">
-              {reviewDialog.status === LEAVE_STATUSES.APPROVED
-                ? 'Комментарий к одобрению'
-                : 'Комментарий к отклонению'}
-            </p>
-            <textarea
-              value={reviewCommentInput}
-              onChange={(event) => setReviewCommentInput(event.target.value)}
-              rows={4}
-              placeholder="Оставьте комментарий при необходимости"
-              className="mt-3 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted"
-            />
-            {mutationError ? (
-              <div className="mt-3 rounded-lg border border-rose-800 bg-rose-950/30 px-3 py-2 text-sm text-rose-300" role="alert">
-                {mutationError}
-              </div>
-            ) : null}
-            <div className="mt-4 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover"
-                onClick={closeReviewDialog}
-                disabled={reviewMutation.isPending}
-              >{t('common.cancel')}</button>
-              <button
-                type="button"
-                className={cn(
-                  'rounded-lg px-3 py-2 text-sm font-medium text-primary',
-                  reviewDialog.status === LEAVE_STATUSES.APPROVED
-                    ? 'bg-brand hover:bg-brand-hover'
-                    : 'bg-rose-600 hover:bg-rose-500',
-                )}
-                onClick={submitReview}
-                disabled={reviewMutation.isPending}
-              >
-                {reviewMutation.isPending
-                  ? 'Сохраняем...'
-                  : reviewDialog.status === LEAVE_STATUSES.APPROVED
-                    ? 'Подтвердить одобрение'
-                    : 'Подтвердить отклонение'}
-              </button>
-            </div>
-          </div>
         </div>
-      ) : null}
+      )}
 
-      {cancelConfirmId !== null ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-          role="dialog"
-          aria-modal="true"
-          onMouseDown={(e) => {
-            if (e.target !== e.currentTarget) return;
-            if (!cancelMutation.isPending) {
-              setMutationError(null);
-              setCancelConfirmId(null);
-            }
-          }}
-        >
-          <div
-            className="w-full max-w-sm rounded-xl border border-default bg-raised p-5"
-          >
-            <h2 className="text-lg font-semibold text-primary">Отменить заявку</h2>
-            <p className="mt-2 text-sm text-secondary">
-              Вы уверены, что хотите отменить эту заявку? Действие нельзя отменить.
-            </p>
-            {mutationError ? (
-              <div className="mt-3 rounded-lg border border-rose-800 bg-rose-950/30 px-3 py-2 text-sm text-rose-300" role="alert">
-                {mutationError}
-              </div>
-            ) : null}
-            <div className="mt-4 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                className="rounded-lg border border-default px-3 py-2 text-sm text-secondary hover:bg-hover"
-                onClick={() => { setMutationError(null); setCancelConfirmId(null); }}
-                disabled={cancelMutation.isPending}
-              >
-                Назад
-              </button>
-              <button
-                type="button"
-                className="rounded-lg bg-rose-600 px-3 py-2 text-sm font-medium text-white hover:bg-rose-500 disabled:opacity-50"
-                disabled={cancelMutation.isPending}
-                onClick={() => cancelMutation.mutate(cancelConfirmId)}
-              >
-                {cancelMutation.isPending ? 'Отмена...' : 'Подтвердить отмену'}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {/* Create modal */}
+      <LeaveCreateModal open={createOpen} onClose={() => setCreateOpen(false)} />
+
+      {/* Action modal */}
+      <LeaveActionModal
+        open={actionModal !== null}
+        actionType={actionModal?.type ?? null}
+        leaveId={actionModal?.leaveId ?? null}
+        onClose={() => setActionModal(null)}
+        onSuccess={handleActionSuccess}
+      />
     </main>
   );
 }

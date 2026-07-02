@@ -18,7 +18,6 @@ import {
   MailPlus,
   Bell,
   Ban,
-  Trash2,
   type LucideIcon,
 } from 'lucide-react';
 import { STAFF_UI_PREFIX, SUPERADMIN_UI_PREFIX, USER_ROLES, type UserRole } from '@/shared/config/constants';
@@ -109,7 +108,6 @@ const companyAdminNav: NavSection[] = [
       { labelKey: 'sidebar.navItem.buildingMap',        path: '/building/map',                                     icon: Map },
       { labelKey: 'sidebar.navItem.guestPasses',     path: '/passes',                               icon: ShieldCheck },
       { labelKey: 'sidebar.navItem.files',           path: '/storage',                              icon: FileText },
-      { labelKey: 'sidebar.navItem.trash',           path: '/storage/trash',                        icon: Trash2 },
       { labelKey: 'sidebar.navItem.announcements',   path: '/announcements',                        icon: Megaphone },
       { labelKey: 'sidebar.navItem.leave',           path: '/hr/leaves',                            icon: Clock },
       { labelKey: 'sidebar.navItem.serviceRequests', path: '/service-requests',                     icon: Wrench },
@@ -150,7 +148,6 @@ const employeeNav: NavSection[] = [
       { labelKey: 'sidebar.navItem.bookings',        path: '/bookings/my',                          icon: CalendarDays },
       { labelKey: 'sidebar.navItem.guestPasses',     path: '/passes',                               icon: ShieldCheck },
       { labelKey: 'sidebar.navItem.files',           path: '/storage',                              icon: FileText },
-      { labelKey: 'sidebar.navItem.trash',           path: '/storage/trash',                        icon: Trash2 },
       { labelKey: 'sidebar.navItem.announcements',   path: '/announcements',                        icon: Megaphone },
       { labelKey: 'sidebar.navItem.leave',           path: '/hr/leaves',                            icon: Clock },
     ],
@@ -179,7 +176,6 @@ const guestNav: NavSection[] = [
       { labelKey: 'sidebar.navItem.buildingMap',     path: '/building/map',                         icon: Map },
       { labelKey: 'sidebar.navItem.serviceRequest',  path: '/service-requests',                     icon: Wrench },
       { labelKey: 'sidebar.navItem.files',           path: '/storage',                              icon: FileText },
-      { labelKey: 'sidebar.navItem.trash',           path: '/storage/trash',                        icon: Trash2 },
       { labelKey: 'sidebar.navItem.guestPasses',     path: '/passes',                               icon: ShieldCheck },
     ],
   },

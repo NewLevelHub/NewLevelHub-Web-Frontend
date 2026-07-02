@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { PromptModal } from '@/shared/ui/PromptModal';
-import { ChevronRight, Download, Folder, Plus, X } from 'lucide-react';
+import { ChevronRight, Download, Folder, Plus, Trash2, X } from 'lucide-react';
+import { BulkActionBar } from '@/shared/ui/BulkActionBar';
 import { cn } from '@/shared/lib/cn';
+import { Button } from '@/shared/ui/Button';
 import { useFileBrowser } from '@/pages/files/hooks/useFileBrowser';
 import { FolderCard } from '@/pages/files/components/FolderCard';
 import { FolderPermissionPanel } from '@/pages/files/components/FolderPermissionPanel';
@@ -14,6 +17,16 @@ import { FilesTableShell } from '@/pages/files/components/FilesTableShell';
 import { StoragePanel } from '@/pages/files/components/StoragePanel';
 import { FilePreviewPanel } from '@/pages/files/components/FilePreviewPanel';
 import type { StorageFile } from '@/shared/types';
+
+/** Compact label for the trash button badge: «447M» / «1.2G» / «512K» */
+function formatTrashSizeCompact(bytes: number): string {
+  const KB = 1024;
+  const MB = KB * 1024;
+  const GB = MB * 1024;
+  if (bytes >= GB) return `${(bytes / GB).toFixed(1)}G`;
+  if (bytes >= MB) return `${Math.round(bytes / MB)}M`;
+  return `${Math.round(bytes / KB)}K`;
+}
 
 export default function FileBrowserPage() {
   const { t } = useTranslation();
@@ -41,30 +54,54 @@ export default function FileBrowserPage() {
           {t('files.title')}
         </h1>
         <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to="/storage/trash"
+            className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium rounded-[var(--radius-sm)] border border-[color:var(--border)] text-secondary hover:bg-[color:var(--bg-hover)] transition-colors"
+          >
+            <Trash2 size={14} />
+            {t('files.trash')}
+            {(() => {
+              const trashBytes = fb.trashPersonalDeletableBytes + (fb.trashCompanyDeletableBytes ?? 0);
+              return trashBytes > 0 ? (
+                <span
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 700,
+                    padding: '1px 5px',
+                    borderRadius: 10,
+                    background: 'var(--danger)',
+                    color: '#fff',
+                    marginLeft: 2,
+                  }}
+                >
+                  {formatTrashSizeCompact(trashBytes)}
+                </span>
+              ) : null;
+            })()}
+          </Link>
           {!fb.isGuest && !fb.isCurrentLocationViewOnly && (
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={() => fb.setShowNewFolderModal(true)}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-sm)] border border-default bg-surface text-sm font-medium text-primary hover:bg-hover transition-colors"
             >
               <Folder size={13} />
               {t('files.newFolder')}
-            </button>
+            </Button>
           )}
           {!fb.isGuest && (
-            <button
+            <Button
               type="button"
+              variant="primary"
+              size="sm"
               onClick={() => fb.uploadInputRef.current?.click()}
               disabled={fb.isUploadPending}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-sm)] bg-[var(--brand)] text-white text-sm font-medium hover:bg-[var(--brand-hover)] transition-colors disabled:opacity-60"
+              loading={fb.isUploadPending}
             >
-              {fb.isUploadPending ? (
-                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden="true" />
-              ) : (
-                <Plus size={14} />
-              )}
+              {!fb.isUploadPending && <Plus size={14} />}
               {t('common.uploadFile')}
-            </button>
+            </Button>
           )}
           <input
             ref={fb.uploadInputRef}
@@ -199,29 +236,19 @@ export default function FileBrowserPage() {
 
           {/* Bulk action bar */}
           {fb.selectedFileIds.size > 0 && (
-            <div className="flex flex-col gap-2.5 rounded-xl border border-[var(--brand)] bg-brand-subtle px-4 py-2.5 text-sm sm:flex-row sm:items-center sm:gap-3">
-              <span className="font-medium text-[var(--brand-text)]">
-                {t('files.selectedCount', { count: fb.selectedFileIds.size })}
-              </span>
-              <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
-                <button
-                  type="button"
-                  onClick={() => fb.setSelectedFileIds(new Set())}
-                  className="inline-flex items-center gap-1.5 h-7 px-3 rounded-[var(--radius-sm)] border border-default bg-surface text-[12px] font-medium text-secondary hover:bg-hover transition-colors"
-                >
-                  <X size={12} />
-                  {t('files.deselectAll')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fb.setConfirmBulkDelete(true)}
-                  disabled={fb.isBulkDeletePending}
-                  className="inline-flex items-center gap-1.5 h-7 px-3 rounded-[var(--radius-sm)] bg-danger-subtle border border-[var(--danger)] text-[12px] font-medium text-danger hover:bg-[var(--danger)] hover:text-white transition-colors disabled:opacity-50"
-                >
-                  {t('files.deleteSelected')}
-                </button>
-              </div>
-            </div>
+            <BulkActionBar
+              selectedCount={fb.selectedFileIds.size}
+              onClearSelection={() => fb.setSelectedFileIds(new Set())}
+              actions={[
+                {
+                  label: t('files.deleteSelected'),
+                  icon: <Trash2 size={13} />,
+                  onClick: () => fb.setConfirmBulkDelete(true),
+                  variant: 'danger',
+                  isLoading: fb.isBulkDeletePending,
+                },
+              ]}
+            />
           )}
 
           {/* Files table */}
