@@ -15,7 +15,7 @@ export function mapApiUser(raw: Record<string, unknown>): User {
   // Support both nested company object { id, name } and flat company_id/company_name
   let companyId: number | null = null;
   let companyName: string | null = null;
-  let companyObject: { id: number; name: string; onboarding_completed?: boolean } | null = null;
+  let companyObject: { id: number; name: string; onboarding_completed?: boolean; plan?: string | null } | null = null;
 
   if (companyRaw !== null && companyRaw !== undefined && typeof companyRaw === 'object') {
     const c = companyRaw as Record<string, unknown>;
@@ -26,6 +26,7 @@ export function mapApiUser(raw: Record<string, unknown>): User {
         id: companyId,
         name: companyName,
         onboarding_completed: typeof c.onboarding_completed === 'boolean' ? c.onboarding_completed : undefined,
+        plan: typeof c.plan === 'string' ? c.plan : null,
       };
     }
   } else if (typeof companyRaw === 'number') {

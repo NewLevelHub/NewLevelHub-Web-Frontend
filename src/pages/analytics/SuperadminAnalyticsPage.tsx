@@ -45,6 +45,9 @@ import { getApiError } from '@/shared/lib/getApiError';
 import { cn } from '@/shared/lib/cn';
 import { fmtDayMonth, fmtTime } from '@/shared/lib/formatDate';
 import { filenameFromContentDisposition, triggerCsvFileDownload } from '@/shared/lib/csvDownload';
+import { Button } from '@/shared/ui/Button';
+import { AnalyticsPeriodFilter } from '@/pages/analytics/components/AnalyticsPeriodFilter';
+import type { PeriodValue } from '@/pages/analytics/components/AnalyticsPeriodFilter';
 import type {
   Booking,
   BookingResourceListItem,
@@ -55,13 +58,6 @@ import type {
   SuperadminAnalyticsPeriod,
   SuperadminAnalyticsResponse,
 } from '@/shared/types';
-
-const PERIOD_OPTIONS: { value: SuperadminAnalyticsPeriod; label: string }[] = [
-  { value: '7d', label: '7 дн.' },
-  { value: '30d', label: '30 дн.' },
-  { value: '90d', label: '90 дн.' },
-  { value: 'custom', label: 'Свой' },
-];
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const SR_TYPE_LABELS: Record<string, string> = {
@@ -159,7 +155,10 @@ function StatCard({
       className="bg-raised rounded-2xl border border-default p-5 flex items-center gap-4"
       title={ariaDescription}
     >
-      <div className="w-12 h-12 rounded-xl bg-blue-900/40 flex items-center justify-center shrink-0 text-blue-300">
+      <div
+        className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+        style={{ background: 'var(--brand-subtle)', color: 'var(--brand-text, var(--brand))' }}
+      >
         {icon}
       </div>
       <div className="min-w-0">
@@ -709,18 +708,16 @@ function ResourceUsageSection({
   );
 }
 
-const DOW_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 const DOW_DISPLAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const HEATMAP_HOURS = Array.from({ length: 14 }, (_, i) => i + 8); // 8..21
+const DAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
 function PeakHoursHeatmap({ rows }: { rows: SuperadminAnalyticsResponse['peak_hours'] }) {
   const { t } = useTranslation();
 
   const cellMap = useMemo(() => {
     const m = new Map<string, number>();
-    for (const r of rows) {
-      m.set(`${r.day_of_week}-${r.hour}`, r.booking_count);
-    }
+    for (const r of rows) m.set(`${r.day_of_week}-${r.hour}`, r.booking_count);
     return m;
   }, [rows]);
 
@@ -733,45 +730,71 @@ function PeakHoursHeatmap({ rows }: { rows: SuperadminAnalyticsResponse['peak_ho
     return <p className="text-xs text-muted">{t('analytics.noData')}</p>;
   }
 
-  return (
-    <div className="overflow-x-auto">
-      <div
-        className="grid min-w-[480px]"
-        style={{ gridTemplateColumns: '1.75rem repeat(24, minmax(0, 1fr))' }}
-      >
-        {/* Hour axis labels — top row */}
-        <div className="w-7 shrink-0" aria-hidden />
-        {HOURS.map((h) => (
-          <div key={h} className="text-center text-[10px] text-muted mb-1">
-            {h === 0 || h === 6 || h === 12 || h === 18 ? String(h) : ''}
-          </div>
-        ))}
+  const W = 298, H = 148, lbl = 18;
+  const cW = (W - lbl) / HEATMAP_HOURS.length;
+  const cH = (H - 14) / 7;
 
+  return (
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: H }}>
+        {/* Hour labels */}
+        {HEATMAP_HOURS.map((h, hi) => (
+          <text
+            key={h}
+            x={lbl + hi * cW + cW / 2}
+            y={10}
+            textAnchor="middle"
+            fontSize="8"
+            fill="var(--text-subtle)"
+          >
+            {h}
+          </text>
+        ))}
         {/* Day rows */}
-        {DOW_DISPLAY_ORDER.map((dow) => {
-          const dowKey = DOW_KEYS[dow];
-          const dayLabel = t(`analytics.dow.${dowKey}`);
+        {DOW_DISPLAY_ORDER.map((dow, di) => {
+          const dayLabel = DAY_LABELS[di];
           return (
-            <Fragment key={dow}>
-              <div className="w-7 shrink-0 text-[10px] text-muted text-right pr-1.5 flex items-center justify-end">
+            <g key={dow}>
+              <text
+                x={0}
+                y={14 + di * cH + cH / 2 + 3}
+                fontSize="9"
+                fill="var(--text-muted)"
+              >
                 {dayLabel}
-              </div>
-              {HOURS.map((hour) => {
-                const count = cellMap.get(`${dow}-${hour}`) ?? 0;
-                const intensity = count > 0 ? Math.max(0.12, count / maxCount) : 0;
+              </text>
+              {HEATMAP_HOURS.map((h, hi) => {
+                const count = cellMap.get(`${dow}-${h}`) ?? 0;
+                const v = count / maxCount;
                 return (
-                  <div
-                    key={hour}
-                    className={cn('w-full h-5 rounded-[2px]', count === 0 && 'bg-[var(--bg-hover)]')}
-                    style={count > 0 ? { backgroundColor: `rgba(59,130,246,${intensity})` } : undefined}
-                    title={`${dayLabel} ${hour}:00 — ${count} бр.`}
-                    aria-label={`${dayLabel} ${hour}:00 — ${count} бр.`}
-                  />
+                  <rect
+                    key={h}
+                    x={lbl + hi * cW + 1}
+                    y={14 + di * cH + 1}
+                    width={cW - 2}
+                    height={cH - 2}
+                    fill="var(--brand)"
+                    opacity={0.06 + v * 0.88}
+                    rx="2"
+                  >
+                    <title>{`${dayLabel} ${h}:00 — ${count} бр.`}</title>
+                  </rect>
                 );
               })}
-            </Fragment>
+            </g>
           );
         })}
+      </svg>
+      {/* Legend */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 10, color: 'var(--text-subtle)' }}>
+        <span>Меньше</span>
+        {[0.08, 0.28, 0.48, 0.68, 0.88].map((o, i) => (
+          <span
+            key={i}
+            style={{ width: 16, height: 10, borderRadius: 2, background: 'var(--brand)', opacity: o, display: 'block' }}
+          />
+        ))}
+        <span>Больше</span>
       </div>
     </div>
   );
@@ -851,11 +874,11 @@ export default function SuperadminAnalyticsPage() {
 
   const customRangeError = useMemo(() => {
     if (period !== 'custom') return null;
-    if (!dateFrom || !dateTo) return 'Укажите даты начала и конца периода.';
-    if (!isValidIsoDate(dateFrom) || !isValidIsoDate(dateTo)) return 'Формат даты: YYYY-MM-DD.';
-    if (dateFrom > dateTo) return 'Дата «с» не может быть позже даты «по».';
+    if (!dateFrom || !dateTo) return t('analytics.dateRangeError.required');
+    if (!isValidIsoDate(dateFrom) || !isValidIsoDate(dateTo)) return t('analytics.dateRangeError.format');
+    if (dateFrom > dateTo) return t('analytics.dateRangeError.order');
     return null;
-  }, [dateFrom, dateTo, period]);
+  }, [dateFrom, dateTo, period, t]);
 
   const requestParams = useMemo(() => {
     const params: Record<string, string | number> = { period };
@@ -948,112 +971,81 @@ export default function SuperadminAnalyticsPage() {
 
   if (authLoading) {
     return (
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <p className="text-sm text-muted">Загрузка…</p>
-      </main>
+      <div>
+        <p className="text-sm text-muted">{t('analytics.loadingAnalytics')}</p>
+      </div>
     );
   }
 
   if (!isSuperadmin) {
     return (
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <p className="text-sm text-muted">Недостаточно прав для просмотра этой страницы.</p>
-      </main>
+      <div>
+        <p className="text-sm text-muted">{t('analytics.noPermission')}</p>
+      </div>
     );
   }
 
   return (
-    <main className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <div className="space-y-8">
       <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-primary flex items-center gap-2">
-            <BarChart3 className="text-blue-400 shrink-0" size={28} aria-hidden />
-            Аналитика
+            <BarChart3 className="text-[color:var(--brand)] shrink-0" size={28} aria-hidden />
+            {t('analytics.title')}
           </h1>
-          <p className="text-sm text-secondary mt-1">Обзор по платформе (суперадмин)</p>
+          <p className="text-sm text-secondary mt-1">{t('analytics.superadminSubtitle')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {PERIOD_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setPeriod(opt.value)}
-              className={cn(
-                'rounded-lg px-3 py-1.5 text-sm font-medium border transition-colors',
-                period === opt.value
-                  ? 'bg-blue-600 text-white border-blue-500'
-                  : 'bg-raised text-secondary border-default hover:border-gray-500',
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => void handleExportCsv()}
             disabled={!queryEnabled || isExporting}
-            className={cn(
-              'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium border transition-colors',
-              !queryEnabled || isExporting
-                ? 'border-default bg-surface text-muted cursor-not-allowed'
-                : 'border-emerald-700 bg-success-subtle text-emerald-100 hover:border-emerald-600',
-            )}
           >
-            <Download size={16} aria-hidden />
-            {isExporting ? 'Выгрузка…' : 'Скачать CSV'}
-          </button>
-          <button
-            type="button"
+            <Download size={14} aria-hidden />
+            {isExporting ? t('analytics.exportingCsv') : t('analytics.exportCsv')}
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
             onClick={() => void handleExportPdf()}
             disabled={!queryEnabled || isExportingPdf}
-            className={cn(
-              'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium border transition-colors',
-              !queryEnabled || isExportingPdf
-                ? 'border-default bg-surface text-muted cursor-not-allowed'
-                : 'border-[color:var(--brand)] bg-brand-subtle text-brand hover:opacity-90',
-            )}
           >
-            <FileDown size={16} aria-hidden />
+            <FileDown size={14} aria-hidden />
             {isExportingPdf ? t('analytics.exportingPdf') : t('analytics.exportPdf')}
-          </button>
+          </Button>
         </div>
       </header>
 
       {exportError && (
-        <div className="rounded-xl border border-rose-800 bg-rose-950/40 px-4 py-3 text-sm text-rose-100" role="alert">
+        <div
+          className="rounded-xl px-4 py-3 text-sm"
+          style={{ border: '1px solid var(--danger)', background: 'var(--danger-bg)', color: 'var(--danger-text)' }}
+          role="alert"
+        >
           {exportError}
         </div>
       )}
 
       {exportPdfError && (
-        <div className="rounded-xl border border-rose-800 bg-rose-950/40 px-4 py-3 text-sm text-rose-100" role="alert">
+        <div
+          className="rounded-xl px-4 py-3 text-sm"
+          style={{ border: '1px solid var(--danger)', background: 'var(--danger-bg)', color: 'var(--danger-text)' }}
+          role="alert"
+        >
           {exportPdfError}
         </div>
       )}
 
-      {period === 'custom' && (
-        <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4">
-          <label className="flex flex-col gap-1 text-sm text-secondary">
-            <span className="text-secondary">С даты</span>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="rounded-lg border border-default bg-raised px-3 py-2 text-primary"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm text-secondary">
-            <span className="text-secondary">По дату</span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="rounded-lg border border-default bg-raised px-3 py-2 text-primary"
-            />
-          </label>
-          {customRangeError && <p className="text-sm text-warning sm:pb-2">{customRangeError}</p>}
-        </div>
-      )}
+      <AnalyticsPeriodFilter
+        period={period as PeriodValue}
+        onPeriodChange={(p) => setPeriod(p as SuperadminAnalyticsPeriod)}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        onDateFromChange={setDateFrom}
+        onDateToChange={setDateTo}
+        customRangeError={customRangeError ?? undefined}
+      />
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-end sm:gap-4">
         <label className="flex flex-col gap-1 text-sm text-secondary min-w-[200px]">
@@ -1179,14 +1171,48 @@ export default function SuperadminAnalyticsPage() {
         <p className="text-sm text-muted">Укажите и проверьте даты, чтобы загрузить обзор.</p>
       )}
 
-      <ResourceUsageSection
-        period={period}
-        dateFrom={dateFrom}
-        dateTo={dateTo}
-        companyId={companyId}
-        enabled={queryEnabled}
-      />
+      {/* Row 1: Resource bar chart + Heatmap */}
+      {data && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 14 }}>
+          {/* Resource utilization horizontal bar chart */}
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '18px 20px' }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>Загруженность ресурсов</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 14 }}>
+              последние {period === '7d' ? 7 : period === '30d' ? 30 : period === '90d' ? 90 : ''} {period !== 'custom' ? 'дней' : `${data.date_from} — ${data.date_to}`} · количество броней
+            </div>
+            {(() => {
+              const maxCount = Math.max(...data.top_resources.map((r) => r.booking_count), 1);
+              return data.top_resources.map((r) => {
+                const pct = (r.booking_count / maxCount) * 100;
+                return (
+                  <div key={r.resource_id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7 }}>
+                    <div style={{ width: 130, flexShrink: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {r.name}
+                      </div>
+                    </div>
+                    <div style={{ flex: 1, height: 18, background: 'var(--bg-raised)', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: pct + '%', background: 'var(--brand)', borderRadius: 4, opacity: 0.85, minWidth: 4 }} />
+                    </div>
+                    <div style={{ width: 36, textAlign: 'right', fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-mono, monospace)', flexShrink: 0 }}>
+                      {r.booking_count}
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+          </div>
 
+          {/* Heatmap card */}
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '18px 20px' }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>Пиковые часы бронирований</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 14 }}>день × час · интенсивность</div>
+            <PeakHoursHeatmap rows={data.peak_hours ?? []} />
+          </div>
+        </div>
+      )}
+
+      {/* Row 2: Registrations + Service requests charts */}
       {data && (
         <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <div className="rounded-2xl border border-default bg-raised p-4">
@@ -1203,16 +1229,16 @@ export default function SuperadminAnalyticsPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                     <XAxis
                       dataKey="week"
-                      tick={{ fill: '#9ca3af', fontSize: 11 }}
+                      tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
                       tickFormatter={fmtWeek}
                     />
-                    <YAxis tick={{ fill: '#9ca3af', fontSize: 12 }} allowDecimals={false} width={28} />
+                    <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 12 }} allowDecimals={false} width={28} />
                     <Tooltip
                       contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-strong)', color: 'var(--text-primary)', borderRadius: 8 }}
                       cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                       labelFormatter={(label) => `Неделя с ${fmtWeek(String(label))}`}
                     />
-                    <Bar dataKey="count" fill="#3b82f6" name="Новых пользователей" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="count" fill="var(--brand)" name="Новых пользователей" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -1233,16 +1259,16 @@ export default function SuperadminAnalyticsPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                     <XAxis
                       dataKey="type"
-                      tick={{ fill: '#9ca3af', fontSize: 12 }}
+                      tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
                       tickFormatter={fmtType}
                     />
-                    <YAxis tick={{ fill: '#9ca3af', fontSize: 12 }} allowDecimals={false} width={28} />
+                    <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 12 }} allowDecimals={false} width={28} />
                     <Tooltip
                       contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-strong)', color: 'var(--text-primary)', borderRadius: 8 }}
                       cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                       labelFormatter={(label) => fmtType(String(label))}
                     />
-                    <Bar dataKey="count" fill="#22c55e" name="Заявок" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="count" fill="var(--success)" name="Заявок" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -1251,44 +1277,134 @@ export default function SuperadminAnalyticsPage() {
         </section>
       )}
 
-      {data && (
-        <section className="rounded-xl border border-default bg-surface p-5">
-          <h2 className="text-sm font-semibold text-primary mb-1">{t('analytics.peakHours')}</h2>
-          <p className="text-xs text-muted mb-4">{t('analytics.peakHoursDesc')}</p>
-          <PeakHoursHeatmap rows={data.peak_hours ?? []} />
-        </section>
-      )}
+      <ResourceUsageSection
+        period={period}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        companyId={companyId}
+        enabled={queryEnabled}
+      />
 
-      {data && (
-        <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <div className="rounded-2xl border border-default bg-raised p-4">
-            <h3 className="text-sm font-semibold text-primary mb-3">Top-5 ресурсов</h3>
-            <div className="space-y-2 text-sm">
-              {data.top_resources.map((row) => (
-                <div key={row.resource_id} className="flex items-center justify-between text-secondary">
-                  <span className="truncate pr-3">{row.name}</span>
-                  <span className="tabular-nums">{row.booking_count}</span>
-                </div>
-              ))}
+      {/* Row 3: Top-5 resources + Top-5 companies + Low utilization */}
+      {data && (() => {
+        const thStyle: React.CSSProperties = {
+          textAlign: 'left',
+          fontSize: 11,
+          fontWeight: 500,
+          color: 'var(--text-muted)',
+          padding: '8px 12px',
+          whiteSpace: 'nowrap',
+        };
+        const tdStyle: React.CSSProperties = {
+          padding: '10px 12px',
+          fontSize: 13,
+          color: 'var(--text-primary)',
+          verticalAlign: 'middle',
+        };
+        const maxB = Math.max(...data.top_resources.map((r) => r.booking_count), 1);
+
+        return (
+          <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
+            {/* Top-5 resources */}
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '18px 20px' }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 12 }}>
+                {t('analytics.top5resources')}
+              </h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <th style={{ ...thStyle, width: 22 }}>#</th>
+                    <th style={thStyle}>Ресурс</th>
+                    <th style={{ ...thStyle, textAlign: 'right' }}>Бр.</th>
+                    <th style={{ ...thStyle, textAlign: 'right' }}>Загр.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.top_resources.map((row, i) => {
+                    const pct = Math.round((row.booking_count / maxB) * 100);
+                    return (
+                      <tr key={row.resource_id} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ ...tdStyle, color: 'var(--text-muted)', fontFamily: 'var(--font-mono, monospace)' }}>{i + 1}</td>
+                        <td style={tdStyle}>
+                          <div style={{ fontWeight: 500 }}>{row.name}</div>
+                        </td>
+                        <td style={{ ...tdStyle, textAlign: 'right', fontFamily: 'var(--font-mono, monospace)' }}>{row.booking_count}</td>
+                        <td style={{ ...tdStyle, textAlign: 'right', width: 76 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+                            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--bg-raised)', overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: pct + '%', background: pct > 85 ? 'var(--success)' : pct > 70 ? 'var(--warning)' : 'var(--brand)' }} />
+                            </div>
+                            <span style={{ fontSize: 11, color: 'var(--text-muted)', minWidth: 26, textAlign: 'right' }}>{pct}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          </div>
 
-          {/* Top-5 компаний скрыты до проработки метрики:
-              сейчас рейтинг строится по числу бронирований, что не отражает ценность компании. */}
+            {/* Top-5 companies */}
+            {data.top_companies.length > 0 && (
+              <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '18px 20px' }}>
+                <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 12 }}>
+                  {t('analytics.top5companies')}
+                </h3>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                      <th style={{ ...thStyle, width: 22 }}>#</th>
+                      <th style={thStyle}>Компания</th>
+                      <th style={{ ...thStyle, textAlign: 'right' }}>Бр.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.top_companies.map((row, i) => (
+                      <tr key={row.company_id} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ ...tdStyle, color: 'var(--text-muted)', fontFamily: 'var(--font-mono, monospace)' }}>{i + 1}</td>
+                        <td style={{ ...tdStyle, fontWeight: 500 }}>{row.company_name}</td>
+                        <td style={{ ...tdStyle, textAlign: 'right', fontFamily: 'var(--font-mono, monospace)' }}>{row.booking_count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-          <div className="rounded-2xl border border-default bg-raised p-4">
-            <h3 className="text-sm font-semibold text-primary mb-3">Низкая загруженность (&lt;20%)</h3>
-            <div className="space-y-2 text-sm">
-              {data.low_utilization.map((row) => (
-                <div key={row.resource_id} className="flex items-center justify-between text-secondary">
-                  <span className="truncate pr-3">{row.name}</span>
-                  <span className="tabular-nums">{row.utilization_percent}%</span>
-                </div>
-              ))}
+            {/* Low utilization */}
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '18px 20px' }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 12 }}>
+                {t('analytics.lowUtilization')}
+              </h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <th style={thStyle}>Ресурс</th>
+                    <th style={{ ...thStyle, textAlign: 'right' }}>Загр.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.low_utilization.map((row) => (
+                    <tr key={row.resource_id} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={tdStyle}>
+                        <div style={{ fontWeight: 500 }}>{row.name}</div>
+                      </td>
+                      <td style={{ ...tdStyle, textAlign: 'right', width: 84 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+                          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--bg-raised)', overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: (row.utilization_percent * 3) + '%', background: 'var(--danger)', opacity: 0.75 }} />
+                          </div>
+                          <span style={{ fontSize: 11, color: 'var(--danger)', minWidth: 26, textAlign: 'right', fontWeight: 600 }}>{row.utilization_percent}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
-        </section>
-      )}
-    </main>
+          </section>
+        );
+      })()}
+    </div>
   );
 }
