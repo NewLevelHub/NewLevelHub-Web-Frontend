@@ -2307,7 +2307,14 @@
     "onboardingCompleted": "Onboarding completed",
     "onboardingNotStarted": "Onboarding has not started yet.",
     "completedAt": "Completed {{date}}",
-    "invitationsPageOf": "Page {{page}} of {{total}} ({{count}} records)"
+    "stepDone": "Done",
+    "noTemplateAssigned": "No template assigned",
+    "assignTemplate": "Assign template",
+    "assignTemplateTitle": "Assign onboarding template",
+    "assignTemplateSuccess": "Template assigned successfully",
+    "assignTemplateNote": "Note (optional)",
+    "assignTemplateSelectPlaceholder": "Select a template",
+    "reassignTemplate": "Reassign"
   },
   "building": {
     "mapManage": "Manage map",
@@ -2537,7 +2544,12 @@
     "markDoneAria": "Mark step as done: {{title}}",
     "saveError": "Failed to save step. Please try again.",
     "goToLink": "Go",
-    "visitLinkFirst": "First follow the link, then click \"Done\"."
+    "visitLinkFirst": "First follow the link, then click \"Done\".",
+    "systemBadge": "System",
+    "systemReadonly": "System (readonly)",
+    "userTemplate": "Custom",
+    "notAssignedTitle": "No onboarding template assigned",
+    "notAssignedDesc": "Your administrator hasn't assigned an onboarding template yet."
   },
   "access": {
     "title": "Access log",

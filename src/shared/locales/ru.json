@@ -2249,7 +2249,7 @@
     "templatesLoading": "Загрузка шаблонов...",
     "templatesError": "Не удалось загрузить шаблоны онбординга.",
     "noTemplates": "Шаблоны пока не созданы.",
-    "templateDefault": "По умолчанию",
+    "templateDefault": "По умолч.",
     "stepsCount": "{{count}} шаг",
     "stepsCountMany": "{{count}} шагов",
     "templateActive": "активный",
@@ -2302,7 +2302,14 @@
     "onboardingCompleted": "Онбординг завершён",
     "onboardingNotStarted": "Онбординг ещё не начат.",
     "completedAt": "Выполнено {{date}}",
-    "invitationsPageOf": "Страница {{page}} из {{total}} ({{count}} записей)"
+    "stepDone": "Выполнено",
+    "noTemplateAssigned": "Шаблон не назначен",
+    "assignTemplate": "Назначить шаблон",
+    "assignTemplateTitle": "Назначение шаблона",
+    "assignTemplateSuccess": "Шаблон успешно назначен",
+    "assignTemplateNote": "Примечание (необязательно)",
+    "assignTemplateSelectPlaceholder": "Выберите шаблон",
+    "reassignTemplate": "Переназначить"
   },
   "building": {
     "mapManage": "Управление картой",
@@ -2532,7 +2539,12 @@
     "markDoneAria": "Отметить шаг выполненным: {{title}}",
     "saveError": "Не удалось сохранить шаг. Попробуйте снова.",
     "goToLink": "Перейти",
-    "visitLinkFirst": "Сначала перейдите по ссылке, затем нажмите «Выполнено»."
+    "visitLinkFirst": "Сначала перейдите по ссылке, затем нажмите «Выполнено».",
+    "systemBadge": "Системный",
+    "systemReadonly": "Системный (readonly)",
+    "userTemplate": "Пользовательский",
+    "notAssignedTitle": "Шаблон онбординга не назначен",
+    "notAssignedDesc": "Администратор ещё не назначил вам шаблон онбординга."
   },
   "access": {
     "title": "Лог доступа",
