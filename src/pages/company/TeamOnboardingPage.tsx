@@ -25,7 +25,11 @@ function getInitials(firstName: string, lastName: string): string {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
 
-export default function TeamOnboardingPage() {
+interface TeamOnboardingPageProps {
+  hideNav?: boolean;
+}
+
+export default function TeamOnboardingPage({ hideNav = false }: TeamOnboardingPageProps) {
   const { t } = useTranslation();
   const {
     companyId,
@@ -67,92 +71,96 @@ export default function TeamOnboardingPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Page header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <ListChecks
-          style={{ width: 24, height: 24, color: 'var(--brand)' }}
-          aria-hidden="true"
-        />
-        <h1
-          style={{ fontSize: 22, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}
-        >
-          {t('companies.teamOnboardingTitle')}
-        </h1>
-      </div>
+      {!hideNav && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <ListChecks
+            style={{ width: 24, height: 24, color: 'var(--brand)' }}
+            aria-hidden="true"
+          />
+          <h1
+            style={{ fontSize: 22, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}
+          >
+            {t('companies.teamOnboardingTitle')}
+          </h1>
+        </div>
+      )}
 
       {/* Tab navigation */}
-      <nav
-        style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}
-        aria-label={t('companies.onboardingTitle')}
-      >
-        <Link
-          to={`/company/settings${companyId ? `?company=${companyId}` : ''}`}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            borderRadius: 9999,
-            border: '1px solid var(--border)',
-            padding: '6px 16px',
-            fontSize: 14,
-            color: 'var(--text-secondary)',
-            textDecoration: 'none',
-          }}
+      {!hideNav && (
+        <nav
+          style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}
+          aria-label={t('companies.onboardingTitle')}
         >
-          <Settings2 style={{ width: 14, height: 14 }} aria-hidden="true" />
-          {t('companies.generalSettings')}
-        </Link>
-        <Link
-          to={`/company/settings/members${companyId ? `?company=${companyId}` : ''}`}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            borderRadius: 9999,
-            border: '1px solid var(--border)',
-            padding: '6px 16px',
-            fontSize: 14,
-            color: 'var(--text-secondary)',
-            textDecoration: 'none',
-          }}
-        >
-          <Users style={{ width: 14, height: 14 }} aria-hidden="true" />
-          {t('companies.membersTitle')}
-        </Link>
-        <Link
-          to={`/company/settings/onboarding${companyId ? `?company=${companyId}` : ''}`}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            borderRadius: 9999,
-            border: '1px solid var(--border)',
-            padding: '6px 16px',
-            fontSize: 14,
-            color: 'var(--text-secondary)',
-            textDecoration: 'none',
-          }}
-        >
-          <ListChecks style={{ width: 14, height: 14 }} aria-hidden="true" />
-          {t('companies.onboardingTemplatesLink')}
-        </Link>
-        <span
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            borderRadius: 9999,
-            background: 'var(--brand)',
-            padding: '6px 16px',
-            fontSize: 14,
-            fontWeight: 500,
-            color: '#fff',
-          }}
-          aria-current="page"
-        >
-          <Users style={{ width: 14, height: 14 }} aria-hidden="true" />
-          {t('companies.teamOnboardingTab')}
-        </span>
-      </nav>
+          <Link
+            to={`/company/settings${companyId ? `?company=${companyId}` : ''}`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              borderRadius: 9999,
+              border: '1px solid var(--border)',
+              padding: '6px 16px',
+              fontSize: 14,
+              color: 'var(--text-secondary)',
+              textDecoration: 'none',
+            }}
+          >
+            <Settings2 style={{ width: 14, height: 14 }} aria-hidden="true" />
+            {t('companies.generalSettings')}
+          </Link>
+          <Link
+            to={`/company/settings/members${companyId ? `?company=${companyId}` : ''}`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              borderRadius: 9999,
+              border: '1px solid var(--border)',
+              padding: '6px 16px',
+              fontSize: 14,
+              color: 'var(--text-secondary)',
+              textDecoration: 'none',
+            }}
+          >
+            <Users style={{ width: 14, height: 14 }} aria-hidden="true" />
+            {t('companies.membersTitle')}
+          </Link>
+          <Link
+            to={`/company/settings/onboarding${companyId ? `?company=${companyId}` : ''}`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              borderRadius: 9999,
+              border: '1px solid var(--border)',
+              padding: '6px 16px',
+              fontSize: 14,
+              color: 'var(--text-secondary)',
+              textDecoration: 'none',
+            }}
+          >
+            <ListChecks style={{ width: 14, height: 14 }} aria-hidden="true" />
+            {t('companies.onboardingTemplatesLink')}
+          </Link>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              borderRadius: 9999,
+              background: 'var(--brand)',
+              padding: '6px 16px',
+              fontSize: 14,
+              fontWeight: 500,
+              color: '#fff',
+            }}
+            aria-current="page"
+          >
+            <Users style={{ width: 14, height: 14 }} aria-hidden="true" />
+            {t('companies.teamOnboardingTab')}
+          </span>
+        </nav>
+      )}
 
       {/* Main content — two-column grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 14, alignItems: 'start' }}>

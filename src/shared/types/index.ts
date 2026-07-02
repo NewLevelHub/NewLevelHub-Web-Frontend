@@ -74,6 +74,11 @@ export interface Company {
 
 export interface CompanyDetail extends Company {
   storage_used: number;
+  quick_stats?: {
+    bookings_this_month: number;
+    active_tasks: number;
+    guests_this_month: number;
+  };
 }
 
 /** GET /analytics/superadmin/ — обзорные метрики (суперадмин). */

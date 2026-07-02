@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
+import { Button } from '@/shared/ui/Button';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
@@ -8,6 +9,7 @@ import {
   RESOURCE_TYPE_LABEL_KEYS,
   RESOURCE_TYPES,
   BOOKING_RESOURCE_CATALOG_STATUS,
+  USER_ROLES,
   type ResourceType,
 } from '@/shared/config/constants';
 import { useAuth } from '@/shared/hooks/useAuth';
@@ -30,7 +32,11 @@ const TYPE_FILTER_OPTIONS: Array<{ value: ResourceType | 'all'; labelKey: string
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export default function CompanyResourcesPage() {
+interface CompanyResourcesPageProps {
+  companyId?: string;
+}
+
+export default function CompanyResourcesPage({ companyId: propCompanyId }: CompanyResourcesPageProps = {}) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [page, setPage] = useState(1);
@@ -39,7 +45,9 @@ export default function CompanyResourcesPage() {
   const [detailResource, setDetailResource] = useState<BookingResourceListItem | null>(null);
   const [bookingResource, setBookingResource] = useState<BookingResourceListItem | null>(null);
 
-  const companyId = user?.company_id;
+  const companyId = propCompanyId ?? user?.company_id;
+  const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
+  const emptyKey = isSuperadmin ? 'companyHub.resourcesEmptySuperadmin' : 'companyHub.resourcesEmpty';
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['company-resources', companyId, page, typeFilter, onlyFree],
@@ -66,6 +74,21 @@ export default function CompanyResourcesPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <style>{`
+        @media (max-width: 767px) {
+          .hub-resources-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+          .hub-resources-filters {
+            flex-wrap: wrap !important;
+          }
+        }
+        @media (max-width: 479px) {
+          .hub-resources-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
 
       {isError && (
         <div
@@ -84,7 +107,7 @@ export default function CompanyResourcesPage() {
       )}
 
       {/* Filter row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+      <div className="hub-resources-filters" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
         {TYPE_FILTER_OPTIONS.map((opt) => (
           <button
             key={opt.value}
@@ -150,6 +173,7 @@ export default function CompanyResourcesPage() {
       {/* Cards grid */}
       {isLoading ? (
         <div
+          className="hub-resources-grid"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(4, 1fr)',
@@ -172,10 +196,11 @@ export default function CompanyResourcesPage() {
             borderRadius: 'var(--radius-lg)',
           }}
         >
-          {t('companyHub.resourcesEmpty')}
+          {t(emptyKey)}
         </div>
       ) : (
         <div
+          className="hub-resources-grid"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(4, 1fr)',
@@ -224,42 +249,22 @@ export default function CompanyResourcesPage() {
             {page} / {totalPages} · {totalCount}
           </span>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="sm"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              style={{
-                height: 30,
-                padding: '0 12px',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--border)',
-                background: 'var(--bg-surface)',
-                color: 'var(--text-secondary)',
-                fontSize: 12,
-                cursor: 'pointer',
-                opacity: page <= 1 ? 0.4 : 1,
-              }}
             >
               {t('common.back')}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              style={{
-                height: 30,
-                padding: '0 12px',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--border)',
-                background: 'var(--bg-surface)',
-                color: 'var(--text-secondary)',
-                fontSize: 12,
-                cursor: 'pointer',
-                opacity: page >= totalPages ? 0.4 : 1,
-              }}
             >
               →
-            </button>
+            </Button>
           </div>
         </div>
       )}

@@ -14,7 +14,6 @@ import {
   Clock,
   ListTodo,
   Repeat,
-  MailPlus,
   Bell,
   Ban,
   type LucideIcon,
@@ -40,7 +39,6 @@ const superadminNav: NavSection[] = [
     titleKey: 'sidebar.navSection.management',
     items: [
       { labelKey: 'sidebar.navItem.employees',      path: '/team/manage',                          icon: Users },
-      { labelKey: 'sidebar.navItem.invites',         path: '/company/settings/members',             icon: MailPlus },
       { labelKey: 'sidebar.navItem.companies',       path: `${SUPERADMIN_UI_PREFIX}/companies`,     icon: Building2 },
       { labelKey: 'sidebar.navItem.resources',       path: '/resources',                            icon: Bookmark },
       { labelKey: 'sidebar.navItem.bookings',           path: `${STAFF_UI_PREFIX}/bookings`,                        icon: CalendarDays },

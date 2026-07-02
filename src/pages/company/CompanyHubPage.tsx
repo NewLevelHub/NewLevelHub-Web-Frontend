@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
-import { Check, X, Mail, Phone, Globe, Edit2, Users, LayoutGrid, FolderOpen, MonitorPlay } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Check, X, Mail, Phone, Globe, Edit2, Users, LayoutGrid, FolderOpen, MonitorPlay, ChevronLeft } from 'lucide-react';
+import { Button } from '@/shared/ui/Button';
+import { resFileInput } from '@/shared/ui/resourcePageStyles';
 
 import CompanyResourcesPage from '@/pages/company/CompanyResourcesPage';
 import CompanySettingsPage from '@/pages/company/CompanySettingsPage';
@@ -21,7 +24,7 @@ import {
   COMPANY_TIER_LABEL_KEYS,
   type CompanyTier,
 } from '@/shared/config/constants';
-import type { CompanyDetail, CompanyLimits, CompanyAnalytics } from '@/shared/types';
+import type { CompanyDetail, CompanyLimits } from '@/shared/types';
 
 // ── Tier badge styles ────────────────────────────────────────────────────────
 
@@ -57,6 +60,30 @@ const TARIFF_FEATURES: TariffFeature[] = [
   { labelKey: 'companyHub.tariffFeatureSla',      tiers: [COMPANY_TIERS.PREMIUM] },
   { labelKey: 'companyHub.tariffFeatureApi',      tiers: [COMPANY_TIERS.PREMIUM] },
 ];
+
+// ── Edit modal styles ────────────────────────────────────────────────────────
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  boxSizing: 'border-box',
+  height: 36,
+  padding: '0 12px',
+  borderRadius: 'var(--radius-sm)',
+  border: '1px solid var(--border)',
+  background: 'var(--bg-surface)',
+  color: 'var(--text-primary)',
+  fontSize: 14,
+  outline: 'none',
+  fontFamily: 'inherit',
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 500,
+  color: 'var(--text-secondary)',
+  display: 'block',
+  marginBottom: 6,
+};
 
 // ── Underline sub-tab bar ────────────────────────────────────────────────────
 
@@ -123,9 +150,18 @@ function UnderlineTabBar<T extends string>({
 
 type SettingsSubTab = 'general' | 'onboarding' | 'team-progress';
 
-function SettingsTabContent() {
+function SettingsTabContent({ companyId }: { companyId?: string }) {
   const { t } = useTranslation();
-  const [subTab, setSubTab] = useState<SettingsSubTab>('general');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const subTab = (searchParams.get('subtab') as SettingsSubTab | null) ?? 'general';
+
+  function setSubTab(tab: SettingsSubTab) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('subtab', tab);
+      return next;
+    });
+  }
 
   const subTabs: SubTab<SettingsSubTab>[] = [
     { id: 'general', label: t('companyHub.tabSettingsGeneral') },
@@ -136,9 +172,9 @@ function SettingsTabContent() {
   return (
     <div>
       <UnderlineTabBar tabs={subTabs} active={subTab} onChange={setSubTab} />
-      {subTab === 'general' && <CompanySettingsPage />}
-      {subTab === 'onboarding' && <CompanyOnboardingTemplatesPage />}
-      {subTab === 'team-progress' && <TeamOnboardingPage />}
+      {subTab === 'general' && <CompanySettingsPage hideNav companyId={companyId} />}
+      {subTab === 'onboarding' && <CompanyOnboardingTemplatesPage hideNav />}
+      {subTab === 'team-progress' && <TeamOnboardingPage hideNav />}
     </div>
   );
 }
@@ -147,22 +183,35 @@ function SettingsTabContent() {
 
 type MembersSubTab = 'manage' | 'cards' | 'invites';
 
-function MembersTabContent({ isCA, companyId }: { isCA: boolean; companyId: string }) {
+function MembersTabContent({ isCA, isSuperadmin, companyId }: { isCA: boolean; isSuperadmin: boolean; companyId: string }) {
   const { t } = useTranslation();
-  const [subTab, setSubTab] = useState<MembersSubTab>('manage');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const subTab = (searchParams.get('subtab') as MembersSubTab | null) ?? 'manage';
+
+  function setSubTab(tab: MembersSubTab) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('subtab', tab);
+      return next;
+    });
+  }
+
+  if (!isCA && !isSuperadmin) {
+    return <TeamDirectoryPage hideNav companyId={companyId} />;
+  }
 
   const subTabs: SubTab<MembersSubTab>[] = [
     { id: 'manage', label: t('companyHub.tabMembersManage') },
     { id: 'cards', label: t('companyHub.tabMembersCards') },
-    ...(isCA ? [{ id: 'invites' as MembersSubTab, label: t('companyHub.tabMembersInvites') }] : []),
+    { id: 'invites', label: t('companyHub.tabMembersInvites') },
   ];
 
   return (
     <div>
       <UnderlineTabBar tabs={subTabs} active={subTab} onChange={setSubTab} />
-      {subTab === 'manage' && (isCA ? <TeamManagePage hideNav initialView="manage" /> : <TeamDirectoryPage />)}
-      {subTab === 'cards' && <TeamManagePage hideNav initialView="directory" />}
-      {subTab === 'invites' && isCA && <InvitesPanel companyId={companyId} />}
+      {subTab === 'manage' && <TeamManagePage hideNav initialView="manage" companyId={companyId} />}
+      {subTab === 'cards' && <TeamManagePage hideNav initialView="directory" companyId={companyId} />}
+      {subTab === 'invites' && (isCA || isSuperadmin) && <InvitesPanel companyId={companyId} />}
     </div>
   );
 }
@@ -171,14 +220,78 @@ function MembersTabContent({ isCA, companyId }: { isCA: boolean; companyId: stri
 
 type TabId = 'overview' | 'members' | 'resources' | 'settings';
 
-export default function CompanyHubPage() {
+interface CompanyHubPageProps {
+  companyId?: string; // overrides user.company_id when provided (superadmin use-case)
+}
+
+export default function CompanyHubPage({ companyId: propCompanyId }: CompanyHubPageProps = {}) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
+  const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
   const isCA = user?.role === USER_ROLES.COMPANY_ADMIN;
-  const companyId = user?.company_id ? String(user.company_id) : null;
+  const companyId = propCompanyId ?? (user?.company_id ? String(user.company_id) : null);
 
-  const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const defaultTab: TabId = isSuperadmin && !!propCompanyId ? 'members' : 'overview';
+  const activeTab = (searchParams.get('tab') as TabId | null) ?? defaultTab;
+
+  function setActiveTab(tab: TabId) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tab);
+      next.delete('subtab');
+      return next;
+    });
+  }
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    description: '',
+    categories: [] as string[],
+    office_number: '',
+    plan: '',
+    max_employees: 0,
+    storage_limit_gb: 0,
+    max_boards: 0,
+  });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [categoriesInput, setCategoriesInput] = useState('');
+  const [editError, setEditError] = useState<string | null>(null);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
+
+  const queryClient = useQueryClient();
+
+  const { mutate: patchCompany, isPending: editPending } = useMutation({
+    mutationFn: async () => {
+      if (logoFile) {
+        const fd = new FormData();
+        (Object.entries(editForm) as [string, string | number | string[]][]).forEach(([k, v]) => {
+          if (Array.isArray(v)) {
+            fd.append(k, JSON.stringify(v));
+          } else if (v !== '' && v !== null && v !== undefined) {
+            fd.append(k, String(v));
+          }
+        });
+        fd.append('logo', logoFile);
+        return apiClient.patch(API.companies.detail(companyId!), fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      }
+      return apiClient.patch(API.companies.detail(companyId!), editForm);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['company-hub', 'detail', companyId] });
+      setEditOpen(false);
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setEditError(typeof msg === 'string' ? msg : t('companyHub.editSaveError'));
+    },
+  });
 
   // Inject style once to hide inner page headers when sub-pages render inside the hub
   useEffect(() => {
@@ -204,22 +317,20 @@ export default function CompanyHubPage() {
     enabled: !!companyId,
   });
 
-  const { data: analytics } = useQuery({
-    queryKey: ['company-hub', 'analytics', companyId],
-    queryFn: () =>
-      apiClient.get<CompanyAnalytics>(API.analytics.companyDashboard).then((r) => r.data),
-    enabled: !!companyId,
-  });
-
   // Resource count for tab badge — use limits if available
   const resourceCount = undefined; // No separate resource count from limits
+
+  const showSettings = isCA || isSuperadmin;
 
   const tabs: { id: TabId; labelKey: string; count?: number }[] = [
     { id: 'overview', labelKey: 'companyHub.tabOverview' },
     { id: 'members', labelKey: 'companyHub.tabMembers', count: limits?.employees?.current },
     { id: 'resources', labelKey: 'companyHub.tabResources', count: resourceCount },
-    ...(isCA ? [{ id: 'settings' as TabId, labelKey: 'companyHub.tabSettings' }] : []),
+    ...(showSettings ? [{ id: 'settings' as TabId, labelKey: 'companyHub.tabSettings' }] : []),
   ];
+
+  const isPremium = company?.plan === COMPANY_TIERS.PREMIUM;
+  const canUploadLogo = (isCA && isPremium) || isSuperadmin;
 
   const tierStyle = company
     ? (TIER_BADGE_STYLE[company.plan] ?? TIER_BADGE_STYLE[COMPANY_TIERS.BASIC])
@@ -227,18 +338,77 @@ export default function CompanyHubPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* ── Back button ── */}
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          fontSize: 13,
+          fontWeight: 500,
+          color: 'var(--text-secondary)',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          padding: '4px 0',
+          marginBottom: 4,
+        }}
+        onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)')}
+        onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)')}
+      >
+        <ChevronLeft size={16} />
+        {t('common.back')}
+      </button>
+
+      <style>{`
+        @media (max-width: 767px) {
+          .hub-hero-card {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+          }
+          .hub-hero-avatar {
+            width: 56px !important;
+            height: 56px !important;
+            font-size: 18px !important;
+            border-radius: 12px !important;
+          }
+          .hub-hero-edit-btn {
+            align-self: flex-start !important;
+            margin-top: 4px !important;
+          }
+          .hub-limits-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+          .nlh-filters {
+            justify-content: flex-start !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            flex-wrap: nowrap !important;
+          }
+          .hub-quick-stats-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .hub-tariff-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
 
       {/* ── Page header ── */}
-      <div style={{ marginBottom: 4 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
-          {t('companyHub.title')}
-        </h1>
-        {company && (
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '2px 0 0' }}>
-            {company.name} · {t(COMPANY_TIER_LABEL_KEYS[company.plan as CompanyTier] ?? '')}
-          </p>
-        )}
-      </div>
+      {!isSuperadmin && (
+        <div style={{ marginBottom: 4 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
+            {t('companyHub.title')}
+          </h1>
+          {company && (
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '2px 0 0' }}>
+              {company.name} · {t(COMPANY_TIER_LABEL_KEYS[company.plan as CompanyTier] ?? '')}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* ── Hero card ── */}
       <div
@@ -253,7 +423,7 @@ export default function CompanyHubPage() {
         {companyLoading ? (
           <HeroSkeleton />
         ) : company ? (
-          <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+          <div className="hub-hero-card" style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
             {/* Avatar */}
             <CompanyAvatar name={company.name} />
 
@@ -320,30 +490,35 @@ export default function CompanyHubPage() {
               </div>
             </div>
 
-            {/* Edit button — CA only */}
-            {isCA && (
-              <button
-                type="button"
-                onClick={() => setActiveTab('settings')}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  height: 30,
-                  padding: '0 12px',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: 12,
-                  fontWeight: 500,
-                  color: 'var(--text-secondary)',
-                  background: 'var(--bg-raised)',
-                  border: '1px solid var(--border)',
-                  cursor: 'pointer',
-                  flexShrink: 0,
+            {/* Edit button — CA or superadmin */}
+            {(isCA || isSuperadmin) && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setEditForm({
+                    name: company?.name ?? '',
+                    description: company?.description ?? '',
+                    categories: company?.categories ?? [],
+                    office_number: company?.office_number ?? '',
+                    plan: company?.plan ?? '',
+                    max_employees: company?.max_employees ?? 0,
+                    storage_limit_gb: company?.storage_limit_gb ?? 0,
+                    max_boards: company?.max_boards ?? 0,
+                  });
+                  setCategoriesInput((company?.categories ?? []).join(', '));
+                  setLogoFile(null);
+                  setLogoPreview(null);
+                  setEditError(null);
+                  setCategoriesError(null);
+                  setEditOpen(true);
                 }}
+                className="hub-hero-edit-btn"
+                style={{ flexShrink: 0 }}
               >
                 <Edit2 size={12} />
                 {t('companyHub.editCompany')}
-              </button>
+              </Button>
             )}
           </div>
         ) : null}
@@ -351,6 +526,7 @@ export default function CompanyHubPage() {
 
       {/* ── Limit cards — 4-col grid matching DS ── */}
       <div
+        className="hub-limits-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',
@@ -385,7 +561,7 @@ export default function CompanyHubPage() {
             />
             <LimitCard
               label={t('companyHub.limitsGuests')}
-              value={company.employee_count}
+              value={company.quick_stats?.guests_this_month ?? 0}
               max={0}
               showBar={false}
               icon={<MonitorPlay size={14} />}
@@ -422,12 +598,248 @@ export default function CompanyHubPage() {
       {/* ── Tab content ── */}
       <div className="nlh-hub-embed">
         {activeTab === 'overview' && (
-          <OverviewTab analytics={analytics ?? null} plan={company?.plan ?? null} />
+          <OverviewTab quickStats={company?.quick_stats ?? null} plan={company?.plan ?? null} />
         )}
-        {activeTab === 'members' && companyId && <MembersTabContent isCA={isCA} companyId={companyId} />}
-        {activeTab === 'resources' && <CompanyResourcesPage />}
-        {activeTab === 'settings' && isCA && <SettingsTabContent />}
+        {activeTab === 'members' && companyId && <MembersTabContent isCA={isCA} isSuperadmin={isSuperadmin} companyId={companyId} />}
+        {activeTab === 'resources' && <CompanyResourcesPage companyId={companyId ?? undefined} />}
+        {activeTab === 'settings' && showSettings && <SettingsTabContent companyId={companyId ?? undefined} />}
       </div>
+
+      {/* ── Edit company modal ── */}
+      {editOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={(e) => e.target === e.currentTarget && setEditOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="relative w-full max-w-[560px] rounded-2xl border border-default bg-surface shadow-xl overflow-y-auto max-h-[90vh]">
+            {/* Header */}
+            <div className="flex items-start justify-between px-[22px] pt-[18px] pb-[14px]">
+              <div className="min-w-0 pr-4">
+                <h2 className="text-base font-semibold text-primary tracking-[-0.015em]">
+                  {t('companyHub.editModalTitle')}
+                </h2>
+                <p className="text-xs text-muted mt-0.5">{t('companyHub.editModalSubtitle')}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditOpen(false)}
+                className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg text-secondary hover:bg-raised hover:text-primary focus:outline-none focus:ring-2 focus:ring-[color:var(--brand)]"
+                aria-label={t('common.close')}
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (categoriesError) return;
+                patchCompany();
+              }}
+            >
+              <div className="px-[22px] pb-0 flex flex-col gap-4 max-h-[calc(90vh-120px)] overflow-y-auto">
+
+                {/* Name */}
+                <div>
+                  <label style={labelStyle} htmlFor="edit-company-name">
+                    {t('companyHub.editFieldName')}
+                  </label>
+                  <input
+                    id="edit-company-name"
+                    type="text"
+                    required
+                    value={editForm.name}
+                    onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                    style={inputStyle}
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label style={labelStyle} htmlFor="edit-company-description">
+                    {t('companyHub.editFieldDescription')}
+                  </label>
+                  <textarea
+                    id="edit-company-description"
+                    rows={3}
+                    value={editForm.description}
+                    onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
+                    style={{ ...inputStyle, height: 'auto', padding: '8px 12px', resize: 'none', minHeight: 80 }}
+                  />
+                </div>
+
+                {/* Categories */}
+                <div>
+                  <label style={labelStyle} htmlFor="edit-company-categories">
+                    {t('companyHub.editFieldCategories')}
+                  </label>
+                  <input
+                    id="edit-company-categories"
+                    type="text"
+                    value={categoriesInput}
+                    placeholder={t('companyHub.editFieldCategoriesHint')}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setCategoriesInput(v);
+                      const parsed = v.split(',').map((s) => s.trim()).filter(Boolean);
+                      const tooMany = parsed.length > 10;
+                      const tooLong = parsed.some((s) => s.length > 50);
+                      if (tooMany) {
+                        setCategoriesError(t('companyHub.editCategoriesErrorMax'));
+                      } else if (tooLong) {
+                        setCategoriesError(t('companyHub.editCategoriesErrorLength'));
+                      } else {
+                        setCategoriesError(null);
+                      }
+                      setEditForm((f) => ({ ...f, categories: parsed }));
+                    }}
+                    style={inputStyle}
+                  />
+                  {categoriesError ? (
+                    <p style={{ fontSize: 11, color: 'var(--danger)', marginTop: 4 }}>{categoriesError}</p>
+                  ) : (
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                      {t('companyHub.editFieldCategoriesHint')}
+                    </p>
+                  )}
+                </div>
+
+                {/* Logo upload — premium CA or superadmin */}
+                {canUploadLogo && (
+                  <div>
+                    <label style={labelStyle} htmlFor="edit-company-logo">
+                      {t('companyHub.editFieldLogo')}
+                    </label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      {(logoPreview ?? company?.logo) && (
+                        <img
+                          src={logoPreview ?? company!.logo!}
+                          alt={t('companyHub.editFieldLogo')}
+                          style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)', flexShrink: 0 }}
+                        />
+                      )}
+                      <input
+                        id="edit-company-logo"
+                        type="file"
+                        accept="image/*"
+                        className={resFileInput}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] ?? null;
+                          setLogoFile(file);
+                          setLogoPreview(file ? URL.createObjectURL(file) : null);
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Superadmin-only fields ── */}
+                {isSuperadmin && (
+                  <>
+                    {/* Office number */}
+                    <div>
+                      <label style={labelStyle} htmlFor="edit-company-office-number">
+                        {t('companyHub.editFieldOfficeNumber')}
+                      </label>
+                      <input
+                        id="edit-company-office-number"
+                        type="text"
+                        value={editForm.office_number}
+                        onChange={(e) => setEditForm((f) => ({ ...f, office_number: e.target.value }))}
+                        style={inputStyle}
+                      />
+                    </div>
+
+                    {/* Plan */}
+                    <div>
+                      <label style={labelStyle} htmlFor="edit-company-plan">
+                        {t('companyHub.editFieldPlan')}
+                      </label>
+                      <select
+                        id="edit-company-plan"
+                        value={editForm.plan}
+                        onChange={(e) => setEditForm((f) => ({ ...f, plan: e.target.value }))}
+                        style={{ ...inputStyle, cursor: 'pointer' }}
+                      >
+                        <option value={COMPANY_TIERS.BASIC}>{t('common.companyTier.basic')}</option>
+                        <option value={COMPANY_TIERS.STANDARD}>{t('common.companyTier.standard')}</option>
+                        <option value={COMPANY_TIERS.PREMIUM}>{t('common.companyTier.premium')}</option>
+                      </select>
+                    </div>
+
+                    {/* Max employees */}
+                    <div>
+                      <label style={labelStyle} htmlFor="edit-company-max-employees">
+                        {t('companyHub.editFieldMaxEmployees')}
+                      </label>
+                      <input
+                        id="edit-company-max-employees"
+                        type="number"
+                        min={1}
+                        value={editForm.max_employees}
+                        onChange={(e) => setEditForm((f) => ({ ...f, max_employees: Number(e.target.value) }))}
+                        style={inputStyle}
+                      />
+                    </div>
+
+                    {/* Storage limit */}
+                    <div>
+                      <label style={labelStyle} htmlFor="edit-company-storage">
+                        {t('companyHub.editFieldStorageLimitGb')}
+                      </label>
+                      <input
+                        id="edit-company-storage"
+                        type="number"
+                        min={1}
+                        value={editForm.storage_limit_gb}
+                        onChange={(e) => setEditForm((f) => ({ ...f, storage_limit_gb: Number(e.target.value) }))}
+                        style={inputStyle}
+                      />
+                    </div>
+
+                    {/* Max boards */}
+                    <div>
+                      <label style={labelStyle} htmlFor="edit-company-max-boards">
+                        {t('companyHub.editFieldMaxBoards')}
+                      </label>
+                      <input
+                        id="edit-company-max-boards"
+                        type="number"
+                        min={1}
+                        value={editForm.max_boards}
+                        onChange={(e) => setEditForm((f) => ({ ...f, max_boards: Number(e.target.value) }))}
+                        style={inputStyle}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* API error banner */}
+                {editError && (
+                  <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4 }}>{editError}</p>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex justify-end gap-2 border-t border-[color:var(--border-faint)] px-[22px] pt-[14px] pb-[18px] mt-3">
+                <button
+                  type="button"
+                  onClick={() => setEditOpen(false)}
+                  className="h-8 px-4 text-sm font-medium text-secondary hover:bg-raised rounded-[var(--radius-sm)] transition-colors"
+                >
+                  {t('common.cancel')}
+                </button>
+                <Button variant="primary" size="sm" loading={editPending} disabled={!!categoriesError}>
+                  {t('common.save')}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -458,6 +870,7 @@ function CompanyAvatar({ name }: { name: string }) {
 
   return (
     <div
+      className="hub-hero-avatar"
       style={{
         width: 80,
         height: 80,
@@ -627,18 +1040,24 @@ function LimitProgressBar({ value, max }: LimitProgressBarProps) {
 
 // ── Tab: Overview ─────────────────────────────────────────────────────────────
 
+interface QuickStats {
+  bookings_this_month: number;
+  active_tasks: number;
+  guests_this_month: number;
+}
+
 interface OverviewTabProps {
-  analytics: CompanyAnalytics | null;
+  quickStats: QuickStats | null;
   plan: string | null;
 }
 
-function OverviewTab({ analytics, plan }: OverviewTabProps) {
+function OverviewTab({ quickStats, plan }: OverviewTabProps) {
   const { t } = useTranslation();
 
   const stats: Array<{ value: number; labelKey: string; color: string }> = [
-    { value: analytics?.bookings_month ?? 0,           labelKey: 'companyHub.statBookings', color: 'var(--brand)' },
-    { value: analytics?.active_crm_tasks?.total ?? 0,  labelKey: 'companyHub.statTasks',    color: 'var(--violet, #8b5cf6)' },
-    { value: analytics?.guest_visits_month ?? 0,       labelKey: 'companyHub.statGuests',   color: 'var(--success)' },
+    { value: quickStats?.bookings_this_month ?? 0, labelKey: 'companyHub.statBookings', color: 'var(--brand)' },
+    { value: quickStats?.active_tasks ?? 0,        labelKey: 'companyHub.statTasks',    color: 'var(--violet, #8b5cf6)' },
+    { value: quickStats?.guests_this_month ?? 0,   labelKey: 'companyHub.statGuests',   color: 'var(--success)' },
   ];
 
   return (
@@ -657,7 +1076,7 @@ function OverviewTab({ analytics, plan }: OverviewTabProps) {
         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 14 }}>
           {t('companyHub.quickStats')}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+        <div className="hub-quick-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
           {stats.map((s) => (
             <div
               key={s.labelKey}
@@ -705,7 +1124,7 @@ function OverviewTab({ analytics, plan }: OverviewTabProps) {
             </span>
           )}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div className="hub-tariff-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {TARIFF_FEATURES.map((feature) => {
             const included = plan ? feature.tiers.includes(plan) : false;
             return (

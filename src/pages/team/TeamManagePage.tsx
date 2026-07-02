@@ -1003,9 +1003,10 @@ type ViewTab = 'manage' | 'directory' | 'invites';
 interface TeamManagePageProps {
   hideNav?: boolean;
   initialView?: 'manage' | 'directory' | 'invites';
+  companyId?: string;
 }
 
-export default function TeamManagePage({ hideNav = false, initialView }: TeamManagePageProps) {
+export default function TeamManagePage({ hideNav = false, initialView, companyId: companyIdProp }: TeamManagePageProps) {
   const { t } = useTranslation();
   const { user, isImpersonating, startImpersonation } = useAuth();
   const queryClient = useQueryClient();
@@ -1016,7 +1017,7 @@ export default function TeamManagePage({ hideNav = false, initialView }: TeamMan
   const canInvite = !isEmployee;
   const [view, setView] = useState<ViewTab>(initialView ?? 'manage');
 
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>(companyIdProp ?? '');
   const [filters, setFilters] = useState<Filters>({
     search: '',
     role: '',
@@ -1348,8 +1349,8 @@ export default function TeamManagePage({ hideNav = false, initialView }: TeamMan
         </div>
       )}
 
-      {/* Company selector — superadmin only */}
-      {isSuperadmin && (
+      {/* Company selector — superadmin only, hidden when companyId prop is provided */}
+      {isSuperadmin && !companyIdProp && (
         <div className="rounded-xl border border-default bg-raised p-4">
           <label
             htmlFor="company-select"
