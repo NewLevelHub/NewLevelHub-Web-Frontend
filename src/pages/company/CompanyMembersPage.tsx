@@ -1,15 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { MailPlus, UserX, Users, Star, Trash2, Ban } from 'lucide-react';
+import { MailPlus, UserX, Users, Star, Trash2, Ban, Settings2, ListChecks } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
 import { USER_ROLES } from '@/shared/config/constants';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
-import { useAuth } from '@/shared/hooks/useAuth';
 import { cn } from '@/shared/lib/cn';
+import { useAuth } from '@/shared/hooks/useAuth';
 import type { Company, CompanyMember, PaginatedResponse } from '@/shared/types';
 import InvitesPanel from '@/pages/company/components/InvitesPanel';
 
@@ -98,6 +98,38 @@ export default function CompanyMembersPage() {
             : t('companies.membersSubtitle')}
         </p>
       </div>
+
+      {/* Tab navigation */}
+      <nav className="flex flex-wrap gap-2" aria-label={t('companies.membersTitle')}>
+        <Link
+          to={`/company/settings${companyId ? `?company=${companyId}` : ''}`}
+          className="inline-flex items-center gap-1.5 rounded-full border border-default px-4 py-1.5 text-sm text-secondary hover:bg-hover"
+        >
+          <Settings2 className="h-3.5 w-3.5" aria-hidden="true" />
+          {t('companies.generalSettings')}
+        </Link>
+        <span
+          className="inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white"
+          aria-current="page"
+        >
+          <Users className="h-3.5 w-3.5" aria-hidden="true" />
+          {t('companies.membersTitle')}
+        </span>
+        <Link
+          to={`/company/settings/onboarding${companyId ? `?company=${companyId}` : ''}`}
+          className="inline-flex items-center gap-1.5 rounded-full border border-default px-4 py-1.5 text-sm text-secondary hover:bg-hover"
+        >
+          <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
+          {t('companies.onboardingTemplatesLink')}
+        </Link>
+        <Link
+          to={`/company/settings/onboarding/team${companyId ? `?company=${companyId}` : ''}`}
+          className="inline-flex items-center gap-1.5 rounded-full border border-default px-4 py-1.5 text-sm text-secondary hover:bg-hover"
+        >
+          <Users className="h-3.5 w-3.5" aria-hidden="true" />
+          {t('companies.teamOnboardingTab')}
+        </Link>
+      </nav>
 
       {/* Superadmin company selector */}
       {isSuperadmin ? (
@@ -340,7 +372,7 @@ export default function CompanyMembersPage() {
       ) : null}
 
       {/* Invitations panel */}
-      {(companyId && inviteOpen) ? <InvitesPanel companyId={companyId} /> : null}
+      {companyId && inviteOpen ? <InvitesPanel companyId={companyId} /> : null}
     </div>
   );
 }
