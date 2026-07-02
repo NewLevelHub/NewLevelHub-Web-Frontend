@@ -977,7 +977,8 @@ function ReassignMemberModal({
             type="button"
             disabled={isLoading}
             onClick={() => onConfirm(selectedId || undefined)}
-            className="inline-flex items-center gap-2 rounded-lg bg-danger px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:pointer-events-none disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:pointer-events-none disabled:opacity-50"
+            style={{ background: 'var(--danger)' }}
           >
             {isLoading && (
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden="true" />
@@ -1074,6 +1075,34 @@ export default function TeamManagePage() {
     placeholderData: (prev) => prev,
   });
 
+  // Lightweight count queries for role chips — fetch only 1 item to read total count
+  const { data: adminCountData } = useQuery<PaginatedResponse<CompanyMember>>({
+    queryKey: ['teamMembers', companyId, 'count', 'company_admin'],
+    queryFn: () =>
+      apiClient
+        .get<PaginatedResponse<CompanyMember>>(API.companies.members(companyId!), {
+          params: { role: 'company_admin', page_size: 1 },
+        })
+        .then((r) => r.data),
+    enabled: companyId !== null,
+    staleTime: 15_000,
+  });
+
+  const { data: employeeCountData } = useQuery<PaginatedResponse<CompanyMember>>({
+    queryKey: ['teamMembers', companyId, 'count', 'employee'],
+    queryFn: () =>
+      apiClient
+        .get<PaginatedResponse<CompanyMember>>(API.companies.members(companyId!), {
+          params: { role: 'employee', page_size: 1 },
+        })
+        .then((r) => r.data),
+    enabled: companyId !== null,
+    staleTime: 15_000,
+  });
+
+  const adminCount = adminCountData?.count ?? 0;
+  const employeeCount = employeeCountData?.count ?? 0;
+
   const refreshMemberQueries = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
     await queryClient.invalidateQueries({ queryKey: ['company-members'] });
@@ -1136,6 +1165,7 @@ export default function TeamManagePage() {
           : '';
       setActionError(null);
       setActionSuccess(t('team.removed', { suffix }));
+      setFilters((prev) => ({ ...prev, page: 1 }));
       await refreshMemberQueries();
     },
     onError: (error: unknown) => {
@@ -1384,8 +1414,8 @@ export default function TeamManagePage() {
               {(
                 [
                   { value: '' as const, label: `${t('common.all')} · ${data?.count ?? 0}` },
-                  { value: 'company_admin' as const, label: `${t('team.roleAdmin')} · ${data?.results.filter(m => m.role === USER_ROLES.COMPANY_ADMIN).length ?? 0}` },
-                  { value: 'employee' as const, label: `${t('team.roleEmployee')} · ${data?.results.filter(m => m.role === USER_ROLES.EMPLOYEE).length ?? 0}` },
+                  { value: 'company_admin' as const, label: `${t('team.roleAdmin')} · ${adminCount}` },
+                  { value: 'employee' as const, label: `${t('team.roleEmployee')} · ${employeeCount}` },
                 ] as { value: Filters['role']; label: string }[]
               ).map(({ value, label }) => (
                 <span
