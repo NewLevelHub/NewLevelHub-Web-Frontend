@@ -4,8 +4,42 @@ import { Link, useLocation } from 'react-router';
 import { useAuthStore } from '@/shared/store/auth';
 import { getApiError } from '@/shared/lib/getApiError';
 import { clearSessionExpiredState, consumeLoginNoticeKey } from '@/shared/lib/sessionManager';
-import { authInput, authLabel, authPrimaryBtn, authLink } from '@/shared/ui/authFormStyles';
 import { AuthPasswordField } from '@/shared/ui/AuthPasswordField';
+
+const C = {
+  brand: '#059669',
+  brandL: '#34d399',
+  border: 'rgba(5,150,105,0.18)',
+  borderFocus: '#059669',
+  text: '#e8f5ee',
+  textSub: '#8bbfa0',
+  textMut: '#4d7a60',
+} as const;
+
+const lbl: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 500,
+  color: C.textSub,
+  display: 'block',
+  marginBottom: 6,
+};
+
+function darkInput(focused: boolean): React.CSSProperties {
+  return {
+    width: '100%',
+    padding: '12px 14px',
+    borderRadius: 9,
+    border: `1px solid ${focused ? C.borderFocus : C.border}`,
+    background: 'rgba(255,255,255,0.04)',
+    color: C.text,
+    fontSize: 14,
+    fontFamily: 'inherit',
+    outline: 'none',
+    transition: 'border-color 0.2s, box-shadow 0.2s',
+    boxShadow: focused ? '0 0 0 3px rgba(5,150,105,0.15)' : 'none',
+    boxSizing: 'border-box',
+  };
+}
 
 type LoginLocationState = {
   notice?: string;
@@ -16,6 +50,7 @@ export default function LoginPage() {
   const { t } = useTranslation();
   const login = useAuthStore((s) => s.login);
   const location = useLocation();
+
   const [loginNotice] = useState(() => {
     const locationState =
       typeof location.state === 'object' && location.state !== null
@@ -40,6 +75,7 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -56,29 +92,103 @@ export default function LoginPage() {
 
   return (
     <div>
-      <h2 className="mb-1 text-center text-xl font-semibold">{t('auth.login.title')}</h2>
-      <p className="mb-6 text-center text-sm text-muted">{t('auth.login.subtitle')}</p>
+      {/* Header */}
+      <div style={{ marginBottom: 28 }}>
+        <h2
+          style={{
+            fontSize: 24,
+            fontWeight: 800,
+            color: '#fff',
+            letterSpacing: '-0.025em',
+            marginBottom: 6,
+          }}
+        >
+          {t('auth.login.title')}
+        </h2>
+        <p style={{ fontSize: 13, color: C.textMut }}>{t('auth.login.subtitle')}</p>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {notice ? (
-          <div
-            className={
-              isSessionNotice
-                ? 'rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100'
-                : 'rounded-lg border border-green-200 bg-success-subtle px-3 py-2 text-sm text-success dark:border-green-900/40'
-            }
-          >
-            {notice}
-          </div>
-        ) : null}
-        {error ? (
-          <div className="rounded-lg border border-red-200 bg-danger-subtle px-3 py-2 text-sm text-danger dark:border-red-900/40">
-            {error}
-          </div>
-        ) : null}
+      {/* Tab switcher */}
+      <div
+        style={{
+          display: 'flex',
+          background: 'rgba(255,255,255,0.04)',
+          borderRadius: 9,
+          padding: 3,
+          marginBottom: 28,
+          border: `1px solid ${C.border}`,
+        }}
+      >
+        <div
+          style={{
+            flex: 1,
+            padding: '8px',
+            borderRadius: 7,
+            textAlign: 'center',
+            background: C.brand,
+            color: '#fff',
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          {t('common.signIn')}
+        </div>
+        <Link
+          to="/register"
+          style={{
+            flex: 1,
+            padding: '8px',
+            borderRadius: 7,
+            textAlign: 'center',
+            color: C.textMut,
+            fontSize: 13,
+            textDecoration: 'none',
+            display: 'block',
+          }}
+        >
+          {t('auth.register.title')}
+        </Link>
+      </div>
 
+      {/* Notice banner */}
+      {notice ? (
+        <div
+          style={{
+            marginBottom: 16,
+            padding: '10px 14px',
+            borderRadius: 9,
+            background: isSessionNotice ? 'rgba(251,191,36,0.08)' : 'rgba(52,211,153,0.08)',
+            border: `1px solid ${isSessionNotice ? 'rgba(251,191,36,0.3)' : 'rgba(52,211,153,0.3)'}`,
+            fontSize: 13,
+            color: isSessionNotice ? '#fbbf24' : C.brandL,
+          }}
+        >
+          {notice}
+        </div>
+      ) : null}
+
+      {/* Error banner */}
+      {error ? (
+        <div
+          style={{
+            marginBottom: 16,
+            padding: '10px 14px',
+            borderRadius: 9,
+            background: 'rgba(248,113,113,0.08)',
+            border: '1px solid rgba(248,113,113,0.3)',
+            fontSize: 13,
+            color: '#f87171',
+          }}
+        >
+          {error}
+        </div>
+      ) : null}
+
+      {/* Form */}
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Email */}
         <div>
-          <label htmlFor="login-email" className={authLabel}>
+          <label htmlFor="login-email" style={lbl}>
             Email
           </label>
           <input
@@ -88,15 +198,25 @@ export default function LoginPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className={authInput}
+            onFocus={() => setEmailFocused(true)}
+            onBlur={() => setEmailFocused(false)}
             placeholder="you@example.com"
+            style={darkInput(emailFocused)}
           />
         </div>
 
+        {/* Password */}
         <div>
-          <div className="mb-1 flex items-center justify-between">
-            <label htmlFor="login-password" className={authLabel}>{t('common.password')}</label>
-            <Link to="/forgot-password" className={authLink}>{t('auth.login.forgotPassword')}</Link>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+            <label htmlFor="login-password" style={{ ...lbl, marginBottom: 0 }}>
+              {t('common.password')}
+            </label>
+            <Link
+              to="/forgot-password"
+              style={{ fontSize: 11, color: C.brand, textDecoration: 'none' }}
+            >
+              {t('auth.login.forgotPassword')}
+            </Link>
           </div>
           <AuthPasswordField
             id="login-password"
@@ -104,25 +224,70 @@ export default function LoginPage() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(5,150,105,0.18)',
+              color: '#e8f5ee',
+              borderRadius: 9,
+              padding: '12px 40px 12px 14px',
+              fontSize: 14,
+              outline: 'none',
+              width: '100%',
+              boxSizing: 'border-box',
+              fontFamily: 'inherit',
+            }}
+            inputClassName="focus:border-[#059669] focus:ring-[rgba(5,150,105,0.15)]"
           />
         </div>
 
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
+        {/* Remember me */}
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 13,
+            color: C.textSub,
+            cursor: 'pointer',
+          }}
+        >
           <input
             type="checkbox"
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
-            className="h-4 w-4 rounded border-default"
-          />{t('common.rememberMe')}</label>
+            style={{ width: 14, height: 14 }}
+          />
+          {t('common.rememberMe')}
+        </label>
 
-        <button type="submit" disabled={loading} className={authPrimaryBtn}>
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            width: '100%',
+            padding: 13,
+            borderRadius: 9,
+            border: 'none',
+            background: loading
+              ? 'rgba(5,150,105,0.5)'
+              : 'linear-gradient(135deg,#059669,#10b981)',
+            color: '#fff',
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: loading ? 'wait' : 'pointer',
+            fontFamily: 'inherit',
+            boxShadow: '0 6px 20px rgba(5,150,105,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+        >
           {loading ? t('common.signInLoading') : t('common.signIn')}
         </button>
       </form>
 
-      <p className="mt-6 text-center">
-        <Link to="/register" className={authLink}>{t('auth.login.noAccount')}</Link>
-      </p>
     </div>
   );
 }

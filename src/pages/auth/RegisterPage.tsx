@@ -3,8 +3,55 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { useAuthStore } from '@/shared/store/auth';
 import { getApiError } from '@/shared/lib/getApiError';
-import { authInput, authLabel, authPrimaryBtn, authLink } from '@/shared/ui/authFormStyles';
 import { AuthPasswordField } from '@/shared/ui/AuthPasswordField';
+
+const C = {
+  brand: '#059669',
+  brandL: '#34d399',
+  border: 'rgba(5,150,105,0.18)',
+  borderFocus: '#059669',
+  text: '#e8f5ee',
+  textSub: '#8bbfa0',
+  textMut: '#4d7a60',
+} as const;
+
+const lbl: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 500,
+  color: C.textSub,
+  display: 'block',
+  marginBottom: 6,
+};
+
+function darkInput(focused: boolean): React.CSSProperties {
+  return {
+    width: '100%',
+    padding: '12px 14px',
+    borderRadius: 9,
+    border: `1px solid ${focused ? C.borderFocus : C.border}`,
+    background: 'rgba(255,255,255,0.04)',
+    color: C.text,
+    fontSize: 14,
+    fontFamily: 'inherit',
+    outline: 'none',
+    transition: 'border-color 0.2s, box-shadow 0.2s',
+    boxShadow: focused ? '0 0 0 3px rgba(5,150,105,0.15)' : 'none',
+    boxSizing: 'border-box',
+  };
+}
+
+const passwordInputStyle: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px solid rgba(5,150,105,0.18)',
+  color: '#e8f5ee',
+  borderRadius: 9,
+  padding: '12px 40px 12px 14px',
+  fontSize: 14,
+  outline: 'none',
+  width: '100%',
+  boxSizing: 'border-box',
+  fontFamily: 'inherit',
+};
 
 export default function RegisterPage() {
   const { t } = useTranslation();
@@ -18,6 +65,11 @@ export default function RegisterPage() {
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [firstNameFocused, setFirstNameFocused] = useState(false);
+  const [lastNameFocused, setLastNameFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [phoneFocused, setPhoneFocused] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -54,41 +106,118 @@ export default function RegisterPage() {
 
   return (
     <div>
-      <h2 className="mb-1 text-center text-xl font-semibold">{t('auth.register.title')}</h2>
-      <p className="mb-6 text-center text-sm text-muted">{t('auth.register.subtitle')}</p>
+      {/* Header */}
+      <div style={{ marginBottom: 28 }}>
+        <h2
+          style={{
+            fontSize: 24,
+            fontWeight: 800,
+            color: '#fff',
+            letterSpacing: '-0.025em',
+            marginBottom: 6,
+          }}
+        >
+          {t('auth.register.title')}
+        </h2>
+        <p style={{ fontSize: 13, color: C.textMut }}>{t('auth.register.subtitle')}</p>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
-        {error ? (
-          <div className="rounded-lg border border-red-200 bg-danger-subtle px-3 py-2 text-sm text-danger dark:border-red-900/40">
-            {error}
-          </div>
-        ) : null}
+      {/* Tab switcher */}
+      <div
+        style={{
+          display: 'flex',
+          background: 'rgba(255,255,255,0.04)',
+          borderRadius: 9,
+          padding: 3,
+          marginBottom: 28,
+          border: `1px solid ${C.border}`,
+        }}
+      >
+        <Link
+          to="/login"
+          style={{
+            flex: 1,
+            padding: '8px',
+            borderRadius: 7,
+            textAlign: 'center',
+            color: C.textMut,
+            fontSize: 13,
+            textDecoration: 'none',
+            display: 'block',
+          }}
+        >
+          {t('common.signIn')}
+        </Link>
+        <div
+          style={{
+            flex: 1,
+            padding: '8px',
+            borderRadius: 7,
+            textAlign: 'center',
+            background: C.brand,
+            color: '#fff',
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          {t('auth.register.title')}
+        </div>
+      </div>
 
-        <div className="grid grid-cols-2 gap-3">
+      {/* Error banner */}
+      {error ? (
+        <div
+          style={{
+            marginBottom: 16,
+            padding: '10px 14px',
+            borderRadius: 9,
+            background: 'rgba(248,113,113,0.08)',
+            border: '1px solid rgba(248,113,113,0.3)',
+            fontSize: 13,
+            color: '#f87171',
+          }}
+        >
+          {error}
+        </div>
+      ) : null}
+
+      {/* Form */}
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {/* First + Last name row */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
-            <label htmlFor="reg-first" className={authLabel}>{t('common.firstName')}</label>
+            <label htmlFor="reg-first" style={lbl}>
+              {t('common.firstName')}
+            </label>
             <input
               id="reg-first"
               required
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className={authInput}
+              onFocus={() => setFirstNameFocused(true)}
+              onBlur={() => setFirstNameFocused(false)}
+              style={darkInput(firstNameFocused)}
             />
           </div>
           <div>
-            <label htmlFor="reg-last" className={authLabel}>{t('common.lastName')}</label>
+            <label htmlFor="reg-last" style={lbl}>
+              {t('common.lastName')}
+            </label>
             <input
               id="reg-last"
               required
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className={authInput}
+              onFocus={() => setLastNameFocused(true)}
+              onBlur={() => setLastNameFocused(false)}
+              style={darkInput(lastNameFocused)}
             />
           </div>
         </div>
 
+        {/* Email */}
         <div>
-          <label htmlFor="reg-email" className={authLabel}>
+          <label htmlFor="reg-email" style={lbl}>
             Email
           </label>
           <input
@@ -97,26 +226,35 @@ export default function RegisterPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className={authInput}
+            onFocus={() => setEmailFocused(true)}
+            onBlur={() => setEmailFocused(false)}
             placeholder="you@example.com"
+            style={darkInput(emailFocused)}
           />
         </div>
 
+        {/* Phone */}
         <div>
-          <label htmlFor="reg-phone" className={authLabel}>
-            Телефон <span className="text-gray-600">{t('common.optional')}</span>
+          <label htmlFor="reg-phone" style={lbl}>
+            {t('common.phone')}{' '}
+            <span style={{ color: C.textMut }}>{t('common.optional')}</span>
           </label>
           <input
             id="reg-phone"
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className={authInput}
+            onFocus={() => setPhoneFocused(true)}
+            onBlur={() => setPhoneFocused(false)}
+            style={darkInput(phoneFocused)}
           />
         </div>
 
+        {/* Password */}
         <div>
-          <label htmlFor="reg-pass" className={authLabel}>{t('common.password')}</label>
+          <label htmlFor="reg-pass" style={lbl}>
+            {t('common.password')}
+          </label>
           <AuthPasswordField
             id="reg-pass"
             autoComplete="new-password"
@@ -124,33 +262,57 @@ export default function RegisterPage() {
             minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            style={passwordInputStyle}
           />
         </div>
 
+        {/* Password confirm */}
         <div>
-          <label htmlFor="reg-pass2" className={authLabel}>{t('auth.register.passwordAgain')}</label>
+          <label htmlFor="reg-pass2" style={lbl}>
+            {t('auth.register.passwordAgain')}
+          </label>
           <AuthPasswordField
             id="reg-pass2"
             required
             value={passwordConfirm}
             onChange={(e) => setPasswordConfirm(e.target.value)}
             autoComplete="new-password"
+            style={passwordInputStyle}
           />
         </div>
 
-        <p className="text-xs text-muted">
-          После регистрации на почту уйдёт ссылка для подтверждения (локально смотри логи бэкенда при
-          console email).
+        {/* After-register note */}
+        <p style={{ fontSize: 11, color: C.textMut, lineHeight: 1.6 }}>
+          {t('auth.register.afterRegister')}
         </p>
 
-        <button type="submit" disabled={loading} className={authPrimaryBtn}>
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            width: '100%',
+            padding: 13,
+            borderRadius: 9,
+            border: 'none',
+            background: loading
+              ? 'rgba(5,150,105,0.5)'
+              : 'linear-gradient(135deg,#059669,#10b981)',
+            color: '#fff',
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: loading ? 'wait' : 'pointer',
+            fontFamily: 'inherit',
+            boxShadow: '0 6px 20px rgba(5,150,105,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+        >
           {loading ? t('auth.register.submitting') : t('auth.register.submit')}
         </button>
       </form>
-
-      <p className="mt-6 text-center">
-        <Link to="/login" className={authLink}>{t('auth.register.hasAccount')}</Link>
-      </p>
     </div>
   );
 }
