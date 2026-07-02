@@ -971,7 +971,7 @@ export default function BuildingStaffPage() {
                                 disabled={inv.status !== 'pending' || resendInvite.isPending}
                                 onClick={() => resendInvite.mutate(inv.id)}
                                 title={t('buildingStaff.resendInvite')}
-                                className={btnGhost}
+                                className={cn(btnGhost, 'hover:text-[color:var(--brand)]')}
                               >
                                 <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
                                 <span className="sr-only">{t('buildingStaff.resendInvite')}</span>
