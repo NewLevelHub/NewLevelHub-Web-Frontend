@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/shared/ui/Button';
 import {
   Search,
   ChevronDown,
@@ -43,7 +42,6 @@ import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
-import InvitesPanel from '@/pages/company/components/InvitesPanel';
 import type {
   Company,
   CompanyMember,
@@ -129,7 +127,7 @@ const Avatar = memo<AvatarProps>(({ src, fullName }) => {
   }
   return (
     <div
-      className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-xs font-semibold text-white select-none"
+      className="h-9 w-9 rounded-full bg-raised text-secondary text-xs font-semibold border border-default grid place-items-center select-none shrink-0"
       aria-hidden="true"
     >
       {getInitials(fullName)}
@@ -346,17 +344,17 @@ const MemberRow = memo<MemberRowProps>(({
     <>
       <tr
         className={cn(
-          'cursor-pointer transition-colors',
-          isExpanded ? 'bg-hover/60' : 'hover:bg-hover/40',
+          'group cursor-pointer transition-colors',
+          isExpanded && 'bg-[color:var(--bg-hover)]',
         )}
         onClick={() => onToggle(member.id)}
         onKeyDown={handleKeyDown}
         tabIndex={0}
         role="row"
         aria-expanded={isExpanded}
-        aria-label={`Сотрудник ${member.full_name}`}
+        aria-label={t('common.employeeRow', { name: member.full_name })}
       >
-        <td className="px-4 py-3">
+        <td className="px-3 py-3 align-middle border-b border-[color:var(--border-faint)] group-hover:bg-[color:var(--bg-hover)]">
           <div className="flex items-center gap-3">
             <Avatar src={member.avatar} fullName={member.full_name} />
             <div className="min-w-0">
@@ -365,25 +363,25 @@ const MemberRow = memo<MemberRowProps>(({
             </div>
           </div>
         </td>
-        <td className="hidden px-4 py-3 sm:table-cell">
+        <td className="hidden px-3 py-3 align-middle border-b border-[color:var(--border-faint)] group-hover:bg-[color:var(--bg-hover)] sm:table-cell">
           <RoleBadge role={member.role} />
         </td>
-        <td className="hidden px-4 py-3 text-sm text-secondary md:table-cell">
+        <td className="hidden px-3 py-3 align-middle border-b border-[color:var(--border-faint)] group-hover:bg-[color:var(--bg-hover)] text-sm text-secondary md:table-cell">
           {member.position || <span className="text-muted">—</span>}
         </td>
-        <td className="hidden px-4 py-3 lg:table-cell">
+        <td className="hidden px-3 py-3 align-middle border-b border-[color:var(--border-faint)] group-hover:bg-[color:var(--bg-hover)] lg:table-cell">
           <StatusBadge isActive={member.is_active} />
         </td>
-        <td className="hidden px-4 py-3 lg:table-cell">
+        <td className="hidden px-3 py-3 align-middle border-b border-[color:var(--border-faint)] group-hover:bg-[color:var(--bg-hover)] lg:table-cell">
           <EmailVerifiedBadge isVerified={member.is_email_verified} />
         </td>
-        <td className="hidden px-4 py-3 text-xs text-secondary xl:table-cell">
+        <td className="hidden px-3 py-3 align-middle border-b border-[color:var(--border-faint)] group-hover:bg-[color:var(--bg-hover)] text-xs text-secondary xl:table-cell">
           {formatDate(member.date_joined)}
         </td>
-        <td className="hidden px-4 py-3 text-xs text-secondary xl:table-cell">
+        <td className="hidden px-3 py-3 align-middle border-b border-[color:var(--border-faint)] group-hover:bg-[color:var(--bg-hover)] text-xs text-secondary xl:table-cell">
           {formatDate(member.last_login)}
         </td>
-        <td className="px-4 py-3 text-right">
+        <td className="px-3 py-3 align-middle border-b border-[color:var(--border-faint)] group-hover:bg-[color:var(--bg-hover)] text-right">
           {isExpanded ? (
             <ChevronUp className="ml-auto h-4 w-4 text-secondary" aria-hidden="true" />
           ) : (
@@ -393,8 +391,8 @@ const MemberRow = memo<MemberRowProps>(({
       </tr>
       {isExpanded && (
         <tr role="row">
-          <td colSpan={8} className="bg-raised px-4 pb-4 pt-2">
-            <div className="space-y-3">
+          <td colSpan={8} className="p-0">
+            <div style={{ padding: '14px 20px 14px 84px', background: 'var(--bg-raised)', borderBottom: '1px solid var(--border-faint)' }} className="space-y-3">
               <ActivityPanel companyId={companyId} memberId={member.id} />
               {canManageMembers && (
                 <div className="flex flex-wrap items-center gap-3">
@@ -459,7 +457,7 @@ const MemberRow = memo<MemberRowProps>(({
                     )}
                   >
                     <Shield className="h-3.5 w-3.5" aria-hidden="true" />
-                    {member.is_active ? 'Заблокировать' : 'Разблокировать'}
+                    {member.is_active ? t('team.block') : t('team.unblock')}
                   </button>
                   {!isImpersonating && (
                     <button
@@ -492,6 +490,7 @@ interface OrderingButtonProps {
 }
 
 const OrderingButton = memo<OrderingButtonProps>(({ field, label, current, onChange }) => {
+  const { t } = useTranslation();
   const isActive = current.field === field;
   const Icon = isActive
     ? current.dir === 'asc'
@@ -510,7 +509,7 @@ const OrderingButton = memo<OrderingButtonProps>(({ field, label, current, onCha
           : 'border border-default bg-raised text-secondary hover:bg-hover',
       )}
       aria-pressed={isActive}
-      aria-label={`Сортировка по ${label}`}
+      aria-label={t('common.sortBy', { label })}
     >
       <Icon className="h-3.5 w-3.5" aria-hidden="true" />
       {label}
@@ -689,15 +688,15 @@ function DirectoryTab({ companyId }: DirectoryTabProps) {
         {isLoading ? (
           <div className="flex items-center gap-2 rounded-xl border border-default bg-raised p-6 text-secondary">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            Загрузка сотрудников…
+            {t('team.loadingMembers')}
           </div>
         ) : isError ? (
           <div className="rounded-xl border border-default bg-danger-subtle p-6 text-sm text-danger">
-            Не удалось загрузить список сотрудников.
+            {t('team.loadError')}
           </div>
         ) : members.length === 0 ? (
           <div className="rounded-xl border border-default bg-raised p-6 text-sm text-secondary">
-            По текущим фильтрам сотрудники не найдены.
+            {t('team.noMembersFound')}
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -736,7 +735,7 @@ function DirectoryTab({ companyId }: DirectoryTabProps) {
                       {roleLabelDir(member.role)}
                     </span>
                     <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', member.is_active ? 'bg-success-subtle text-emerald-400' : 'bg-danger-subtle text-red-400')}>
-                      {member.is_active ? 'Активен' : 'Неактивен'}
+                      {member.is_active ? t('common.active') : t('common.inactive')}
                     </span>
                   </div>
                 </div>
@@ -749,13 +748,13 @@ function DirectoryTab({ companyId }: DirectoryTabProps) {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between text-sm text-secondary">
-          <span>Страница {page} из {totalPages} ({directoryData?.count ?? 0} сотрудников)</span>
+          <span>{t('team.pageOf', { page, total: totalPages, count: directoryData?.count ?? 0 })}</span>
           <div className="flex gap-2">
             <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}
               className={cn('rounded-lg border border-default px-3 py-1.5', page <= 1 ? 'cursor-not-allowed opacity-50' : 'hover:bg-hover text-primary')}>{t('common.back')}</button>
             <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}
               className={cn('rounded-lg border border-default px-3 py-1.5', page >= totalPages ? 'cursor-not-allowed opacity-50' : 'hover:bg-hover text-primary')}>
-              Вперёд
+              {t('common.next')}
             </button>
           </div>
         </div>
@@ -764,12 +763,12 @@ function DirectoryTab({ companyId }: DirectoryTabProps) {
       {/* Profile panel */}
       {selectedMemberId && (
         <section className="rounded-xl border border-default bg-raised p-5">
-          <h2 className="text-base font-semibold text-primary">Профиль сотрудника</h2>
+          <h2 className="text-base font-semibold text-primary">{t('team.memberProfile')}</h2>
           {isProfileLoading ? (
             <div className="mt-3 flex items-center gap-2 text-sm text-secondary">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />{t('common.loading')}</div>
           ) : isProfileError || !profileData ? (
-            <p className="mt-3 text-sm text-danger">Не удалось загрузить профиль.</p>
+            <p className="mt-3 text-sm text-danger">{t('team.directoryProfileLoadError')}</p>
           ) : (
             <div className="mt-4 space-y-4">
               <div className="flex items-start gap-3">
@@ -785,21 +784,21 @@ function DirectoryTab({ companyId }: DirectoryTabProps) {
                   <p className="text-sm text-secondary">{profileData.email}</p>
                 </div>
                 <div className="rounded-lg border border-default bg-surface/50 p-3">
-                  <p className="mb-1 text-xs text-muted">Телефон</p>
+                  <p className="mb-1 text-xs text-muted">{t('common.phone')}</p>
                   <p className="text-sm text-secondary">{profileData.phone || '—'}</p>
                 </div>
                 <div className="rounded-lg border border-default bg-surface/50 p-3">
-                  <p className="mb-1 text-xs text-muted">Задачи</p>
+                  <p className="mb-1 text-xs text-muted">{t('team.tasks')}</p>
                   <p className="text-sm text-secondary">{profileData.tasks_count}</p>
                 </div>
                 <div className="rounded-lg border border-default bg-surface/50 p-3">
-                  <p className="mb-1 text-xs text-muted">Бронирования за 30 дней</p>
+                  <p className="mb-1 text-xs text-muted">{t('common.bookingsLast30')}</p>
                   <p className="text-sm text-secondary">{profileData.bookings_last_30_days}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 text-xs text-secondary">
                 <CalendarClock className="h-4 w-4" aria-hidden="true" />
-                {t('team.lastLogin')}: {formatDateTime(profileData.last_login)}
+                {t('common.lastLogin')}: {formatDateTime(profileData.last_login)}
               </div>
             </div>
           )}
@@ -968,23 +967,24 @@ function ReassignMemberModal({
 
         {/* Footer */}
         <div className="flex justify-end gap-3 px-6 pb-6">
-          <Button
+          <button
             type="button"
-            variant="secondary"
-            size="sm"
             onClick={onClose}
             disabled={isLoading}
-          >{t('common.cancel')}</Button>
-          <Button
+            className="rounded-lg border border-default bg-surface px-4 py-2 text-sm font-medium text-secondary hover:bg-raised disabled:pointer-events-none disabled:opacity-50"
+          >{t('common.cancel')}</button>
+          <button
             type="button"
-            variant="danger"
-            size="sm"
             disabled={isLoading}
-            loading={isLoading}
             onClick={() => onConfirm(selectedId || undefined)}
+            className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:pointer-events-none disabled:opacity-50"
+            style={{ background: 'var(--danger)' }}
           >
-            Удалить из компании
-          </Button>
+            {isLoading && (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden="true" />
+            )}
+            {t('common.removeFromCompany')}
+          </button>
         </div>
       </div>
     </div>
@@ -997,7 +997,7 @@ function ReassignMemberModal({
 
 const DEBOUNCE_MS = 350;
 
-type ViewTab = 'manage' | 'directory' | 'invites';
+type ViewTab = 'manage' | 'directory';
 
 export default function TeamManagePage() {
   const { t } = useTranslation();
@@ -1005,9 +1005,7 @@ export default function TeamManagePage() {
   const queryClient = useQueryClient();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
   const isCompanyAdmin = user?.role === USER_ROLES.COMPANY_ADMIN;
-  const isEmployee = user?.role === USER_ROLES.EMPLOYEE;
-  const showTabs = isCompanyAdmin || isSuperadmin;
-  const canInvite = !isEmployee;
+  const showTabs = isCompanyAdmin;
   const [view, setView] = useState<ViewTab>('manage');
 
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
@@ -1077,6 +1075,34 @@ export default function TeamManagePage() {
     placeholderData: (prev) => prev,
   });
 
+  // Lightweight count queries for role chips — fetch only 1 item to read total count
+  const { data: adminCountData } = useQuery<PaginatedResponse<CompanyMember>>({
+    queryKey: ['teamMembers', companyId, 'count', 'company_admin'],
+    queryFn: () =>
+      apiClient
+        .get<PaginatedResponse<CompanyMember>>(API.companies.members(companyId!), {
+          params: { role: 'company_admin', page_size: 1 },
+        })
+        .then((r) => r.data),
+    enabled: companyId !== null,
+    staleTime: 15_000,
+  });
+
+  const { data: employeeCountData } = useQuery<PaginatedResponse<CompanyMember>>({
+    queryKey: ['teamMembers', companyId, 'count', 'employee'],
+    queryFn: () =>
+      apiClient
+        .get<PaginatedResponse<CompanyMember>>(API.companies.members(companyId!), {
+          params: { role: 'employee', page_size: 1 },
+        })
+        .then((r) => r.data),
+    enabled: companyId !== null,
+    staleTime: 15_000,
+  });
+
+  const adminCount = adminCountData?.count ?? 0;
+  const employeeCount = employeeCountData?.count ?? 0;
+
   const refreshMemberQueries = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
     await queryClient.invalidateQueries({ queryKey: ['company-members'] });
@@ -1094,7 +1120,7 @@ export default function TeamManagePage() {
         .then((r) => r.data),
     onSuccess: async () => {
       setActionError(null);
-      setActionSuccess('Сотрудник деактивирован.');
+      setActionSuccess(t('team.deactivated'));
       await refreshMemberQueries();
     },
     onError: (error: unknown) => {
@@ -1110,7 +1136,7 @@ export default function TeamManagePage() {
         .then((r) => r.data),
     onSuccess: async () => {
       setActionError(null);
-      setActionSuccess('Сотрудник активирован.');
+      setActionSuccess(t('team.activated'));
       await refreshMemberQueries();
     },
     onError: (error: unknown) => {
@@ -1135,10 +1161,11 @@ export default function TeamManagePage() {
     onSuccess: async (payload) => {
       const suffix =
         typeof payload.tasks_reassigned === 'number'
-          ? ` Переназначено задач: ${payload.tasks_reassigned}.`
+          ? t('team.tasksSuffix', { count: payload.tasks_reassigned })
           : '';
       setActionError(null);
-      setActionSuccess(`Сотрудник удалён из компании.${suffix}`);
+      setActionSuccess(t('team.removed', { suffix }));
+      setFilters((prev) => ({ ...prev, page: 1 }));
       await refreshMemberQueries();
     },
     onError: (error: unknown) => {
@@ -1154,7 +1181,7 @@ export default function TeamManagePage() {
         .then((r) => r.data),
     onSuccess: async (_, { shouldBlock }) => {
       setActionError(null);
-      setActionSuccess(shouldBlock ? 'Пользователь заблокирован.' : 'Пользователь разблокирован.');
+      setActionSuccess(shouldBlock ? t('team.userBlocked') : t('team.userUnblocked'));
       await refreshMemberQueries();
     },
     onError: (error: unknown) => {
@@ -1274,7 +1301,7 @@ export default function TeamManagePage() {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-center">
         <User className="h-12 w-12 text-muted" aria-hidden="true" />
-        <p className="text-sm text-secondary">Компания не найдена.</p>
+        <p className="text-sm text-secondary">{t('team.companyNotFound')}</p>
       </div>
     );
   }
@@ -1285,29 +1312,18 @@ export default function TeamManagePage() {
   return (
     <div className="space-y-6 p-6">
       {/* Page header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-primary">Сотрудники</h1>
-          <p className="mt-1 text-sm text-secondary">
-            {companyId && data && view === 'manage'
-              ? `Всего: ${data.count} сотрудников`
-              : isSuperadmin && !companyId
-                ? 'Выберите компанию для просмотра сотрудников'
-                : ' '}
-          </p>
-        </div>
-        {canInvite && companyId && (
-          <button
-            type="button"
-            onClick={() => setView('invites')}
-            className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
-          >
-            {t('companies.invite')}
-          </button>
-        )}
+      <div>
+        <h1 className="text-2xl font-bold text-primary">{t('team.employeesTitle')}</h1>
+        <p className="mt-1 text-sm text-secondary">
+          {companyId && data && view === 'manage'
+            ? t('common.totalEmployees', { count: data.count })
+            : isSuperadmin && !companyId
+              ? t('common.selectCompanyToView')
+              : ' '}
+        </p>
       </div>
 
-      {/* Tab bar — company admin / superadmin */}
+      {/* Tab bar — company admin only */}
       {showTabs && (
         <div className="flex gap-1 rounded-xl border border-default bg-raised p-1 w-fit">
           <button
@@ -1321,7 +1337,7 @@ export default function TeamManagePage() {
             )}
           >
             <List className="h-4 w-4" aria-hidden="true" />
-            Управление
+            {t('team.tabManage')}
           </button>
           <button
             type="button"
@@ -1334,19 +1350,7 @@ export default function TeamManagePage() {
             )}
           >
             <LayoutGrid className="h-4 w-4" aria-hidden="true" />
-            Карточки
-          </button>
-          <button
-            type="button"
-            onClick={() => setView('invites')}
-            className={cn(
-              'inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-              view === 'invites'
-                ? 'bg-surface text-primary shadow-sm'
-                : 'text-secondary hover:text-primary',
-            )}
-          >
-            {t('companies.invitationsTitle')}
+            {t('team.tabCards')}
           </button>
         </div>
       )}
@@ -1382,244 +1386,218 @@ export default function TeamManagePage() {
       {/* Directory card view */}
       {view === 'directory' && companyId && <DirectoryTab companyId={companyId} />}
 
-      {/* Invites panel */}
-      {view === 'invites' && companyId && <InvitesPanel companyId={companyId} />}
-
-      {/* Filters, table and pagination — only shown once a company is available */}
-      {view === 'manage' && companyId && <><div className="rounded-xl border border-default bg-raised p-4">
-        {actionError && (
-          <div className="mb-3 rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-3 py-2 text-sm text-danger">
-            {actionError}
-          </div>
-        )}
-        {actionSuccess && (
-          <div className="mb-3 rounded-lg border border-emerald-800 bg-success-subtle px-3 py-2 text-sm text-success">
-            {actionSuccess}
-          </div>
-        )}
-        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
-          {/* Search */}
-          <div className="flex-1 min-w-48">
-            <label htmlFor="member-search" className="mb-1 block text-xs font-medium text-secondary">{t('common.search')}</label>
-            <div className="relative">
-              <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
-                aria-hidden="true"
-              />
-              <input
-                id="member-search"
-                type="search"
-                value={filters.search}
-                onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value, page: 1 }))}
-                placeholder="Имя или email…"
-                className={cn(inputClass, 'pl-9')}
-                aria-label="Поиск сотрудников по имени или email"
-              />
+      {/* Manage view */}
+      {view === 'manage' && companyId && (
+        <>
+          {/* Action feedback — outside the card */}
+          {actionError && (
+            <div className="rounded-lg border border-red-200 dark:border-red-800 bg-danger-subtle px-3 py-2 text-sm text-danger">
+              {actionError}
             </div>
-          </div>
+          )}
+          {actionSuccess && (
+            <div className="rounded-lg border border-emerald-800 bg-success-subtle px-3 py-2 text-sm text-success">
+              {actionSuccess}
+            </div>
+          )}
 
-          {/* Role filter */}
-          <div>
-            <label htmlFor="role-filter" className="mb-1 block text-xs font-medium text-secondary">{t('common.role')}</label>
-            <select
-              id="role-filter"
-              value={filters.role}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  role: e.target.value as Filters['role'],
-                  page: 1,
-                }))
-              }
-              className={selectClass}
-              aria-label="Фильтр по роли"
-            >
-              <option value="">{t('common.allRoles')}</option>
-              <option value="employee">{t('team.roleEmployee')}</option>
-              <option value="company_admin">{t('team.roleCompanyAdmin')}</option>
-            </select>
-          </div>
+          {/* Table card with toolbar inside */}
+          <div
+            className={cn(
+              'overflow-hidden rounded-xl border border-default bg-surface transition-opacity',
+              isFetching && 'opacity-70',
+            )}
+          >
+            {/* Toolbar */}
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, padding: '12px 14px', borderBottom: '1px solid var(--border-faint)', background: 'var(--bg-surface)' }}>
+              {/* Role chips */}
+              {(
+                [
+                  { value: '' as const, label: `${t('common.all')} · ${data?.count ?? 0}` },
+                  { value: 'company_admin' as const, label: `${t('team.roleAdmin')} · ${adminCount}` },
+                  { value: 'employee' as const, label: `${t('team.roleEmployee')} · ${employeeCount}` },
+                ] as { value: Filters['role']; label: string }[]
+              ).map(({ value, label }) => (
+                <span
+                  key={value}
+                  onClick={() => setFilters((prev) => ({ ...prev, role: value, page: 1 }))}
+                  className={cn(
+                    'inline-flex h-[26px] cursor-pointer items-center rounded-full border px-[10px] text-xs font-medium transition-colors',
+                    filters.role === value
+                      ? 'border-transparent bg-brand-subtle text-brand-text'
+                      : 'border-default bg-raised text-secondary hover:bg-hover hover:text-primary',
+                  )}
+                >
+                  {label}
+                </span>
+              ))}
 
-          {/* Active status filter */}
-          <div>
-            <label htmlFor="status-filter" className="mb-1 block text-xs font-medium text-secondary">{t('common.status')}</label>
-            <select
-              id="status-filter"
-              value={filters.is_active}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  is_active: e.target.value as Filters['is_active'],
-                  page: 1,
-                }))
-              }
-              className={selectClass}
-              aria-label="Фильтр по статусу активности"
-            >
-              <option value="">Все</option>
-              <option value="true">{t('passes.filters.active')}</option>
-              <option value="false">Неактивные</option>
-            </select>
-          </div>
-        </div>
+              {/* Vertical divider */}
+              <span style={{ width: 1, height: 18, background: 'var(--border)', margin: '0 4px' }} aria-hidden="true" />
 
-        {/* Ordering */}
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-secondary">Сортировка:</span>
-          <OrderingButton
-            field="full_name"
-            label={t('common.byName')}
-            current={{ field: filters.orderingField, dir: filters.orderingDir }}
-            onChange={handleOrderingFieldChange}
-          />
-          <OrderingButton
-            field="date_joined"
-            label={t('common.joinedAt')}
-            current={{ field: filters.orderingField, dir: filters.orderingDir }}
-            onChange={handleOrderingFieldChange}
-          />
-          <OrderingButton
-            field="last_login"
-            label={t('common.byLastLogin')}
-            current={{ field: filters.orderingField, dir: filters.orderingDir }}
-            onChange={handleOrderingFieldChange}
-          />
-        </div>
-      </div>
+              {/* Search input (compact) */}
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" aria-hidden="true" />
+                <input
+                  type="search"
+                  value={filters.search}
+                  onChange={e => setFilters(prev => ({ ...prev, search: e.target.value, page: 1 }))}
+                  placeholder={t('common.search')}
+                  aria-label={t('common.searchEmployees')}
+                  className="h-[26px] rounded-full border border-default bg-raised pl-7 pr-3 text-xs text-primary placeholder:text-muted focus:outline-none focus:border-[color:var(--brand)]"
+                />
+              </div>
 
-      {/* Table */}
-      <div
-        className={cn(
-          'overflow-hidden rounded-xl border border-default bg-raised transition-opacity',
-          isFetching && 'opacity-70',
-        )}
-      >
-        {isLoading ? (
-          <div className="flex items-center justify-center py-16 text-sm text-secondary">
-            <Activity className="mr-2 h-5 w-5 animate-pulse" aria-hidden="true" />
-            Загрузка сотрудников…
-          </div>
-        ) : isError ? (
-          <div className="flex items-center justify-center py-16 text-sm text-red-400">
-            Не удалось загрузить список сотрудников. Попробуйте снова.
-          </div>
-        ) : !data?.results.length ? (
-          <div className="flex flex-col items-center justify-center gap-2 py-16 text-sm text-secondary">
-            <User className="h-10 w-10 text-muted" aria-hidden="true" />
-            <p>Сотрудники не найдены.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left" role="table" aria-label={t('common.employeeList')}>
-              <thead>
-                <tr className="border-b border-default">
-                  <th
-                    scope="col"
-                    className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary"
-                  >{t('team.roleEmployee')}</th>
-                  <th
-                    scope="col"
-                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary sm:table-cell"
-                  >{t('common.role')}</th>
-                  <th
-                    scope="col"
-                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary md:table-cell"
-                  >{t('team.position')}</th>
-                  <th
-                    scope="col"
-                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary lg:table-cell"
-                  >{t('common.status')}</th>
-                  <th
-                    scope="col"
-                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary lg:table-cell"
-                  >
-                    Email
-                  </th>
-                  <th
-                    scope="col"
-                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary xl:table-cell"
-                  >
-                    Дата вступления
-                  </th>
-                  <th
-                    scope="col"
-                    className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-secondary xl:table-cell"
-                  >{t('common.lastLogin')}</th>
-                  <th scope="col" className="px-4 py-3">
-                    <span className="sr-only">Действия</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[color:var(--border)]/50">
-                {data.results.map((member) => (
-                  <MemberRow
-                    key={member.id}
-                    member={member}
-                    companyId={companyId!}
-                    isExpanded={expandedId === member.id}
-                    onToggle={handleToggleExpand}
-                    canManageMembers={canManageMembers}
-                    isUpdating={isMemberActionPending || changeRoleMutation.isPending}
-                    onDeactivate={handleDeactivate}
-                    onActivate={handleActivate}
-                    onRemove={handleRemove}
-                    isSuperadmin={isSuperadmin}
-                    isImpersonating={isImpersonating}
-                    onBlock={handleBlock}
-                    onImpersonate={handleImpersonate}
-                    currentUserId={user?.id ?? null}
-                    onChangeRole={handleChangeRole}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+              {/* Status filter */}
+              <select
+                value={filters.is_active}
+                onChange={e => setFilters(prev => ({ ...prev, is_active: e.target.value as Filters['is_active'], page: 1 }))}
+                aria-label={t('common.filterByActivity')}
+                className="h-[26px] rounded-full border border-default bg-raised px-3 text-xs text-secondary focus:outline-none cursor-pointer"
+              >
+                <option value="">{t('common.all')}</option>
+                <option value="true">{t('common.active')}</option>
+                <option value="false">{t('common.inactive')}</option>
+              </select>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div
-          className="flex items-center justify-between text-sm text-secondary"
-          role="navigation"
-          aria-label={t('common.pagination')}
-        >
-          <span>
-            Страница {filters.page} из {totalPages} ({data?.count ?? 0} записей)
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={filters.page <= 1}
-              onClick={() => setFilters((prev) => ({ ...prev, page: prev.page - 1 }))}
-              className={cn(
-                'inline-flex items-center gap-1 rounded-lg border border-default px-3 py-1.5 text-sm transition-colors',
-                filters.page <= 1
-                  ? 'cursor-not-allowed opacity-40'
-                  : 'hover:bg-hover text-primary',
-              )}
-              aria-label={t('common.previousPage')}
-            >
-              <ChevronLeft className="h-4 w-4" aria-hidden="true" />{t('common.back')}</button>
-            <button
-              type="button"
-              disabled={filters.page >= totalPages}
-              onClick={() => setFilters((prev) => ({ ...prev, page: prev.page + 1 }))}
-              className={cn(
-                'inline-flex items-center gap-1 rounded-lg border border-default px-3 py-1.5 text-sm transition-colors',
-                filters.page >= totalPages
-                  ? 'cursor-not-allowed opacity-40'
-                  : 'hover:bg-hover text-primary',
-              )}
-              aria-label={t('common.nextPage')}
-            >
-              Вперёд
-              <ChevronRight className="h-4 w-4" aria-hidden="true" />
-            </button>
+              {/* Ordering buttons */}
+              <span style={{ width: 1, height: 18, background: 'var(--border)', margin: '0 4px' }} aria-hidden="true" />
+              <OrderingButton
+                field="full_name"
+                label={t('common.byName')}
+                current={{ field: filters.orderingField, dir: filters.orderingDir }}
+                onChange={handleOrderingFieldChange}
+              />
+              <OrderingButton
+                field="date_joined"
+                label={t('common.joinedAt')}
+                current={{ field: filters.orderingField, dir: filters.orderingDir }}
+                onChange={handleOrderingFieldChange}
+              />
+              <OrderingButton
+                field="last_login"
+                label={t('common.byLastLogin')}
+                current={{ field: filters.orderingField, dir: filters.orderingDir }}
+                onChange={handleOrderingFieldChange}
+              />
+
+              {/* Pagination info on the right */}
+              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)' }}>
+                {data && (
+                  <span>
+                    {t('team.pageRange', {
+                      from: Math.min((filters.page - 1) * PAGE_SIZE + 1, data.count),
+                      to: Math.min(filters.page * PAGE_SIZE, data.count),
+                      total: data.count,
+                    })}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  disabled={filters.page <= 1}
+                  onClick={() => setFilters((prev) => ({ ...prev, page: prev.page - 1 }))}
+                  aria-label={t('common.previousPage')}
+                  className="h-[26px] w-[26px] rounded-md border-none bg-transparent text-muted grid place-items-center hover:bg-hover hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  disabled={filters.page >= totalPages}
+                  onClick={() => setFilters((prev) => ({ ...prev, page: prev.page + 1 }))}
+                  aria-label={t('common.nextPage')}
+                  className="h-[26px] w-[26px] rounded-md border-none bg-transparent text-muted grid place-items-center hover:bg-hover hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+
+            {/* Table content */}
+            {isLoading ? (
+              <div className="flex items-center justify-center py-16 text-sm text-secondary">
+                <Activity className="mr-2 h-5 w-5 animate-pulse" aria-hidden="true" />
+                {t('team.loadingMembers')}
+              </div>
+            ) : isError ? (
+              <div className="flex items-center justify-center py-16 text-sm text-danger">
+                {t('team.listLoadError')}
+              </div>
+            ) : !data?.results.length ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-16 text-sm text-secondary">
+                <User className="h-10 w-10 text-muted" aria-hidden="true" />
+                <p>{t('team.membersNotFound')}</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-[13px] text-left" role="table" aria-label={t('common.employeeList')}>
+                  <thead>
+                    <tr>
+                      <th
+                        scope="col"
+                        className="px-3 py-[10px] text-left text-[11px] font-medium text-muted tracking-[0.02em] uppercase bg-transparent whitespace-nowrap border-b border-[color:var(--border)]"
+                      >{t('team.roleEmployee')}</th>
+                      <th
+                        scope="col"
+                        className="hidden px-3 py-[10px] text-left text-[11px] font-medium text-muted tracking-[0.02em] uppercase bg-transparent whitespace-nowrap border-b border-[color:var(--border)] sm:table-cell"
+                      >{t('common.role')}</th>
+                      <th
+                        scope="col"
+                        className="hidden px-3 py-[10px] text-left text-[11px] font-medium text-muted tracking-[0.02em] uppercase bg-transparent whitespace-nowrap border-b border-[color:var(--border)] md:table-cell"
+                      >{t('team.position')}</th>
+                      <th
+                        scope="col"
+                        className="hidden px-3 py-[10px] text-left text-[11px] font-medium text-muted tracking-[0.02em] uppercase bg-transparent whitespace-nowrap border-b border-[color:var(--border)] lg:table-cell"
+                      >{t('common.status')}</th>
+                      <th
+                        scope="col"
+                        className="hidden px-3 py-[10px] text-left text-[11px] font-medium text-muted tracking-[0.02em] uppercase bg-transparent whitespace-nowrap border-b border-[color:var(--border)] lg:table-cell"
+                      >
+                        Email
+                      </th>
+                      <th
+                        scope="col"
+                        className="hidden px-3 py-[10px] text-left text-[11px] font-medium text-muted tracking-[0.02em] uppercase bg-transparent whitespace-nowrap border-b border-[color:var(--border)] xl:table-cell"
+                      >
+                        {t('team.dateJoined')}
+                      </th>
+                      <th
+                        scope="col"
+                        className="hidden px-3 py-[10px] text-left text-[11px] font-medium text-muted tracking-[0.02em] uppercase bg-transparent whitespace-nowrap border-b border-[color:var(--border)] xl:table-cell"
+                      >{t('common.lastLogin')}</th>
+                      <th scope="col" className="px-3 py-[10px] border-b border-[color:var(--border)]">
+                        <span className="sr-only">{t('team.rowActions')}</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.results.map((member) => (
+                      <MemberRow
+                        key={member.id}
+                        member={member}
+                        companyId={companyId!}
+                        isExpanded={expandedId === member.id}
+                        onToggle={handleToggleExpand}
+                        canManageMembers={canManageMembers}
+                        isUpdating={isMemberActionPending || changeRoleMutation.isPending}
+                        onDeactivate={handleDeactivate}
+                        onActivate={handleActivate}
+                        onRemove={handleRemove}
+                        isSuperadmin={isSuperadmin}
+                        isImpersonating={isImpersonating}
+                        onBlock={handleBlock}
+                        onImpersonate={handleImpersonate}
+                        currentUserId={user?.id ?? null}
+                        onChangeRole={handleChangeRole}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        </div>
+        </>
       )}
-      </>}
 
       <ConfirmModal
         isOpen={deactivateTarget !== null}
@@ -1633,10 +1611,10 @@ export default function TeamManagePage() {
             { onSettled: () => setDeactivateTarget(null) },
           );
         }}
-        title="Деактивировать пользователя?"
+        title={t('team.deactivateTitle')}
         description={
           deactivateTarget
-            ? `Пользователь ${deactivateTarget.full_name} потеряет доступ к системе до повторной активации.`
+            ? t('team.deactivateDesc', { name: deactivateTarget.full_name })
             : ''
         }
         variant="warning"
@@ -1656,10 +1634,10 @@ export default function TeamManagePage() {
             { onSettled: () => setActivateTarget(null) },
           );
         }}
-        title="Активировать пользователя?"
+        title={t('team.activateTitle')}
         description={
           activateTarget
-            ? `Пользователь ${activateTarget.full_name} снова сможет входить в систему.`
+            ? t('team.activateDesc', { name: activateTarget.full_name })
             : ''
         }
         variant="warning"
@@ -1675,10 +1653,10 @@ export default function TeamManagePage() {
           setRemoveConfirmTarget(null);
           setRemoveReassignTarget(removeConfirmTarget);
         }}
-        title="Удалить из компании?"
+        title={t('team.removeTitle')}
         description={
           removeConfirmTarget
-            ? `Сотрудник ${removeConfirmTarget.full_name} будет удалён из компании. Далее можно выбрать сотрудника для переназначения CRM-задач.`
+            ? t('team.removeDesc', { name: removeConfirmTarget.full_name })
             : ''
         }
         variant="danger"
@@ -1718,16 +1696,16 @@ export default function TeamManagePage() {
             { onSettled: () => setBlockTarget(null) },
           );
         }}
-        title={blockTarget?.is_active ? 'Заблокировать пользователя?' : 'Разблокировать пользователя?'}
+        title={blockTarget?.is_active ? t('team.blockTitle') : t('team.unblockTitle')}
         description={
           blockTarget
             ? blockTarget.is_active
-              ? `Пользователь ${blockTarget.full_name} потеряет доступ к платформе.`
-              : `Пользователь ${blockTarget.full_name} снова получит доступ к платформе.`
+              ? t('team.blockDesc', { name: blockTarget.full_name })
+              : t('team.unblockDesc', { name: blockTarget.full_name })
             : ''
         }
         variant={blockTarget?.is_active ? 'danger' : 'warning'}
-        confirmLabel={blockTarget?.is_active ? 'Заблокировать' : 'Разблокировать'}
+        confirmLabel={blockTarget?.is_active ? t('team.block') : t('team.unblock')}
         isLoading={blockUserMutation.isPending}
       />
 
@@ -1740,10 +1718,10 @@ export default function TeamManagePage() {
           setActionError(null);
           impersonateMutation.mutate(impersonateTarget.id);
         }}
-        title="Войти от имени пользователя?"
+        title={t('team.impersonateTitle')}
         description={
           impersonateTarget
-            ? `Вы войдёте в систему от имени ${impersonateTarget.full_name}. Все действия будут выполняться от его имени.`
+            ? t('team.impersonateDesc', { name: impersonateTarget.full_name })
             : ''
         }
         variant="warning"

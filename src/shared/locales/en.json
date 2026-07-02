@@ -1902,7 +1902,8 @@
     "directoryProfileLoadError": "Failed to load profile.",
     "rowActions": "Actions",
     "changeRole": "Role",
-    "changeRoleFor": "Change role: {{name}}"
+    "changeRoleFor": "Change role: {{name}}",
+    "pageRange": "{{from}}–{{to}} of {{total}}"
   },
   "passes": {
     "showing": "Showing {{start}}—{{end}} of {{total}}",
