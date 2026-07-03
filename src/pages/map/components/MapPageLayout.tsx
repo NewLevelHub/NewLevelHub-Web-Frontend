@@ -28,7 +28,7 @@ import { MapCreateFloorModal } from '@/pages/map/components/MapCreateFloorModal'
 import { MapEditFloorModal } from '@/pages/map/components/MapEditFloorModal';
 import { MapRoomPopup } from '@/pages/map/components/MapRoomPopup';
 import { BookingModal } from '@/shared/ui/BookingModal';
-import { ResourceDetailModal } from '@/shared/ui/ResourceDetailModal';
+import { CompanyResourceDetailModal } from '@/shared/ui/ResourceDetailModal';
 import { CleaningModal } from '@/pages/service-requests/components/CleaningModal';
 
 export type MapPageLayoutProps = UseMapLogicReturn;
@@ -731,11 +731,13 @@ export const MapPageLayout = memo<MapPageLayoutProps>((logic) => {
         onUpdated={onFloorUpdated}
       />
 
-      <ResourceDetailModal
+      <CompanyResourceDetailModal
         resource={detailModalResource}
-        open={detailModalResource !== null}
         onClose={handleCloseDetailModal}
-        onBook={(r) => { handleCloseDetailModal(); handleOpenBookingModal(r); }}
+        onBook={() => {
+          if (detailModalResource) handleOpenBookingModal(detailModalResource);
+          handleCloseDetailModal();
+        }}
       />
 
       {bookingModalResource !== null && (

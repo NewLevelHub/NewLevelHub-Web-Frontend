@@ -1,45 +1,35 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { MailPlus, RefreshCw, Ban, Users, Settings2, ListChecks, AlertCircle, UserX, Star, Trash2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { MailPlus, UserX, Users, Star, Trash2, Ban, Settings2, ListChecks } from 'lucide-react';
 
 import { apiClient } from '@/shared/api/client';
 import { API } from '@/shared/api/endpoints';
-import { USER_ROLES, USER_ROLE_LABEL_KEYS, type UserRole } from '@/shared/config/constants';
-import { getApiError } from '@/shared/lib/getApiError';
+import { USER_ROLES } from '@/shared/config/constants';
 import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
-import { fmtDateTime } from '@/shared/lib/formatDate';
 import { useAuth } from '@/shared/hooks/useAuth';
-import type { Company, CompanyInvitation, CompanyMember, PaginatedResponse } from '@/shared/types';
+import type { Company, CompanyMember, PaginatedResponse } from '@/shared/types';
+import InvitesPanel from '@/pages/company/components/InvitesPanel';
 
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0][0]?.toUpperCase() ?? '?';
-  return ((parts[0][0] ?? '') + (parts[parts.length - 1][0] ?? '')).toUpperCase();
-}
-
+const labelClass = 'block text-sm font-medium text-secondary';
 const inputClass =
   'mt-1 w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand';
-const labelClass = 'block text-sm font-medium text-secondary';
-const btnPrimary =
-  'inline-flex items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50';
-const btnGhost =
-  'inline-flex items-center justify-center gap-1.5 rounded-lg border border-default px-3 py-1.5 text-xs font-medium text-secondary hover:bg-hover disabled:opacity-50';
+
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
 
 export default function CompanyMembersPage() {
   const { t } = useTranslation();
-  const inviteRoles = useMemo(
-    () => [
-      { value: USER_ROLES.EMPLOYEE, label: t(USER_ROLE_LABEL_KEYS[USER_ROLES.EMPLOYEE]) },
-      { value: USER_ROLES.COMPANY_ADMIN, label: t(USER_ROLE_LABEL_KEYS[USER_ROLES.COMPANY_ADMIN]) },
-    ],
-    [t],
-  );
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  const queryClient = useQueryClient();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
   const initialCompanyId = searchParams.get('company') ?? '';
   const [selectedCompanyId, setSelectedCompanyId] = useState(initialCompanyId);
@@ -49,12 +39,8 @@ export default function CompanyMembersPage() {
       ? String(user.company_id)
       : null;
 
+  const [memberRoleFilter, setMemberRoleFilter] = useState<'' | 'company_admin' | 'employee'>('');
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState<UserRole>(USER_ROLES.EMPLOYEE);
-  const [formError, setFormError] = useState('');
-  const [filterUsed, setFilterUsed] = useState<boolean | undefined>(undefined);
-  const [filterExpired, setFilterExpired] = useState<boolean | undefined>(undefined);
 
   const { data: companiesData } = useQuery({
     queryKey: [...companiesCacheRoot(user?.id), 'list'],
@@ -64,8 +50,6 @@ export default function CompanyMembersPage() {
         .get<PaginatedResponse<Company>>(API.companies.list)
         .then((r) => r.data),
   });
-  const selectedCompanyName =
-    companiesData?.results.find((company) => String(company.id) === companyId)?.name ?? null;
 
   const { data: membersData, isLoading: membersLoading } = useQuery({
     queryKey: ['company-members', companyId],
@@ -76,65 +60,6 @@ export default function CompanyMembersPage() {
         .then((r) => r.data),
   });
 
-  const invitationsQuery = useQuery({
-    queryKey: ['company-invitations', companyId, filterUsed, filterExpired],
-    enabled: Boolean(companyId),
-    queryFn: () =>
-      apiClient
-        .get<PaginatedResponse<CompanyInvitation>>(API.companies.invitations(companyId!), {
-          params: {
-            ...(filterUsed !== undefined ? { is_used: filterUsed } : {}),
-            ...(filterExpired !== undefined ? { is_expired: filterExpired } : {}),
-          },
-        })
-        .then((r) => r.data),
-  });
-
-  const createInvite = useMutation({
-    mutationFn: (body: { email: string; role: string }) =>
-      apiClient.post(API.companies.invitations(companyId!), body),
-    onSuccess: () => {
-      setEmail('');
-      setRole(USER_ROLES.EMPLOYEE);
-      setInviteOpen(false);
-      setFormError('');
-      void queryClient.invalidateQueries({ queryKey: ['company-invitations', companyId] });
-    },
-    onError: (err) => {
-      setFormError(getApiError(err).message);
-    },
-  });
-
-  const revokeInvite = useMutation({
-    mutationFn: (invitationId: number) =>
-      apiClient.post(API.companies.invitationRevoke(companyId!, String(invitationId))),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['company-invitations', companyId] });
-    },
-  });
-
-  const resendInvite = useMutation({
-    mutationFn: (invitationId: number) =>
-      apiClient.post(API.companies.invitationResend(companyId!, String(invitationId))),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['company-invitations', companyId] });
-    },
-  });
-
-  const canOfferCompanyAdmin = user?.role === USER_ROLES.SUPERADMIN;
-  const roleOptions = inviteRoles.filter(
-    (o) => o.value !== USER_ROLES.COMPANY_ADMIN || canOfferCompanyAdmin,
-  );
-
-  async function onInviteSubmit(e: FormEvent) {
-    e.preventDefault();
-    setFormError('');
-    createInvite.mutate({ email: email.trim().toLowerCase(), role });
-  }
-
-  const [memberRoleFilter, setMemberRoleFilter] = useState<'' | 'company_admin' | 'employee'>('');
-
-  const invitations = invitationsQuery.data?.results ?? [];
   const members = membersData?.results ?? [];
 
   const filteredMembers = useMemo(() => {
@@ -215,11 +140,7 @@ export default function CompanyMembersPage() {
           <select
             id="company-select"
             value={selectedCompanyId}
-            onChange={(e) => {
-              setSelectedCompanyId(e.target.value);
-              setFilterUsed(undefined);
-              setFilterExpired(undefined);
-            }}
+            onChange={(e) => setSelectedCompanyId(e.target.value)}
             className={inputClass}
           >
             <option value="">{t('common.selectCompany')}</option>
@@ -236,68 +157,6 @@ export default function CompanyMembersPage() {
       {!companyId ? (
         <section className="rounded-xl border border-default bg-surface p-6">
           <p className="text-sm text-secondary">{t('companies.selectCompanyToView')}</p>
-        </section>
-      ) : null}
-
-      {/* Invite form */}
-      {inviteOpen && companyId ? (
-        <section className="rounded-xl border border-default bg-surface p-6 shadow-sm shadow-black/10">
-          <h2 className="text-base font-semibold text-primary">{t('companies.newInvitation')}</h2>
-          <form onSubmit={onInviteSubmit} className="mt-4 max-w-md space-y-4">
-            {formError ? (
-              <div
-                role="alert"
-                className="flex items-start gap-2 rounded-lg border border-default bg-danger-subtle px-3 py-2 text-sm text-danger"
-              >
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                <span>{formError}</span>
-              </div>
-            ) : null}
-            <div>
-              <label htmlFor="invite-email" className={labelClass}>
-                {t('common.email')}
-              </label>
-              <input
-                id="invite-email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={inputClass}
-                placeholder={t('companies.inviteEmailPlaceholder')}
-                autoComplete="off"
-              />
-            </div>
-            <div>
-              <label htmlFor="invite-role" className={labelClass}>
-                {t('common.role')}
-              </label>
-              <select
-                id="invite-role"
-                value={role}
-                onChange={(e) => setRole(e.target.value as UserRole)}
-                className={inputClass}
-              >
-                {roleOptions.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-3">
-              <button type="submit" disabled={createInvite.isPending} className={btnPrimary}>
-                {createInvite.isPending ? t('common.submitting') : t('companies.sendInvitation')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setInviteOpen(false)}
-                className="rounded-lg border border-default px-4 py-2 text-sm text-secondary hover:bg-hover"
-              >
-                {t('common.cancel')}
-              </button>
-            </div>
-          </form>
         </section>
       ) : null}
 
@@ -348,10 +207,7 @@ export default function CompanyMembersPage() {
                     type="button"
                     disabled={!companyId}
                     title={!companyId ? t('companies.selectCompanyFirst') : undefined}
-                    onClick={() => {
-                      setInviteOpen((v) => !v);
-                      setFormError('');
-                    }}
+                    onClick={() => setInviteOpen((v) => !v)}
                     className="inline-flex items-center gap-1.5 h-8 px-3 text-sm font-medium rounded-[var(--radius-sm)] bg-brand text-white hover:opacity-90 disabled:opacity-50"
                   >
                     <MailPlus className="h-3.5 w-3.5" aria-hidden="true" />
@@ -406,11 +262,9 @@ export default function CompanyMembersPage() {
                     ) : (
                       filteredMembers.map((m) => (
                         <tr key={m.id} className="group cursor-default">
-                          {/* Checkbox cell */}
                           <td style={{ paddingLeft: 16 }} className="py-3 align-middle border-b border-[color:var(--border-faint)] group-hover:bg-[color:var(--bg-hover)]">
                             <span className="inline-block h-[14px] w-[14px] rounded-[3px] border-[1.5px] border-[color:var(--border-strong)] align-middle" aria-hidden="true" />
                           </td>
-                          {/* Employee cell */}
                           <td className="px-3 py-3 align-middle border-b border-[color:var(--border-faint)] group-hover:bg-[color:var(--bg-hover)]">
                             <div className="flex items-center gap-2.5">
                               <span
@@ -432,11 +286,9 @@ export default function CompanyMembersPage() {
                               </div>
                             </div>
                           </td>
-                          {/* Position cell */}
                           <td className="px-3 py-3 align-middle border-b border-[color:var(--border-faint)] group-hover:bg-[color:var(--bg-hover)]">
                             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{m.position || '—'}</span>
                           </td>
-                          {/* Role badge */}
                           <td className="px-3 py-3 align-middle border-b border-[color:var(--border-faint)] group-hover:bg-[color:var(--bg-hover)]">
                             {m.role === USER_ROLES.COMPANY_ADMIN ? (
                               <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-[#eef2ff] text-[#4338ca] dark:bg-[rgba(99,102,241,0.18)] dark:text-[#a5b4fc]">
@@ -448,7 +300,6 @@ export default function CompanyMembersPage() {
                               </span>
                             )}
                           </td>
-                          {/* Status badge */}
                           <td className="px-3 py-3 align-middle border-b border-[color:var(--border-faint)] group-hover:bg-[color:var(--bg-hover)]">
                             <span
                               className={cn(
@@ -464,7 +315,6 @@ export default function CompanyMembersPage() {
                               {m.is_active ? t('common.active') : t('common.inactive')}
                             </span>
                           </td>
-                          {/* Email verified */}
                           <td className="px-3 py-3 align-middle border-b border-[color:var(--border-faint)] group-hover:bg-[color:var(--bg-hover)]">
                             {m.is_email_verified ? (
                               <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--success)', fontSize: 11 }}>
@@ -477,13 +327,11 @@ export default function CompanyMembersPage() {
                               <span style={{ color: 'var(--warning)', fontSize: 11 }}>{t('common.notVerified')}</span>
                             )}
                           </td>
-                          {/* Date joined */}
                           <td className="px-3 py-3 align-middle border-b border-[color:var(--border-faint)] group-hover:bg-[color:var(--bg-hover)]">
                             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                               {m.date_joined ? new Date(m.date_joined).toLocaleDateString() : '—'}
                             </span>
                           </td>
-                          {/* Row actions */}
                           <td className="px-3 py-3 align-middle border-b border-[color:var(--border-faint)] group-hover:bg-[color:var(--bg-hover)]">
                             <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button
@@ -523,147 +371,8 @@ export default function CompanyMembersPage() {
         </section>
       ) : null}
 
-      {/* Invitations list */}
-      {companyId ? (
-        <section>
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <h2 className="text-base font-semibold text-primary">
-              {t('companies.invitationsTitle')}
-              {!invitationsQuery.isLoading && invitations.length > 0 ? (
-                <span className="ml-2 inline-flex items-center rounded-full bg-raised px-2 py-0.5 text-xs font-medium text-secondary">
-                  {invitations.length}
-                </span>
-              ) : null}
-            </h2>
-            <div className="flex flex-wrap gap-3 text-sm">
-              <label className="flex items-center gap-2 text-secondary">
-                <span>{t('companies.filterUsed')}</span>
-                <select
-                  value={filterUsed === undefined ? '' : filterUsed ? 'true' : 'false'}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setFilterUsed(v === '' ? undefined : v === 'true');
-                  }}
-                  className="rounded-md border border-default bg-surface px-2 py-1 text-sm text-primary focus:outline-none"
-                >
-                  <option value="">{t('companies.allOption')}</option>
-                  <option value="true">{t('companies.yesOption')}</option>
-                  <option value="false">{t('companies.noOption')}</option>
-                </select>
-              </label>
-              <label className="flex items-center gap-2 text-secondary">
-                <span>{t('common.overdue')}</span>
-                <select
-                  value={filterExpired === undefined ? '' : filterExpired ? 'true' : 'false'}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setFilterExpired(v === '' ? undefined : v === 'true');
-                  }}
-                  className="rounded-md border border-default bg-surface px-2 py-1 text-sm text-primary focus:outline-none"
-                >
-                  <option value="">{t('companies.allOption')}</option>
-                  <option value="true">{t('companies.yesOption')}</option>
-                  <option value="false">{t('companies.noOption')}</option>
-                </select>
-              </label>
-              {(filterUsed !== undefined || filterExpired !== undefined) ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFilterUsed(undefined);
-                    setFilterExpired(undefined);
-                  }}
-                  className="rounded-md border border-default px-3 py-1 text-sm text-secondary hover:bg-hover"
-                >
-                  {t('common.resetFilters')}
-                </button>
-              ) : null}
-            </div>
-          </div>
-
-          {invitationsQuery.isLoading ? (
-            <p className="mt-3 text-sm text-muted">{t('common.loading')}</p>
-          ) : (
-            <ul className="mt-3 divide-y divide-[color:var(--border)] rounded-xl border border-default overflow-hidden">
-              {invitations.map((inv) => (
-                <li key={inv.id} className="px-4 py-3 hover:bg-hover">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="flex items-start gap-3 min-w-0">
-                      <span
-                        className={cn(
-                          'mt-1.5 w-2 h-2 rounded-full shrink-0',
-                          inv.is_expired
-                            ? 'bg-danger'
-                            : inv.is_used
-                              ? 'bg-raised'
-                              : 'bg-success',
-                        )}
-                        aria-hidden="true"
-                      />
-                      <div className="min-w-0">
-                        <p className="truncate font-medium text-primary">{inv.email}</p>
-                        <p className="mt-0.5 text-xs text-muted">
-                          {t(USER_ROLE_LABEL_KEYS[inv.role as UserRole]) ?? inv.role}
-                          {' · '}
-                          {t('common.end')}: {fmtDateTime(inv.expires_at)}
-                          {inv.is_expired
-                            ? ` · ${t('companies.expiredSuffix')}`
-                            : inv.is_used
-                              ? ` · ${t('companies.usedSuffix')}`
-                              : ''}
-                        </p>
-                        {isSuperadmin && selectedCompanyName ? (
-                          <p className="mt-0.5 text-xs text-muted">
-                            {t('companies.companyLabel', { name: selectedCompanyName })}
-                          </p>
-                        ) : null}
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 flex-wrap items-center gap-2">
-                      {inv.is_expired ? (
-                        <span className="rounded-full bg-danger-subtle px-2.5 py-0.5 text-xs text-danger">
-                          {t('companies.expiredSuffix')}
-                        </span>
-                      ) : inv.is_used ? (
-                        <span className="rounded-full bg-raised px-2.5 py-0.5 text-xs text-muted">
-                          {t('companies.usedSuffix')}
-                        </span>
-                      ) : null}
-                      <button
-                        type="button"
-                        disabled={inv.is_used || resendInvite.isPending}
-                        onClick={() => resendInvite.mutate(inv.id)}
-                        className={btnGhost}
-                        title={t('companies.resendTitle')}
-                      >
-                        <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
-                        {t('companies.resend')}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={inv.is_used || revokeInvite.isPending}
-                        onClick={() => revokeInvite.mutate(inv.id)}
-                        className={cn(
-                          btnGhost,
-                          'border-default text-danger hover:bg-danger-subtle hover:border-danger/30',
-                        )}
-                      >
-                        <Ban className="h-3.5 w-3.5" aria-hidden="true" />
-                        {t('companies.revoke')}
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
-              {!invitations.length ? (
-                <li className="px-4 py-8 text-center text-sm text-muted">
-                  {t('companies.noInvitations')}
-                </li>
-              ) : null}
-            </ul>
-          )}
-        </section>
-      ) : null}
+      {/* Invitations panel */}
+      {companyId && inviteOpen ? <InvitesPanel companyId={companyId} /> : null}
     </div>
   );
 }

@@ -29,6 +29,8 @@ import CompanySettingsPage from '@/pages/company/CompanySettingsPage';
 import CompanyMembersPage from '@/pages/company/CompanyMembersPage';
 import CompanyOnboardingTemplatesPage from '@/pages/company/CompanyOnboardingTemplatesPage';
 import TeamOnboardingPage from '@/pages/company/TeamOnboardingPage';
+import CompanyHubPage from '@/pages/company/CompanyHubPage';
+import CompanyResourcesPage from '@/pages/company/CompanyResourcesPage';
 
 // Team
 import TeamDirectoryPage from '@/pages/team/TeamDirectoryPage';
@@ -242,6 +244,15 @@ export const router = createBrowserRouter([
               { path: '/files', element: <FileBrowserPage /> },
               { path: '/storage', element: <FileBrowserPage /> },
               { path: '/storage/trash', element: <TrashPage /> },
+            ],
+          },
+
+          // Company hub + resources — superadmin + company_admin + employee
+          {
+            element: <RequireRole allowed={[SUPERADMIN, COMPANY_ADMIN, EMPLOYEE]} />,
+            children: [
+              { path: '/company/hub', element: <CompanyHubPage /> },
+              { path: '/company/resources', element: <CompanyResourcesPage /> },
             ],
           },
 

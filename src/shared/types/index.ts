@@ -74,6 +74,11 @@ export interface Company {
 
 export interface CompanyDetail extends Company {
   storage_used: number;
+  quick_stats?: {
+    bookings_this_month: number;
+    active_tasks: number;
+    guests_this_month: number;
+  };
 }
 
 /** GET /analytics/superadmin/ — обзорные метрики (суперадмин). */
@@ -1182,18 +1187,16 @@ export interface TeamMemberProgressDetail {
 }
 
 export interface OnboardingAssignment {
-  id: number;
-  user: number;
+  user_id: number;
   first_name: string;
   last_name: string;
   avatar: string | null;
-  role: string;
+  position: string;
   template_id: number | null;
   template_name: string | null;
   completed_steps: number;
   total_steps: number;
   assigned_at: string | null;
-  note: string | null;
 }
 
 export interface OnboardingAssignmentCreatePayload {

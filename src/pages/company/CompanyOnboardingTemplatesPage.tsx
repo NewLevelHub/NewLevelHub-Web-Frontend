@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Plus,
@@ -19,10 +19,25 @@ import { cn } from '@/shared/lib/cn';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { useOnboardingTemplates } from '@/pages/company/hooks/useOnboardingTemplates';
 
-export default function CompanyOnboardingTemplatesPage() {
+interface CompanyOnboardingTemplatesPageProps {
+  hideNav?: boolean;
+  companyId?: string;
+  triggerCreate?: boolean;
+  onTriggerReset?: () => void;
+  onTemplatesLoaded?: (hasTemplates: boolean) => void;
+}
+
+export default function CompanyOnboardingTemplatesPage({ hideNav, companyId: propCompanyId, triggerCreate, onTriggerReset, onTemplatesLoaded }: CompanyOnboardingTemplatesPageProps = {}) {
   const { t } = useTranslation();
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+
+  useEffect(() => {
+    if (triggerCreate) {
+      setShowCreateForm(true);
+      onTriggerReset?.();
+    }
+  }, [triggerCreate, onTriggerReset]);
 
   const {
     isSuperadmin,
@@ -64,81 +79,89 @@ export default function CompanyOnboardingTemplatesPage() {
     handleSaveStep,
     handleDeleteTemplate,
     handleDeleteStep,
-  } = useOnboardingTemplates();
+  } = useOnboardingTemplates(propCompanyId);
+
+  useEffect(() => {
+    if (!templatesQuery.isLoading && !templatesQuery.isFetching) {
+      onTemplatesLoaded?.(templates.length > 0);
+    }
+  }, [templatesQuery.isLoading, templatesQuery.isFetching, templates, onTemplatesLoaded]);
 
   return (
     <div className="space-y-4">
       {/* Page header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          marginBottom: 20,
-        }}
-      >
-        <div>
-          <h1
-            style={{
-              fontSize: 18,
-              fontWeight: 700,
-              color: 'var(--text-primary)',
-              margin: 0,
-            }}
-          >
-            {t('companies.onboardingTitle')}
-          </h1>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {isSuperadmin && (
-            <div
+      {!hideNav && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            marginBottom: 20,
+          }}
+        >
+          <div>
+            <h1
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '6px 12px',
-                borderRadius: 8,
-                border: '1px solid var(--border)',
-                background: 'var(--bg-raised)',
-                cursor: 'pointer',
+                fontSize: 18,
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                margin: 0,
               }}
             >
-              <Building size={13} style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
-              <select
-                value={selectedCompanyId}
-                onChange={(e) => setSelectedCompanyId(e.target.value)}
-                aria-label={t('common.selectCompany')}
+              {t('companies.onboardingTitle')}
+            </h1>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {isSuperadmin && (
+              <div
                 style={{
-                  border: 'none',
-                  background: 'transparent',
-                  outline: 'none',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: 'var(--text-primary)',
-                  fontFamily: 'inherit',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '6px 12px',
+                  borderRadius: 8,
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-raised)',
                   cursor: 'pointer',
                 }}
               >
-                <option value="">{t('common.selectCompany')}</option>
-                {(companiesData?.results ?? []).map((c) => (
-                  <option key={c.id} value={String(c.id)}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} aria-hidden="true" />
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={() => setShowCreateForm((v) => !v)}
-            className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity"
-          >
-            <Plus size={13} aria-hidden="true" />
-            {t('companies.createTemplateBtn')}
-          </button>
+                <Building size={13} style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
+                <select
+                  value={selectedCompanyId}
+                  onChange={(e) => setSelectedCompanyId(e.target.value)}
+                  aria-label={t('common.selectCompany')}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    outline: 'none',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: 'var(--text-primary)',
+                    fontFamily: 'inherit',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="">{t('common.selectCompany')}</option>
+                  {(companiesData?.results ?? []).map((c) => (
+                    <option key={c.id} value={String(c.id)}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} aria-hidden="true" />
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowCreateForm((v) => !v)}
+              className="inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium text-white rounded-[var(--radius-sm)] bg-[color:var(--brand)] hover:opacity-90 transition-opacity"
+            >
+              <Plus size={14} aria-hidden="true" />
+              {t('companies.createTemplateBtn')}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Alert banners */}
       {error && (
@@ -623,9 +646,18 @@ export default function CompanyOnboardingTemplatesPage() {
             </div>
           )}
           {!templatesQuery.isLoading && !templates.length && (
-            <div className="flex flex-col items-center justify-center py-12">
-              <ClipboardList className="mb-3 h-10 w-10 text-muted" aria-hidden="true" />
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <ClipboardList className="h-10 w-10 text-muted" aria-hidden="true" />
               <p className="text-sm font-medium text-secondary">{t('companies.noTemplates')}</p>
+              <p className="text-xs text-muted">{t('companies.noTemplatesHint')}</p>
+              <button
+                type="button"
+                onClick={() => setShowCreateForm(true)}
+                className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity mt-1"
+              >
+                <Plus size={13} aria-hidden="true" />
+                {t('companies.createTemplateBtn')}
+              </button>
             </div>
           )}
 

@@ -42,6 +42,7 @@ import { companiesCacheRoot } from '@/shared/lib/companyQueryKeys';
 import { cn } from '@/shared/lib/cn';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { resolveMediaUrl } from '@/shared/lib/mediaUrl';
+import InvitesPanel from '@/pages/company/components/InvitesPanel';
 import type {
   Company,
   CompanyMember,
@@ -997,18 +998,26 @@ function ReassignMemberModal({
 
 const DEBOUNCE_MS = 350;
 
-type ViewTab = 'manage' | 'directory';
+type ViewTab = 'manage' | 'directory' | 'invites';
 
-export default function TeamManagePage() {
+interface TeamManagePageProps {
+  hideNav?: boolean;
+  initialView?: 'manage' | 'directory' | 'invites';
+  companyId?: string;
+}
+
+export default function TeamManagePage({ hideNav = false, initialView, companyId: companyIdProp }: TeamManagePageProps) {
   const { t } = useTranslation();
   const { user, isImpersonating, startImpersonation } = useAuth();
   const queryClient = useQueryClient();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
   const isCompanyAdmin = user?.role === USER_ROLES.COMPANY_ADMIN;
-  const showTabs = isCompanyAdmin;
-  const [view, setView] = useState<ViewTab>('manage');
+  const isEmployee = user?.role === USER_ROLES.EMPLOYEE;
+  const showTabs = isCompanyAdmin || isSuperadmin;
+  const canInvite = !isEmployee;
+  const [view, setView] = useState<ViewTab>(initialView ?? 'manage');
 
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>(companyIdProp ?? '');
   const [filters, setFilters] = useState<Filters>({
     search: '',
     role: '',
@@ -1310,21 +1319,23 @@ export default function TeamManagePage() {
   // Render
   // ---------------------------------------------------------------------------
   return (
-    <div className="space-y-6 p-6">
+    <div className={cn('space-y-6', hideNav ? 'pt-0' : 'p-6')}>
       {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold text-primary">{t('team.employeesTitle')}</h1>
-        <p className="mt-1 text-sm text-secondary">
-          {companyId && data && view === 'manage'
-            ? t('common.totalEmployees', { count: data.count })
-            : isSuperadmin && !companyId
-              ? t('common.selectCompanyToView')
-              : ' '}
-        </p>
-      </div>
+      {!hideNav && (
+        <div>
+          <h1 className="text-2xl font-bold text-primary">{t('team.employeesTitle')}</h1>
+          <p className="mt-1 text-sm text-secondary">
+            {companyId && data && view === 'manage'
+              ? t('common.totalEmployees', { count: data.count })
+              : isSuperadmin && !companyId
+                ? t('common.selectCompanyToView')
+                : ' '}
+          </p>
+        </div>
+      )}
 
-      {/* Tab bar — company admin only */}
-      {showTabs && (
+      {/* Tab bar — company admin / superadmin */}
+      {showTabs && !hideNav && (
         <div className="flex gap-1 rounded-xl border border-default bg-raised p-1 w-fit">
           <button
             type="button"
@@ -1352,11 +1363,25 @@ export default function TeamManagePage() {
             <LayoutGrid className="h-4 w-4" aria-hidden="true" />
             {t('team.tabCards')}
           </button>
+          {canInvite && (
+            <button
+              type="button"
+              onClick={() => setView('invites')}
+              className={cn(
+                'inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                view === 'invites'
+                  ? 'bg-surface text-primary shadow-sm'
+                  : 'text-secondary hover:text-primary',
+              )}
+            >
+              {t('companies.invitationsTitle')}
+            </button>
+          )}
         </div>
       )}
 
-      {/* Company selector — superadmin only */}
-      {isSuperadmin && (
+      {/* Company selector — superadmin only, hidden when companyId prop is provided */}
+      {isSuperadmin && !companyIdProp && (
         <div className="rounded-xl border border-default bg-raised p-4">
           <label
             htmlFor="company-select"
@@ -1385,6 +1410,9 @@ export default function TeamManagePage() {
 
       {/* Directory card view */}
       {view === 'directory' && companyId && <DirectoryTab companyId={companyId} />}
+
+      {/* Invites panel */}
+      {view === 'invites' && companyId && <InvitesPanel companyId={companyId} />}
 
       {/* Manage view */}
       {view === 'manage' && companyId && (

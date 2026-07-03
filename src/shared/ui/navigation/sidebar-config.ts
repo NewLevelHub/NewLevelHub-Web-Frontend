@@ -9,13 +9,11 @@ import {
   ShieldCheck,
   FileText,
   BarChart3,
-  Settings,
   Wrench,
   Megaphone,
   Clock,
   ListTodo,
   Repeat,
-  MailPlus,
   Bell,
   Ban,
   type LucideIcon,
@@ -41,7 +39,6 @@ const superadminNav: NavSection[] = [
     titleKey: 'sidebar.navSection.management',
     items: [
       { labelKey: 'sidebar.navItem.employees',      path: '/team/manage',                          icon: Users },
-      { labelKey: 'sidebar.navItem.invites',         path: '/company/settings/members',             icon: MailPlus },
       { labelKey: 'sidebar.navItem.companies',       path: `${SUPERADMIN_UI_PREFIX}/companies`,     icon: Building2 },
       { labelKey: 'sidebar.navItem.resources',       path: '/resources',                            icon: Bookmark },
       { labelKey: 'sidebar.navItem.bookings',           path: `${STAFF_UI_PREFIX}/bookings`,                        icon: CalendarDays },
@@ -82,12 +79,7 @@ const companyAdminNav: NavSection[] = [
   {
     titleKey: 'sidebar.navSection.company',
     items: [
-      { labelKey: 'sidebar.navItem.myCompany',           path: '/companies',                        icon: Building2 },
-      { labelKey: 'sidebar.navItem.employees',           path: '/team/manage',                      icon: Users },
-      { labelKey: 'sidebar.navItem.settings',            path: '/company/settings',                 icon: Settings },
-      { labelKey: 'sidebar.navItem.invites',             path: '/company/settings/members',         icon: MailPlus },
-      { labelKey: 'sidebar.navItem.onboardingTemplates', path: '/company/settings/onboarding',      icon: ListTodo },
-      { labelKey: 'sidebar.navItem.teamOnboarding',      path: '/company/settings/onboarding/team', icon: Users },
+      { labelKey: 'sidebar.navItem.myCompany',           path: '/company/hub',                      icon: Building2 },
     ],
   },
   {
@@ -130,7 +122,7 @@ const employeeNav: NavSection[] = [
   {
     titleKey: 'sidebar.navSection.company',
     items: [
-      { labelKey: 'sidebar.navItem.myCompany',       path: '/companies',                            icon: Building2 },
+      { labelKey: 'sidebar.navItem.myCompany',       path: '/company/hub',                          icon: Building2 },
     ],
   },
   {
@@ -138,7 +130,6 @@ const employeeNav: NavSection[] = [
     items: [
       { labelKey: 'sidebar.navItem.crmBoards',       path: '/crm',                                  icon: Columns3 },
       { labelKey: 'sidebar.navItem.myTasks',         path: '/crm/my-tasks',                         icon: ListTodo },
-      { labelKey: 'sidebar.navItem.team',            path: '/team',                                 icon: Users },
       { labelKey: 'sidebar.navItem.calendar',        path: '/company/calendar',                     icon: CalendarDays },
     ],
   },

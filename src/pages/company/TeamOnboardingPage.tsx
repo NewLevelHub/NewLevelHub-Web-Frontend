@@ -25,22 +25,25 @@ function getInitials(firstName: string, lastName: string): string {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
 
-export default function TeamOnboardingPage() {
+interface TeamOnboardingPageProps {
+  hideNav?: boolean;
+  companyId?: string;
+}
+
+export default function TeamOnboardingPage({ hideNav = false, companyId: propCompanyId }: TeamOnboardingPageProps) {
   const { t } = useTranslation();
   const {
     companyId,
     selectedUserId,
-    members,
     detail,
     detailQuery,
-    teamQuery,
     handleSelectUser,
-  } = useTeamOnboarding();
+  } = useTeamOnboarding(propCompanyId);
 
-  const { assignments, assignMutation, assignError } =
+  const { assignments, assignmentsQuery, assignMutation, assignError } =
     useOnboardingAssignments(companyId || null);
 
-  const { templates } = useOnboardingTemplates();
+  const { templates } = useOnboardingTemplates(propCompanyId);
 
   const [assignModalUserId, setAssignModalUserId] = useState<number | null>(null);
 
@@ -53,11 +56,11 @@ export default function TeamOnboardingPage() {
 
   const selectedMember =
     selectedUserId != null
-      ? assignments.find((m) => Number(m.user) === selectedUserId) ?? null
+      ? assignments.find((m) => m.user_id === selectedUserId) ?? null
       : null;
 
   const assignModalUser = assignModalUserId != null
-    ? assignments.find((m) => Number(m.user) === assignModalUserId) ?? null
+    ? assignments.find((m) => m.user_id === assignModalUserId) ?? null
     : null;
 
   const handleAssign = (userId: number, templateId: number, note: string) => {
@@ -67,92 +70,96 @@ export default function TeamOnboardingPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Page header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <ListChecks
-          style={{ width: 24, height: 24, color: 'var(--brand)' }}
-          aria-hidden="true"
-        />
-        <h1
-          style={{ fontSize: 22, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}
-        >
-          {t('companies.teamOnboardingTitle')}
-        </h1>
-      </div>
+      {!hideNav && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <ListChecks
+            style={{ width: 24, height: 24, color: 'var(--brand)' }}
+            aria-hidden="true"
+          />
+          <h1
+            style={{ fontSize: 22, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}
+          >
+            {t('companies.teamOnboardingTitle')}
+          </h1>
+        </div>
+      )}
 
       {/* Tab navigation */}
-      <nav
-        style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}
-        aria-label={t('companies.onboardingTitle')}
-      >
-        <Link
-          to={`/company/settings${companyId ? `?company=${companyId}` : ''}`}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            borderRadius: 9999,
-            border: '1px solid var(--border)',
-            padding: '6px 16px',
-            fontSize: 14,
-            color: 'var(--text-secondary)',
-            textDecoration: 'none',
-          }}
+      {!hideNav && (
+        <nav
+          style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}
+          aria-label={t('companies.onboardingTitle')}
         >
-          <Settings2 style={{ width: 14, height: 14 }} aria-hidden="true" />
-          {t('companies.generalSettings')}
-        </Link>
-        <Link
-          to={`/company/settings/members${companyId ? `?company=${companyId}` : ''}`}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            borderRadius: 9999,
-            border: '1px solid var(--border)',
-            padding: '6px 16px',
-            fontSize: 14,
-            color: 'var(--text-secondary)',
-            textDecoration: 'none',
-          }}
-        >
-          <Users style={{ width: 14, height: 14 }} aria-hidden="true" />
-          {t('companies.membersTitle')}
-        </Link>
-        <Link
-          to={`/company/settings/onboarding${companyId ? `?company=${companyId}` : ''}`}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            borderRadius: 9999,
-            border: '1px solid var(--border)',
-            padding: '6px 16px',
-            fontSize: 14,
-            color: 'var(--text-secondary)',
-            textDecoration: 'none',
-          }}
-        >
-          <ListChecks style={{ width: 14, height: 14 }} aria-hidden="true" />
-          {t('companies.onboardingTemplatesLink')}
-        </Link>
-        <span
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            borderRadius: 9999,
-            background: 'var(--brand)',
-            padding: '6px 16px',
-            fontSize: 14,
-            fontWeight: 500,
-            color: '#fff',
-          }}
-          aria-current="page"
-        >
-          <Users style={{ width: 14, height: 14 }} aria-hidden="true" />
-          {t('companies.teamOnboardingTab')}
-        </span>
-      </nav>
+          <Link
+            to={`/company/settings${companyId ? `?company=${companyId}` : ''}`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              borderRadius: 9999,
+              border: '1px solid var(--border)',
+              padding: '6px 16px',
+              fontSize: 14,
+              color: 'var(--text-secondary)',
+              textDecoration: 'none',
+            }}
+          >
+            <Settings2 style={{ width: 14, height: 14 }} aria-hidden="true" />
+            {t('companies.generalSettings')}
+          </Link>
+          <Link
+            to={`/company/settings/members${companyId ? `?company=${companyId}` : ''}`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              borderRadius: 9999,
+              border: '1px solid var(--border)',
+              padding: '6px 16px',
+              fontSize: 14,
+              color: 'var(--text-secondary)',
+              textDecoration: 'none',
+            }}
+          >
+            <Users style={{ width: 14, height: 14 }} aria-hidden="true" />
+            {t('companies.membersTitle')}
+          </Link>
+          <Link
+            to={`/company/settings/onboarding${companyId ? `?company=${companyId}` : ''}`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              borderRadius: 9999,
+              border: '1px solid var(--border)',
+              padding: '6px 16px',
+              fontSize: 14,
+              color: 'var(--text-secondary)',
+              textDecoration: 'none',
+            }}
+          >
+            <ListChecks style={{ width: 14, height: 14 }} aria-hidden="true" />
+            {t('companies.onboardingTemplatesLink')}
+          </Link>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              borderRadius: 9999,
+              background: 'var(--brand)',
+              padding: '6px 16px',
+              fontSize: 14,
+              fontWeight: 500,
+              color: '#fff',
+            }}
+            aria-current="page"
+          >
+            <Users style={{ width: 14, height: 14 }} aria-hidden="true" />
+            {t('companies.teamOnboardingTab')}
+          </span>
+        </nav>
+      )}
 
       {/* Main content — two-column grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 14, alignItems: 'start' }}>
@@ -169,7 +176,7 @@ export default function TeamOnboardingPage() {
           aria-label={t('companies.teamOnboardingSubtitle')}
         >
           {/* Skeleton */}
-          {teamQuery.isLoading && (
+          {assignmentsQuery.isLoading && (
             <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[1, 2, 3].map((i) => (
                 <div
@@ -205,14 +212,14 @@ export default function TeamOnboardingPage() {
           )}
 
           {/* Error */}
-          {teamQuery.isError && (
+          {assignmentsQuery.isError && (
             <div style={{ padding: 16, fontSize: 13, color: 'var(--danger)' }}>
               {t('companies.teamOnboardingLoadError')}
             </div>
           )}
 
           {/* Empty state */}
-          {!teamQuery.isLoading && !teamQuery.isError && members.length === 0 && (
+          {!assignmentsQuery.isLoading && !assignmentsQuery.isError && assignments.length === 0 && (
             <div
               style={{
                 display: 'flex',
@@ -233,12 +240,11 @@ export default function TeamOnboardingPage() {
           )}
 
           {/* Member rows */}
-          {members.map((member) => {
+          {assignments.map((member) => {
             const name = `${member.first_name} ${member.last_name}`.trim();
-            const isSelected = Number(selectedUserId) === Number(member.user);
-            const assignment = assignments.find((a) => Number(a.user) === Number(member.user));
-            const templateName = member.template_name ?? assignment?.template_name ?? null;
-            const isDefaultTemplate = templateName !== null && (assignment?.assigned_at == null);
+            const isSelected = selectedUserId === member.user_id;
+            const templateName = member.template_name;
+            const isDefaultTemplate = templateName !== null && member.assigned_at == null;
             const pct =
               member.total_steps > 0
                 ? Math.round((member.completed_steps / member.total_steps) * 100)
@@ -246,12 +252,12 @@ export default function TeamOnboardingPage() {
 
             return (
               <div
-                key={member.user}
-                onClick={() => { if (member.user != null) handleSelectUser(member.user); }}
+                key={member.user_id}
+                onClick={() => { handleSelectUser(member.user_id); }}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
-                  if ((e.key === 'Enter' || e.key === ' ') && member.user != null) handleSelectUser(member.user);
+                  if (e.key === 'Enter' || e.key === ' ') handleSelectUser(member.user_id);
                 }}
                 aria-label={t('companies.teamMemberAria', { name })}
                 style={{
@@ -313,7 +319,7 @@ export default function TeamOnboardingPage() {
                     >
                       {name}
                     </div>
-                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{member.role}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{member.position}</div>
                   </div>
                   <span
                     style={{
@@ -439,11 +445,9 @@ export default function TeamOnboardingPage() {
                         color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'inherit',
                       }}
                     >
-                      {(() => {
-                        const curAssignment = assignments.find((a) => Number(a.user) === Number(selectedUserId));
-                        const hasTemplate = selectedMember?.template_name ?? curAssignment?.template_name ?? null;
-                        return hasTemplate ? t('companies.reassignTemplate') : t('companies.assignTemplate');
-                      })()}
+                      {selectedMember?.template_name
+                        ? t('companies.reassignTemplate')
+                        : t('companies.assignTemplate')}
                     </button>
                     <span
                       style={{

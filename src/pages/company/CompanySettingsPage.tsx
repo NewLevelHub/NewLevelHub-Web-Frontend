@@ -82,18 +82,23 @@ function FieldLabel({ htmlFor, children }: { htmlFor?: string; children: React.R
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function CompanySettingsPage() {
+interface CompanySettingsPageProps {
+  hideNav?: boolean;
+  companyId?: string; // overrides query param / user.company_id when provided (superadmin hub use-case)
+}
+
+export default function CompanySettingsPage({ hideNav, companyId: propCompanyId }: CompanySettingsPageProps = {}) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
 
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
-  const initialCompanyId = searchParams.get('company') ?? '';
+  const initialCompanyId = propCompanyId ?? searchParams.get('company') ?? '';
   const [selectedCompanyId, setSelectedCompanyId] = useState(initialCompanyId);
 
   const companyId = isSuperadmin
-    ? selectedCompanyId || null
+    ? (propCompanyId ?? selectedCompanyId) || null
     : user?.company_id != null
       ? String(user.company_id)
       : null;
@@ -228,62 +233,64 @@ export default function CompanySettingsPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
       {/* Page header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 12,
-          marginBottom: 20,
-        }}
-      >
-        <div>
-          <h1 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-            {t('companies.settingsPageTitle')}
-          </h1>
-        </div>
+      {!hideNav && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 12,
+            marginBottom: 20,
+          }}
+        >
+          <div>
+            <h1 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              {t('companies.settingsPageTitle')}
+            </h1>
+          </div>
 
-        {/* SA company dropdown */}
-        {isSuperadmin && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '6px 12px',
-              borderRadius: 8,
-              border: '1px solid var(--border)',
-              background: 'var(--bg-raised)',
-              cursor: 'pointer',
-            }}
-          >
-            <Building size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-            <select
-              value={selectedCompanyId}
-              onChange={(e) => setSelectedCompanyId(e.target.value)}
+          {/* SA company dropdown */}
+          {isSuperadmin && (
+            <div
               style={{
-                border: 'none',
-                background: 'transparent',
-                outline: 'none',
-                fontSize: 13,
-                fontWeight: 500,
-                color: 'var(--text-primary)',
-                fontFamily: 'inherit',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '6px 12px',
+                borderRadius: 8,
+                border: '1px solid var(--border)',
+                background: 'var(--bg-raised)',
                 cursor: 'pointer',
               }}
             >
-              <option value="">{t('common.selectCompany')}</option>
-              {(companiesData?.results ?? []).map((c) => (
-                <option key={c.id} value={String(c.id)}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-          </div>
-        )}
-      </div>
+              <Building size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+              <select
+                value={selectedCompanyId}
+                onChange={(e) => setSelectedCompanyId(e.target.value)}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  outline: 'none',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: 'var(--text-primary)',
+                  fontFamily: 'inherit',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="">{t('common.selectCompany')}</option>
+                {(companiesData?.results ?? []).map((c) => (
+                  <option key={c.id} value={String(c.id)}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── General Settings ────────────────────────────────────────────── */}
       <>

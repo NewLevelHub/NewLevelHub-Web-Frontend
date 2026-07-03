@@ -88,12 +88,17 @@ function MemberAvatar({ src, fullName }: { src: string | null; fullName: string 
   );
 }
 
-export default function TeamDirectoryPage() {
+interface TeamDirectoryPageProps {
+  hideNav?: boolean;
+  companyId?: string;
+}
+
+export default function TeamDirectoryPage({ hideNav, companyId: companyIdProp }: TeamDirectoryPageProps = {}) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
 
-  const [selectedCompanyId, setSelectedCompanyId] = useState('');
+  const [selectedCompanyId, setSelectedCompanyId] = useState(companyIdProp ?? '');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [position, setPosition] = useState('');
@@ -188,15 +193,17 @@ export default function TeamDirectoryPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold text-primary">{t('team.title')}</h1>
-        <p className="mt-1 text-sm text-secondary">
-          {t('team.directorySubtitle')}
-        </p>
-      </div>
+    <div className={cn('space-y-6', hideNav ? 'pt-0' : 'p-6')}>
+      {!hideNav && (
+        <div>
+          <h1 className="text-2xl font-bold text-primary">{t('team.title')}</h1>
+          <p className="mt-1 text-sm text-secondary">
+            {t('team.directorySubtitle')}
+          </p>
+        </div>
+      )}
 
-      {isSuperadmin && (
+      {isSuperadmin && !companyIdProp && (
         <div className="rounded-xl border border-default bg-raised p-4">
           <label htmlFor="company-select" className="mb-1 block text-xs font-medium text-secondary">{t('common.company')}</label>
           <select
