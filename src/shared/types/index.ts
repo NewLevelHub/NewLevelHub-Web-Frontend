@@ -200,9 +200,19 @@ export interface MemberActivity {
   bookings_last_30_days: number;
 }
 
-export interface CompanyAnalyticsEmployeeActivity {
-  user_id: number;
+export interface CompanyAnalyticsEmployeeActivityUser {
+  id: number;
+  first_name: string;
+  last_name: string;
   full_name: string;
+  email: string;
+  avatar: string | null;
+  position: string | null;
+  role: string;
+}
+
+export interface CompanyAnalyticsEmployeeActivity {
+  user: CompanyAnalyticsEmployeeActivityUser;
   booking_count_30d: number;
   task_count_active: number;
   last_login: string | null;

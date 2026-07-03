@@ -331,7 +331,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <main className="mx-auto max-w-[1560px] space-y-5 px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-7">
+    <main className="space-y-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-[-0.02em] text-primary sm:text-[28px]">{t('calendar.pageTitle')}</h1>

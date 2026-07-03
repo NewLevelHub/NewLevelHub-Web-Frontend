@@ -993,28 +993,7 @@
       "leave": "Отпуска",
       "team": "Команда",
       "serviceRequest": "Сервисная заявка",
-      "buildingStaff": "Сотрудники здания",
-      "cancellationAudit": "История отмен"
-    }
-  },
-  "bookingCancellationAudit": {
-    "title": "История отмен бронирований",
-    "description": "История отмен бронирований с указанием причины и ответственного.",
-    "loading": "Загрузка лога...",
-    "empty": "Нет записей об отменах",
-    "deletedUser": "Пользователь удалён",
-    "totalRecords": "Всего записей: {{count}}",
-    "col": {
-      "cancelledAt": "Дата отмены",
-      "bookingId": "ID брони",
-      "cancelledBy": "Кто отменил",
-      "reason": "Причина"
-    },
-    "filter": {
-      "bookingId": "ID бронирования",
-      "cancelledBy": "Кто отменил",
-      "dateFrom": "Дата от",
-      "dateTo": "Дата до"
+      "buildingStaff": "Сотрудники здания"
     }
   },
   "catalog": {

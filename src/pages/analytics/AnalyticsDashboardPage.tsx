@@ -854,7 +854,7 @@ export default function AnalyticsDashboardPage() {
                 </tr>
               ) : (
                 data.employee_activity.map((row) => {
-                  const initials = row.full_name
+                  const initials = row.user.full_name
                     .split(' ')
                     .slice(0, 2)
                     .map((w: string) => w[0]?.toUpperCase() ?? '')
@@ -863,7 +863,7 @@ export default function AnalyticsDashboardPage() {
 
                   return (
                     <tr
-                      key={row.user_id}
+                      key={row.user.id}
                       style={{ borderBottom: '1px solid var(--border)' }}
                       onMouseEnter={(e) => {
                         (e.currentTarget as HTMLTableRowElement).style.background =
@@ -882,25 +882,45 @@ export default function AnalyticsDashboardPage() {
                               height: 28,
                               borderRadius: 8,
                               flexShrink: 0,
+                              overflow: 'hidden',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               fontSize: 11,
                               fontWeight: 700,
-                              background: isActive
-                                ? 'var(--brand-subtle)'
-                                : 'var(--bg-raised)',
+                              background: row.user.avatar
+                                ? 'transparent'
+                                : isActive
+                                  ? 'var(--brand-subtle)'
+                                  : 'var(--bg-raised)',
                               color: isActive
                                 ? 'var(--brand-text, var(--brand))'
                                 : 'var(--text-muted)',
                             }}
                           >
-                            {initials}
+                            {row.user.avatar ? (
+                              <img
+                                src={row.user.avatar}
+                                alt={row.user.full_name}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                                onError={(e) => {
+                                  const img = e.currentTarget;
+                                  img.style.display = 'none';
+                                  const parent = img.parentElement;
+                                  if (parent) {
+                                    parent.style.background = isActive ? 'var(--brand-subtle)' : 'var(--bg-raised)';
+                                    parent.textContent = initials;
+                                  }
+                                }}
+                              />
+                            ) : (
+                              initials
+                            )}
                           </div>
                           <span
                             style={{ fontWeight: 500, color: 'var(--text-primary)' }}
                           >
-                            {row.full_name}
+                            {row.user.full_name}
                           </span>
                         </div>
                       </td>
