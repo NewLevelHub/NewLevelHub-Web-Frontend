@@ -27,24 +27,23 @@ function getInitials(firstName: string, lastName: string): string {
 
 interface TeamOnboardingPageProps {
   hideNav?: boolean;
+  companyId?: string;
 }
 
-export default function TeamOnboardingPage({ hideNav = false }: TeamOnboardingPageProps) {
+export default function TeamOnboardingPage({ hideNav = false, companyId: propCompanyId }: TeamOnboardingPageProps) {
   const { t } = useTranslation();
   const {
     companyId,
     selectedUserId,
-    members,
     detail,
     detailQuery,
-    teamQuery,
     handleSelectUser,
-  } = useTeamOnboarding();
+  } = useTeamOnboarding(propCompanyId);
 
-  const { assignments, assignMutation, assignError } =
+  const { assignments, assignmentsQuery, assignMutation, assignError } =
     useOnboardingAssignments(companyId || null);
 
-  const { templates } = useOnboardingTemplates();
+  const { templates } = useOnboardingTemplates(propCompanyId);
 
   const [assignModalUserId, setAssignModalUserId] = useState<number | null>(null);
 
@@ -57,11 +56,11 @@ export default function TeamOnboardingPage({ hideNav = false }: TeamOnboardingPa
 
   const selectedMember =
     selectedUserId != null
-      ? assignments.find((m) => Number(m.user) === selectedUserId) ?? null
+      ? assignments.find((m) => m.user_id === selectedUserId) ?? null
       : null;
 
   const assignModalUser = assignModalUserId != null
-    ? assignments.find((m) => Number(m.user) === assignModalUserId) ?? null
+    ? assignments.find((m) => m.user_id === assignModalUserId) ?? null
     : null;
 
   const handleAssign = (userId: number, templateId: number, note: string) => {
@@ -177,7 +176,7 @@ export default function TeamOnboardingPage({ hideNav = false }: TeamOnboardingPa
           aria-label={t('companies.teamOnboardingSubtitle')}
         >
           {/* Skeleton */}
-          {teamQuery.isLoading && (
+          {assignmentsQuery.isLoading && (
             <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[1, 2, 3].map((i) => (
                 <div
@@ -213,14 +212,14 @@ export default function TeamOnboardingPage({ hideNav = false }: TeamOnboardingPa
           )}
 
           {/* Error */}
-          {teamQuery.isError && (
+          {assignmentsQuery.isError && (
             <div style={{ padding: 16, fontSize: 13, color: 'var(--danger)' }}>
               {t('companies.teamOnboardingLoadError')}
             </div>
           )}
 
           {/* Empty state */}
-          {!teamQuery.isLoading && !teamQuery.isError && members.length === 0 && (
+          {!assignmentsQuery.isLoading && !assignmentsQuery.isError && assignments.length === 0 && (
             <div
               style={{
                 display: 'flex',
@@ -241,12 +240,11 @@ export default function TeamOnboardingPage({ hideNav = false }: TeamOnboardingPa
           )}
 
           {/* Member rows */}
-          {members.map((member) => {
+          {assignments.map((member) => {
             const name = `${member.first_name} ${member.last_name}`.trim();
-            const isSelected = Number(selectedUserId) === Number(member.user);
-            const assignment = assignments.find((a) => Number(a.user) === Number(member.user));
-            const templateName = member.template_name ?? assignment?.template_name ?? null;
-            const isDefaultTemplate = templateName !== null && (assignment?.assigned_at == null);
+            const isSelected = selectedUserId === member.user_id;
+            const templateName = member.template_name;
+            const isDefaultTemplate = templateName !== null && member.assigned_at == null;
             const pct =
               member.total_steps > 0
                 ? Math.round((member.completed_steps / member.total_steps) * 100)
@@ -254,12 +252,12 @@ export default function TeamOnboardingPage({ hideNav = false }: TeamOnboardingPa
 
             return (
               <div
-                key={member.user}
-                onClick={() => { if (member.user != null) handleSelectUser(member.user); }}
+                key={member.user_id}
+                onClick={() => { handleSelectUser(member.user_id); }}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
-                  if ((e.key === 'Enter' || e.key === ' ') && member.user != null) handleSelectUser(member.user);
+                  if (e.key === 'Enter' || e.key === ' ') handleSelectUser(member.user_id);
                 }}
                 aria-label={t('companies.teamMemberAria', { name })}
                 style={{
@@ -321,7 +319,7 @@ export default function TeamOnboardingPage({ hideNav = false }: TeamOnboardingPa
                     >
                       {name}
                     </div>
-                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{member.role}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{member.position}</div>
                   </div>
                   <span
                     style={{
@@ -447,11 +445,9 @@ export default function TeamOnboardingPage({ hideNav = false }: TeamOnboardingPa
                         color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'inherit',
                       }}
                     >
-                      {(() => {
-                        const curAssignment = assignments.find((a) => Number(a.user) === Number(selectedUserId));
-                        const hasTemplate = selectedMember?.template_name ?? curAssignment?.template_name ?? null;
-                        return hasTemplate ? t('companies.reassignTemplate') : t('companies.assignTemplate');
-                      })()}
+                      {selectedMember?.template_name
+                        ? t('companies.reassignTemplate')
+                        : t('companies.assignTemplate')}
                     </button>
                     <span
                       style={{

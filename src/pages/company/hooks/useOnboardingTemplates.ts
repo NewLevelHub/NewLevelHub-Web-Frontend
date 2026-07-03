@@ -26,17 +26,19 @@ export interface EditingStepState {
   url: string;
 }
 
-export function useOnboardingTemplates() {
+export function useOnboardingTemplates(propCompanyId?: string) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
 
   const isSuperadmin = user?.role === USER_ROLES.SUPERADMIN;
-  const initialCompanyId = searchParams.get('company') ?? '';
+  const initialCompanyId = propCompanyId ?? searchParams.get('company') ?? '';
   const [selectedCompanyId, setSelectedCompanyId] = useState(initialCompanyId);
+  // When a propCompanyId is provided (superadmin viewing a specific company hub),
+  // use it directly without requiring the user to re-select from the dropdown.
   const companyId = isSuperadmin
-    ? selectedCompanyId || null
+    ? propCompanyId || selectedCompanyId || null
     : user?.company_id != null
       ? String(user.company_id)
       : null;

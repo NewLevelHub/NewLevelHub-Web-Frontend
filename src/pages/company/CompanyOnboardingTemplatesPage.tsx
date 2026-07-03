@@ -21,9 +21,10 @@ import { useOnboardingTemplates } from '@/pages/company/hooks/useOnboardingTempl
 
 interface CompanyOnboardingTemplatesPageProps {
   hideNav?: boolean;
+  companyId?: string;
 }
 
-export default function CompanyOnboardingTemplatesPage({ hideNav }: CompanyOnboardingTemplatesPageProps = {}) {
+export default function CompanyOnboardingTemplatesPage({ hideNav, companyId: propCompanyId }: CompanyOnboardingTemplatesPageProps = {}) {
   const { t } = useTranslation();
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -68,7 +69,7 @@ export default function CompanyOnboardingTemplatesPage({ hideNav }: CompanyOnboa
     handleSaveStep,
     handleDeleteTemplate,
     handleDeleteStep,
-  } = useOnboardingTemplates();
+  } = useOnboardingTemplates(propCompanyId);
 
   return (
     <div className="space-y-4">

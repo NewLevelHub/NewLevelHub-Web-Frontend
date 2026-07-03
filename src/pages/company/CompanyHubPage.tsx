@@ -22,6 +22,7 @@ import {
   USER_ROLES,
   COMPANY_TIERS,
   COMPANY_TIER_LABEL_KEYS,
+  COMPANY_PLAN_DEFAULT_LIMITS,
   type CompanyTier,
 } from '@/shared/config/constants';
 import type { CompanyDetail, CompanyLimits } from '@/shared/types';
@@ -173,8 +174,8 @@ function SettingsTabContent({ companyId }: { companyId?: string }) {
     <div>
       <UnderlineTabBar tabs={subTabs} active={subTab} onChange={setSubTab} />
       {subTab === 'general' && <CompanySettingsPage hideNav companyId={companyId} />}
-      {subTab === 'onboarding' && <CompanyOnboardingTemplatesPage hideNav />}
-      {subTab === 'team-progress' && <TeamOnboardingPage hideNav />}
+      {subTab === 'onboarding' && <CompanyOnboardingTemplatesPage hideNav companyId={companyId} />}
+      {subTab === 'team-progress' && <TeamOnboardingPage hideNav companyId={companyId} />}
     </div>
   );
 }
@@ -425,7 +426,7 @@ export default function CompanyHubPage({ companyId: propCompanyId }: CompanyHubP
         ) : company ? (
           <div className="hub-hero-card" style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
             {/* Avatar */}
-            <CompanyAvatar name={company.name} />
+            <CompanyAvatar name={company.name} logo={company.logo} />
 
             {/* Info */}
             <div style={{ flex: 1 }}>
@@ -613,7 +614,7 @@ export default function CompanyHubPage({ companyId: propCompanyId }: CompanyHubP
           role="dialog"
           aria-modal="true"
         >
-          <div className="relative w-full max-w-[560px] rounded-2xl border border-default bg-surface shadow-xl overflow-y-auto max-h-[90vh]">
+          <div className="relative w-full max-w-[560px] rounded-2xl border border-default bg-surface shadow-xl max-h-[90vh] flex flex-col">
             {/* Header */}
             <div className="flex items-start justify-between px-[22px] pt-[18px] pb-[14px]">
               <div className="min-w-0 pr-4">
@@ -639,8 +640,9 @@ export default function CompanyHubPage({ companyId: propCompanyId }: CompanyHubP
                 if (categoriesError) return;
                 patchCompany();
               }}
+              className="flex flex-col min-h-0 flex-1"
             >
-              <div className="px-[22px] pb-0 flex flex-col gap-4 max-h-[calc(90vh-120px)] overflow-y-auto">
+              <div className="px-[22px] pb-4 flex flex-col gap-4 overflow-y-auto flex-1">
 
                 {/* Name */}
                 <div>
@@ -761,7 +763,19 @@ export default function CompanyHubPage({ companyId: propCompanyId }: CompanyHubP
                       <select
                         id="edit-company-plan"
                         value={editForm.plan}
-                        onChange={(e) => setEditForm((f) => ({ ...f, plan: e.target.value }))}
+                        onChange={(e) => {
+                          const newPlan = e.target.value as CompanyTier;
+                          const limits =
+                            COMPANY_PLAN_DEFAULT_LIMITS[newPlan] ??
+                            COMPANY_PLAN_DEFAULT_LIMITS[COMPANY_TIERS.BASIC];
+                          setEditForm((f) => ({
+                            ...f,
+                            plan: newPlan,
+                            max_employees: limits.max_employees,
+                            storage_limit_gb: limits.storage_limit_gb,
+                            max_boards: limits.max_boards,
+                          }));
+                        }}
                         style={{ ...inputStyle, cursor: 'pointer' }}
                       >
                         <option value={COMPANY_TIERS.BASIC}>{t('common.companyTier.basic')}</option>
@@ -861,12 +875,32 @@ function HeroSkeleton() {
 
 // ── CompanyAvatar ─────────────────────────────────────────────────────────────
 
-function CompanyAvatar({ name }: { name: string }) {
+function CompanyAvatar({ name, logo }: { name: string; logo?: string | null }) {
+  const [imgError, setImgError] = useState(false);
   const initials = name
     .split(/\s+/)
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase() ?? '')
     .join('');
+
+  if (logo && !imgError) {
+    return (
+      <img
+        src={logo}
+        alt={name}
+        className="hub-hero-avatar"
+        onError={() => setImgError(true)}
+        style={{
+          width: 80,
+          height: 80,
+          borderRadius: 16,
+          objectFit: 'cover',
+          flexShrink: 0,
+          border: '1px solid var(--border)',
+        }}
+      />
+    );
+  }
 
   return (
     <div
