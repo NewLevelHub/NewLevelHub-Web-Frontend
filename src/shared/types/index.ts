@@ -228,10 +228,6 @@ export interface CompanyAnalytics {
   };
   active_crm_tasks: {
     total: number;
-    todo: number;
-    in_progress: number;
-    done: number;
-    other: number;
     by_column: Array<{
       column_id: number;
       name: string;

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -152,11 +152,12 @@ function StorageCard({ usedBytes, limitBytes, storagePct, t }: StorageCardProps)
 
 interface CrmData {
   total: number;
-  todo: number;
-  in_progress: number;
-  done: number;
-  other: number;
-  by_column: { name: string; count: number }[];
+  by_column: Array<{
+    column_id: number;
+    name: string;
+    board_name: string;
+    count: number;
+  }>;
 }
 
 interface CRMCardProps {
@@ -165,16 +166,6 @@ interface CRMCardProps {
 }
 
 function CRMCard({ crm, t }: CRMCardProps) {
-  const statuses = [
-    { label: t('analytics.crmTodo'), val: crm.todo, color: 'var(--info)' },
-    { label: t('analytics.crmInProgress'), val: crm.in_progress, color: 'var(--brand)' },
-    { label: t('analytics.crmDone'), val: crm.done, color: 'var(--success)' },
-    {
-      label: t('analytics.crmOther'),
-      val: crm.other,
-      color: 'var(--text-subtle, var(--text-muted))',
-    },
-  ];
   const total = crm.total || 1;
 
   return (
@@ -203,70 +194,99 @@ function CRMCard({ crm, t }: CRMCardProps) {
           {crm.total} {t('analytics.crmTotal')}
         </span>
       </div>
-      {statuses.map((s, i) => (
-        <div
-          key={i}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '9px 0',
-            borderBottom:
-              i < statuses.length - 1 ? '1px solid var(--border-faint)' : 'none',
-          }}
-        >
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: 2,
-              background: s.color,
-              flexShrink: 0,
-            }}
-          />
-          <span style={{ flex: 1, fontSize: 12, color: 'var(--text-secondary)' }}>
-            {s.label}
-          </span>
+      {crm.by_column.length === 0 ? (
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '12px 0' }}>
+          {t('analytics.noData')}
+        </div>
+      ) : (
+        crm.by_column.map((col, i) => (
           <div
+            key={col.column_id}
             style={{
-              flex: '0 0 120px',
-              height: 5,
-              borderRadius: 3,
-              background: 'var(--bg-raised)',
-              overflow: 'hidden',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '9px 0',
+              borderBottom:
+                i < crm.by_column.length - 1 ? '1px solid var(--border-faint)' : 'none',
             }}
           >
-            <div
+            <span
               style={{
-                height: '100%',
-                width: `${Math.round((s.val / total) * 100)}%`,
-                background: s.color,
-                opacity: 0.82,
+                width: 8,
+                height: 8,
+                borderRadius: 2,
+                background: 'var(--brand)',
+                flexShrink: 0,
               }}
             />
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span
+                style={{
+                  display: 'block',
+                  fontSize: 12,
+                  color: 'var(--text-secondary)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {col.name}
+              </span>
+              <span
+                style={{
+                  display: 'block',
+                  fontSize: 11,
+                  color: 'var(--text-muted)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {col.board_name}
+              </span>
+            </span>
+            <div
+              style={{
+                flex: '0 0 120px',
+                height: 5,
+                borderRadius: 3,
+                background: 'var(--bg-raised)',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  height: '100%',
+                  width: `${Math.round((col.count / total) * 100)}%`,
+                  background: 'var(--brand)',
+                  opacity: 0.82,
+                }}
+              />
+            </div>
+            <span
+              style={{
+                fontSize: 12,
+                color: 'var(--text-secondary)',
+                width: 22,
+                textAlign: 'right',
+              }}
+            >
+              {col.count}
+            </span>
+            <span
+              style={{
+                fontSize: 11,
+                color: 'var(--text-muted)',
+                width: 32,
+                textAlign: 'right',
+              }}
+            >
+              {Math.round((col.count / total) * 100)}%
+            </span>
           </div>
-          <span
-            style={{
-              fontSize: 12,
-              color: 'var(--text-secondary)',
-              width: 22,
-              textAlign: 'right',
-            }}
-          >
-            {s.val}
-          </span>
-          <span
-            style={{
-              fontSize: 11,
-              color: 'var(--text-muted)',
-              width: 32,
-              textAlign: 'right',
-            }}
-          >
-            {Math.round((s.val / total) * 100)}%
-          </span>
-        </div>
-      ))}
+        ))
+      )}
     </div>
   );
 }
@@ -368,6 +388,11 @@ export default function AnalyticsDashboardPage() {
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [exportPdfError, setExportPdfError] = useState<string | null>(null);
 
+  // activeParams only updates when we have a valid range to query.
+  // When period === 'custom' and dates are incomplete, it stays at the
+  // previous value so the query keeps returning the last loaded data.
+  const [activeParams, setActiveParams] = useState<Record<string, string>>({ period: '30d' });
+
   const { data: companyData } = useQuery({
     queryKey: ['company-detail-plan', companyId],
     enabled: !!companyId,
@@ -412,16 +437,22 @@ export default function AnalyticsDashboardPage() {
   // Build request params
   // ---------------------------------------------------------------------------
 
-  const analyticsParams = useMemo(() => {
-    const p: Record<string, string> = { period };
-    if (period === 'custom' && customRangeValid && dateFrom && dateTo) {
-      p.date_from = dateFrom;
-      p.date_to = dateTo;
+  // Commit activeParams only when the selected range is fully valid.
+  // While the user is still picking custom dates, activeParams stays at the
+  // previously committed value so the query keeps showing existing data.
+  useEffect(() => {
+    if (period !== 'custom') {
+      setActiveParams({ period });
+    } else if (customRangeValid && dateFrom && dateTo) {
+      setActiveParams({ period: 'custom', date_from: dateFrom, date_to: dateTo });
     }
-    return p;
+    // When period === 'custom' but range is invalid, do nothing — keep previous activeParams
   }, [period, customRangeValid, dateFrom, dateTo]);
 
-  const queryEnabled = isCompanyAdmin && (period !== 'custom' || customRangeValid);
+  // Legacy alias so export handlers keep working unchanged
+  const analyticsParams = activeParams;
+
+  const queryEnabled = isCompanyAdmin;
 
   // ---------------------------------------------------------------------------
   // Period label helper
@@ -478,7 +509,6 @@ export default function AnalyticsDashboardPage() {
   }
 
   async function handleExportPdf() {
-    if (!queryEnabled) return;
     try {
       setIsExportingPdf(true);
       setExportPdfError(null);
@@ -545,7 +575,7 @@ export default function AnalyticsDashboardPage() {
             variant="secondary"
             size="sm"
             onClick={() => void handleExportCsv()}
-            disabled={isExporting || !queryEnabled}
+            disabled={isExporting}
           >
             <Download size={14} aria-hidden />
             {isExporting ? t('analytics.exportingCsv') : t('analytics.exportCsv')}
@@ -556,7 +586,7 @@ export default function AnalyticsDashboardPage() {
             variant="primary"
             size="sm"
             onClick={() => void handleExportPdf()}
-            disabled={isExportingPdf || !queryEnabled}
+            disabled={isExportingPdf}
           >
             <FileDown size={14} aria-hidden />
             {isExportingPdf ? t('analytics.exportingPdf') : t('analytics.exportPdf')}
@@ -592,29 +622,6 @@ export default function AnalyticsDashboardPage() {
     );
   }
 
-  // Query disabled — waiting for a valid custom date range
-  if (!queryEnabled) {
-    return (
-      <div>
-        {headerBlock}
-        {periodFilter}
-        <div
-          style={{
-            marginTop: 32,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 8,
-            color: 'var(--text-muted)',
-            fontSize: 13,
-          }}
-        >
-          <span>{t('analytics.customRangePrompt')}</span>
-        </div>
-      </div>
-    );
-  }
-
   if (isError) {
     return (
       <div className="p-6 text-sm" style={{ color: 'var(--danger)' }}>
@@ -625,22 +632,10 @@ export default function AnalyticsDashboardPage() {
 
   if (!data) {
     return (
-      <div>
-        {headerBlock}
-        {periodFilter}
-        <div
-          style={{
-            marginTop: 32,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 8,
-            color: 'var(--text-muted)',
-            fontSize: 13,
-          }}
-        >
-          <span>{t('analytics.customRangePrompt')}</span>
-        </div>
+      <div className="p-6 space-y-4">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-20 animate-pulse rounded-xl bg-hover" />
+        ))}
       </div>
     );
   }
@@ -727,7 +722,7 @@ export default function AnalyticsDashboardPage() {
           icon={Ticket}
           label={t('analytics.kpiCrm')}
           value={crm.total}
-          sub={`${crm.todo + crm.in_progress} ${t('analytics.kpiCrmActiveSub')}`}
+          sub={`${crm.by_column.length} ${t('analytics.kpiCrmColumnsSub')}`}
           locked={!isStandard}
         />
         <KpiCard
