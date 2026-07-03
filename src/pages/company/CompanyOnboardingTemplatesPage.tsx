@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Plus,
@@ -22,12 +22,22 @@ import { useOnboardingTemplates } from '@/pages/company/hooks/useOnboardingTempl
 interface CompanyOnboardingTemplatesPageProps {
   hideNav?: boolean;
   companyId?: string;
+  triggerCreate?: boolean;
+  onTriggerReset?: () => void;
+  onTemplatesLoaded?: (hasTemplates: boolean) => void;
 }
 
-export default function CompanyOnboardingTemplatesPage({ hideNav, companyId: propCompanyId }: CompanyOnboardingTemplatesPageProps = {}) {
+export default function CompanyOnboardingTemplatesPage({ hideNav, companyId: propCompanyId, triggerCreate, onTriggerReset, onTemplatesLoaded }: CompanyOnboardingTemplatesPageProps = {}) {
   const { t } = useTranslation();
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+
+  useEffect(() => {
+    if (triggerCreate) {
+      setShowCreateForm(true);
+      onTriggerReset?.();
+    }
+  }, [triggerCreate, onTriggerReset]);
 
   const {
     isSuperadmin,
@@ -70,6 +80,12 @@ export default function CompanyOnboardingTemplatesPage({ hideNav, companyId: pro
     handleDeleteTemplate,
     handleDeleteStep,
   } = useOnboardingTemplates(propCompanyId);
+
+  useEffect(() => {
+    if (!templatesQuery.isLoading && !templatesQuery.isFetching) {
+      onTemplatesLoaded?.(templates.length > 0);
+    }
+  }, [templatesQuery.isLoading, templatesQuery.isFetching, templates, onTemplatesLoaded]);
 
   return (
     <div className="space-y-4">
@@ -138,9 +154,9 @@ export default function CompanyOnboardingTemplatesPage({ hideNav, companyId: pro
             <button
               type="button"
               onClick={() => setShowCreateForm((v) => !v)}
-              className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium text-white rounded-[var(--radius-sm)] bg-[color:var(--brand)] hover:opacity-90 transition-opacity"
             >
-              <Plus size={13} aria-hidden="true" />
+              <Plus size={14} aria-hidden="true" />
               {t('companies.createTemplateBtn')}
             </button>
           </div>
@@ -630,9 +646,18 @@ export default function CompanyOnboardingTemplatesPage({ hideNav, companyId: pro
             </div>
           )}
           {!templatesQuery.isLoading && !templates.length && (
-            <div className="flex flex-col items-center justify-center py-12">
-              <ClipboardList className="mb-3 h-10 w-10 text-muted" aria-hidden="true" />
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <ClipboardList className="h-10 w-10 text-muted" aria-hidden="true" />
               <p className="text-sm font-medium text-secondary">{t('companies.noTemplates')}</p>
+              <p className="text-xs text-muted">{t('companies.noTemplatesHint')}</p>
+              <button
+                type="button"
+                onClick={() => setShowCreateForm(true)}
+                className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity mt-1"
+              >
+                <Plus size={13} aria-hidden="true" />
+                {t('companies.createTemplateBtn')}
+              </button>
             </div>
           )}
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, X, Mail, Phone, Globe, Edit2, Users, LayoutGrid, FolderOpen, MonitorPlay, ChevronLeft } from 'lucide-react';
+import { Check, X, Mail, Phone, Globe, Edit2, Users, LayoutGrid, FolderOpen, MonitorPlay, ChevronLeft, Plus } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
 import { resFileInput } from '@/shared/ui/resourcePageStyles';
 
@@ -155,6 +155,8 @@ function SettingsTabContent({ companyId }: { companyId?: string }) {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const subTab = (searchParams.get('subtab') as SettingsSubTab | null) ?? 'general';
+  const [createTemplate, setCreateTemplate] = useState(false);
+  const [hasTemplates, setHasTemplates] = useState(true);
 
   function setSubTab(tab: SettingsSubTab) {
     setSearchParams((prev) => {
@@ -172,9 +174,29 @@ function SettingsTabContent({ companyId }: { companyId?: string }) {
 
   return (
     <div>
-      <UnderlineTabBar tabs={subTabs} active={subTab} onChange={setSubTab} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 0 }}>
+        <UnderlineTabBar tabs={subTabs} active={subTab} onChange={setSubTab} />
+        {subTab === 'onboarding' && hasTemplates && (
+          <button
+            type="button"
+            onClick={() => setCreateTemplate(true)}
+            className="inline-flex items-center gap-1.5 h-[34px] px-3 text-[13px] font-medium bg-[color:var(--brand)] text-white rounded-[var(--radius-sm)] hover:opacity-90 transition-opacity"
+          >
+            <Plus size={13} aria-hidden="true" />
+            {t('companies.createTemplateBtn')}
+          </button>
+        )}
+      </div>
       {subTab === 'general' && <CompanySettingsPage hideNav companyId={companyId} />}
-      {subTab === 'onboarding' && <CompanyOnboardingTemplatesPage hideNav companyId={companyId} />}
+      {subTab === 'onboarding' && (
+        <CompanyOnboardingTemplatesPage
+          hideNav
+          companyId={companyId}
+          triggerCreate={createTemplate}
+          onTriggerReset={() => setCreateTemplate(false)}
+          onTemplatesLoaded={setHasTemplates}
+        />
+      )}
       {subTab === 'team-progress' && <TeamOnboardingPage hideNav companyId={companyId} />}
     </div>
   );
