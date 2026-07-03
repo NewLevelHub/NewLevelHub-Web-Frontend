@@ -45,7 +45,7 @@ export default function PassListPage() {
   } = useAccessLogs();
 
   return (
-    <main className="mx-auto max-w-7xl space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6">
+    <main className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-primary">{t('passes.listTitle')}</h1>

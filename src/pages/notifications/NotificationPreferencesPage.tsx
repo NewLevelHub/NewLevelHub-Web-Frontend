@@ -74,7 +74,7 @@ export default function NotificationPreferencesPage() {
   const roleLabel = roleKey ? t(roleKey) : '';
 
   return (
-    <main style={{ padding: '24px 24px 48px', maxWidth: 860, margin: '0 auto' }}>
+    <main>
       {/* Page header */}
       <div
         style={{

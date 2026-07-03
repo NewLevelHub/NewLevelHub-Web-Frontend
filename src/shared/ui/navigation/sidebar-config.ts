@@ -15,7 +15,6 @@ import {
   ListTodo,
   Repeat,
   Bell,
-  Ban,
   type LucideIcon,
 } from 'lucide-react';
 import { STAFF_UI_PREFIX, SUPERADMIN_UI_PREFIX, USER_ROLES, type UserRole } from '@/shared/config/constants';
@@ -42,7 +41,6 @@ const superadminNav: NavSection[] = [
       { labelKey: 'sidebar.navItem.companies',       path: `${SUPERADMIN_UI_PREFIX}/companies`,     icon: Building2 },
       { labelKey: 'sidebar.navItem.resources',       path: '/resources',                            icon: Bookmark },
       { labelKey: 'sidebar.navItem.bookings',           path: `${STAFF_UI_PREFIX}/bookings`,                        icon: CalendarDays },
-      { labelKey: 'sidebar.navItem.cancellationAudit', path: `${STAFF_UI_PREFIX}/bookings/cancellation-audit`,    icon: Ban },
       { labelKey: 'sidebar.navItem.passes',             path: '/passes',                                           icon: ShieldCheck },
       { labelKey: 'sidebar.navItem.qrCheck',         path: '/access/validate',                      icon: ShieldCheck },
     ],
@@ -96,7 +94,6 @@ const companyAdminNav: NavSection[] = [
       { labelKey: 'sidebar.navItem.bookingCatalog',  path: '/bookings/catalog',                     icon: CalendarDays },
       { labelKey: 'sidebar.navItem.recurringBookings', path: '/bookings/recurring',                 icon: Repeat },
       { labelKey: 'sidebar.navItem.adminBookings',      path: `${STAFF_UI_PREFIX}/bookings`,                        icon: CalendarDays },
-      { labelKey: 'sidebar.navItem.cancellationAudit', path: `${STAFF_UI_PREFIX}/bookings/cancellation-audit`,    icon: Ban },
       { labelKey: 'sidebar.navItem.buildingMap',        path: '/building/map',                                     icon: Map },
       { labelKey: 'sidebar.navItem.guestPasses',     path: '/passes',                               icon: ShieldCheck },
       { labelKey: 'sidebar.navItem.files',           path: '/storage',                              icon: FileText },
